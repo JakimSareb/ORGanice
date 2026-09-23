@@ -34,9 +34,8 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
 - **YouTube**: los enlaces a vídeos de YouTube muestran un reproductor de 300 px (modo de
   privacidad mejorada, youtube-nocookie.com).
 - **Contextos GTD**: botones de filtro generados desde las líneas `#+TAGS:` de tus ficheros
-  (las etiquetas que empiezan por `@`; si no hay ninguna con `@`, todas las declaradas; `casa` y
-  `@casa` cuentan como el mismo contexto). El editor de etiquetas ofrece primero las declaradas en
-  `#+TAGS:`. En Buscar,
+  (en los filtros solo aparecen las etiquetas que empiezan por `@` presentes en tareas abiertas).
+  El editor de etiquetas ofrece primero las declaradas en `#+TAGS:`. En Buscar,
   Lista de tareas y Agenda. Solo se muestran los contextos y estados presentes con los filtros
   actuales; varios contextos seleccionados deben cumplirse a la vez. Respeta la herencia de
   etiquetas.

@@ -2,8 +2,8 @@
 //
 // Los contextos se definen en la cabecera de cada fichero Org con la sintaxis
 // estándar de Org:   #+TAGS: @casa(c) @oficina(o) { @llamadas @recados } proyecto
-// Se consideran contextos las etiquetas que empiezan por "@". Si en #+TAGS: no hay ninguna con
-// "@", se consideran contextos todas las declaradas. "casa" y "@casa" son el mismo contexto.
+// En los filtros solo aparecen las etiquetas que empiezan por "@" y que están presentes en
+// tareas abiertas (encabezados con palabra clave TODO/NEXT… no terminada).
 
 import { Set as ISet, Map as IMap } from 'immutable';
 
@@ -30,10 +30,7 @@ export const contextsFromConfigLines = (configLines) => {
   return withAt.length ? withAt : declared;
 };
 
-// "casa" y "@casa" son el mismo contexto
-export const contextKey = (tag) => String(tag || '').replace(/^@/, '').toLowerCase();
-export const tagsHaveContext = (tags, context) =>
-  !!tags && tags.some((t) => contextKey(t) === contextKey(context));
+export const tagsHaveContext = (tags, context) => !!tags && tags.some((t) => t === context);
 
 // Etiquetas para el editor: primero las declaradas en #+TAGS: (en su orden), luego el resto
 export const allTagsForEditor = (headers, configLines) => {
@@ -116,12 +113,11 @@ export const filterFilesByTodo = (files, selectedTodos) => {
 };
 
 // Contextos y estados que tienen sentido mostrar con los filtros actuales (filtros facetados):
-//  - contextos: los declarados en #+TAGS: (con @) presentes en encabezados que cumplen
+//  - contextos: etiquetas con @ presentes (propias o heredadas) en tareas abiertas que cumplen
 //    el estado y TODOS los contextos ya seleccionados;
 //  - estados: los de TODO_FILTER_KEYWORDS presentes en encabezados que cumplen los contextos.
 // Los seleccionados se incluyen siempre, para poder quitarlos.
 export const availableFacets = (files, selectedContexts, selectedTodos) => {
-  const declared = ISet(collectContexts(files));
   const selC = ISet(selectedContexts || []);
   const selT = ISet(selectedTodos || []);
   let contexts = ISet();
@@ -131,10 +127,14 @@ export const availableFacets = (files, selectedContexts, selectedTodos) => {
       const headers = file.get('headers');
       if (!headers) return;
       const tagsById = inheritedTagsById(headers);
+      const doneKeywords = ISet(
+        (file.get('todoKeywordSets') || []).flatMap((s) => s.get('completedKeywords') || [])
+      );
       headers.forEach((h) => {
-        const own = tagsById.get(h.get('id')) || ISet();
-        const tags = declared.filter((d) => tagsHaveContext(own, d));
         const kw = h.getIn(['titleLine', 'todoKeyword']);
+        // Solo tareas abiertas
+        if (!kw || doneKeywords.has(kw)) return;
+        const tags = (tagsById.get(h.get('id')) || ISet()).filter((t) => t.startsWith('@'));
         const matchesContexts = selC.every((c) => tagsHaveContext(tags, c));
         const matchesTodo = selT.size === 0 || selT.has(kw);
         if (matchesContexts && kw && TODO_FILTER_KEYWORDS.includes(kw)) todos = todos.add(kw);

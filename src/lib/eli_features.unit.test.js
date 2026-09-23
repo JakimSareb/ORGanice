@@ -132,28 +132,35 @@ test('filtros facetados: solo lo presente y contextos combinados con Y', () => {
   expect(availableFacets(files, List(), List(['NEXT'])).contexts).toEqual(['@casa']);
 });
 
-test('contextos sin @ y etiquetas declaradas en el editor', () => {
+test('filtros: solo etiquetas con @ presentes en tareas abiertas; editor con las declaradas', () => {
   const f = parseOrg(
     [
-      '#+TODO: TODO | DONE',
-      '#+TAGS: { casa(c) recados(r) } ordenador llamadas \\n leer',
-      '* TODO barrer :casa:recados:',
-      '* TODO otra :casa:proyectoX:',
+      '#+TODO: TODO NEXT | DONE',
+      '#+TAGS: { casa(c) recados(r) } ordenador llamadas \\n leer @oficina @nunca',
+      '* TODO barrer :casa:recados:@calle:',
+      '* TODO otra :@casa:proyectoX:',
+      '* DONE hecha :@viejo:',
+      '* Nota sin tarea :@nota:',
       '',
     ].join('\n')
   );
   const files = Map({ '/a.org': f });
-  // sin @ en #+TAGS: todas las declaradas son contextos; solo se muestran las presentes
-  expect(availableFacets(files, List(), List()).contexts).toEqual(['casa', 'recados']);
-  expect(
-    filterHeadersByContexts(f.get('headers'), List(['casa', 'recados']))
-      .map((h) => h.getIn(['titleLine', 'rawTitle']).trim())
-      .toJS()
-  ).toEqual(['barrer']);
-  // "@casa" declarado equivale a la etiqueta "casa"
-  const g = parseOrg('#+TAGS: @casa @recados\n* TODO x :casa:\n');
-  expect(availableFacets(Map({ '/b.org': g }), List(), List()).contexts).toEqual(['@casa']);
+  // Solo @ presentes en tareas abiertas: ni las sin @, ni las declaradas sin usar, ni DONE/notas
+  expect(availableFacets(files, List(), List()).contexts).toEqual(['@calle', '@casa']);
   expect(
     allTagsForEditor(f.get('headers'), f.get('fileConfigLines').toJS())
-  ).toEqual(['casa', 'recados', 'ordenador', 'llamadas', 'leer', 'proyectoX']);
+  ).toEqual([
+    'casa',
+    'recados',
+    'ordenador',
+    'llamadas',
+    'leer',
+    '@oficina',
+    '@nunca',
+    '@calle',
+    '@casa',
+    '@nota',
+    '@viejo',
+    'proyectoX',
+  ]);
 });
