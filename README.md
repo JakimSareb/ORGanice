@@ -18,7 +18,9 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   `Assets/<año>/` (junto al fichero `.org`) e insertar el enlace. Nunca sobrescribe: si el nombre
   existe, Dropbox lo renombra.
 - **Editar como texto plano**: botón ≡ en la barra superior; edita el fichero abierto tal cual,
-  como en un búfer de Emacs (⌘/Ctrl+S guarda, Esc cancela).
+  como en un búfer de Emacs (⌘/Ctrl+S guarda, Esc cancela). Si hay un encabezado en modo
+  *narrow*, edita solo ese encabezado con sus subencabezados y lo vuelve a colocar en su sitio
+  (comprueba que conserve su nivel; si lo vacías, pregunta antes de eliminarlo).
 - **Exportar a PDF**: botón PDF en la barra superior (fichero entero) o en cada encabezado (ese
   encabezado con sus subencabezados). Abre una vista previa → *PDF / Imprimir* → *Guardar como
   PDF* (en el iPhone: compartir → *Guardar en Archivos*). Incluye imágenes, tablas y listas; las

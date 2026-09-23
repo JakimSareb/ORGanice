@@ -8,7 +8,8 @@ import AttributedString from '../OrgFile/components/AttributedString';
 import { exportOrg } from '../../lib/export_org';
 import { subheadersOfHeaderWithId, isRegularPlanningItem, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { renderAsText } from '../../lib/timestamps';
-import { parseFile, setDirty, sync } from '../../actions/org';
+import { parseFile, setDirty, sync, narrowHeader, widenHeader } from '../../actions/org';
+import { List } from 'immutable';
 
 // ORG Mode para Eli: herramientas de fichero
 //  - Editar el fichero abierto como texto plano (como en un búfer de Emacs)
@@ -43,7 +44,33 @@ const ensurePortal = (id) => {
 // ---------------------------------------------------------------------------
 // Editor de texto plano
 
-function RawEditor({ path, initialText, onClose }) {
+// Comprueba que el texto de un subárbol sigue siendo un subárbol del mismo nivel
+export const validateSubtreeText = (text, level) => {
+  const lines = text.split('\n');
+  const first = lines.find((l) => l.trim() !== '');
+  if (first === undefined) return { ok: false, empty: true };
+  const m = /^(\*+)\s/.exec(first);
+  if (!m) return { ok: false, reason: 'La primera línea debe ser el encabezado (empezar por asteriscos).' };
+  if (m[1].length !== level) {
+    return { ok: false, reason: `El encabezado debe mantener su nivel (${'*'.repeat(level)}).` };
+  }
+  const escapes = lines.filter((l) => {
+    const h = /^(\*+)\s/.exec(l);
+    return h && h[1].length <= level;
+  }).length;
+  if (escapes > 1) {
+    return {
+      ok: false,
+      reason:
+        'Hay otro encabezado de nivel igual o superior: quedaría fuera de este bloque ' +
+        '(se convertiría en un encabezado hermano).',
+      soft: true,
+    };
+  }
+  return { ok: true };
+};
+
+function RawEditor({ path, initialText, narrow, onClose }) {
   const dispatch = useDispatch();
   const [text, setText] = useState(initialText);
   const ref = useRef(null);
@@ -64,12 +91,43 @@ function RawEditor({ path, initialText, onClose }) {
   };
 
   const save = () => {
-    if (changed) {
-      const normalized = text.endsWith('\n') ? text : text + '\n';
-      dispatch(parseFile(path, normalized));
-      dispatch(setDirty(true, path));
-      dispatch(sync({ path, shouldSuppressMessages: true }));
+    if (!changed) {
+      onClose();
+      return;
     }
+    let normalized = text.endsWith('\n') || text === '' ? text : text + '\n';
+    let deleted = false;
+    if (narrow) {
+      const check = validateSubtreeText(normalized, narrow.level);
+      if (check.empty) {
+        // eslint-disable-next-line no-restricted-globals
+        if (!window.confirm('El texto está vacío: se eliminará este encabezado entero. ¿Continuar?')) return;
+        normalized = '';
+        deleted = true;
+      } else if (!check.ok) {
+        if (!check.soft) {
+          window.alert(check.reason);
+          return;
+        }
+        // eslint-disable-next-line no-restricted-globals
+        if (!window.confirm(check.reason + ' ¿Guardar de todos modos?')) return;
+      }
+      normalized = narrow.before + normalized + narrow.after;
+    }
+    // Se sale del narrow antes de volver a analizar (los ids de los encabezados cambian)
+    if (narrow) dispatch(widenHeader());
+    dispatch(parseFile(path, normalized));
+    if (narrow && !deleted) {
+      // Los encabezados reciben ids nuevos al volver a analizar el fichero: se vuelve a
+      // enfocar (narrow) el encabezado que ocupa la misma posición.
+      dispatch((d, getState) => {
+        const headers = getState().org.present.getIn(['files', path, 'headers']) || List();
+        const h = headers.get(narrow.index);
+        if (h && h.get('nestingLevel') === narrow.level) d(narrowHeader(h.get('id')));
+      });
+    }
+    dispatch(setDirty(true, path));
+    dispatch(sync({ path, shouldSuppressMessages: true }));
     onClose();
   };
 
@@ -97,8 +155,9 @@ function RawEditor({ path, initialText, onClose }) {
           Cancelar
         </button>
         <div className="eli-raw__title">
-          Texto plano{changed ? ' •' : ''}
-          <span className="eli-raw__path">{path}</span>
+          {narrow ? 'Texto plano: solo este encabezado' : 'Texto plano'}
+          {changed ? ' •' : ''}
+          <span className="eli-raw__path">{narrow ? `${path} › ${narrow.title}` : path}</span>
         </div>
         <button className="btn eli-raw__btn eli-raw__btn--primary" onClick={save}>
           Guardar
@@ -246,14 +305,29 @@ export default function EliTools() {
   useEffect(() => {
     const onRaw = () => {
       if (!usable) return;
-      setRaw({
-        path,
-        text: exportOrg({
-          headers: file.get('headers'),
-          linesBeforeHeadings: file.get('linesBeforeHeadings'),
-          dontIndent,
-        }),
-      });
+      const headers = file.get('headers');
+      const linesBeforeHeadings = file.get('linesBeforeHeadings') || List();
+      const narrowedId = file.get('narrowedHeaderId');
+      const index = narrowedId ? headers.findIndex((h) => h.get('id') === narrowedId) : -1;
+      if (index >= 0) {
+        // Modo narrow: solo el encabezado enfocado y sus subencabezados
+        const root = headers.get(index);
+        const end = index + 1 + subheadersOfHeaderWithId(headers, narrowedId).size;
+        const part = (hs, lines) => exportOrg({ headers: hs, linesBeforeHeadings: lines, dontIndent });
+        setRaw({
+          path,
+          text: part(headers.slice(index, end), List()),
+          narrow: {
+            index,
+            level: root.get('nestingLevel'),
+            title: root.getIn(['titleLine', 'rawTitle']).trim(),
+            before: part(headers.slice(0, index), linesBeforeHeadings),
+            after: part(headers.slice(end), List()),
+          },
+        });
+        return;
+      }
+      setRaw({ path, text: exportOrg({ headers, linesBeforeHeadings, dontIndent }) });
     };
     const onPrint = (e) => {
       if (!usable) return;
@@ -269,7 +343,14 @@ export default function EliTools() {
 
   return (
     <>
-      {raw && <RawEditor path={raw.path} initialText={raw.text} onClose={() => setRaw(null)} />}
+      {raw && (
+        <RawEditor
+          path={raw.path}
+          initialText={raw.text}
+          narrow={raw.narrow}
+          onClose={() => setRaw(null)}
+        />
+      )}
       {print && usable && (
         <PrintPreview path={path} file={file} headerId={print.headerId} onClose={() => setPrint(null)} />
       )}
