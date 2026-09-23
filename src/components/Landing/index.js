@@ -11,7 +11,7 @@ import './stylesheet.css';
 // import AOS from 'aos';
 // import 'aos/dist/aos.css';
 
-import logo from 'url:../../images/organice.svg';
+import logo from 'url:../../images/logo-unicornio.svg';
 import screenshotOverview from 'url:../../images/screenshot-overview.png';
 import screenshotWide from 'url:../../images/screenshot-wide.png';
 // import ExternalLink from '../UI/ExternalLink';

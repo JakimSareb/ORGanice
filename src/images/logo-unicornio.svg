@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>ORG Mode para Eli</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbe3ec"/>
+      <stop offset="1" stop-color="#e3dcfa"/>
+    </linearGradient>
+    <linearGradient id="horn" x1="0" y1="1" x2="0.6" y2="0">
+      <stop offset="0" stop-color="#f2b24a"/>
+      <stop offset="1" stop-color="#ffe29a"/>
+    </linearGradient>
+    <linearGradient id="head" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f6effb"/>
+    </linearGradient>
+    <clipPath id="hornClip"><path d="M284 198 C300 150 330 100 362 60 C352 110 340 160 328 206 Z"/></clipPath>
+  </defs>
+
+  <!-- fondo -->
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+
+  <!-- asteriscos de Org Mode: * ** *** -->
+  <g stroke="#f2b24a" stroke-linecap="round" fill="none">
+    <g transform="translate(96 104)" stroke-width="11">
+      <line x1="0" y1="-22" x2="0" y2="22"/><line x1="-19" y1="-11" x2="19" y2="11"/><line x1="-19" y1="11" x2="19" y2="-11"/>
+    </g>
+    <g transform="translate(428 150)" stroke-width="9">
+      <line x1="0" y1="-15" x2="0" y2="15"/><line x1="-13" y1="-7.5" x2="13" y2="7.5"/><line x1="-13" y1="7.5" x2="13" y2="-7.5"/>
+    </g>
+    <g transform="translate(440 206)" stroke-width="7.5">
+      <line x1="0" y1="-10" x2="0" y2="10"/><line x1="-8.7" y1="-5" x2="8.7" y2="5"/><line x1="-8.7" y1="5" x2="8.7" y2="-5"/>
+    </g>
+  </g>
+
+  <g stroke="#5a4870" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <!-- crin trasera (lavanda) -->
+    <path fill="#b9a0f0" d="M246 150 C196 128 140 160 142 214 C112 238 108 290 136 318 C104 350 112 408 150 432 C140 452 142 470 150 478 L262 478 C236 420 222 330 244 250 Z"/>
+    <!-- crin media (rosa) -->
+    <path fill="#f59fc4" d="M252 158 C214 150 176 176 180 220 C156 244 156 284 180 304 C156 334 162 380 190 400 C184 430 190 460 206 478 L268 478 C246 420 238 330 254 256 Z"/>
+
+    <!-- cabeza y cuello -->
+    <path fill="url(#head)" d="M214 478 C200 410 204 330 226 274 C236 238 246 206 262 186 C296 178 330 196 358 222 C386 248 414 276 432 304 C446 328 438 356 410 364 C380 372 352 364 330 356 C312 374 312 424 330 478 Z"/>
+
+    <!-- oreja -->
+    <path fill="#ffffff" d="M258 196 C246 160 254 128 272 112 C286 138 288 168 280 196 Z"/>
+    <path fill="#f9c6dc" stroke="none" d="M264 188 C258 164 262 144 272 132 C279 150 280 170 276 188 Z"/>
+
+    <!-- cuerno -->
+    <path fill="url(#horn)" d="M284 198 C300 150 330 100 362 60 C352 110 340 160 328 206 Z"/>
+    <path fill="none" clip-path="url(#hornClip)" stroke-width="4.5" d="M288 168 L338 186 M302 136 L346 152 M318 106 L354 118"/>
+
+    <!-- flequillo (melocotón y menta) -->
+    <path fill="#ffc8a2" d="M262 186 C276 168 300 164 318 176 C306 184 300 198 302 214 C290 204 276 198 262 206 Z"/>
+    <path fill="#a9e6d0" d="M232 214 C236 190 252 176 270 176 C262 192 262 210 270 226 C256 222 242 222 232 232 Z"/>
+    <!-- mechones de la crin por delante (menta y melocotón) -->
+    <path fill="#a9e6d0" d="M226 262 C204 276 198 304 210 326 C220 306 232 294 248 290 C236 282 230 272 226 262 Z"/>
+    <path fill="#ffc8a2" d="M216 350 C196 368 194 398 208 418 C214 398 224 386 240 380 C228 372 220 362 216 350 Z"/>
+  </g>
+
+  <!-- cara -->
+  <g stroke="#5a4870" stroke-linecap="round" fill="none">
+    <!-- ojo cerrado y sonriente, con pestañas -->
+    <path stroke-width="7" d="M318 258 Q336 274 356 258"/>
+    <path stroke-width="5" d="M322 266 L316 276 M336 270 L336 281 M350 266 L356 276"/>
+    <!-- orificio nasal y sonrisa -->
+    <path stroke-width="6" d="M412 322 Q418 318 422 324"/>
+    <path stroke-width="6" d="M392 346 Q404 354 416 344"/>
+  </g>
+  <!-- mejilla -->
+  <ellipse cx="364" cy="306" rx="18" ry="11" fill="#f59fc4" opacity="0.55"/>
+</svg>
