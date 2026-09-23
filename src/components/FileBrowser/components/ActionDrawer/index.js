@@ -1,6 +1,7 @@
 // INFO: There's an <ActionDrawer> component within the <OrgFile>
 // component, as well.
 
+import { openFavorites } from '../../../EliTools';
 import React, { Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -45,6 +46,14 @@ const ActionDrawer = ({ org, files, syncBackend, path }) => {
     <div className="action-drawer-container nice-scroll">
       {
         <Fragment>
+          <ActionButton
+            iconName="star"
+            isDisabled={false}
+            onClick={openFavorites}
+            dataTestId="eli-favorites"
+            style={mainButtonStyle}
+            tooltip="Ficheros principales"
+          />
           <div
             className="action-drawer__capture-buttons-container"
             style={{

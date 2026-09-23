@@ -31,6 +31,9 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
   const toggleIncludeInTasklist = () =>
     onFieldPathUpdate(setting.get('id'), ['includeInTasklist'], !setting.get('includeInTasklist'));
 
+  const toggleEliFavorite = () =>
+    onFieldPathUpdate(setting.get('id'), ['eliFavorite'], !setting.get('eliFavorite'));
+
   const toggleIncludeInRefile = () =>
     onFieldPathUpdate(setting.get('id'), ['includeInRefile'], !setting.get('includeInRefile'));
 
@@ -64,6 +67,16 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
 
   const renderOptionFields = (setting) => (
     <>
+      <div className="file-setting__field-container">
+        <div className="file-setting__field">
+          <div>Fichero principal (acceso directo ★)?</div>
+          <Switch isEnabled={!!setting.get('eliFavorite')} onToggle={toggleEliFavorite} />
+        </div>
+
+        <div className="file-setting__help-text">
+          Aparece en la lista del botón ★ de la barra inferior para abrirlo con un toque.
+        </div>
+      </div>
       <div className="file-setting__field-container">
         <div className="file-setting__field">
           <div>Is default file to load on startup?</div>

@@ -409,7 +409,7 @@ class Header extends PureComponent {
     });
   }
 
-  // ORG Mode para Eli: seleccionar archivos y subirlos a Assets/AAAA
+  // ORG Mode para Eli: seleccionar archivos y subirlos a assets/AAAA
   handleAttachFiles() {
     const headerId = this.props.header.get('id');
     const input = document.createElement('input');

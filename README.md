@@ -6,16 +6,24 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
 
 - **Búsqueda con ámbito**: *Tareas* (solo encabezados con TODO/DONE…), *Encabezados* (título) o
   *Texto* (título + contenido).
-- **Agenda con vencidas**: cada día muestra las tareas abiertas cuyo SCHEDULED o DEADLINE ya pasó
-  y cuántos días llevan vencidas.
+- **Agenda con vencidas**: el día de hoy muestra las tareas abiertas cuyo SCHEDULED o DEADLINE ya
+  pasó y cuántos días llevan vencidas.
+- **Ficheros principales**: botón ★ en la barra inferior (también en el explorador) para abrir con
+  un toque los ficheros que elijas. Se marcan desde el propio botón, con la ☆ del explorador o en
+  Ajustes → File settings. Se guardan con los ajustes de organice (sincronizables vía Dropbox).
+- **Filtro por estado**: TODO, NEXT, WAITING, MAYBE, PROJECT (en Buscar, Lista de tareas y Agenda),
+  combinable con los contextos. Los estados deben estar declarados en el fichero, p. ej.
+  `#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE`.
+- **YouTube**: los enlaces a vídeos de YouTube muestran un reproductor de 300 px (modo de
+  privacidad mejorada, youtube-nocookie.com).
 - **Contextos GTD**: botones de filtro generados desde las líneas `#+TAGS:` de tus ficheros (solo
   etiquetas que empiezan por `@`, p. ej. `#+TAGS: @casa(c) @oficina(o) @llamadas`). En Buscar,
   Lista de tareas y Agenda. Respeta la herencia de etiquetas.
-- **Imágenes y multimedia desde Dropbox**: los enlaces Org a imágenes (`[[file:Assets/2026/foto.jpg]]`,
-  `[[./Assets/2026/foto.jpg][Descripción]]`) se ven dentro de la nota (miniatura generada por
+- **Imágenes y multimedia desde Dropbox**: los enlaces Org a imágenes (`[[file:assets/2026/foto.jpg]]`,
+  `[[./assets/2026/foto.jpg][Descripción]]`) se ven dentro de la nota (miniatura generada por
   Dropbox; al pulsar se abre el original). Vídeo y audio con reproductor; PDF y otros ficheros se
   abren al pulsar. Botón 📎 en cada encabezado para subir fotos, vídeos o archivos a
-  `Assets/<año>/` (junto al fichero `.org`) e insertar el enlace. Nunca sobrescribe: si el nombre
+  `assets/<año>/` (junto al fichero `.org`) e insertar el enlace. Nunca sobrescribe: si el nombre
   existe, Dropbox lo renombra.
 - **Editar como texto plano**: botón ≡ en la barra superior; edita el fichero abierto tal cual,
   como en un búfer de Emacs (⌘/Ctrl+S guarda, Esc cancela). Si hay un encabezado en modo
@@ -83,7 +91,7 @@ navegador; no hay servidor intermedio.
 
 - **Bloqueo de envíos a terceros** (Content-Security-Policy): la app solo puede conectarse con este
   mismo sitio y con la API de Dropbox (y reproducir vídeo/audio desde los enlaces temporales de
-  descarga de Dropbox). Ni scripts en línea, ni marcos, ni formularios externos.
+  descarga de Dropbox; los únicos marcos permitidos son los reproductores de youtube-nocookie.com). Ni scripts en línea, ni marcos, ni formularios externos.
   Los enlaces de tus notas con esquemas peligrosos (`javascript:`…) se muestran como texto.
 - **Bloqueo por inactividad** (por defecto 10 min, configurable o desactivable): guarda lo
   pendiente, olvida frases y claves y recarga la app. Solo actúa si hay algo cifrado abierto.
@@ -105,7 +113,7 @@ Todo se configura en **Ajustes → Seguridad y cifrado**.
 - Abre la app en un perfil de navegador sin extensiones, o instalada como app.
 - Si pierdes un dispositivo: Dropbox → Configuración → *Aplicaciones conectadas* → revoca la app.
 
-Los archivos adjuntos (carpeta `Assets`) se guardan **sin cifrar** en Dropbox, también cuando
+Los archivos adjuntos (carpeta `assets`) se guardan **sin cifrar** en Dropbox, también cuando
 la nota está en un fichero `.gpg` (la app avisa antes de subir).
 
 Riesgo residual: la política de seguridad deja hablar con la API de Dropbox, así que un código

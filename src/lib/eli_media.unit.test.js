@@ -35,7 +35,7 @@ test('tipos, nombres y rutas de subida', () => {
   expect(mediaKind('a.m4a')).toBe('audio');
   expect(mediaKind('a.pdf')).toBe('file');
   expect(sanitizeFileName('Mi foto [1].jpg')).toBe('Mi_foto__1_.jpg');
-  expect(assetsDirFor('/Notas/gtd.org', new Date(2026, 8, 23))).toBe('/Notas/Assets/2026');
+  expect(assetsDirFor('/Notas/gtd.org', new Date(2026, 8, 23))).toBe('/Notas/assets/2026');
   expect(relativeLinkFor('/Notas/gtd.org', '/notas/Assets/2026/a (1).jpg')).toBe('Assets/2026/a (1).jpg');
 });
 

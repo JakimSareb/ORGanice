@@ -7,7 +7,7 @@ import './stylesheet.css';
 import AgendaDay from './components/AgendaDay';
 import TabButtons from '../../../UI/TabButtons';
 import ContextFilterBar from '../ContextFilterBar';
-import { filterFilesByContexts } from '../../../../lib/gtd_contexts';
+import { filterFilesByContexts, filterFilesByTodo } from '../../../../lib/gtd_contexts';
 
 import { isMobileBrowser } from '../../../../lib/browser_utils';
 import * as baseActions from '../../../../actions/base';
@@ -187,9 +187,12 @@ const mapStateToProps = (state) => {
   const fileSettings = state.org.present.get('fileSettings');
   const agendaStartOnWeekday = state.base.get('agendaStartOnWeekday');
   return {
-    files: filterFilesByContexts(
-      determineIncludedFiles(allFiles, fileSettings, path, 'includeInAgenda', false),
-      state.org.present.get('contextFilter')
+    files: filterFilesByTodo(
+      filterFilesByContexts(
+        determineIncludedFiles(allFiles, fileSettings, path, 'includeInAgenda', false),
+        state.org.present.get('contextFilter')
+      ),
+      state.org.present.get('todoFilter')
     ),
     todoKeywordSets: !!file ? file.get('todoKeywordSets') : null,
     agendaTimeframe: state.base.get('agendaTimeframe'),

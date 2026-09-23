@@ -1,5 +1,5 @@
 // ORG Mode para Eli: imágenes y contenido multimedia enlazado desde ficheros Org y
-// almacenado en Dropbox (por convención en Assets/AAAA, junto al fichero .org).
+// almacenado en Dropbox (por convención en assets/AAAA, junto al fichero .org).
 
 const IMAGE = /\.(jpe?g|png|gif|webp|bmp|tiff?|heic|heif|svg|avif)$/i;
 const VIDEO = /\.(mp4|m4v|mov|webm|ogv)$/i;
@@ -21,7 +21,7 @@ const hasExtension = (path) => /\/?[^/]+\.[A-Za-z0-9]{1,6}$/.test(path);
 /**
  * Si `uri` es un enlace a un fichero (no .org) que debería abrirse desde Dropbox, devuelve su
  * ruta relativa al enlace (sin "file:" ni "::búsqueda"). Si no, null.
- * Acepta: file:Assets/2026/a.jpg, file:./a.png, ./Assets/a.png, ../x/a.pdf, /Notas/Assets/a.jpg
+ * Acepta: file:assets/2026/a.jpg, file:./a.png, ./assets/a.png, ../x/a.pdf, /Notas/assets/a.jpg
  */
 export const fileLinkTarget = (uri) => {
   if (!uri) return null;
@@ -118,7 +118,7 @@ export const openInNewTab = (client, path) => {
     });
 };
 
-// --- Subida a Assets/AAAA -----------------------------------------------------------------
+// --- Subida a assets/AAAA -----------------------------------------------------------------
 
 export const sanitizeFileName = (name) =>
   (name || 'archivo')
@@ -129,7 +129,7 @@ export const sanitizeFileName = (name) =>
 
 export const assetsDirFor = (orgFilePath, date = new Date()) => {
   const dir = (orgFilePath || '/').replace(/\/[^/]*$/, '');
-  return `${dir}/Assets/${date.getFullYear()}`;
+  return `${dir}/assets/${date.getFullYear()}`;
 };
 
 // Ruta relativa desde el directorio del .org (lo que se escribe en el enlace Org)
@@ -144,7 +144,7 @@ export const relativeLinkFor = (orgFilePath, uploadedPath) => {
 export const orgLinkFor = (relativePath) => `[[file:${relativePath}]]`;
 
 /**
- * Sube los ficheros a Assets/AAAA y devuelve los enlaces Org a insertar.
+ * Sube los ficheros a assets/AAAA y devuelve los enlaces Org a insertar.
  * @returns {Promise<string[]>}
  */
 export const uploadAssets = async (client, orgFilePath, files) => {

@@ -22,3 +22,18 @@
   border-color: var(--blue);
   color: var(--base3);
 }
+
+.context-filter-bars {
+  margin: 6px 0 10px;
+}
+.context-filter-bars .context-filter-bar {
+  margin: 0 0 6px;
+  align-items: center;
+}
+.context-filter-bar__label {
+  font-size: 0.75em;
+  color: var(--base1);
+  min-width: 58px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

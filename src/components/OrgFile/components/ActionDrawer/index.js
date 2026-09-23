@@ -1,3 +1,4 @@
+import { openFavorites } from '../../../EliTools';
 import React, { Fragment, useState, useMemo, useRef } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -376,6 +377,19 @@ const ActionDrawer = ({
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
             tooltip="Show Search / Task List"
+          />
+
+          <ActionButton
+            iconName="star"
+            isDisabled={false}
+            onClick={openFavorites}
+            dataTestId="eli-favorites"
+            style={{
+              opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
+              pointerEvents:
+                isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
+            }}
+            tooltip="Ficheros principales"
           />
 
           {renderCaptureButtons()}

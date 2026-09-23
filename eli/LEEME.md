@@ -8,15 +8,16 @@ clocking, capture templates, búsqueda, etc.).
 Cambios respecto al original:
 
 - La **App key de Dropbox se introduce en la pantalla de acceso** (no hace falta recompilar).
-- **Imágenes y multimedia**: enlaces a `Assets/<año>/…` se ven en la nota; botón 📎 para subir.
+- **Imágenes y multimedia**: enlaces a `assets/<año>/…` se ven en la nota; botón 📎 para subir.
 - **Texto plano y PDF**: editar el fichero como texto; exportar fichero o encabezado a PDF.
 - **Seguridad**: bloqueo de envíos a terceros, bloqueo por inactividad y sin copia local de
   ficheros sin cifrar (configurable en Ajustes → Seguridad y cifrado).
 - **Búsqueda con ámbito**: en *Buscar* elige **Tareas** (solo encabezados con TODO/DONE…),
   **Encabezados** (título de cualquier encabezado) o **Texto** (título + contenido).
-- **Agenda con vencidas**: cada día muestra una sección *Vencidas* con las tareas abiertas cuyo
-  SCHEDULED o DEADLINE ya pasó y los días de retraso (desplegada en la vista Día y en hoy;
-  plegada en Semana/Mes, se abre con un toque).
+- **Agenda con vencidas**: el día de hoy muestra una sección *Vencidas* con las tareas abiertas
+  cuyo SCHEDULED o DEADLINE ya pasó y los días de retraso.
+- **Ficheros principales** (botón ★), **filtro por estado** (TODO, NEXT, WAITING, MAYBE, PROJECT)
+  y **previsualización de YouTube**.
 - **Filtro por contextos GTD**: botones generados a partir de las líneas `#+TAGS:` de tus ficheros
   (solo las etiquetas que empiezan por `@`, p. ej. `#+TAGS: @casa(c) @oficina(o) @llamadas`).
   Aparecen en Buscar, Lista de tareas y Agenda. Varios seleccionados = cualquiera de ellos.

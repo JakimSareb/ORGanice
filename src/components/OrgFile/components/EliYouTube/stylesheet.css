@@ -1,0 +1,25 @@
+.eli-youtube {
+  display: inline-flex;
+  flex-direction: column;
+  width: 300px;
+  max-width: 100%;
+  margin: 4px 0;
+  vertical-align: top;
+}
+.eli-youtube__frame {
+  width: 300px;
+  max-width: 100%;
+  height: 169px;
+  border: 0;
+  border-radius: 6px;
+  background: #000;
+}
+.eli-youtube__link {
+  font-size: 0.8em;
+  word-break: break-all;
+}
+@media print {
+  .eli-youtube__frame {
+    display: none;
+  }
+}

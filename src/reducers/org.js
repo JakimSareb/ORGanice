@@ -1675,6 +1675,12 @@ export const setSearchFilterInformation = (state, action) => {
 
     // ORG Mode para Eli: filtro por contextos GTD (@casa, @oficina...)
     const selectedContexts = state.get('contextFilter');
+    const selectedTodos = state.get('todoFilter');
+    if (selectedTodos && selectedTodos.size > 0 && context !== 'refile') {
+      headersToSearch = headersToSearch.map((headersOfFile) =>
+        headersOfFile.filter((h) => selectedTodos.includes(h.getIn(['titleLine', 'todoKeyword'])))
+      );
+    }
     if (selectedContexts && selectedContexts.size > 0 && context !== 'refile') {
       headersToSearch = headersToSearch.map((headersOfFile, filePath) => {
         const tagsById = inheritedTagsById(headers.get(filePath) || headersOfFile);
@@ -1791,6 +1797,24 @@ const toggleContextFilter = (state, action) => {
   return state;
 };
 
+// ORG Mode para Eli: filtro por estado (TODO, NEXT, WAITING, MAYBE, PROJECT)
+const toggleTodoFilter = (state, action) => {
+  let selected = state.get('todoFilter') || List();
+  if (action.clear) selected = List();
+  else if (selected.includes(action.keyword)) selected = selected.filter((k) => k !== action.keyword);
+  else selected = selected.push(action.keyword);
+  state = state.set('todoFilter', selected);
+  const searchContext = state.getIn(['search', 'context']);
+  if (searchContext && state.get('path') && state.getIn(['files', state.get('path')])) {
+    state = setSearchFilterInformation(state, {
+      searchFilter: state.getIn(['search', 'searchFilter']) || '',
+      cursorPosition: state.getIn(['search', 'cursorPosition']) || 0,
+      context: searchContext,
+    });
+  }
+  return state;
+};
+
 const setOrgFileErrorMessage = (state, action) => state.set('orgFileErrorMessage', action.message);
 
 const setPath = (state, action) => state.set('path', action.path);
@@ -1873,6 +1897,34 @@ const addNewEmptyFileSetting = (state) =>
       })
     )
   );
+
+// ORG Mode para Eli: ficheros principales (acceso directo). Se guardan como un campo más de
+// los ajustes de fichero de organice, así que se sincronizan igual que el resto.
+const toggleEliFavoriteFile = (state, action) => {
+  const { path, value } = action;
+  const settings = state.get('fileSettings') || List();
+  const index = settings.findIndex((s) => s.get('path') === path);
+  if (index >= 0) {
+    const next = value === undefined ? !settings.getIn([index, 'eliFavorite']) : value;
+    return state.setIn(['fileSettings', index, 'eliFavorite'], next);
+  }
+  if (value === false) return state;
+  return state.set(
+    'fileSettings',
+    settings.push(
+      fromJS({
+        id: generateId(),
+        path,
+        loadOnStartup: false,
+        includeInAgenda: false,
+        includeInSearch: false,
+        includeInRefile: false,
+        includeInTasklist: false,
+        eliFavorite: true,
+      })
+    )
+  );
+};
 
 const restoreFileSettings = (state, action) => {
   if (!action.newSettings) {
@@ -2053,6 +2105,10 @@ const reducer = (state, action) => {
       return setSearchFilterInformation(state, action);
     case 'TOGGLE_CONTEXT_FILTER':
       return toggleContextFilter(state, action);
+    case 'TOGGLE_TODO_FILTER':
+      return toggleTodoFilter(state, action);
+    case 'TOGGLE_ELI_FAVORITE_FILE':
+      return toggleEliFavoriteFile(state, action);
     case 'SET_PATH':
       return setPath(state, action);
     case 'TOGGLE_CLOCK_DISPLAY':

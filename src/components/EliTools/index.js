@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 
 import './stylesheet.css';
 
@@ -8,7 +9,14 @@ import AttributedString from '../OrgFile/components/AttributedString';
 import { exportOrg } from '../../lib/export_org';
 import { subheadersOfHeaderWithId, isRegularPlanningItem, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { renderAsText } from '../../lib/timestamps';
-import { parseFile, setDirty, sync, narrowHeader, widenHeader } from '../../actions/org';
+import {
+  parseFile,
+  setDirty,
+  sync,
+  narrowHeader,
+  widenHeader,
+  toggleEliFavoriteFile,
+} from '../../actions/org';
 import { List } from 'immutable';
 
 // ORG Mode para Eli: herramientas de fichero
@@ -18,6 +26,7 @@ import { List } from 'immutable';
 //   window.dispatchEvent(new CustomEvent('eli:raw-edit'))
 //   window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId } }))
 
+export const openFavorites = () => window.dispatchEvent(new CustomEvent('eli:favorites'));
 export const openRawEditor = () => window.dispatchEvent(new CustomEvent('eli:raw-edit'));
 export const openPrintPreview = (headerId = null) =>
   window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId } }));
@@ -287,6 +296,97 @@ function PrintPreview({ path, file, headerId, onClose }) {
 }
 
 // ---------------------------------------------------------------------------
+// Ficheros principales
+
+const selectFileSettings = (state) => state.org.present.get('fileSettings');
+
+export const favoritePaths = (fileSettings) =>
+  (fileSettings || List())
+    .filter((s) => s.get('eliFavorite') && s.get('path'))
+    .map((s) => s.get('path'))
+    .toArray();
+
+const fileName = (p) => p.split('/').pop().replace(/\.org(_archive)?(\.gpg|\.asc)?$/i, '');
+const fileDir = (p) => p.replace(/\/[^/]*$/, '') || '/';
+
+function FavoritesPopup({ currentPath, onClose }) {
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const favorites = favoritePaths(useSelector(selectFileSettings));
+  const canToggleCurrent = !!currentPath && !currentPath.startsWith(STATIC_FILE_PREFIX);
+  const currentIsFavorite = favorites.includes(currentPath);
+
+  const open = (p) => {
+    onClose();
+    history.push(`/file${p}`);
+  };
+
+  return ReactDOM.createPortal(
+    <div className="eli-prompt__overlay" onClick={onClose}>
+      <div className="eli-prompt__box eli-fav" onClick={(e) => e.stopPropagation()}>
+        <div className="eli-prompt__title">
+          <i className="fas fa-star eli-fav__star" /> Ficheros principales
+        </div>
+        {favorites.length === 0 ? (
+          <div className="eli-prompt__message">
+            Aún no hay ninguno. Abre un fichero y márcalo aquí, o usa la ☆ del explorador de
+            ficheros.
+          </div>
+        ) : (
+          <ul className="eli-fav__list">
+            {favorites.map((p) => (
+              <li key={p}>
+                <button
+                  className={'eli-fav__item' + (p === currentPath ? ' is-current' : '')}
+                  onClick={() => open(p)}
+                >
+                  <span className="eli-fav__name">
+                    {/\.(gpg|asc)$/i.test(p) && <i className="fas fa-lock" />} {fileName(p)}
+                  </span>
+                  <span className="eli-fav__dir">{fileDir(p)}</span>
+                </button>
+                <button
+                  className="eli-fav__remove"
+                  title="Quitar de principales"
+                  onClick={() => dispatch(toggleEliFavoriteFile(p, false))}
+                >
+                  <i className="fas fa-times" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {canToggleCurrent && (
+          <button
+            className="btn eli-fav__toggle"
+            onClick={() => dispatch(toggleEliFavoriteFile(currentPath, !currentIsFavorite))}
+          >
+            {currentIsFavorite ? (
+              <>
+                <i className="far fa-star" /> Quitar «{fileName(currentPath)}»
+              </>
+            ) : (
+              <>
+                <i className="fas fa-star" /> Añadir «{fileName(currentPath)}»
+              </>
+            )}
+          </button>
+        )}
+        <div className="eli-fav__hint">
+          También en Ajustes → File settings («Fichero principal»).
+        </div>
+        <div className="eli-prompt__buttons">
+          <button className="btn eli-prompt__ok" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>,
+    ensurePortal('eli-fav-portal')
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 const selectPath = (state) => state.org.present.get('path');
 const selectFiles = (state) => state.org.present.get('files');
@@ -299,6 +399,13 @@ export default function EliTools() {
   const dontIndent = useSelector(selectDontIndent);
   const [raw, setRaw] = useState(null); // { path, text }
   const [print, setPrint] = useState(null); // { headerId }
+  const [favorites, setFavorites] = useState(false);
+
+  useEffect(() => {
+    const onFav = () => setFavorites(true);
+    window.addEventListener('eli:favorites', onFav);
+    return () => window.removeEventListener('eli:favorites', onFav);
+  }, []);
 
   const usable = !!path && !!file && !!file.get('headers') && !path.startsWith(STATIC_FILE_PREFIX);
 
@@ -351,6 +458,7 @@ export default function EliTools() {
           onClose={() => setRaw(null)}
         />
       )}
+      {favorites && <FavoritesPopup currentPath={path} onClose={() => setFavorites(false)} />}
       {print && usable && (
         <PrintPreview path={path} file={file} headerId={print.headerId} onClose={() => setPrint(null)} />
       )}

@@ -1,3 +1,4 @@
+import EliYouTube, { youTubeId } from '../EliYouTube';
 import EliMedia from '../EliMedia';
 import { fileLinkTarget } from '../../../../lib/eli_media';
 import React from 'react';
@@ -29,6 +30,11 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
     const title = part.getIn(['contents', 'title']) || uri;
     let target = uri;
     // ORG Mode para Eli: imágenes, vídeo, audio y otros ficheros guardados en Dropbox
+    // ORG Mode para Eli: vídeos de YouTube con previsualización
+    if (youTubeId(uri)) {
+      const hasDescription = !!part.getIn(['contents', 'title']);
+      return <EliYouTube key={id} url={uri} title={hasDescription ? title : null} />;
+    }
     const mediaTarget = fileLinkTarget(uri);
     if (mediaTarget) {
       const hasDescription = !!part.getIn(['contents', 'title']);
@@ -161,12 +167,18 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
               />
             );
           case 'url':
+            if (youTubeId(part.get('content'))) {
+              return <EliYouTube key={part.get('id')} url={part.get('content')} />;
+            }
             return (
               <ExternalLink href={part.get('content')} key={part.get('id')}>
                 {part.get('content')}
               </ExternalLink>
             );
           case 'www-url':
+            if (youTubeId(`https://${part.get('content')}`)) {
+              return <EliYouTube key={part.get('id')} url={`https://${part.get('content')}`} />;
+            }
             return (
               <ExternalLink href={`https://${part.get('content')}`} key={part.get('id')}>
                 {part.get('content')}

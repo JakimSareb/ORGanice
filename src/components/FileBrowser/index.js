@@ -11,6 +11,8 @@ import './stylesheet.css';
 import classNames from 'classnames';
 
 import * as syncBackendActions from '../../actions/sync_backend';
+import { toggleEliFavoriteFile } from '../../actions/org';
+import { favoritePaths } from '../EliTools';
 
 const FileBrowser = ({
   path,
@@ -19,6 +21,8 @@ const FileBrowser = ({
   isLoadingMore,
   syncBackendType,
   syncBackend,
+  favorites,
+  toggleFavorite,
   // INFO: This was required back when we had Google Drive support.
   // Leaving it here in case another sync backend requires it.
   // additionalSyncBackendState,
@@ -88,6 +92,18 @@ const FileBrowser = ({
                 <li className="file-browser__file-list__element">
                   <i className={iconClass} /> {file.get('name')}
                   {isEncryptedFile && <i className="fas fa-lock" style={{ marginLeft: 6, opacity: 0.6 }} />}
+                  {isOrgFile && (
+                    <i
+                      className={`${favorites.includes(file.get('path')) ? 'fas' : 'far'} fa-star eli-file-fav`}
+                      title="Fichero principal (acceso directo con ★)"
+                      data-testid="eli-file-fav"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFavorite(file.get('path'));
+                      }}
+                    />
+                  )}
                 </li>
               </Link>
             );
@@ -118,6 +134,7 @@ const mapStateToProps = (state) => {
   );
   return {
     syncBackendType: state.syncBackend.get('client').type,
+    favorites: favoritePaths(state.org.present.get('fileSettings')),
     listing: !!currentFileBrowserDirectoryListing
       ? currentFileBrowserDirectoryListing.get('listing')
       : null,
@@ -135,6 +152,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
   return {
     syncBackend: bindActionCreators(syncBackendActions, dispatch),
+    toggleFavorite: (path) => dispatch(toggleEliFavoriteFile(path)),
   };
 };
 

@@ -139,3 +139,11 @@ body,
     overflow: visible;
   }
 }
+
+/* ORG Mode para Eli: seis botones en la barra inferior también en móviles estrechos */
+@media (max-width: 400px) {
+  .App:not(.landing-page) .action-drawer__btn.btn--circle {
+    width: 52px;
+    height: 52px;
+  }
+}

@@ -190,3 +190,61 @@ h6.eli-print__heading {
 .eli-print__doc .checkbox .fa-square {
   color: #fff;
 }
+
+/* ---------- Ficheros principales ---------- */
+.eli-fav {
+  max-width: 420px;
+}
+.eli-fav__star {
+  color: #f2b24a;
+}
+.eli-fav__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 50vh;
+  overflow: auto;
+}
+.eli-fav__list li {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.eli-fav__item {
+  flex: 1;
+  text-align: left;
+  border: 1px solid var(--base2);
+  background: var(--base3);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  color: var(--base00);
+  font-size: 16px;
+}
+.eli-fav__item.is-current {
+  border-color: var(--magenta, #d33682);
+}
+.eli-fav__name {
+  font-weight: bold;
+}
+.eli-fav__dir {
+  font-size: 0.75em;
+  color: var(--base1);
+}
+.eli-fav__remove {
+  border: 0;
+  background: transparent;
+  color: var(--base1);
+  padding: 0 8px;
+  cursor: pointer;
+}
+.eli-fav__toggle {
+  align-self: flex-start;
+}
+.eli-fav__hint {
+  font-size: 0.8em;
+  color: var(--base1);
+}

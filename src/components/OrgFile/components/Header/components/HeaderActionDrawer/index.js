@@ -215,7 +215,7 @@ export default class HeaderActionDrawer extends PureComponent {
               className: 'fas fa-paperclip fa-lg',
               onClick: onAttachFiles,
               testId: 'eli-attach',
-              title: 'Adjuntar imagen o archivo (se sube a Assets/año en Dropbox)',
+              title: 'Adjuntar imagen o archivo (se sube a assets/año en Dropbox)',
             })}
           {onExportPdf &&
             this.iconWithFFClickCatcher({

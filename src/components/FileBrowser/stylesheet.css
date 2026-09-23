@@ -51,3 +51,11 @@
 .file-browser__file-list__icon--directory {
   color: var(--base00);
 }
+
+/* ORG Mode para Eli: marcar fichero principal */
+.eli-file-fav {
+  float: right;
+  padding: 2px 6px;
+  color: #f2b24a;
+  cursor: pointer;
+}

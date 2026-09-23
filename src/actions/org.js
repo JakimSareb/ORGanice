@@ -902,7 +902,7 @@ export const encryptCryptHeaders = () => async (dispatch, getState) => {
   }
 };
 
-// ORG Mode para Eli: adjuntar imágenes / multimedia (se suben a Assets/AAAA junto al .org)
+// ORG Mode para Eli: adjuntar imágenes / multimedia (se suben a assets/AAAA junto al .org)
 export const attachAssetsToHeader = (headerId, files) => async (dispatch, getState) => {
   const state = getState();
   const client = state.syncBackend.get('client');
@@ -913,12 +913,12 @@ export const attachAssetsToHeader = (headerId, files) => async (dispatch, getSta
     // eslint-disable-next-line no-restricted-globals
     !window.confirm(
       'Este fichero está cifrado, pero los archivos adjuntos se guardarán SIN cifrar en ' +
-        'Dropbox (carpeta Assets). ¿Continuar?'
+        'Dropbox (carpeta assets). ¿Continuar?'
     )
   ) {
     return;
   }
-  dispatch(setLoadingMessage(`Subiendo ${files.length} archivo(s) a Assets/${new Date().getFullYear()}…`));
+  dispatch(setLoadingMessage(`Subiendo ${files.length} archivo(s) a assets/${new Date().getFullYear()}…`));
   try {
     const links = await uploadAssets(client, path, Array.from(files));
     const current = getState().org.present;
@@ -946,3 +946,12 @@ export const attachAssetsToHeader = (headerId, files) => async (dispatch, getSta
     showMessage('No se pudo subir', (e && (e.message || e.error_summary)) || String(e));
   }
 };
+
+// ORG Mode para Eli: filtro por estado y ficheros principales
+export const toggleTodoFilter = (keyword) => ({ type: 'TOGGLE_TODO_FILTER', keyword });
+export const clearTodoFilter = () => ({ type: 'TOGGLE_TODO_FILTER', clear: true });
+export const toggleEliFavoriteFile = (path, value) => ({
+  type: 'TOGGLE_ELI_FAVORITE_FILE',
+  path,
+  value,
+});

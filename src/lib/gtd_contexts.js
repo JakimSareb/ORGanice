@@ -72,3 +72,20 @@ export const filterFilesByContexts = (files, selectedContexts) => {
       : file
   );
 };
+
+// ORG Mode para Eli: estados de tarea por los que se puede filtrar
+export const TODO_FILTER_KEYWORDS = ['TODO', 'NEXT', 'WAITING', 'MAYBE', 'PROJECT'];
+
+export const filterFilesByTodo = (files, selectedTodos) => {
+  if (!selectedTodos || selectedTodos.size === 0) return files;
+  return files.map((file) =>
+    file.get('headers')
+      ? file.set(
+          'headers',
+          file
+            .get('headers')
+            .filter((h) => selectedTodos.includes(h.getIn(['titleLine', 'todoKeyword'])))
+        )
+      : file
+  );
+};

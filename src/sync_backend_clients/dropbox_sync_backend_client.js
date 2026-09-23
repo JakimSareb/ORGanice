@@ -231,7 +231,7 @@ export default () => {
     }
   });
 
-  // ORG Mode para Eli: contenido multimedia (Assets/AAAA)
+  // ORG Mode para Eli: contenido multimedia (assets/AAAA)
   const withDbx = (fn) => dbxPromise.then(fn);
 
   const getFileBlob = (path) =>

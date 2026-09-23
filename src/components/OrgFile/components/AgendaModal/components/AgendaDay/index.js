@@ -141,7 +141,8 @@ export default class AgendaDay extends PureComponent {
     const dateStart = startOfDay(date);
     const dateEnd = endOfDay(date);
 
-    const overdue = this.getOverdueItemsAndHeaders({ files, dateStart });
+    // Las vencidas solo se muestran en el día de hoy
+    const overdue = isToday(date) ? this.getOverdueItemsAndHeaders({ files, dateStart }) : [];
     const overdueKeys = new Set(
       overdue.map(({ header, planningItem }) => `${header.get('path')}-${planningItem.get('id')}`)
     );
