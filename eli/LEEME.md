@@ -8,6 +8,7 @@ clocking, capture templates, búsqueda, etc.).
 Cambios respecto al original:
 
 - La **App key de Dropbox se introduce en la pantalla de acceso** (no hace falta recompilar).
+- **Imágenes y multimedia**: enlaces a `Assets/<año>/…` se ven en la nota; botón 📎 para subir.
 - **Seguridad**: bloqueo de envíos a terceros, bloqueo por inactividad y sin copia local de
   ficheros sin cifrar (configurable en Ajustes → Seguridad y cifrado).
 - **Búsqueda con ámbito**: en *Buscar* elige **Tareas** (solo encabezados con TODO/DONE…),

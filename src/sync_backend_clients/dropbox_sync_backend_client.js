@@ -231,8 +231,37 @@ export default () => {
     }
   });
 
+  // ORG Mode para Eli: contenido multimedia (Assets/AAAA)
+  const withDbx = (fn) => dbxPromise.then(fn);
+
+  const getFileBlob = (path) =>
+    withDbx((dbx) => dbx.filesDownload({ path })).then((response) => response.result.fileBlob);
+
+  const getThumbnailBlob = (path, size = 'w1024h768') =>
+    withDbx((dbx) =>
+      dbx.filesGetThumbnailV2({
+        resource: { '.tag': 'path', path },
+        format: { '.tag': 'jpeg' },
+        size: { '.tag': size },
+        mode: { '.tag': 'fitone_bestfit' },
+      })
+    ).then((response) => response.result.fileBlob);
+
+  const getTemporaryLink = (path) =>
+    withDbx((dbx) => dbx.filesGetTemporaryLink({ path })).then((response) => response.result.link);
+
+  // Sube un fichero binario sin sobrescribir nunca: si el nombre existe, Dropbox lo renombra.
+  const uploadBinaryFile = (path, blob) =>
+    withDbx((dbx) =>
+      dbx.filesUpload({ path, contents: blob, mode: { '.tag': 'add' }, autorename: true })
+    ).then((response) => response.result.path_display);
+
   return {
     type: 'Dropbox',
+    getFileBlob,
+    getThumbnailBlob,
+    getTemporaryLink,
+    uploadBinaryFile,
     isSignedIn,
     getDirectoryListing,
     getMoreDirectoryListing,

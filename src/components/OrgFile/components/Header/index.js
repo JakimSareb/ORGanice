@@ -51,6 +51,7 @@ class Header extends PureComponent {
       'handleShareHeaderClick',
       'handleRefileHeaderRequest',
       'handleAddNoteClick',
+      'handleAttachFiles',
       'handleDuplicateHeader',
       'handleDragStartFromPending',
     ]);
@@ -407,6 +408,23 @@ class Header extends PureComponent {
     });
   }
 
+  // ORG Mode para Eli: seleccionar archivos y subirlos a Assets/AAAA
+  handleAttachFiles() {
+    const headerId = this.props.header.get('id');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*,video/*,audio/*,application/pdf,*/*';
+    input.style.display = 'none';
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files || []);
+      input.remove();
+      if (files.length) this.props.org.attachAssetsToHeader(headerId, files);
+    });
+    document.body.appendChild(input);
+    input.click();
+  }
+
   handleAddNoteClick() {
     this.props.base.activatePopup('note-editor');
   }
@@ -652,6 +670,7 @@ class Header extends PureComponent {
                   onShareHeader={this.handleShareHeaderClick}
                   onRefileHeader={this.handleRefileHeaderRequest}
                   onAddNote={this.handleAddNoteClick}
+                  onAttachFiles={this.handleAttachFiles}
                   onDuplicateHeader={this.handleDuplicateHeader}
                 />
               </Collapse>

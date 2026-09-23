@@ -8,7 +8,9 @@ import {
   activatePopup,
   closePopup,
 } from './base';
-import { exportOrg } from '../lib/export_org';
+import { exportOrg, createRawDescriptionText } from '../lib/export_org';
+import { uploadAssets } from '../lib/eli_media';
+import { isEncryptedPath } from '../lib/eli_crypto';
 import { List } from 'immutable';
 import { decryptCryptEntryInText, encryptCryptEntries } from '../lib/eli_crypto';
 import { showMessage } from '../lib/eli_prompt';
@@ -897,5 +899,50 @@ export const encryptCryptHeaders = () => async (dispatch, getState) => {
     if (e && e.message !== 'Cancelado por el usuario') {
       showMessage('No se pudo cifrar', e.message || String(e));
     }
+  }
+};
+
+// ORG Mode para Eli: adjuntar imágenes / multimedia (se suben a Assets/AAAA junto al .org)
+export const attachAssetsToHeader = (headerId, files) => async (dispatch, getState) => {
+  const state = getState();
+  const client = state.syncBackend.get('client');
+  const path = state.org.present.get('path');
+  if (!files || !files.length || !path || path.startsWith(STATIC_FILE_PREFIX)) return;
+  if (
+    isEncryptedPath(path) &&
+    // eslint-disable-next-line no-restricted-globals
+    !window.confirm(
+      'Este fichero está cifrado, pero los archivos adjuntos se guardarán SIN cifrar en ' +
+        'Dropbox (carpeta Assets). ¿Continuar?'
+    )
+  ) {
+    return;
+  }
+  dispatch(setLoadingMessage(`Subiendo ${files.length} archivo(s) a Assets/${new Date().getFullYear()}…`));
+  try {
+    const links = await uploadAssets(client, path, Array.from(files));
+    const current = getState().org.present;
+    const header = current
+      .getIn(['files', path, 'headers'])
+      .find((h) => h.get('id') === headerId);
+    if (header) {
+      const raw = header.get('rawDescription') || '';
+      const newRaw = (raw && !raw.endsWith('\n') ? raw + '\n' : raw) + links.join('\n') + '\n';
+      dispatch(
+        updateHeaderDescription(
+          headerId,
+          createRawDescriptionText(
+            header.set('rawDescription', newRaw),
+            false,
+            getState().base.get('shouldNotIndentOnExport')
+          )
+        )
+      );
+      dispatch(openHeader(headerId));
+    }
+    dispatch(setDisappearingLoadingMessage(`Adjuntado: ${links.join(' ')}`, 3000));
+  } catch (e) {
+    dispatch(hideLoadingMessage());
+    showMessage('No se pudo subir', (e && (e.message || e.error_summary)) || String(e));
   }
 };

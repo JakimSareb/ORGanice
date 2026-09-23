@@ -98,6 +98,7 @@ export default class HeaderActionDrawer extends PureComponent {
       onRefileHeader,
       onAddNote,
       onDuplicateHeader,
+      onAttachFiles,
     } = this.props;
 
     // Create a fallback function for onDuplicateHeader if not provided
@@ -208,6 +209,13 @@ export default class HeaderActionDrawer extends PureComponent {
             onClick: onAddNote,
             title: 'Add a note',
           })}
+          {onAttachFiles &&
+            this.iconWithFFClickCatcher({
+              className: 'fas fa-paperclip fa-lg',
+              onClick: onAttachFiles,
+              testId: 'eli-attach',
+              title: 'Adjuntar imagen o archivo (se sube a Assets/año en Dropbox)',
+            })}
         </div>
       </div>
     );

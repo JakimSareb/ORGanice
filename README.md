@@ -11,6 +11,12 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
 - **Contextos GTD**: botones de filtro generados desde las líneas `#+TAGS:` de tus ficheros (solo
   etiquetas que empiezan por `@`, p. ej. `#+TAGS: @casa(c) @oficina(o) @llamadas`). En Buscar,
   Lista de tareas y Agenda. Respeta la herencia de etiquetas.
+- **Imágenes y multimedia desde Dropbox**: los enlaces Org a imágenes (`[[file:Assets/2026/foto.jpg]]`,
+  `[[./Assets/2026/foto.jpg][Descripción]]`) se ven dentro de la nota (miniatura generada por
+  Dropbox; al pulsar se abre el original). Vídeo y audio con reproductor; PDF y otros ficheros se
+  abren al pulsar. Botón 📎 en cada encabezado para subir fotos, vídeos o archivos a
+  `Assets/<año>/` (junto al fichero `.org`) e insertar el enlace. Nunca sobrescribe: si el nombre
+  existe, Dropbox lo renombra.
 - **Cifrado GPG** compatible con GnuPG y Emacs: ficheros `*.org.gpg` / `*.org.asc` y cabeceras
   `:crypt:` (org-crypt); simétrico o con clave pública/privada.
 - **Seguridad reforzada** (ver abajo).
@@ -68,7 +74,8 @@ navegador; no hay servidor intermedio.
 **Protecciones**
 
 - **Bloqueo de envíos a terceros** (Content-Security-Policy): la app solo puede conectarse con este
-  mismo sitio y con la API de Dropbox. Ni scripts en línea, ni marcos, ni formularios externos.
+  mismo sitio y con la API de Dropbox (y reproducir vídeo/audio desde los enlaces temporales de
+  descarga de Dropbox). Ni scripts en línea, ni marcos, ni formularios externos.
   Los enlaces de tus notas con esquemas peligrosos (`javascript:`…) se muestran como texto.
 - **Bloqueo por inactividad** (por defecto 10 min, configurable o desactivable): guarda lo
   pendiente, olvida frases y claves y recarga la app. Solo actúa si hay algo cifrado abierto.
@@ -89,6 +96,13 @@ Todo se configura en **Ajustes → Seguridad y cifrado**.
 - Usa un par de claves GPG **dedicado** a tus notas, nunca tu clave principal, con una frase larga.
 - Abre la app en un perfil de navegador sin extensiones, o instalada como app.
 - Si pierdes un dispositivo: Dropbox → Configuración → *Aplicaciones conectadas* → revoca la app.
+
+Los archivos adjuntos (carpeta `Assets`) se guardan **sin cifrar** en Dropbox, también cuando
+la nota está en un fichero `.gpg` (la app avisa antes de subir).
+
+Riesgo residual: la política de seguridad deja hablar con la API de Dropbox, así que un código
+malicioso que llegara a ejecutarse (ver recomendaciones) podría, en teoría, subir datos a *otra*
+cuenta de Dropbox. Por eso lo más importante es proteger quién puede cambiar el código.
 
 Limitación conocida: con la política de seguridad activa solo funciona la sincronización con
 Dropbox (WebDAV y GitLab, que organice también admite, quedan bloqueados).

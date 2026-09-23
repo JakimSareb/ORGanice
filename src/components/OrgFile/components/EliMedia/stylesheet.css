@@ -1,0 +1,46 @@
+@import '../../../../colors.css';
+
+.eli-media {
+  display: inline-flex;
+  flex-direction: column;
+  max-width: 100%;
+  margin: 4px 0;
+  vertical-align: top;
+}
+.eli-media__img {
+  max-width: 100%;
+  max-height: 60vh;
+  border-radius: 6px;
+  cursor: zoom-in;
+  display: block;
+}
+.eli-media__player {
+  max-width: 100%;
+  border-radius: 6px;
+}
+.eli-media--audio .eli-media__player {
+  width: 320px;
+}
+.eli-media__caption {
+  font-size: 0.85em;
+  color: var(--base1);
+  margin-top: 2px;
+}
+.eli-media__placeholder {
+  display: inline-block;
+  padding: 18px 14px;
+  border: 1px dashed var(--base1);
+  border-radius: 6px;
+  color: var(--base1);
+  font-size: 0.9em;
+}
+.eli-media__chip {
+  text-decoration: underline;
+  cursor: pointer;
+  color: var(--blue);
+  word-break: break-all;
+}
+.eli-media__error {
+  color: var(--orange);
+  text-decoration: none;
+}

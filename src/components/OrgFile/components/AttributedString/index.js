@@ -1,3 +1,5 @@
+import EliMedia from '../EliMedia';
+import { fileLinkTarget } from '../../../../lib/eli_media';
 import React from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -26,6 +28,12 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
     const uri = part.getIn(['contents', 'uri']);
     const title = part.getIn(['contents', 'title']) || uri;
     let target = uri;
+    // ORG Mode para Eli: imágenes, vídeo, audio y otros ficheros guardados en Dropbox
+    const mediaTarget = fileLinkTarget(uri);
+    if (mediaTarget) {
+      const hasDescription = !!part.getIn(['contents', 'title']);
+      return <EliMedia key={id} target={mediaTarget} title={hasDescription ? title : null} />;
+    }
     if (uri.startsWith('file:')) {
       target = uri.substr(5);
       const isRelativeFileLink = !target.startsWith('/') && !target.startsWith('~');
