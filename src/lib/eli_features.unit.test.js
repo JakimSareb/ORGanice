@@ -6,6 +6,7 @@ import {
   collectContexts,
   filterHeadersByContexts,
   availableFacets,
+  allTagsForEditor,
 } from './gtd_contexts';
 import AgendaDay from '../components/OrgFile/components/AgendaModal/components/AgendaDay';
 import { Map, List } from 'immutable';
@@ -129,4 +130,30 @@ test('filtros facetados: solo lo presente y contextos combinados con Y', () => {
   });
   // Con NEXT: solo @casa
   expect(availableFacets(files, List(), List(['NEXT'])).contexts).toEqual(['@casa']);
+});
+
+test('contextos sin @ y etiquetas declaradas en el editor', () => {
+  const f = parseOrg(
+    [
+      '#+TODO: TODO | DONE',
+      '#+TAGS: { casa(c) recados(r) } ordenador llamadas \\n leer',
+      '* TODO barrer :casa:recados:',
+      '* TODO otra :casa:proyectoX:',
+      '',
+    ].join('\n')
+  );
+  const files = Map({ '/a.org': f });
+  // sin @ en #+TAGS: todas las declaradas son contextos; solo se muestran las presentes
+  expect(availableFacets(files, List(), List()).contexts).toEqual(['casa', 'recados']);
+  expect(
+    filterHeadersByContexts(f.get('headers'), List(['casa', 'recados']))
+      .map((h) => h.getIn(['titleLine', 'rawTitle']).trim())
+      .toJS()
+  ).toEqual(['barrer']);
+  // "@casa" declarado equivale a la etiqueta "casa"
+  const g = parseOrg('#+TAGS: @casa @recados\n* TODO x :casa:\n');
+  expect(availableFacets(Map({ '/b.org': g }), List(), List()).contexts).toEqual(['@casa']);
+  expect(
+    allTagsForEditor(f.get('headers'), f.get('fileConfigLines').toJS())
+  ).toEqual(['casa', 'recados', 'ordenador', 'llamadas', 'leer', 'proyectoX']);
 });

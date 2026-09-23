@@ -1,3 +1,4 @@
+import { allTagsForEditor } from '../../lib/gtd_contexts';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -27,7 +28,6 @@ import { ActionCreators as undoActions } from 'redux-undo';
 import sampleCaptureTemplates from '../../lib/sample_capture_templates';
 import { calculateActionedKeybindings } from '../../lib/keybindings';
 import {
-  extractAllOrgTags,
   extractAllOrgProperties,
   changelogHash,
   STATIC_FILE_PREFIX,
@@ -785,6 +785,7 @@ class OrgFile extends PureComponent {
   render() {
     const {
       headers,
+      fileConfigLines,
       linesBeforeHeadings,
       shouldDisableDirtyIndicator,
       shouldDisableSyncButtons,
@@ -970,7 +971,7 @@ class OrgFile extends PureComponent {
                   onRemovePlanningItem={
                     this.state.captureMode ? this.handleCaptureRemovePlanningItem : null
                   }
-                  allTags={extractAllOrgTags(headers)}
+                  allTags={allTagsForEditor(headers, fileConfigLines)}
                   allOrgProperties={extractAllOrgProperties(headers)}
                   getPopupCloseAction={this.getPopupCloseAction}
                   onSwitch={() => {
@@ -1019,6 +1020,7 @@ const mapStateToProps = (state) => {
     loadedPath: path,
     files,
     headers,
+    fileConfigLines: file.get('fileConfigLines') ? file.get('fileConfigLines').toJS() : [],
     linesBeforeHeadings,
     selectedHeaderId,
     isDirty: file.get('isDirty'),

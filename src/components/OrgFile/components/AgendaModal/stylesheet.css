@@ -62,3 +62,7 @@
   font-family: Courier;
   margin: 2px 0;
 }
+/* TitleLine usa margin-top negativo (pensado para ir bajo la fecha en la agenda): aquí no */
+.agenda__priority-item .title-line {
+  margin-top: 0;
+}

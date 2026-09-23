@@ -2,24 +2,49 @@
 //
 // Los contextos se definen en la cabecera de cada fichero Org con la sintaxis
 // estándar de Org:   #+TAGS: @casa(c) @oficina(o) { @llamadas @recados } proyecto
-// Solo las etiquetas que empiezan por "@" se consideran contextos.
+// Se consideran contextos las etiquetas que empiezan por "@". Si en #+TAGS: no hay ninguna con
+// "@", se consideran contextos todas las declaradas. "casa" y "@casa" son el mismo contexto.
 
 import { Set as ISet, Map as IMap } from 'immutable';
 
 const TAGS_LINE = /^#\+TAGS:\s*(.*)$/i;
 
-// "@casa(c)" -> "@casa"; descarta separadores de grupos { } [ ] \n
-export const contextsFromConfigLines = (configLines) => {
-  const contexts = [];
+// Todas las etiquetas declaradas en #+TAGS: ("@casa(c)" -> "@casa"; sin { } [ ] \n ni grupos)
+export const declaredTagsFromConfigLines = (configLines) => {
+  const tags = [];
   (configLines || []).forEach((line) => {
     const match = TAGS_LINE.exec(String(line).trim());
     if (!match) return;
     match[1].split(/\s+/).forEach((token) => {
-      const tag = token.replace(/\(.*\)$/, '').trim();
-      if (tag.startsWith('@') && tag.length > 1 && !contexts.includes(tag)) contexts.push(tag);
+      const tag = token.replace(/\(.*\)$/, '').replace(/^[{[]|[}\]]$/g, '').trim();
+      if (!tag || /^[{}[\]:]+$/.test(tag) || tag === '\\n' || tags.includes(tag)) return;
+      tags.push(tag);
     });
   });
-  return contexts;
+  return tags;
+};
+
+export const contextsFromConfigLines = (configLines) => {
+  const declared = declaredTagsFromConfigLines(configLines);
+  const withAt = declared.filter((t) => t.startsWith('@') && t.length > 1);
+  return withAt.length ? withAt : declared;
+};
+
+// "casa" y "@casa" son el mismo contexto
+export const contextKey = (tag) => String(tag || '').replace(/^@/, '').toLowerCase();
+export const tagsHaveContext = (tags, context) =>
+  !!tags && tags.some((t) => contextKey(t) === contextKey(context));
+
+// Etiquetas para el editor: primero las declaradas en #+TAGS: (en su orden), luego el resto
+export const allTagsForEditor = (headers, configLines) => {
+  const declared = declaredTagsFromConfigLines(configLines);
+  const used = (headers || [])
+    .flatMap((h) => h.getIn(['titleLine', 'tags']) || [])
+    .filter((t) => !!t && !declared.includes(t))
+    .toSet()
+    .sort()
+    .toArray();
+  return declared.concat(used);
 };
 
 // Contextos de todos los ficheros cargados (Immutable Map path -> file)
@@ -60,7 +85,7 @@ export const filterHeadersByContexts = (headers, selectedContexts) => {
   const tagsById = inheritedTagsById(headers);
   return headers.filter((h) => {
     const tags = tagsById.get(h.get('id'));
-    return !!tags && selected.every((t) => tags.has(t));
+    return !!tags && selected.every((c) => tagsHaveContext(tags, c));
   });
 };
 
@@ -107,9 +132,10 @@ export const availableFacets = (files, selectedContexts, selectedTodos) => {
       if (!headers) return;
       const tagsById = inheritedTagsById(headers);
       headers.forEach((h) => {
-        const tags = (tagsById.get(h.get('id')) || ISet()).intersect(declared);
+        const own = tagsById.get(h.get('id')) || ISet();
+        const tags = declared.filter((d) => tagsHaveContext(own, d));
         const kw = h.getIn(['titleLine', 'todoKeyword']);
-        const matchesContexts = selC.every((c) => tags.has(c));
+        const matchesContexts = selC.every((c) => tagsHaveContext(tags, c));
         const matchesTodo = selT.size === 0 || selT.has(kw);
         if (matchesContexts && kw && TODO_FILTER_KEYWORDS.includes(kw)) todos = todos.add(kw);
         if (matchesContexts && matchesTodo) contexts = contexts.union(tags);

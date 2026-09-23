@@ -4,7 +4,7 @@ import { Map, List, fromJS } from 'immutable';
 import _ from 'lodash';
 
 import headline_filter_parser from '../lib/headline_filter_parser';
-import { inheritedTagsById } from '../lib/gtd_contexts';
+import { inheritedTagsById, tagsHaveContext } from '../lib/gtd_contexts';
 import { isMatch, computeCompletionsForDatalist, timeFilter } from '../lib/headline_filter';
 import {
   updateHeadersTotalTimeLoggedRecursive,
@@ -1686,7 +1686,7 @@ export const setSearchFilterInformation = (state, action) => {
         const tagsById = inheritedTagsById(headers.get(filePath) || headersOfFile);
         return headersOfFile.filter((h) => {
           const tags = tagsById.get(h.get('id'));
-          return !!tags && selectedContexts.every((t) => tags.has(t));
+          return !!tags && selectedContexts.every((c) => tagsHaveContext(tags, c));
         });
       });
     }
