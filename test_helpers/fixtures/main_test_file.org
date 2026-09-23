@@ -1,0 +1,66 @@
+#+TODO: TODO | DONE
+#+TODO: START(s!/!) | FINISHED(f@)
+
+* Top level header
+** A nested header
+** TODO A todo item with schedule and deadline
+   DEADLINE: <2018-10-05 Fri> SCHEDULED: <2019-09-19 Thu>
+* Another top level header
+Some description content
+** TODO A repeating todo
+   SCHEDULED: <2020-04-05 Sun +1d>
+
+* A header with tags                                              :tag1:tag2:
+* A header with [[https://organice.200ok.ch][a link]]
+* A header with various links as content
+  Relative link to [[file:schedule_and_timestamps.org][an existing .org file in the same directory]]
+  Relative link to [[file:subdir][subdir]]
+  Relative link to [[file:subdir/][subdir/]]
+  Relative link to [[file:subdir/foo.org][a fictitious .org file in a sub-directory]]
+  Relative link to [[file:../foo.org_archive][a fictitious .org file in a parent directory]]
+  Relative link to [[file:../subdir][../subdir]]
+  Relative link to [[file:../subdir/][../subdir/]]
+  Relative link to [[file:../../foo.org][a fictitious .org file in a grand-parent directory]]
+  Relative link to [[file:../../../../too-high-to-access-file.org][a fictitious .org file in a too-high ancestor directory]]
+  Relative link to [[file:../../../../too-high-to-access-directory][a too-high ancestor directory]]
+  Absolute link to [[file:~/foo/bar/baz.org][a fictitious .org file in home directory]]
+  Absolute link to [[file:/foo/bar/baz.org][a fictitious .org file]]
+* A header with a URL, mail address and phone number as content
+
+  This is a URL https://foo.bar.baz/xyz?a=b&d#foo in a line of text.
+
+  This is an e-mail foo.bar@baz.org in a line of text.
+
+  Canonical format +xxxxxxxxx phone numbers:
+
+    - +49123456789
+
+  US phone numbers:
+    - 123-456-7890
+    - (123) 456-7890
+    - 123 456 7890
+    - 123.456.7890
+    - +91 (123) 456-7890
+
+  Swiss phone numbers:
+    - 0783268674
+    - 078 326 86 74
+    - 041783268675
+    - 0041783268674
+    - +41783268676
+    - +41783268677
+
+  These are not phone numbers:
+    - 05 05 05
+
+** PROJECT Foo
+*** DONE A headline that's done since a loong time
+   SCHEDULED: <2001-01-03 Wed>
+*** DONE A headline that's done a day earlier even
+   SCHEDULED: <2001-01-02 Tue>
+* A header with plain list items
+
+- Plain list item 1
+- Plain list item 2
+  
+* FINISHED A header with a custom todo sequence in DONE state

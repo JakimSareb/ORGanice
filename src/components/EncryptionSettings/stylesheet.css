@@ -1,0 +1,71 @@
+@import '../../colors.css';
+
+.eli-encryption {
+  padding: 10px 16px 40px;
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--base00);
+}
+.eli-encryption h3 {
+  margin-top: 1.4em;
+  font-size: 1.1em;
+}
+.eli-encryption__help,
+.eli-encryption__muted {
+  color: var(--base1);
+  font-size: 0.9em;
+}
+.eli-encryption__radio {
+  display: block;
+  margin: 6px 0;
+}
+.eli-encryption__keys {
+  list-style: none;
+  padding: 0;
+}
+.eli-encryption__keys li {
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.eli-encryption__fp {
+  font-family: Courier, monospace;
+  font-size: 0.8em;
+  color: var(--base1);
+  word-break: break-all;
+}
+.eli-encryption__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.eli-encryption__textarea {
+  width: 100%;
+  font-family: Courier, monospace;
+  font-size: 12px;
+  margin: 8px 0;
+}
+.eli-encryption__gen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+}
+.eli-encryption__gen input {
+  font-size: 16px;
+}
+.eli-encryption__message {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--base2);
+}
+.eli-encryption__message.is-error {
+  color: var(--red);
+}
+
+.eli-encryption__select {
+  font-size: 16px;
+  padding: 2px 4px;
+}

@@ -1,0 +1,5 @@
+.attributed-string__timestamp-part {
+  cursor: pointer;
+  color: var(--base02);
+  text-decoration: underline;
+}

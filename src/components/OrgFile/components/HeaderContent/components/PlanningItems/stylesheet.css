@@ -1,0 +1,13 @@
+.planning-items__item-container {
+  display: flex;
+}
+
+.planning-item__type {
+  color: var(--base0);
+}
+
+.planning-item__timestamp {
+  cursor: pointer;
+  color: var(--base02);
+  text-decoration: underline;
+}

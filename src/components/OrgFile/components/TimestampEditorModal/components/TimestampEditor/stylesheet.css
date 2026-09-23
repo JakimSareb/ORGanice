@@ -1,0 +1,99 @@
+@import '../../../../../../colors.css';
+
+.timestamp-editor__render {
+  font-family: Courier;
+  font-size: 14px;
+  color: var(--base01);
+
+  text-align: center;
+}
+
+.timestamp-editor__date-time-fields-container {
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.timestamp-editor__field-container {
+  margin-top: 10px;
+}
+
+.timestamp-editor__field-container--inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.timestamp-editor__field-title {
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--base01);
+
+  margin-bottom: 5px;
+}
+
+.timestamp-editor__field {
+  cursor: pointer;
+  font-family: Courier;
+
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+}
+
+.timestamp-editor__icon {
+  color: var(--base0);
+}
+
+.delay-repeater-value-input {
+  width: 30px;
+  height: 22px;
+
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.timestamp-editor__slash {
+  color: var(--magenta);
+  font-weight: bold;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.timestamp-editor__icon--add {
+  height: 34px;
+  padding-right: 12px;
+  padding-left: 12px;
+
+  background-color: var(--magenta);
+  color: var(--base3);
+
+  font-size: 14px;
+
+  display: flex;
+  align-items: center;
+}
+
+.timestamp-editor__date-input, .timestamp-editor__time-input {
+  background-color: var(--magenta);
+  color: var(--base3);
+
+  border: none;
+  border-radius: 0;
+  font-size: 12px;
+  padding: 8px 0 8px 16px;
+  margin: 0;
+  height: 18px;
+
+  -webkit-appearance: none;
+}
+
+.timestamp-editor__icon--remove {
+  color: var(--magenta);
+  margin-left: 15px;
+}
+
+.timestamp-editor__delay-repeater-type {
+  min-width: 95px;
+}

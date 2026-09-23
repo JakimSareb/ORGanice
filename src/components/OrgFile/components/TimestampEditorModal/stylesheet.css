@@ -1,0 +1,36 @@
+@import '../../../../colors.css';
+
+.timestamp-editor__title {
+  color: var(--base01);
+
+  margin-top: 0;
+}
+
+.timestamp-editor__button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.timestamp-editor__add-new-button {
+  font-size: 18px;
+  margin-top: 15px;
+}
+
+.timestamp-editor__separator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 10px;
+  margin-bottom: 10px;
+
+  font-size: 22px;
+}
+
+.timestamp-editor__separator__margin-line {
+  background-color: var(--base03);
+  height: 1px;
+  width: 40%;
+
+  margin-top: 5px;
+}

@@ -1,0 +1,45 @@
+* Simple header with log notes and logbook
+  - Note taken on [2020-08-29 Sat 18:01] \\
+    another note
+  :LOGBOOK:
+  CLOCK: [2019-11-13 Wed 13:15]--[2019-11-13 Wed 13:15] =>  0:00
+  CLOCK: [2019-11-12 Tue 14:15]--[2019-11-12 Tue 13:20] => -0:55
+  CLOCK: [2019-11-12 Tue 14:15]--[2019-11-12 Tue 14:25] =>  0:10
+  :END:
+  description text
+* Complex header with repeating timestamp, properties, log notes, logbook, and description
+  SCHEDULED: <2020-08-29 Sat +1w>
+  :PROPERTIES:
+  :LAST_REPEAT: [2020-08-29 Sat 18:02]
+  :END:
+  - Note taken on [2020-08-29 Sat 18:04] \\
+    new note
+  - State "DONE"       from "TODO"       [2020-08-29 Sat 18:02]
+  - Note taken on [2020-08-29 Sat 18:01] \\
+    test note here
+  - Note taken on [2020-08-29 Sat 18:01] \\
+    another note
+  :LOGBOOK:
+  CLOCK: [2019-11-13 Wed 13:15]--[2019-11-13 Wed 13:15] =>  0:00
+  CLOCK: [2019-11-12 Tue 14:15]--[2019-11-12 Tue 13:20] => -0:55
+  CLOCK: [2019-11-12 Tue 14:15]--[2019-11-12 Tue 14:25] =>  0:10
+  :END:
+
+  description text
+
+* Header with =LOGBOOK= drawer and note with standard spacing in between
+  :LOGBOOK:
+  CLOCK: [2020-10-11 Sun 18:15]--[2020-10-11 Sun 18:25] =>  0:10
+  :END:
+
+
+  - Note taken on [2020-10-11 Sun 18:25] \\
+    bar
+* Header with =LOGBOOK= drawer and note without spacing in between
+  :LOGBOOK:
+  CLOCK: [2020-10-11 Sun 18:15]--[2020-10-11 Sun 18:25] =>  0:10
+  :END:
+  - Note taken on [2020-10-11 Sun 18:25] \\
+    bar
+* Boring header
+no text

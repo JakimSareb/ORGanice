@@ -1,0 +1,29 @@
+@import '../../colors.css';
+
+.org-file__parsing-error-message {
+  text-align: center;
+  font-size: 16px;
+
+  margin: 10px;
+}
+
+.org-file__btn {
+  margin: 10px;
+  text-align: center;
+}
+
+.dirty-indicator {
+  padding: 3px;
+  opacity: 0.6;
+  color: var(--base2);
+  background-color: var(--orange);
+  position: fixed;
+  bottom: 100px;
+  right: 10px;
+  font-weight: bold;
+}
+
+.error-message-container {
+  padding: 10px;
+  font-size: 20px;
+}

@@ -1,0 +1,34 @@
+@import '../../../../colors.css';
+
+.attributed-string__cookie-part {
+  font-weight: bold;
+  color: var(--red);
+}
+
+.attributed-string__cookie-part--complete {
+  color: var(--green);
+}
+
+.attributed-string__inline-markup--inline-code,
+.attributed-string__inline-markup--verbatim {
+  color: var(--base03);
+  background-color: var(--base2);
+  border: 1px solid var(--base1);
+  padding: 2px;
+}
+
+.attributed-string__inline-markup--bold {
+  font-weight: bold;
+}
+
+.attributed-string__inline-markup--italic {
+  font-style: italic;
+}
+
+.attributed-string__inline-markup--strikethrough {
+  text-decoration: line-through;
+}
+
+.attributed-string__inline-markup--underline {
+  text-decoration: underline;
+}

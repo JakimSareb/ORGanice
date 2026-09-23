@@ -1,0 +1,46 @@
+@import '../../../../colors.css';
+
+.header-content-container {
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.header-content__edit-icon {
+  color: var(--base2);
+
+  margin-top: 10px;
+  margin-right: 5px;
+  float: left;
+}
+
+.header-content__insert-timestamp-button {
+  color: var(--base0);
+
+  display: flex;
+  align-items: center;
+}
+
+.insert-timestamp-icon {
+  margin-right: 5px;
+}
+
+/* ORG Mode para Eli: org-crypt */
+.eli-crypt-box {
+  margin: 6px 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--base1);
+  color: var(--base01);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.eli-crypt-box--open {
+  border-style: dotted;
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+.eli-crypt-box__button {
+  padding: 2px 10px;
+}

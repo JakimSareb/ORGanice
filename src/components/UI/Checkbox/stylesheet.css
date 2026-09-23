@@ -1,0 +1,10 @@
+@import '../../../colors.css';
+
+.checkbox__inner-container {
+  display: flex;
+  justify-content: center;
+}
+
+.checkbox__inner-container .fa-square {
+  color: white;
+}

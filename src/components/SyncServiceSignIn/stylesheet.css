@@ -1,0 +1,59 @@
+@import '../../colors.css';
+
+#webdavLogin h2 {
+  font-size: 3.5em;
+  margin: 0;
+}
+
+.sync-service-container form {
+  display: table;
+  width: 100%;
+}
+.sync-service-container form p {
+  display: table-row;
+}
+.sync-service-container form label {
+  display: table-cell;
+}
+.sync-service-container form input:not([type='submit']) {
+  display: table-cell;
+  width: calc(100% - 10px);
+}
+
+.sync-service-sign-in-container {
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sync-service-sign-in__help-text {
+  padding-left: 5px;
+  padding-right: 5px;
+  font-weight: bold;
+
+  font-size: 18px;
+  color: var(--base0);
+
+  text-align: center;
+}
+
+.sync-service-container {
+  border-bottom: 1px solid var(--base01);
+
+  padding: 20px 10px;
+  text-align: center;
+}
+
+/* Sync back-end logos or titles are the same height. */
+.sync-service-container img,
+.sync-service-container h2 {
+  max-height: 87px;
+}
+
+.sync-service-container:last-of-type {
+  border-bottom: none;
+}
+
+.dropbox-logo {
+  width: 80%;
+}

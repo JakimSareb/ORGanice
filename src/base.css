@@ -1,0 +1,141 @@
+@import 'colors.css';
+
+/* INFO: This file is always loaded, so it should be written in a way
+   that it always makes sense (i.e. for the landing page and the
+   actual app). */
+
+/* Tablets and bigger are constrained to a max width and are centered */
+@media (min-width: 767px) {
+  html {
+    background: var(--base2);
+  }
+
+  .App:not(.landing-page) {
+    box-shadow: 0 2em 2em 1.5em var(--base1-soft);
+  }
+
+  .App:not(.landing-page),
+  .App:not(.landing-page) .action-drawer-container,
+  .App:not(.landing-page) .drawer-inner-container,
+  .App:not(.landing-page) .loading-indicator {
+    max-width: 60em;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .App:not(.landing-page) .action-drawer-container {
+    max-width: 33em;
+  }
+}
+
+body,
+.App:not(.landing-page) {
+  height: 100%;
+}
+
+html,
+body,
+.App:not(.landing-page) {
+  color: var(--base00);
+  background: var(--base3);
+  user-select: none;
+}
+
+.App:not(.landing-page) a {
+  color: var(--base03);
+}
+
+.App:not(.landing-page) h2 {
+  color: var(--base01) !important;
+}
+
+.App:not(.landing-page) .btn {
+  cursor: pointer;
+  background-color: var(--magenta);
+  color: var(--base3) !important;
+
+  border: 0;
+  padding: 8px 16px;
+}
+
+.App:not(.landing-page) .btn-passive {
+  cursor: pointer;
+  background-color: var(--base0-soft);
+  color: var(--base3) !important;
+
+  border: 0;
+  padding: 8px 16px;
+}
+
+.App:not(.landing-page) .btn a {
+  color: var(--base3) !important;
+}
+
+.App:not(.landing-page) .btn--circle {
+  border-radius: 50%;
+  font-weight: bold;
+  padding: 0;
+  width: 60px;
+  height: 60px;
+}
+
+.App:not(.landing-page) .btn--disabled {
+  background-color: var(--base01);
+}
+
+.App:not(.landing-page) .nice-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+.App:not(.landing-page) .textarea {
+  width: 95%;
+  font-size: 16px;
+  font-family: Courier;
+  max-height: 60vh;
+  -webkit-appearance: none;
+  border-radius: 0;
+}
+
+.App:not(.landing-page) .textfield {
+  border: 1px solid var(--base1);
+  border-radius: 0;
+  -webkit-appearance: none;
+  padding: 5px;
+  font-size: 16px;
+}
+
+.App:not(.landing-page) .label-for-checkbox {
+  margin: 4px 0 0;
+}
+
+.App:not(.landing-page) div[tabindex='-1']:focus {
+  outline: 0;
+}
+
+.App:not(.landing-page) button {
+  touch-action: manipulation;
+}
+
+.App:not(.landing-page) .checkbox {
+  height: 20px;
+  width: 20px;
+  vertical-align: middle;
+  margin-right: 5px;
+
+  border: 2px solid var(--green);
+  border-radius: 2px;
+  box-sizing: border-box;
+
+  display: inline-block;
+
+  color: var(--base00);
+}
+
+@media print {
+  html,
+  body,
+  .App:not(.landing-page) {
+    height: 100% !important;
+    overflow: visible;
+  }
+}

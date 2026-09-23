@@ -1,0 +1,24 @@
+@import '../../../../colors.css';
+
+.context-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.context-filter-bar__chip {
+  cursor: pointer;
+  user-select: none;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--base1);
+  color: var(--base01);
+  font-size: 0.9em;
+}
+
+.context-filter-bar__chip.is-selected {
+  background-color: var(--blue);
+  border-color: var(--blue);
+  color: var(--base3);
+}

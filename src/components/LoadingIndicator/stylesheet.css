@@ -1,0 +1,18 @@
+@import '../../colors.css';
+
+.loading-indicator {
+  color: var(--base00);
+  background-color: var(--base2);
+  font-weight: bold;
+  opacity: 0.9;
+  padding: 18px;
+  display: inline-block;
+  position: fixed;
+  font-size: 20px;
+  left: 50%;
+  top: 85px;
+  width: 80%;
+  text-align: center;
+  transform: translateX(-50%);
+  z-index: 1;
+}

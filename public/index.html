@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- ORG Mode para Eli: política de seguridad. La app solo puede comunicarse con
+         este mismo sitio y con la API de Dropbox; no se ejecuta código en línea. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.dropboxapi.com https://content.dropboxapi.com https://notify.dropboxapi.com; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'; frame-src 'none'" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="description"
+      content="organice is the best way get stuff done"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#fdf6e3" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" href="./organice.png" />
+    <title>ORG Mode para Eli</title>
+    <link rel="manifest" href="./manifest.json" />
+    <script src="./theme-init.js"></script>
+  </head>
+  <body>
+    <noscript>
+      <div style="font-size: 22px; font-family: sans">
+        It looks like you don't have JavaScript enabled, but organice is a big, fancy React app that
+        requires JavaScript to run!
+
+        <br />
+        <br />
+
+        If you're interested in inspecting the source code yourself (or even deploying your own
+        version of the project), you can find the project's repo <a href="https://github.com/200ok-ch/organice">here</a>.
+      </div>
+    </noscript>
+    <div id="root"></div>
+    <script type="module" src="../src/index.js"></script>
+  </body>
+</html>

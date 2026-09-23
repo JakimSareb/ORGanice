@@ -1,0 +1,99 @@
+@import '../../colors.css';
+
+.setting-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px;
+  border-bottom: 1px solid var(--base2);
+  padding: 5px 0;
+}
+
+.setting-container--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.settings-container a {
+  text-decoration: none;
+}
+
+.setting-container:first-of-type {
+  border-top: 1px solid var(--base2);
+}
+
+.setting-label {
+  max-width: calc(100% - 90px);
+}
+
+.setting-container--vertical .setting-label {
+  margin-bottom: 10px;
+}
+
+.setting-label__description {
+  font-size: 14px;
+  color: var(--base0);
+  max-width: calc(100% - 25px);
+  margin-top: 5px;
+}
+
+.settings-buttons-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin-top: 20px;
+}
+
+.settings-btn {
+  font-size: 20px;
+  width: 90%;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  text-align: center;
+
+  position: relative;
+}
+
+.settings-button-separator {
+  width: calc(100% - 20px);
+  margin-top: 0px;
+  margin-bottom: 20px;
+
+  border: none;
+  border-bottom: 1px solid var(--base2);
+}
+
+.changelog-badge-container {
+  font-style: none;
+  font-weight: bold;
+  color: var(--red);
+  background-color: var(--base2);
+  padding: 0.25em;
+  margin-top: 0.25em;
+}
+
+.changelog-icon--has-unseen-changelog {
+  color: var(--red);
+}
+
+.settings-button-help-text {
+  color: var(--base1);
+  padding-left: 20px;
+  padding-right: 20px;
+
+  margin-bottom: 10px;
+  margin-top: -10px;
+}
+
+.default-deadline-warning-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.default-deadline-value-textfield {
+  width: 50px;
+  margin-right: 10px;
+}

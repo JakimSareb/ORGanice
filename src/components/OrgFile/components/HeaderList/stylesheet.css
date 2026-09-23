@@ -1,0 +1,22 @@
+@import '../../../../colors.css';
+
+.header-list-container {
+  font-family: Courier;
+  margin-top: 10px;
+
+  z-index: 1;
+
+  height: '100%';
+  overflow: 'auto';
+}
+
+.header-list-container--narrowed {
+  box-shadow: inset 0px 0px 5px 0px var(--base0-soft);
+  margin: 0;
+  margin-top: 10px;
+  border-radius: 5px;
+}
+
+.header-list-container--reordering {
+  user-select: none;
+}

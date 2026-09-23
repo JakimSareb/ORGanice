@@ -1,0 +1,53 @@
+# ORG Mode para Eli: compila la app desde este código fuente y la publica en GitHub Pages.
+# El sitio publicado es siempre el resultado de compilar el commit visible en el repositorio
+# (el registro de cada ejecución queda en la pestaña Actions).
+name: Publicar en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar dependencias (versiones exactas de yarn.lock)
+        run: yarn install --frozen-lockfile --ignore-engines --ignore-scripts
+      - name: Compilar
+        run: yarn --ignore-engines build
+        env:
+          ELI_BASE_PATH: /${{ github.event.repository.name }}
+      - name: Preparar sitio
+        run: |
+          cp dist/index.html dist/404.html   # rutas internas de la app (/files, /file/...)
+          touch dist/.nojekyll
+          (cd dist && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

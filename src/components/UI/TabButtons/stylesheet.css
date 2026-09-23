@@ -1,0 +1,37 @@
+@import '../../../colors.css';
+
+.tab-buttons {
+  border: 1px solid var(--base2);
+  height: 34px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tab-buttons--equal-width-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.tab-buttons__btn {
+  cursor: pointer;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 7px;
+  border-right: 1px solid var(--base01);
+
+  text-align: center;
+}
+
+.tab-buttons__btn:last-of-type {
+  border-right: none;
+}
+
+.entry-container--large-font .tab-buttons__btn {
+  padding: 5px;
+}
+
+.tab-buttons__btn--selected {
+  background-color: var(--base2);
+  color: var(--base03);
+}

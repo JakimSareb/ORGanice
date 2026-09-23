@@ -1,0 +1,38 @@
+@import '../../../../colors.css';
+
+.keyboard-shortcut-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px;
+  border-bottom: 1px solid var(--base2);
+  padding: 5px 0;
+}
+
+.keyboard-shortcut-container:first-of-type {
+  border-top: 1px solid var(--base2);
+}
+
+.keyboard-shortcut-container__shortcut-name {
+  max-width: calc(90% - 100px);
+}
+
+.keyboard-shortcut-container__shortcut-key {
+  height: 34px;
+  width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--base02);
+  background-color: var(--base2);
+  border: 1px solid var(--base0);
+  box-sizing: border-box;
+
+  font-family: Courier;
+}
+
+.keyboard-shortcut-container__shortcut-key--edit-mode {
+  border: 2px solid var(--base2);
+  background-color: var(--base00);
+}
