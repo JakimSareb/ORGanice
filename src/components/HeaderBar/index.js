@@ -1,4 +1,5 @@
-import { openRawEditor, openPrintPreview } from '../EliTools';
+import { openRawEditor, openPrintPreview, openMoonPhases } from '../EliTools';
+import { getPersistPlainFiles } from '../../lib/eli_security';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
 const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
 import React, { PureComponent, Fragment } from 'react';
@@ -258,6 +259,8 @@ class HeaderBar extends PureComponent {
       path,
       isUndoEnabled,
       isRedoEnabled,
+      online,
+      dirtyCount,
     } = this.props;
 
     if (!!activeModalPage) {
@@ -312,12 +315,39 @@ class HeaderBar extends PureComponent {
                   />
                 </Fragment>
               )}
-              <i
-                className="fas fa-question-circle header-bar__actions__item"
-                onClick={this.handleHelpClick}
-                title="Help"
-              />
             </Fragment>
+          )}
+
+          {isAuthenticated && !online && (
+            <button
+              className="eli-offline-pill"
+              data-testid="eli-offline"
+              title="Sin conexión: puedes seguir trabajando; los cambios se sincronizarán al volver la conexión"
+              onClick={() =>
+                window.alert(
+                  'Sin conexión.\n\nPuedes seguir trabajando. En cuanto vuelva la conexión, la app ' +
+                    'sincronizará con Dropbox los cambios pendientes.' +
+                    (dirtyCount ? `\n\nFicheros con cambios pendientes: ${dirtyCount}.` : '') +
+                    (getPersistPlainFiles()
+                      ? ''
+                      : '\n\nAtención: la copia local está desactivada (Ajustes → Seguridad y cifrado). ' +
+                        'Si cierras la app antes de recuperar la conexión, los cambios se pierden.')
+                )
+              }
+            >
+              <i className="fas fa-wifi" />
+              <span className="eli-offline-pill__text"> Sin conexión</span>
+              {dirtyCount ? ` · ${dirtyCount}` : ''}
+            </button>
+          )}
+
+          {isAuthenticated && (
+            <i
+              className="fas fa-moon header-bar__actions__item"
+              onClick={openMoonPhases}
+              title="Fases de la Luna"
+              data-testid="eli-moon"
+            />
           )}
 
           {isAuthenticated && (
@@ -368,6 +398,8 @@ const mapStateToProps = (state) => {
     isUndoEnabled: state.org.past.length > 0,
     isRedoEnabled: state.org.future.length > 0,
     syncBackendType: state.syncBackend.get('client') && state.syncBackend.get('client').type,
+    online: state.base.get('online') !== false,
+    dirtyCount: (state.org.present.get('files') || List()).filter((f) => f.get('isDirty')).size,
   };
 };
 

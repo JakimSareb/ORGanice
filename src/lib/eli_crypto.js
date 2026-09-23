@@ -9,6 +9,7 @@
 
 import * as openpgp from 'openpgp';
 import { askPassphrase } from './eli_prompt';
+import { originalPathForBackup } from './eli_media';
 
 const LS_PRIVATE = 'eliGpgPrivateKeys';
 const LS_PUBLIC = 'eliGpgPublicKeys';
@@ -420,6 +421,14 @@ export const decryptFile = async (path, data) => {
   return text;
 };
 
+// Un fichero nuevo derivado de otro cifrado (p. ej. su _archive) se cifra igual que el original
+export const inheritEncryptionMeta = (targetPath, sourcePath) => {
+  if (!fileMeta.has(targetPath) && fileMeta.has(sourcePath)) {
+    const src = fileMeta.get(sourcePath);
+    fileMeta.set(targetPath, { ...src, armored: !isBinaryEncryptedPath(targetPath) });
+  }
+};
+
 export const encryptFile = async (path, text) => {
   let meta = fileMeta.get(path);
   if (!meta) {
@@ -573,8 +582,8 @@ export const withEncryption = (client) => {
   const prepare = async (path, contents) => {
     if (isEncryptedPath(path)) return encryptFile(path, contents);
     // Copias de seguridad de organice de ficheros cifrados: también cifradas
-    const backup = /^(.*\.(gpg|asc))\.organice-bak$/i.exec(path);
-    if (backup) return encryptFile(backup[1], contents);
+    const backup = /\.(gpg|asc)\.organice-bak$/i.test(path) && originalPathForBackup(path);
+    if (backup) return encryptFile(backup, contents);
     return encryptCryptEntries(contents);
   };
   return {

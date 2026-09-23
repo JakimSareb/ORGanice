@@ -80,3 +80,30 @@
 .header-bar__actions__item--disabled {
   opacity: 0.5;
 }
+
+/* ORG Mode para Eli: indicador de sin conexión (rosa suave) */
+.eli-offline-pill {
+  border: 1px solid #efb7c8;
+  background: #fbe3ea;
+  color: #a2445f;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  margin-right: 6px;
+  line-height: 1.6;
+}
+.eli-offline-pill .fa-wifi {
+  opacity: 0.6;
+  margin-right: 2px;
+}
+
+@media (max-width: 480px) {
+  .eli-offline-pill__text {
+    display: none;
+  }
+  .eli-offline-pill {
+    padding: 2px 8px;
+  }
+}

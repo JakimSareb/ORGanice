@@ -159,3 +159,19 @@ export const uploadAssets = async (client, orgFilePath, files) => {
   }
   return links;
 };
+
+// ORG Mode para Eli: ruta de la copia de seguridad de un fichero, dentro de la subcarpeta
+// "backups" de su directorio:  /Notas/gtd.org -> /Notas/backups/gtd.org.organice-bak
+export const backupPathFor = (path) => {
+  const i = path.lastIndexOf('/');
+  const dir = i >= 0 ? path.slice(0, i) : '';
+  return `${dir}/backups/${path.slice(i + 1)}.organice-bak`;
+};
+
+// Fichero original de una copia (inversa de backupPathFor)
+export const originalPathForBackup = (backupPath) => {
+  const m = /^(.*)\/backups\/([^/]+)\.organice-bak$/i.exec(backupPath);
+  if (m) return `${m[1]}/${m[2]}`;
+  const legacy = /^(.*)\.organice-bak$/i.exec(backupPath);
+  return legacy ? legacy[1] : null;
+};

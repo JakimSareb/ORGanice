@@ -1,3 +1,4 @@
+import { getPriority, titlePartsWithoutPriority } from '../../../../lib/eli_priority';
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -113,6 +114,7 @@ class TitleLine extends PureComponent {
 
     const isTodoKeywordInDoneState = createIsTodoKeywordInDoneState(todoKeywordSets);
     const todoKeyword = header.getIn(['titleLine', 'todoKeyword']);
+    const priority = getPriority(header);
 
     const titleStyle = {
       color,
@@ -157,8 +159,15 @@ class TitleLine extends PureComponent {
           <div style={{ width: '100%' }}>
             <div className="title-line-text">
               <span style={titleStyle}>
+                {priority === 'A' ? (
+                  <i className="fas fa-star eli-priority-star" title="Prioridad A" />
+                ) : priority ? (
+                  <span className="eli-priority-badge" title={`Prioridad ${priority}`}>
+                    {priority}
+                  </span>
+                ) : null}
                 <AttributedString
-                  parts={header.getIn(['titleLine', 'title'])}
+                  parts={titlePartsWithoutPriority(header.getIn(['titleLine', 'title']))}
                   subPartDataAndHandlers={{
                     onTimestampClick: this.handleTimestampClick,
                     shouldDisableActions,

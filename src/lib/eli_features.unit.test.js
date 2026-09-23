@@ -1,7 +1,12 @@
 import { parseOrg } from './parse_org';
 import { isMatch } from './headline_filter';
 import headline_filter_parser from './headline_filter_parser';
-import { contextsFromConfigLines, collectContexts, filterHeadersByContexts } from './gtd_contexts';
+import {
+  contextsFromConfigLines,
+  collectContexts,
+  filterHeadersByContexts,
+  availableFacets,
+} from './gtd_contexts';
 import AgendaDay from '../components/OrgFile/components/AgendaModal/components/AgendaDay';
 import { Map, List } from 'immutable';
 import { startOfDay, endOfDay } from 'date-fns';
@@ -68,7 +73,8 @@ test('filtro por contexto con herencia de etiquetas', () => {
       .map((h) => h.getIn(['titleLine', 'rawTitle']).trim())
       .toJS();
   expect(titles(['@oficina'])).toEqual(['Proyecto X', 'Llamar a Ana', 'Notas']);
-  expect(titles(['@recados', '@oficina']).length).toBe(4);
+  // Varios contextos: deben cumplirse todos
+  expect(titles(['@recados', '@oficina']).length).toBe(0);
   expect(titles([]).length).toBe(headers.size);
 });
 
@@ -85,4 +91,42 @@ test('agenda: vencidas y días de retraso', () => {
     ['Comprar pan', 3],
     ['Revisar correo', 1],
   ]);
+});
+
+test('filtros facetados: solo lo presente y contextos combinados con Y', () => {
+  const f = parseOrg(
+    [
+      '#+TODO: TODO NEXT WAITING | DONE',
+      '#+TAGS: @casa @recados @ordenador @oficina',
+      '* TODO barrer la casa :@casa:@recados:@ordenador:',
+      '* TODO comprar pan :@recados:',
+      '* NEXT llamar :@casa:',
+      '* WAITING factura',
+      '',
+    ].join('\n')
+  );
+  const files = Map({ '/a.org': f });
+  const t = (sel) =>
+    filterHeadersByContexts(f.get('headers'), List(sel))
+      .map((h) => h.getIn(['titleLine', 'rawTitle']).trim())
+      .toJS();
+  expect(t(['@casa', '@recados'])).toEqual(['barrer la casa']);
+  // Sin filtros: no aparece @oficina (declarado pero sin uso) ni MAYBE/PROJECT
+  expect(availableFacets(files, List(), List())).toEqual({
+    contexts: ['@casa', '@ordenador', '@recados'],
+    todos: ['TODO', 'NEXT', 'WAITING'],
+  });
+  // Filtrando por TODO: contextos presentes en las TODO
+  expect(availableFacets(files, List(), List(['TODO'])).contexts).toEqual([
+    '@casa',
+    '@ordenador',
+    '@recados',
+  ]);
+  // Con @recados: solo contextos que conviven con @recados, y estados de esas tareas
+  expect(availableFacets(files, List(['@recados']), List())).toEqual({
+    contexts: ['@casa', '@ordenador', '@recados'],
+    todos: ['TODO'],
+  });
+  // Con NEXT: solo @casa
+  expect(availableFacets(files, List(), List(['NEXT'])).contexts).toEqual(['@casa']);
 });

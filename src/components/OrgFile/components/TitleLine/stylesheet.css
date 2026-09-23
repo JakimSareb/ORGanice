@@ -57,3 +57,21 @@
   display: flex;
   justify-content: space-between;
 }
+
+/* ORG Mode para Eli: prioridad */
+.eli-priority-star {
+  color: #f2b24a;
+  margin-right: 5px;
+  font-size: 0.9em;
+}
+.eli-priority-badge {
+  display: inline-block;
+  font-size: 0.7em;
+  font-weight: bold;
+  color: var(--base1);
+  border: 1px solid var(--base1);
+  border-radius: 3px;
+  padding: 0 3px;
+  margin-right: 5px;
+  vertical-align: middle;
+}

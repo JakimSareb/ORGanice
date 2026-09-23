@@ -380,7 +380,7 @@ const ActionDrawer = ({
           />
 
           <ActionButton
-            iconName="star"
+            iconName="copy"
             isDisabled={false}
             onClick={openFavorites}
             dataTestId="eli-favorites"

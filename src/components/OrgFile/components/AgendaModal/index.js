@@ -7,6 +7,9 @@ import './stylesheet.css';
 import AgendaDay from './components/AgendaDay';
 import TabButtons from '../../../UI/TabButtons';
 import ContextFilterBar from '../ContextFilterBar';
+import TitleLine from '../TitleLine';
+import { getPriority } from '../../../../lib/eli_priority';
+import { isTodoKeywordCompleted } from '../../../../lib/org_utils';
 import { filterFilesByContexts, filterFilesByTodo } from '../../../../lib/gtd_contexts';
 
 import { isMobileBrowser } from '../../../../lib/browser_utils';
@@ -113,6 +116,43 @@ function AgendaModal(props) {
     }
   }
 
+  // ORG Mode para Eli: tareas con prioridad arriba del todo (A primero)
+  function renderPriorityTasks() {
+    const items = [];
+    files.forEach((file, filePath) => {
+      const sets = file.get('todoKeywordSets');
+      (file.get('headers') || []).forEach((header) => {
+        const priority = getPriority(header);
+        if (!priority) return;
+        const kw = header.getIn(['titleLine', 'todoKeyword']);
+        if (kw && sets && isTodoKeywordCompleted(sets, kw)) return;
+        items.push({ priority, header: header.set('path', filePath) });
+      });
+    });
+    if (!items.length) return null;
+    items.sort((a, b) => a.priority.localeCompare(b.priority));
+    return (
+      <div className="agenda__priority" data-testid="eli-agenda-priority">
+        <div className="agenda__priority-title">
+          <i className="fas fa-star" /> Prioritarias ({items.length})
+        </div>
+        {items.map(({ header }) => (
+          <div key={`${header.get('path')}-${header.get('id')}`} className="agenda__priority-item">
+            <TitleLine
+              header={header}
+              color="var(--base03)"
+              hasContent={false}
+              isSelected={false}
+              shouldDisableActions
+              shouldDisableExplicitWidth
+              onClick={() => handleHeaderClick(header.get('path'), header.get('id'))}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   let dates = [];
   switch (agendaTimeframe) {
     case 'Day':
@@ -145,6 +185,8 @@ function AgendaModal(props) {
       </div>
 
       <ContextFilterBar />
+
+      {renderPriorityTasks()}
 
       <div className="agenda__timeframe-header-container">
         <i className="fas fa-chevron-left fa-lg" onClick={handlePreviousDateClick} />

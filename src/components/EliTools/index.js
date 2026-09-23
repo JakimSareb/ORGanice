@@ -7,7 +7,11 @@ import './stylesheet.css';
 
 import AttributedString from '../OrgFile/components/AttributedString';
 import { exportOrg } from '../../lib/export_org';
-import { subheadersOfHeaderWithId, isRegularPlanningItem, STATIC_FILE_PREFIX } from '../../lib/org_utils';
+import {
+  subheadersOfHeaderWithId,
+  isRegularPlanningItem,
+  STATIC_FILE_PREFIX,
+} from '../../lib/org_utils';
 import { renderAsText } from '../../lib/timestamps';
 import {
   parseFile,
@@ -16,7 +20,19 @@ import {
   narrowHeader,
   widenHeader,
   toggleEliFavoriteFile,
+  uploadFilesAndGetLinks,
+  appendLinesToHeader,
 } from '../../actions/org';
+import { isEncryptedPath } from '../../lib/eli_crypto';
+import {
+  IMAGE_SIZES,
+  isResizableImage,
+  prepareImageVariants,
+  formatBytes,
+  pastedName,
+} from '../../lib/eli_image';
+import { phasesForThreeMonths, moonState } from '../../lib/lunar';
+import { getCurrentTimestampAsText } from '../../lib/timestamps';
 import { List } from 'immutable';
 
 // ORG Mode para Eli: herramientas de fichero
@@ -26,6 +42,9 @@ import { List } from 'immutable';
 //   window.dispatchEvent(new CustomEvent('eli:raw-edit'))
 //   window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId } }))
 
+export const openUploadDialog = (detail) =>
+  window.dispatchEvent(new CustomEvent('eli:upload', { detail }));
+export const openMoonPhases = () => window.dispatchEvent(new CustomEvent('eli:moon'));
 export const openFavorites = () => window.dispatchEvent(new CustomEvent('eli:favorites'));
 export const openRawEditor = () => window.dispatchEvent(new CustomEvent('eli:raw-edit'));
 export const openPrintPreview = (headerId = null) =>
@@ -37,7 +56,10 @@ const fileTitle = (path, file) => {
   const lines = (file && file.get('linesBeforeHeadings')) || [];
   const titleLine = (lines.toJS ? lines.toJS() : lines).find((l) => /^#\+TITLE:/i.test(l));
   if (titleLine) return titleLine.replace(/^#\+TITLE:\s*/i, '').trim();
-  return (path || '').split('/').pop().replace(/\.org(_archive)?(\.gpg|\.asc)?$/i, '');
+  return (path || '')
+    .split('/')
+    .pop()
+    .replace(/\.org(_archive)?(\.gpg|\.asc)?$/i, '');
 };
 
 const ensurePortal = (id) => {
@@ -59,7 +81,11 @@ export const validateSubtreeText = (text, level) => {
   const first = lines.find((l) => l.trim() !== '');
   if (first === undefined) return { ok: false, empty: true };
   const m = /^(\*+)\s/.exec(first);
-  if (!m) return { ok: false, reason: 'La primera línea debe ser el encabezado (empezar por asteriscos).' };
+  if (!m)
+    return {
+      ok: false,
+      reason: 'La primera línea debe ser el encabezado (empezar por asteriscos).',
+    };
   if (m[1].length !== level) {
     return { ok: false, reason: `El encabezado debe mantener su nivel (${'*'.repeat(level)}).` };
   }
@@ -110,7 +136,10 @@ function RawEditor({ path, initialText, narrow, onClose }) {
       const check = validateSubtreeText(normalized, narrow.level);
       if (check.empty) {
         // eslint-disable-next-line no-restricted-globals
-        if (!window.confirm('El texto está vacío: se eliminará este encabezado entero. ¿Continuar?')) return;
+        if (
+          !window.confirm('El texto está vacío: se eliminará este encabezado entero. ¿Continuar?')
+        )
+          return;
         normalized = '';
         deleted = true;
       } else if (!check.ok) {
@@ -162,6 +191,21 @@ function RawEditor({ path, initialText, narrow, onClose }) {
       <div className="eli-raw__bar">
         <button className="btn eli-raw__btn" onClick={cancel}>
           Cancelar
+        </button>
+        <button
+          className="btn eli-raw__btn"
+          title="Insertar la fecha de hoy como fecha inactiva"
+          onClick={() => {
+            const el = ref.current;
+            insertIntoField(
+              el,
+              getCurrentTimestampAsText({ isActive: false }),
+              el.selectionStart,
+              el.selectionEnd
+            );
+          }}
+        >
+          <i className="far fa-calendar-plus" />
         </button>
         <div className="eli-raw__title">
           {narrow ? 'Texto plano: solo este encabezado' : 'Texto plano'}
@@ -229,16 +273,26 @@ function PrintHeader({ header, baseLevel }) {
   return (
     <section className="eli-print__section">
       <Tag className="eli-print__heading">
-        {todo && <span className={`eli-print__todo eli-print__todo--${todo.toLowerCase()}`}>{todo} </span>}
-        <AttributedString parts={titleLine.get('title')} subPartDataAndHandlers={readOnlyHandlers} />
-        {tags.size > 0 && <span className="eli-print__tags">{tags.map((t) => `:${t}`).join('')}:</span>}
+        {todo && (
+          <span className={`eli-print__todo eli-print__todo--${todo.toLowerCase()}`}>{todo} </span>
+        )}
+        <AttributedString
+          parts={titleLine.get('title')}
+          subPartDataAndHandlers={readOnlyHandlers}
+        />
+        {tags.size > 0 && (
+          <span className="eli-print__tags">{tags.map((t) => `:${t}`).join('')}:</span>
+        )}
       </Tag>
       {planning && <div className="eli-print__planning">{planning}</div>}
       {encrypted ? (
         <div className="eli-print__encrypted">[contenido cifrado]</div>
       ) : (
         <div className="eli-print__body">
-          <AttributedString parts={header.get('description')} subPartDataAndHandlers={readOnlyHandlers} />
+          <AttributedString
+            parts={header.get('description')}
+            subPartDataAndHandlers={readOnlyHandlers}
+          />
         </div>
       )}
     </section>
@@ -306,7 +360,11 @@ export const favoritePaths = (fileSettings) =>
     .map((s) => s.get('path'))
     .toArray();
 
-const fileName = (p) => p.split('/').pop().replace(/\.org(_archive)?(\.gpg|\.asc)?$/i, '');
+const fileName = (p) =>
+  p
+    .split('/')
+    .pop()
+    .replace(/\.org(_archive)?(\.gpg|\.asc)?$/i, '');
 const fileDir = (p) => p.replace(/\/[^/]*$/, '') || '/';
 
 function FavoritesPopup({ currentPath, onClose }) {
@@ -325,12 +383,12 @@ function FavoritesPopup({ currentPath, onClose }) {
     <div className="eli-prompt__overlay" onClick={onClose}>
       <div className="eli-prompt__box eli-fav" onClick={(e) => e.stopPropagation()}>
         <div className="eli-prompt__title">
-          <i className="fas fa-star eli-fav__star" /> Ficheros principales
+          <i className="fas fa-copy eli-fav__star" /> Ficheros principales
         </div>
         {favorites.length === 0 ? (
           <div className="eli-prompt__message">
-            Aún no hay ninguno. Abre un fichero y márcalo aquí, o usa la ☆ del explorador de
-            ficheros.
+            Aún no hay ninguno. Abre un fichero y márcalo aquí, o pulsa el icono de hojas junto a
+            cada fichero en el explorador.
           </div>
         ) : (
           <ul className="eli-fav__list">
@@ -363,11 +421,11 @@ function FavoritesPopup({ currentPath, onClose }) {
           >
             {currentIsFavorite ? (
               <>
-                <i className="far fa-star" /> Quitar «{fileName(currentPath)}»
+                <i className="far fa-copy" /> Quitar «{fileName(currentPath)}»
               </>
             ) : (
               <>
-                <i className="fas fa-star" /> Añadir «{fileName(currentPath)}»
+                <i className="fas fa-copy" /> Añadir «{fileName(currentPath)}»
               </>
             )}
           </button>
@@ -387,6 +445,285 @@ function FavoritesPopup({ currentPath, onClose }) {
 }
 
 // ---------------------------------------------------------------------------
+// Subida de archivos (pegar o clip): confirmación y tamaño de las imágenes
+
+// Inserta texto en un <textarea>/<input> controlado por React en la posición indicada
+export const insertIntoField = (el, text, start, end) => {
+  const proto =
+    el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+  const value = el.value || '';
+  const s = start == null ? value.length : start;
+  const t = end == null ? s : end;
+  setter.call(el, value.slice(0, s) + text + value.slice(t));
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  try {
+    el.focus();
+    el.setSelectionRange(s + text.length, s + text.length);
+  } catch (e) {}
+};
+
+const headerLabel = (h) =>
+  `${'  '.repeat(Math.max(0, h.get('nestingLevel') - 1))}${h
+    .getIn(['titleLine', 'rawTitle'])
+    .trim()}`;
+
+function UploadDialog({ request, path, headers, onClose }) {
+  const dispatch = useDispatch();
+  const { files: rawFiles, target, source } = request;
+  const [prepared, setPrepared] = useState(null); // [{file, name, variants?}]
+  const [size, setSize] = useState('medium');
+  const [headerId, setHeaderId] = useState(
+    request.headerId || (headers && headers.size ? headers.first().get('id') : null)
+  );
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const list = [];
+      for (const f of rawFiles) {
+        const name = source === 'paste' ? pastedName(f) : f.name;
+        if (isResizableImage(f)) {
+          const info = await prepareImageVariants(f, name);
+          list.push({ file: f, name, ...info });
+        } else {
+          list.push({
+            file: f,
+            name,
+            variants: { original: new File([f], name, { type: f.type }) },
+          });
+        }
+      }
+      if (alive) setPrepared(list);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [rawFiles, source]);
+
+  const hasImages = prepared && prepared.some((p) => Object.keys(p.variants).length > 1);
+  const pick = (p) => p.variants[size] || p.variants.original;
+  const totalFor = (id) =>
+    prepared
+      ? prepared.reduce((acc, p) => acc + (p.variants[id] || p.variants.original).size, 0)
+      : null;
+  const originalTotal = rawFiles.reduce((a, f) => a + f.size, 0);
+
+  const confirm = async () => {
+    if (!prepared || busy) return;
+    setBusy(true);
+    const links = await dispatch(uploadFilesAndGetLinks(prepared.map(pick)));
+    if (links.length) {
+      if (target && target.el && document.body.contains(target.el)) {
+        insertIntoField(target.el, links.join('\n'), target.start, target.end);
+      } else if (headerId) {
+        dispatch(appendLinesToHeader(headerId, links));
+      }
+    }
+    onClose();
+  };
+
+  return ReactDOM.createPortal(
+    <div className="eli-prompt__overlay">
+      <div className="eli-prompt__box eli-upload" role="dialog" aria-label="Subir archivos">
+        <div className="eli-prompt__title">
+          <i className="fas fa-paperclip" /> {source === 'paste' ? 'Pegar' : 'Adjuntar'}{' '}
+          {rawFiles.length === 1 ? 'archivo' : `${rawFiles.length} archivos`}
+        </div>
+        <ul className="eli-upload__files">
+          {(prepared || rawFiles.map((f) => ({ file: f, name: f.name }))).map((p, i) => (
+            <li key={i}>
+              {p.variants && p.variants.original && /^image\//.test(p.file.type) ? (
+                <i className="fas fa-image" />
+              ) : (
+                <i className="fas fa-file" />
+              )}{' '}
+              {p.name}
+              <span className="eli-upload__muted">
+                {' '}
+                · {formatBytes(p.file.size)}
+                {p.width ? ` · ${p.width}×${p.height}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        {!prepared && (
+          <div className="eli-upload__muted">
+            <i className="fas fa-spinner fa-spin" /> Calculando tamaños…
+          </div>
+        )}
+
+        {hasImages && (
+          <div className="eli-upload__sizes" role="radiogroup" aria-label="Tamaño de la imagen">
+            {IMAGE_SIZES.map((s, i) => (
+              <label
+                key={s.id}
+                className={'eli-upload__size' + (size === s.id ? ' is-selected' : '')}
+              >
+                <input
+                  type="radio"
+                  name="eli-size"
+                  checked={size === s.id}
+                  onChange={() => setSize(s.id)}
+                />
+                <span className="eli-upload__size-name">
+                  {i + 1}) {s.label}
+                </span>
+                <span className="eli-upload__size-detail">
+                  {s.max ? `hasta ${s.max} px` : 'sin cambios'}
+                </span>
+                <span className="eli-upload__size-weight">{formatBytes(totalFor(s.id))}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {prepared && !hasImages && (
+          <div className="eli-upload__muted">Tamaño total: {formatBytes(originalTotal)}</div>
+        )}
+
+        <div className="eli-upload__dest">
+          Se guardará en <code>assets/{new Date().getFullYear()}/</code> junto al fichero y se
+          añadirá el enlace{' '}
+          {target && target.el ? (
+            'en el texto que estás editando.'
+          ) : headers && headers.size ? (
+            <>
+              al encabezado:{' '}
+              <select value={headerId || ''} onChange={(e) => setHeaderId(e.target.value)}>
+                {headers.map((h) => (
+                  <option key={h.get('id')} value={h.get('id')}>
+                    {headerLabel(h)}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            '(el fichero no tiene encabezados).'
+          )}
+        </div>
+        {isEncryptedPath(path) && (
+          <div className="eli-upload__warn">
+            Este fichero está cifrado, pero los adjuntos se guardan SIN cifrar en Dropbox.
+          </div>
+        )}
+        <div className="eli-prompt__buttons">
+          <button className="btn eli-prompt__cancel" onClick={onClose} disabled={busy}>
+            Cancelar
+          </button>
+          <button
+            className="btn eli-prompt__ok"
+            onClick={confirm}
+            disabled={!prepared || busy || (!headerId && !(target && target.el))}
+            data-testid="eli-upload-confirm"
+          >
+            {busy ? 'Subiendo…' : 'Subir'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    ensurePortal('eli-upload-portal')
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fases de la Luna (como `M-x lunar-phases` de Emacs)
+
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function MoonPhases({ onClose }) {
+  const now = new Date();
+  const [offset, setOffset] = useState(0); // meses respecto al actual
+  const center = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const phases = phasesForThreeMonths(center.getFullYear(), center.getMonth());
+  const state = moonState(now);
+  const dayFmt = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const timeFmt = new Intl.DateTimeFormat('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+  const monthFmt = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' });
+  const from = new Date(center.getFullYear(), center.getMonth() - 1, 1);
+  const to = new Date(center.getFullYear(), center.getMonth() + 1, 1);
+  const todayKey = now.toDateString();
+
+  return ReactDOM.createPortal(
+    <div className="eli-prompt__overlay" onClick={onClose}>
+      <div className="eli-prompt__box eli-moon" onClick={(e) => e.stopPropagation()}>
+        <div className="eli-prompt__title">Fases de la Luna</div>
+        <div className="eli-moon__today">
+          <span className="eli-moon__big">{state.emoji}</span>
+          <span>
+            Hoy: <strong>{state.name}</strong>
+            <br />
+            {Math.round(state.illumination * 100)} % iluminada ·{' '}
+            {state.age.toFixed(1).replace('.', ',')} días
+          </span>
+        </div>
+        <div className="eli-moon__nav">
+          <button
+            className="btn"
+            onClick={() => setOffset(offset - 1)}
+            aria-label="Meses anteriores"
+          >
+            <i className="fas fa-chevron-left" />
+          </button>
+          <span>
+            {capitalize(monthFmt.format(from))} – {monthFmt.format(to)}
+          </span>
+          <button
+            className="btn"
+            onClick={() => setOffset(offset + 1)}
+            aria-label="Meses siguientes"
+          >
+            <i className="fas fa-chevron-right" />
+          </button>
+        </div>
+        <ul className="eli-moon__list">
+          {phases.map((p) => {
+            const isPast = p.date < now;
+            return (
+              <li
+                key={p.date.toISOString()}
+                className={
+                  (isPast ? 'is-past ' : '') +
+                  (p.date.toDateString() === todayKey ? 'is-today' : '')
+                }
+              >
+                <span className="eli-moon__emoji">{p.emoji}</span>
+                <span className="eli-moon__date">{capitalize(dayFmt.format(p.date))}</span>
+                <span className="eli-moon__phase">
+                  {p.name} <span className="eli-moon__time">{timeFmt.format(p.date)}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="eli-prompt__buttons">
+          {offset !== 0 && (
+            <button className="btn" onClick={() => setOffset(0)}>
+              Hoy
+            </button>
+          )}
+          <button className="btn eli-prompt__ok" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>,
+    ensurePortal('eli-moon-portal')
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 const selectPath = (state) => state.org.present.get('path');
 const selectFiles = (state) => state.org.present.get('files');
@@ -397,17 +734,56 @@ export default function EliTools() {
   const files = useSelector(selectFiles);
   const file = path && files ? files.get(path) : null;
   const dontIndent = useSelector(selectDontIndent);
+  const usable = !!path && !!file && !!file.get('headers') && !path.startsWith(STATIC_FILE_PREFIX);
   const [raw, setRaw] = useState(null); // { path, text }
   const [print, setPrint] = useState(null); // { headerId }
   const [favorites, setFavorites] = useState(false);
+  const [upload, setUpload] = useState(null); // { files, headerId?, target?, source }
+  const [moon, setMoon] = useState(false);
 
   useEffect(() => {
     const onFav = () => setFavorites(true);
+    const onMoon = () => setMoon(true);
+    const onUpload = (e) => setUpload(e.detail);
     window.addEventListener('eli:favorites', onFav);
-    return () => window.removeEventListener('eli:favorites', onFav);
+    window.addEventListener('eli:moon', onMoon);
+    window.addEventListener('eli:upload', onUpload);
+    return () => {
+      window.removeEventListener('eli:favorites', onFav);
+      window.removeEventListener('eli:moon', onMoon);
+      window.removeEventListener('eli:upload', onUpload);
+    };
   }, []);
 
-  const usable = !!path && !!file && !!file.get('headers') && !path.startsWith(STATIC_FILE_PREFIX);
+  // Pegar archivos o imágenes desde el portapapeles
+  useEffect(() => {
+    const onPaste = (e) => {
+      if (!usable || !e.clipboardData) return;
+      const pasted = Array.from(e.clipboardData.files || []);
+      if (!pasted.length) return;
+      const active = document.activeElement;
+      const isField =
+        !!active &&
+        (active.tagName === 'TEXTAREA' ||
+          (active.tagName === 'INPUT' && /^(text|search)$/i.test(active.type)));
+      const text = (e.clipboardData.getData && e.clipboardData.getData('text/plain')) || '';
+      // Si hay texto y se pega en un campo de texto, se respeta el pegado normal
+      if (isField && text.trim()) return;
+      if (active && active.closest && active.closest('.eli-prompt__overlay')) return;
+      e.preventDefault();
+      setUpload({
+        files: pasted,
+        source: 'paste',
+        headerId: file.get('selectedHeaderId') || file.get('narrowedHeaderId') || null,
+        target: isField
+          ? { el: active, start: active.selectionStart, end: active.selectionEnd }
+          : null,
+      });
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [usable, file]);
+
 
   useEffect(() => {
     const onRaw = () => {
@@ -420,7 +796,8 @@ export default function EliTools() {
         // Modo narrow: solo el encabezado enfocado y sus subencabezados
         const root = headers.get(index);
         const end = index + 1 + subheadersOfHeaderWithId(headers, narrowedId).size;
-        const part = (hs, lines) => exportOrg({ headers: hs, linesBeforeHeadings: lines, dontIndent });
+        const part = (hs, lines) =>
+          exportOrg({ headers: hs, linesBeforeHeadings: lines, dontIndent });
         setRaw({
           path,
           text: part(headers.slice(index, end), List()),
@@ -459,8 +836,22 @@ export default function EliTools() {
         />
       )}
       {favorites && <FavoritesPopup currentPath={path} onClose={() => setFavorites(false)} />}
+      {moon && <MoonPhases onClose={() => setMoon(false)} />}
+      {upload && usable && (
+        <UploadDialog
+          request={upload}
+          path={path}
+          headers={file.get('headers')}
+          onClose={() => setUpload(null)}
+        />
+      )}
       {print && usable && (
-        <PrintPreview path={path} file={file} headerId={print.headerId} onClose={() => setPrint(null)} />
+        <PrintPreview
+          path={path}
+          file={file}
+          headerId={print.headerId}
+          onClose={() => setPrint(null)}
+        />
       )}
     </>
   );

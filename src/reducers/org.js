@@ -1686,7 +1686,7 @@ export const setSearchFilterInformation = (state, action) => {
         const tagsById = inheritedTagsById(headers.get(filePath) || headersOfFile);
         return headersOfFile.filter((h) => {
           const tags = tagsById.get(h.get('id'));
-          return tags && tags.some((t) => selectedContexts.includes(t));
+          return !!tags && selectedContexts.every((t) => tags.has(t));
         });
       });
     }

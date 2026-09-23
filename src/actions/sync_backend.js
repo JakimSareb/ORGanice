@@ -1,3 +1,4 @@
+import { backupPathFor } from '../lib/eli_media';
 import { ActionCreators } from 'redux-undo';
 
 import { setLoadingMessage, hideLoadingMessage, clearModalStack, setIsLoading } from './base';
@@ -110,7 +111,8 @@ export const pushBackup = (pathOrFileId, contents) => {
     switch (client.type) {
       case 'Dropbox':
       case 'WebDAV':
-        client.createFile(`${pathOrFileId}.organice-bak`, contents);
+        // ORG Mode para Eli: las copias se guardan en la subcarpeta "backups"
+        client.createFile(backupPathFor(pathOrFileId), contents);
         break;
       case 'GitLab':
         // No-op for GitLab, because the beauty of version control makes backup files redundant.

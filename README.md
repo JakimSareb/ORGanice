@@ -8,9 +8,26 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   *Texto* (título + contenido).
 - **Agenda con vencidas**: el día de hoy muestra las tareas abiertas cuyo SCHEDULED o DEADLINE ya
   pasó y cuántos días llevan vencidas.
-- **Ficheros principales**: botón ★ en la barra inferior (también en el explorador) para abrir con
-  un toque los ficheros que elijas. Se marcan desde el propio botón, con la ☆ del explorador o en
-  Ajustes → File settings. Se guardan con los ajustes de organice (sincronizables vía Dropbox).
+- **Ficheros principales**: botón de hojas en la barra inferior (también en el explorador) para
+  abrir con un toque los ficheros que elijas. Se marcan desde el propio botón, con el icono de hojas
+  del explorador o en Ajustes → File settings. Se guardan con los ajustes de organice
+  (sincronizables vía Dropbox con «Store settings in sync backend»).
+- **Prioridad**: estrella en los iconos del encabezado para marcar/desmarcar `[#A]` (se ve como ★
+  amarilla); la agenda muestra arriba del todo las tareas abiertas con prioridad.
+- **Archivar** como `org-archive-subtree` de Emacs (icono de archivador, pide confirmación): mueve el
+  encabezado y sus hijos a `<fichero>_archive` (o al destino de `#+ARCHIVE:` / propiedad
+  `ARCHIVE`), con las propiedades ARCHIVE_TIME, ARCHIVE_FILE, ARCHIVE_OLPATH, ARCHIVE_CATEGORY,
+  ARCHIVE_TODO y ARCHIVE_ITAGS. Si el fichero está cifrado, el archivo también.
+- **Pegar archivos**: al pegar una imagen o un fichero se abre un diálogo de confirmación; las
+  imágenes se pueden subir en tamaño pequeño (800 px), mediano (1600 px), grande (2560 px) u
+  original, viendo el peso de cada opción. También con el clip 📎.
+- **Fecha inactiva**: icono que añade `[AAAA-MM-DD Día]` de hoy (y botón en el editor de texto
+  plano).
+- **Fases de la Luna**: botón 🌙 en la barra superior, como `M-x lunar-phases` de Emacs.
+- **Sin conexión**: la app abre sin red (service worker); un indicador rosa arriba a la derecha
+  avisa y, al volver la conexión, se sincroniza sola. Para editar ficheros sin conexión entre
+  sesiones, activa la copia local en Ajustes → Seguridad y cifrado.
+- **Copias de seguridad** en la subcarpeta `backups/` de cada carpeta.
 - **Filtro por estado**: TODO, NEXT, WAITING, MAYBE, PROJECT (en Buscar, Lista de tareas y Agenda),
   combinable con los contextos. Los estados deben estar declarados en el fichero, p. ej.
   `#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE`.
@@ -18,7 +35,9 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   privacidad mejorada, youtube-nocookie.com).
 - **Contextos GTD**: botones de filtro generados desde las líneas `#+TAGS:` de tus ficheros (solo
   etiquetas que empiezan por `@`, p. ej. `#+TAGS: @casa(c) @oficina(o) @llamadas`). En Buscar,
-  Lista de tareas y Agenda. Respeta la herencia de etiquetas.
+  Lista de tareas y Agenda. Solo se muestran los contextos y estados presentes con los filtros
+  actuales; varios contextos seleccionados deben cumplirse a la vez. Respeta la herencia de
+  etiquetas.
 - **Imágenes y multimedia desde Dropbox**: los enlaces Org a imágenes (`[[file:assets/2026/foto.jpg]]`,
   `[[./assets/2026/foto.jpg][Descripción]]`) se ven dentro de la nota (miniatura generada por
   Dropbox; al pulsar se abre el original). Vídeo y audio con reproductor; PDF y otros ficheros se

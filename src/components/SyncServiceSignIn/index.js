@@ -14,10 +14,18 @@ import {
 } from '../../sync_backend_clients/gitlab_sync_backend_client';
 
 import { DropboxAuth } from 'dropbox';
-import { getDropboxClientId, setDropboxClientId } from '../../lib/dropbox_client_id';
+import {
+  getDropboxClientId,
+  setDropboxClientId,
+  getBuiltInDropboxClientId,
+  getCustomDropboxClientId,
+} from '../../lib/dropbox_client_id';
 import { appRootUrl } from '../../lib/base_path';
 import _ from 'lodash';
 
+// WebDAV y GitLab quedan bloqueados por la política de seguridad (solo Dropbox); se conservan
+// los componentes de organice por si se reactivan.
+// eslint-disable-next-line no-unused-vars
 function WebDAVForm() {
   const [isVisible, setIsVisible] = useState(false);
   const toggleVisible = () => setIsVisible(!isVisible);
@@ -108,6 +116,7 @@ function WebDAVForm() {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
 function GitLab() {
   const [isVisible, setIsVisible] = useState(false);
   const toggleVisible = () => setIsVisible(!isVisible);
@@ -187,56 +196,125 @@ export default class SyncServiceSignIn extends PureComponent {
   }
 
   render() {
-    return (
-      <div className="sync-service-sign-in-container">
-        <p className="sync-service-sign-in__help-text">
-          organice syncs your files with Dropbox, GitLab, and WebDAV.
-        </p>
-        <p className="sync-service-sign-in__help-text">Click to sign in with:</p>
-
-        <div className="sync-service-container">
-          <a href="#dropbox" onClick={this.handleDropboxClick}>
-            <img src={DropboxLogo} alt="Dropbox logo" className="dropbox-logo" />
-          </a>
-          <div style={{ marginTop: '0.5em', fontSize: '0.85em' }}>
-            <label htmlFor="eli-dropbox-client-id">Dropbox App key: </label>
-            <input
-              id="eli-dropbox-client-id"
-              type="text"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck="false"
-              defaultValue={getDropboxClientId()}
-              onChange={(e) => setDropboxClientId(e.target.value)}
-              placeholder="p. ej. abc123xyz"
-              style={{ width: '12em' }}
-            />
-            <div style={{ opacity: 0.7 }}>
-              Redirect URI a registrar en Dropbox: <code>{appRootUrl()}</code>
-            </div>
-          </div>
-        </div>
-
-        <div className="sync-service-container">
-          <GitLab />
-        </div>
-
-        <div className="sync-service-container">
-          <WebDAVForm />
-        </div>
-
-        <footer>
-          For questions regarding synchronization back-ends, please consult the{' '}
-          <a
-            href="https://organice.200ok.ch/documentation.html#sync_backends"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            documentation
-          </a>
-          .
-        </footer>
-      </div>
-    );
+    return <EliDropboxSignIn onConnect={this.handleDropboxClick} />;
   }
+}
+
+// ORG Mode para Eli: pantalla de acceso con Dropbox (en español), con instrucciones paso a paso
+// para crear la app de Dropbox cuando la app no trae una App key incluida.
+function EliDropboxSignIn({ onConnect }) {
+  const builtIn = getBuiltInDropboxClientId();
+  const [showAdvanced, setShowAdvanced] = useState(!builtIn || !!getCustomDropboxClientId());
+  const [showGuide, setShowGuide] = useState(!builtIn);
+  const [copied, setCopied] = useState(false);
+  const redirect = appRootUrl();
+
+  const copy = () => {
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(redirect).then(done, () => {});
+    }
+  };
+
+  return (
+    <div className="sync-service-sign-in-container eli-signin">
+      <h2 className="eli-signin__title">Conectar con Dropbox</h2>
+      <p className="sync-service-sign-in__help-text">
+        La app lee y guarda tus ficheros .org directamente en tu Dropbox. Se abrirá la web de
+        Dropbox para que autorices el acceso; solo hay que hacerlo una vez en cada dispositivo y la
+        app queda vinculada.
+      </p>
+
+      <div className="sync-service-container">
+        <a href="#dropbox" onClick={onConnect} data-testid="eli-dropbox-connect">
+          <img src={DropboxLogo} alt="Conectar con Dropbox" className="dropbox-logo" />
+        </a>
+      </div>
+
+      {builtIn && (
+        <button className="eli-signin__link" onClick={() => setShowAdvanced(!showAdvanced)}>
+          {showAdvanced
+            ? 'Ocultar opciones avanzadas'
+            : 'Opciones avanzadas (usar otra app de Dropbox)'}
+        </button>
+      )}
+
+      {showAdvanced && (
+        <div className="eli-signin__advanced">
+          <label htmlFor="eli-dropbox-client-id">
+            {builtIn ? 'App key propia (opcional):' : 'App key de tu app de Dropbox:'}
+          </label>
+          <input
+            id="eli-dropbox-client-id"
+            type="text"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck="false"
+            defaultValue={getCustomDropboxClientId() || (builtIn ? '' : getDropboxClientId())}
+            onChange={(e) => setDropboxClientId(e.target.value)}
+            placeholder={builtIn ? 'vacío = la de la app' : 'p. ej. abc123xyz'}
+          />
+          <button className="eli-signin__link" onClick={() => setShowGuide(!showGuide)}>
+            {showGuide ? 'Ocultar instrucciones' : 'Cómo crear la app de Dropbox (paso a paso)'}
+          </button>
+        </div>
+      )}
+
+      {showAdvanced && showGuide && (
+        <ol className="eli-signin__guide">
+          <li>
+            Entra en{' '}
+            <a
+              href="https://www.dropbox.com/developers/apps"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              dropbox.com/developers/apps
+            </a>{' '}
+            con tu cuenta de Dropbox y pulsa <strong>Create app</strong>.
+          </li>
+          <li>
+            Elige <strong>Scoped access</strong> y después <strong>App folder</strong> (la app solo
+            verá su propia carpeta, nunca el resto de tu Dropbox).
+          </li>
+          <li>
+            Ponle un nombre único (p. ej. «ORG Mode Eli») y pulsa <strong>Create app</strong>.
+          </li>
+          <li>
+            Pestaña <strong>Permissions</strong>: marca <code>files.content.read</code> y{' '}
+            <code>files.content.write</code> y pulsa <strong>Submit</strong>.
+          </li>
+          <li>
+            Pestaña <strong>Settings</strong>, sección <strong>OAuth 2</strong>:
+            <ul>
+              <li>
+                En <strong>Redirect URIs</strong> pega esta dirección y pulsa <strong>Add</strong>:
+                <div className="eli-signin__uri">
+                  <code>{redirect}</code>
+                  <button className="btn" onClick={copy}>
+                    {copied ? 'Copiada' : 'Copiar'}
+                  </button>
+                </div>
+              </li>
+              <li>
+                En <strong>Allow public clients (Implicit Grant &amp; PKCE)</strong> elige{' '}
+                <strong>Allow</strong>.
+              </li>
+            </ul>
+          </li>
+          <li>
+            Copia la <strong>App key</strong> (arriba en Settings), pégala en el campo de arriba y
+            pulsa el logo de Dropbox.
+          </li>
+          <li>
+            Tus ficheros van en <strong>Dropbox/Aplicaciones/&lt;nombre de la app&gt;/</strong>
+            (en inglés, <em>Apps</em>). Muévelos allí.
+          </li>
+        </ol>
+      )}
+    </div>
+  );
 }

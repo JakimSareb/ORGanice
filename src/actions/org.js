@@ -10,10 +10,24 @@ import {
 } from './base';
 import { exportOrg, createRawDescriptionText } from '../lib/export_org';
 import { uploadAssets } from '../lib/eli_media';
+import { getCurrentTimestampAsText } from '../lib/timestamps';
+import { toggledPriorityATitle } from '../lib/eli_priority';
+import {
+  archiveLocationFor,
+  resolveArchiveLocation,
+  buildArchivedSubtree,
+  newArchiveFileText,
+  insertIntoArchiveText,
+  targetLevelFor,
+} from '../lib/eli_archive';
 import { isEncryptedPath } from '../lib/eli_crypto';
 import { List } from 'immutable';
-import { decryptCryptEntryInText, encryptCryptEntries } from '../lib/eli_crypto';
-import { showMessage } from '../lib/eli_prompt';
+import {
+  decryptCryptEntryInText,
+  encryptCryptEntries,
+  inheritEncryptionMeta,
+} from '../lib/eli_crypto';
+import { showMessage, askConfirm } from '../lib/eli_prompt';
 import substituteTemplateVariables from '../lib/capture_template_substitution';
 import { headerWithPath, STATIC_FILE_PREFIX } from '../lib/org_utils';
 
@@ -918,28 +932,12 @@ export const attachAssetsToHeader = (headerId, files) => async (dispatch, getSta
   ) {
     return;
   }
-  dispatch(setLoadingMessage(`Subiendo ${files.length} archivo(s) a assets/${new Date().getFullYear()}…`));
+  dispatch(
+    setLoadingMessage(`Subiendo ${files.length} archivo(s) a assets/${new Date().getFullYear()}…`)
+  );
   try {
     const links = await uploadAssets(client, path, Array.from(files));
-    const current = getState().org.present;
-    const header = current
-      .getIn(['files', path, 'headers'])
-      .find((h) => h.get('id') === headerId);
-    if (header) {
-      const raw = header.get('rawDescription') || '';
-      const newRaw = (raw && !raw.endsWith('\n') ? raw + '\n' : raw) + links.join('\n') + '\n';
-      dispatch(
-        updateHeaderDescription(
-          headerId,
-          createRawDescriptionText(
-            header.set('rawDescription', newRaw),
-            false,
-            getState().base.get('shouldNotIndentOnExport')
-          )
-        )
-      );
-      dispatch(openHeader(headerId));
-    }
+    dispatch(appendLinesToHeader(headerId, links));
     dispatch(setDisappearingLoadingMessage(`Adjuntado: ${links.join(' ')}`, 3000));
   } catch (e) {
     dispatch(hideLoadingMessage());
@@ -955,3 +953,154 @@ export const toggleEliFavoriteFile = (path, value) => ({
   path,
   value,
 });
+
+// ORG Mode para Eli: añade líneas al final del cuerpo de un encabezado
+export const appendLinesToHeader = (headerId, lines) => (dispatch, getState) => {
+  const path = getState().org.present.get('path');
+  const headers = getState().org.present.getIn(['files', path, 'headers']);
+  const header = headers && headers.find((h) => h.get('id') === headerId);
+  if (!header) return;
+  const raw = header.get('rawDescription') || '';
+  const newRaw = (raw && !raw.endsWith('\n') ? raw + '\n' : raw) + lines.join('\n') + '\n';
+  dispatch(
+    updateHeaderDescription(
+      headerId,
+      createRawDescriptionText(
+        header.set('rawDescription', newRaw),
+        false,
+        getState().base.get('shouldNotIndentOnExport')
+      )
+    )
+  );
+  dispatch(openHeader(headerId));
+};
+
+// ORG Mode para Eli: fecha inactiva de hoy, p. ej. [2026-09-23 Wed]
+export const insertInactiveDate = (headerId) => (dispatch) => {
+  dispatch(appendLinesToHeader(headerId, [getCurrentTimestampAsText({ isActive: false })]));
+  dispatch(
+    setDisappearingLoadingMessage(`Añadido ${getCurrentTimestampAsText({ isActive: false })}`, 1500)
+  );
+};
+
+// Sube ficheros ya preparados (p. ej. imágenes redimensionadas) y devuelve los enlaces Org
+export const uploadFilesAndGetLinks = (files) => async (dispatch, getState) => {
+  const state = getState();
+  const client = state.syncBackend.get('client');
+  const path = state.org.present.get('path');
+  dispatch(
+    setLoadingMessage(`Subiendo ${files.length} archivo(s) a assets/${new Date().getFullYear()}…`)
+  );
+  try {
+    const links = await uploadAssets(client, path, files);
+    dispatch(setDisappearingLoadingMessage(`Adjuntado: ${links.join(' ')}`, 3000));
+    return links;
+  } catch (e) {
+    dispatch(hideLoadingMessage());
+    showMessage('No se pudo subir', (e && (e.message || e.error_summary)) || String(e));
+    return [];
+  }
+};
+
+// ORG Mode para Eli: marcar/desmarcar prioridad [#A]
+export const togglePriorityA = (headerId) => (dispatch, getState) => {
+  const path = getState().org.present.get('path');
+  const headers = getState().org.present.getIn(['files', path, 'headers']);
+  const header = headers && headers.find((h) => h.get('id') === headerId);
+  if (!header) return;
+  dispatch(updateHeaderTitle(headerId, toggledPriorityATitle(header)));
+};
+
+// ORG Mode para Eli: archivar el encabezado (y sus subencabezados) como org-archive-subtree
+const withTimeout = (promise, ms, message) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+
+export const archiveSubtree = (headerId) => async (dispatch, getState) => {
+  const state = getState();
+  const path = state.org.present.get('path');
+  const file = state.org.present.getIn(['files', path]);
+  const client = state.syncBackend.get('client');
+  if (!file || !path || path.startsWith(STATIC_FILE_PREFIX) || !client) return;
+  const headers = file.get('headers');
+  const index = headers.findIndex((h) => h.get('id') === headerId);
+  if (index < 0) return;
+  const root = headers.get(index);
+  const subCount = subheadersOfHeaderWithIdForArchive(headers, headerId);
+  const { path: archivePath, heading } = resolveArchiveLocation(
+    archiveLocationFor(file, headers, index),
+    path
+  );
+  if (archivePath === path) {
+    showMessage(
+      'No disponible',
+      'Archivar dentro del mismo fichero (#+ARCHIVE: ::encabezado) aún no está soportado.'
+    );
+    return;
+  }
+  const title = root.getIn(['titleLine', 'rawTitle']).trim();
+  const ok = await askConfirm({
+    title: 'Archivar',
+    message:
+      `¿Archivar «${title}»` +
+      (subCount ? ` y sus ${subCount} subencabezado(s)` : '') +
+      `?\n\nSe moverá a ${archivePath}${
+        heading ? ` (bajo «${heading}»)` : ''
+      } y desaparecerá de este fichero.`,
+    okLabel: 'Archivar',
+  });
+  if (!ok) return;
+  if (!getState().base.get('online')) {
+    showMessage('Sin conexión', 'Para archivar hace falta conexión con Dropbox.');
+    return;
+  }
+  dispatch(setLoadingMessage('Archivando…'));
+  try {
+    const subtreeText = buildArchivedSubtree({
+      file,
+      headers,
+      headerId,
+      sourcePath: path,
+      targetLevel: targetLevelFor(heading),
+      dontIndent: getState().base.get('shouldNotIndentOnExport'),
+    });
+    let existing = null;
+    const exists = client.pathExists
+      ? await withTimeout(client.pathExists(archivePath), 20000, 'Dropbox no responde')
+      : false;
+    if (exists) {
+      existing = await withTimeout(
+        client.getFileContents(archivePath),
+        30000,
+        'Dropbox no responde al leer el archivo'
+      );
+    }
+    const base = existing == null ? newArchiveFileText(path) : existing;
+    inheritEncryptionMeta(archivePath, path);
+    const newText = insertIntoArchiveText(base, subtreeText, heading);
+    await withTimeout(
+      client.createFile(archivePath, newText),
+      30000,
+      'Dropbox no responde al guardar'
+    );
+    if (getState().org.present.getIn(['files', archivePath])) {
+      dispatch(parseFile(archivePath, newText));
+    }
+    dispatch(removeHeader(headerId));
+    dispatch(sync({ path, shouldSuppressMessages: true }));
+    dispatch(setDisappearingLoadingMessage(`Archivado en ${archivePath}`, 3000));
+  } catch (e) {
+    dispatch(hideLoadingMessage());
+    showMessage('No se pudo archivar', (e && (e.message || e.error_summary)) || String(e));
+  }
+};
+
+const subheadersOfHeaderWithIdForArchive = (headers, headerId) => {
+  const index = headers.findIndex((h) => h.get('id') === headerId);
+  const level = headers.getIn([index, 'nestingLevel']);
+  let n = 0;
+  for (let i = index + 1; i < headers.size && headers.getIn([i, 'nestingLevel']) > level; i++) n++;
+  return n;
+};

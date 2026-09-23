@@ -175,10 +175,10 @@ maybe('eli_crypto ↔ GnuPG', () => {
     expect(gpg(['--passphrase', SYM, '--decrypt'], Buffer.from(store['/x.org.gpg'])).toString()).toBe(
       'nuevo\n'
     );
-    await client.createFile('/x.org.gpg.organice-bak', 'copia\n');
-    expect(store['/x.org.gpg.organice-bak']).toBeInstanceOf(Uint8Array);
+    await client.createFile('/backups/x.org.gpg.organice-bak', 'copia\n');
+    expect(store['/backups/x.org.gpg.organice-bak']).toBeInstanceOf(Uint8Array);
     expect(
-      gpg(['--passphrase', SYM, '--decrypt'], Buffer.from(store['/x.org.gpg.organice-bak'])).toString()
+      gpg(['--passphrase', SYM, '--decrypt'], Buffer.from(store['/backups/x.org.gpg.organice-bak'])).toString()
     ).toBe('copia\n');
     await client.updateFile('/y.org', cryptFile);
     expect(store['/y.org']).not.toContain('pin 1234');

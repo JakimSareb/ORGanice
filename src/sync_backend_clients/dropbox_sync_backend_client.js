@@ -1,4 +1,3 @@
-/* global process */
 
 import { getDropboxClientId } from '../lib/dropbox_client_id';
 import { appRootUrl } from '../lib/base_path';
@@ -256,8 +255,20 @@ export default () => {
       dbx.filesUpload({ path, contents: blob, mode: { '.tag': 'add' }, autorename: true })
     ).then((response) => response.result.path_display);
 
+  // ¿Existe el fichero? (organice no resuelve getFileContents cuando no existe)
+  const pathExists = (path) =>
+    withDbx((dbx) => dbx.filesGetMetadata({ path })).then(
+      () => true,
+      (error) => {
+        const text = JSON.stringify((error && (error.error || error)) || '');
+        if ((error && error.status === 409) || /not_found/.test(text)) return false;
+        throw error;
+      }
+    );
+
   return {
     type: 'Dropbox',
+    pathExists,
     getFileBlob,
     getThumbnailBlob,
     getTemporaryLink,

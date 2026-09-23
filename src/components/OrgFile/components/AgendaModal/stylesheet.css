@@ -41,3 +41,24 @@
   padding-left: 10px;
   padding-right: 10px;
 }
+
+/* ORG Mode para Eli: tareas prioritarias */
+.agenda__priority {
+  margin: 4px 0 12px;
+  padding: 6px 10px;
+  border-left: 3px solid #f2b24a;
+  background: rgba(242, 178, 74, 0.08);
+  border-radius: 0 6px 6px 0;
+}
+.agenda__priority-title {
+  font-weight: bold;
+  color: var(--base01);
+  margin-bottom: 4px;
+}
+.agenda__priority-title .fa-star {
+  color: #f2b24a;
+}
+.agenda__priority-item {
+  font-family: Courier;
+  margin: 2px 0;
+}

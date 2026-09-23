@@ -56,6 +56,9 @@
 .eli-file-fav {
   float: right;
   padding: 2px 6px;
-  color: #f2b24a;
+  color: var(--base1);
   cursor: pointer;
+}
+.eli-file-fav.is-on {
+  color: var(--magenta, #d33682);
 }

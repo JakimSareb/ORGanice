@@ -91,11 +91,15 @@ const FileBrowser = ({
               <Link to={`/file${file.get('path')}`} key={file.get('id')}>
                 <li className="file-browser__file-list__element">
                   <i className={iconClass} /> {file.get('name')}
-                  {isEncryptedFile && <i className="fas fa-lock" style={{ marginLeft: 6, opacity: 0.6 }} />}
+                  {isEncryptedFile && (
+                    <i className="fas fa-lock" style={{ marginLeft: 6, opacity: 0.6 }} />
+                  )}
                   {isOrgFile && (
                     <i
-                      className={`${favorites.includes(file.get('path')) ? 'fas' : 'far'} fa-star eli-file-fav`}
-                      title="Fichero principal (acceso directo con ★)"
+                      className={`${
+                        favorites.includes(file.get('path')) ? 'fas is-on' : 'far'
+                      } fa-copy eli-file-fav`}
+                      title="Fichero principal (acceso directo con el botón de hojas)"
                       data-testid="eli-file-fav"
                       onClick={(e) => {
                         e.preventDefault();

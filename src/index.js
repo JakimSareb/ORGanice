@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import './fontawesome.css';
 import App from './App';
+import { registerServiceWorker } from './lib/eli_offline';
 
 const rootElement = document.getElementById('root');
 
@@ -13,6 +14,9 @@ function render() {
 }
 
 render();
+
+// ORG Mode para Eli: uso sin conexión
+registerServiceWorker();
 
 // Remove Parcel error overlay for e2e testing
 // See: https://github.com/parcel-bundler/parcel/issues/9738

@@ -196,7 +196,7 @@ h6.eli-print__heading {
   max-width: 420px;
 }
 .eli-fav__star {
-  color: #f2b24a;
+  color: var(--magenta, #d33682);
 }
 .eli-fav__list {
   list-style: none;
@@ -246,5 +246,129 @@ h6.eli-print__heading {
 }
 .eli-fav__hint {
   font-size: 0.8em;
+  color: var(--base1);
+}
+
+/* ---------- Subida de archivos ---------- */
+.eli-upload {
+  max-width: 440px;
+}
+.eli-upload__files {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 25vh;
+  overflow: auto;
+  word-break: break-all;
+}
+.eli-upload__muted {
+  color: var(--base1);
+  font-size: 0.9em;
+}
+.eli-upload__sizes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eli-upload__size {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'radio name weight' 'radio detail weight';
+  align-items: center;
+  column-gap: 10px;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.eli-upload__size.is-selected {
+  border-color: var(--magenta, #d33682);
+  background: rgba(211, 54, 130, 0.06);
+}
+.eli-upload__size input {
+  grid-area: radio;
+}
+.eli-upload__size-name {
+  grid-area: name;
+  font-weight: bold;
+}
+.eli-upload__size-detail {
+  grid-area: detail;
+  font-size: 0.8em;
+  color: var(--base1);
+}
+.eli-upload__size-weight {
+  grid-area: weight;
+  font-variant-numeric: tabular-nums;
+}
+.eli-upload__dest {
+  font-size: 0.9em;
+}
+.eli-upload__dest select {
+  max-width: 100%;
+  font-size: 16px;
+  margin-top: 4px;
+}
+.eli-upload__warn {
+  color: var(--orange);
+  font-size: 0.9em;
+}
+
+/* ---------- Fases de la Luna ---------- */
+.eli-moon {
+  max-width: 460px;
+}
+.eli-moon__today {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.eli-moon__big {
+  font-size: 44px;
+  line-height: 1;
+}
+.eli-moon__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+}
+.eli-moon__nav .btn {
+  padding: 2px 12px;
+}
+.eli-moon__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 50vh;
+  overflow: auto;
+  font-family: Menlo, 'SF Mono', Consolas, Courier, monospace;
+  font-size: 13px;
+}
+.eli-moon__list li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  grid-template-areas: 'emoji date' 'emoji phase';
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--base2);
+}
+.eli-moon__list li.is-past {
+  opacity: 0.55;
+}
+.eli-moon__list li.is-today {
+  font-weight: bold;
+}
+.eli-moon__emoji {
+  grid-area: emoji;
+  font-size: 18px;
+}
+.eli-moon__date {
+  grid-area: date;
+}
+.eli-moon__phase {
+  grid-area: phase;
+  color: var(--base01);
+}
+.eli-moon__time {
   color: var(--base1);
 }

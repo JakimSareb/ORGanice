@@ -69,12 +69,12 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
     <>
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Fichero principal (acceso directo ★)?</div>
+          <div>Fichero principal (acceso directo)?</div>
           <Switch isEnabled={!!setting.get('eliFavorite')} onToggle={toggleEliFavorite} />
         </div>
 
         <div className="file-setting__help-text">
-          Aparece en la lista del botón ★ de la barra inferior para abrirlo con un toque.
+          Aparece en la lista del botón de hojas de la barra inferior para abrirlo con un toque.
         </div>
       </div>
       <div className="file-setting__field-container">

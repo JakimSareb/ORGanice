@@ -50,8 +50,8 @@ export const inheritedTagsById = (headers) => {
   return result;
 };
 
-// Filtra las cabeceras de un fichero dejando las que tienen alguno de los
-// contextos seleccionados (OR). Sin selección, no filtra.
+// Filtra las cabeceras de un fichero dejando las que tienen TODOS los contextos
+// seleccionados (Y). Sin selección, no filtra.
 export const filterHeadersByContexts = (headers, selectedContexts) => {
   if (!selectedContexts || selectedContexts.size === 0 || selectedContexts.length === 0) {
     return headers;
@@ -60,7 +60,7 @@ export const filterHeadersByContexts = (headers, selectedContexts) => {
   const tagsById = inheritedTagsById(headers);
   return headers.filter((h) => {
     const tags = tagsById.get(h.get('id'));
-    return tags && tags.some((t) => selected.has(t));
+    return !!tags && selected.every((t) => tags.has(t));
   });
 };
 
@@ -88,4 +88,39 @@ export const filterFilesByTodo = (files, selectedTodos) => {
         )
       : file
   );
+};
+
+// Contextos y estados que tienen sentido mostrar con los filtros actuales (filtros facetados):
+//  - contextos: los declarados en #+TAGS: (con @) presentes en encabezados que cumplen
+//    el estado y TODOS los contextos ya seleccionados;
+//  - estados: los de TODO_FILTER_KEYWORDS presentes en encabezados que cumplen los contextos.
+// Los seleccionados se incluyen siempre, para poder quitarlos.
+export const availableFacets = (files, selectedContexts, selectedTodos) => {
+  const declared = ISet(collectContexts(files));
+  const selC = ISet(selectedContexts || []);
+  const selT = ISet(selectedTodos || []);
+  let contexts = ISet();
+  let todos = ISet();
+  if (files) {
+    files.forEach((file) => {
+      const headers = file.get('headers');
+      if (!headers) return;
+      const tagsById = inheritedTagsById(headers);
+      headers.forEach((h) => {
+        const tags = (tagsById.get(h.get('id')) || ISet()).intersect(declared);
+        const kw = h.getIn(['titleLine', 'todoKeyword']);
+        const matchesContexts = selC.every((c) => tags.has(c));
+        const matchesTodo = selT.size === 0 || selT.has(kw);
+        if (matchesContexts && kw && TODO_FILTER_KEYWORDS.includes(kw)) todos = todos.add(kw);
+        if (matchesContexts && matchesTodo) contexts = contexts.union(tags);
+      });
+    });
+  }
+  return {
+    contexts: contexts
+      .union(selC)
+      .toArray()
+      .sort((a, b) => a.localeCompare(b)),
+    todos: TODO_FILTER_KEYWORDS.filter((k) => todos.has(k) || selT.has(k)),
+  };
 };

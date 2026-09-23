@@ -47,7 +47,7 @@ const ActionDrawer = ({ org, files, syncBackend, path }) => {
       {
         <Fragment>
           <ActionButton
-            iconName="star"
+            iconName="copy"
             isDisabled={false}
             onClick={openFavorites}
             dataTestId="eli-favorites"

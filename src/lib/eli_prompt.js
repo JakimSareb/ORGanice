@@ -69,3 +69,31 @@ export const showMessage = (title, message) =>
     });
     document.body.appendChild(overlay);
   });
+
+// Confirmación en la propia ventana. Devuelve Promise<boolean>.
+export const askConfirm = ({ title, message, okLabel = 'Aceptar', cancelLabel = 'Cancelar' }) =>
+  new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'eli-prompt__overlay';
+    overlay.innerHTML = `
+      <div class="eli-prompt__box" role="dialog">
+        <div class="eli-prompt__title"></div>
+        <div class="eli-prompt__message" style="white-space: pre-line"></div>
+        <div class="eli-prompt__buttons">
+          <button type="button" class="btn eli-prompt__cancel"></button>
+          <button type="button" class="btn eli-prompt__ok"></button>
+        </div>
+      </div>`;
+    overlay.querySelector('.eli-prompt__title').textContent = title;
+    overlay.querySelector('.eli-prompt__message').textContent = message;
+    overlay.querySelector('.eli-prompt__cancel').textContent = cancelLabel;
+    overlay.querySelector('.eli-prompt__ok').textContent = okLabel;
+    const done = (v) => {
+      overlay.remove();
+      resolve(v);
+    };
+    overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(false));
+    overlay.querySelector('.eli-prompt__ok').addEventListener('click', () => done(true));
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.querySelector('.eli-prompt__ok').focus(), 30);
+  });

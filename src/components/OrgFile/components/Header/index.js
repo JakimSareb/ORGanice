@@ -1,4 +1,5 @@
-import { openPrintPreview } from '../../../EliTools';
+import { getPriority } from '../../../../lib/eli_priority';
+import { openPrintPreview, openUploadDialog } from '../../../EliTools';
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -420,7 +421,7 @@ class Header extends PureComponent {
     input.addEventListener('change', () => {
       const files = Array.from(input.files || []);
       input.remove();
-      if (files.length) this.props.org.attachAssetsToHeader(headerId, files);
+      if (files.length) openUploadDialog({ files, headerId, source: 'attach' });
     });
     document.body.appendChild(input);
     input.click();
@@ -673,6 +674,10 @@ class Header extends PureComponent {
                   onAddNote={this.handleAddNoteClick}
                   onAttachFiles={this.handleAttachFiles}
                   onExportPdf={() => openPrintPreview(header.get('id'))}
+                  onInsertInactiveDate={() => this.props.org.insertInactiveDate(header.get('id'))}
+                  onTogglePriority={() => this.props.org.togglePriorityA(header.get('id'))}
+                  isPriorityA={getPriority(header) === 'A'}
+                  onArchive={() => this.props.org.archiveSubtree(header.get('id'))}
                   onDuplicateHeader={this.handleDuplicateHeader}
                 />
               </Collapse>

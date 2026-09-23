@@ -100,6 +100,10 @@ export default class HeaderActionDrawer extends PureComponent {
       onDuplicateHeader,
       onAttachFiles,
       onExportPdf,
+      onInsertInactiveDate,
+      onTogglePriority,
+      isPriorityA,
+      onArchive,
     } = this.props;
 
     // Create a fallback function for onDuplicateHeader if not provided
@@ -112,118 +116,136 @@ export default class HeaderActionDrawer extends PureComponent {
         }
       });
 
+    // ORG Mode para Eli: todos los iconos en una rejilla uniforme (5 columnas en el móvil,
+    // 8 en pantallas medianas y una sola fila en pantallas anchas), agrupados por función.
+    const icons = [
+      // Editar
+      {
+        className: 'fas fa-pencil-alt fa-lg',
+        onClick: onTitleClick,
+        title: 'Edit header title',
+        testId: 'drawer-action-edit-title',
+      },
+      onTogglePriority && {
+        className: `${isPriorityA ? 'fas' : 'far'} fa-star fa-lg eli-drawer-star${
+          isPriorityA ? ' is-on' : ''
+        }`,
+        onClick: onTogglePriority,
+        testId: 'eli-priority',
+        title: isPriorityA ? 'Quitar la prioridad [#A]' : 'Marcar con prioridad [#A]',
+      },
+      {
+        className: 'fas fa-edit fa-lg',
+        onClick: onDescriptionClick,
+        title: 'Edit header description',
+        testId: 'edit-header-title',
+      },
+      {
+        className: 'fas fa-tags fa-lg',
+        onClick: onTagsClick,
+        title: 'Modify tags',
+        testId: 'drawer-action-tags',
+      },
+      {
+        className: 'fas fa-list fa-lg',
+        onClick: onPropertiesClick,
+        title: 'Modify properties',
+        testId: 'drawer-action-properties',
+      },
+      { className: 'far fa-sticky-note fa-lg', onClick: onAddNote, title: 'Add a note' },
+      // Fechas y tiempo
+      {
+        className: 'fas fa-calendar-check fa-lg',
+        onClick: onDeadlineClick,
+        testId: 'drawer-action-deadline',
+        title: 'Set deadline datetime',
+      },
+      {
+        className: 'far fa-calendar-check fa-lg',
+        onClick: onScheduledClick,
+        testId: 'drawer-action-scheduled',
+        title: 'Set scheduled datetime',
+      },
+      onInsertInactiveDate && {
+        className: 'far fa-calendar-plus fa-lg',
+        onClick: onInsertInactiveDate,
+        testId: 'eli-inactive-date',
+        title: 'Añadir la fecha de hoy como fecha inactiva, p. ej. [2026-09-23 Wed]',
+      },
+      hasActiveClock
+        ? {
+            className: 'fas fa-hourglass-end fa-lg',
+            onClick: onClockInOutClick,
+            testId: 'org-clock-out',
+            title: 'Clock out (Stop the clock)',
+          }
+        : {
+            className: 'fas fa-hourglass-start fa-lg',
+            onClick: onClockInOutClick,
+            testId: 'org-clock-in',
+            title: 'Clock in (Start the clock)',
+          },
+      onAttachFiles && {
+        className: 'fas fa-paperclip fa-lg',
+        onClick: onAttachFiles,
+        testId: 'eli-attach',
+        title: 'Adjuntar imagen o archivo (se sube a assets/año en Dropbox)',
+      },
+      // Estructura y salida
+      isNarrowed
+        ? {
+            className: 'fas fa-expand fa-lg',
+            onClick: onWiden,
+            title: 'Widen (Cancelling the narrowing.)',
+          }
+        : {
+            className: 'fas fa-compress fa-lg',
+            onClick: onNarrow,
+            testId: 'header-action-narrow',
+            title:
+              'Narrow to subtree (focusing in on some portion of the buffer, making the rest temporarily inaccessible.)',
+          },
+      {
+        className: 'fas fa-plus fa-lg',
+        onClick: onAddNewHeader,
+        onLongPress: handleDuplicateHeader,
+        testId: 'header-action-plus',
+        title: 'Create new header below (long-press to duplicate current header)',
+      },
+      {
+        className: 'fas fa-file-export fa-lg',
+        onClick: onRefileHeader,
+        testId: 'org-refile',
+        title: 'Refile this header to another header',
+      },
+      onArchive && {
+        className: 'fas fa-archive fa-lg',
+        onClick: onArchive,
+        testId: 'eli-archive',
+        title: 'Archivar (como org-archive-subtree; pide confirmación)',
+      },
+      {
+        className: 'fas fa-share fa-lg',
+        onClick: onShareHeader,
+        testId: 'share',
+        title: 'Share this header via email',
+      },
+      onExportPdf && {
+        className: 'fas fa-file-pdf fa-lg',
+        onClick: onExportPdf,
+        testId: 'eli-print-header',
+        title: 'Exportar este encabezado y sus subencabezados a PDF',
+      },
+    ].filter(Boolean);
+
     return (
       <div className="header-action-drawer-container" data-testid="header-action-drawer">
-        <div className="header-action-drawer__row">
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-pencil-alt fa-lg',
-            onClick: onTitleClick,
-            title: 'Edit header title',
-            testId: 'drawer-action-edit-title',
-          })}
-
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-edit fa-lg',
-            onClick: onDescriptionClick,
-            title: 'Edit header description',
-            testId: 'edit-header-title',
-          })}
-
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-tags fa-lg',
-            onClick: onTagsClick,
-            title: 'Modify tags',
-            testId: 'drawer-action-tags',
-          })}
-
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-list fa-lg',
-            onClick: onPropertiesClick,
-            title: 'Modify properties',
-            testId: 'drawer-action-properties',
-          })}
-
-          {isNarrowed
-            ? this.iconWithFFClickCatcher({
-                className: 'fas fa-expand fa-lg',
-                onClick: onWiden,
-                title: 'Widen (Cancelling the narrowing.)',
-              })
-            : this.iconWithFFClickCatcher({
-                className: 'fas fa-compress fa-lg',
-                onClick: onNarrow,
-                testId: 'header-action-narrow',
-                title:
-                  'Narrow to subtree (focusing in on some portion of the buffer, making the rest temporarily inaccessible.)',
-              })}
-
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-plus fa-lg',
-            onClick: onAddNewHeader,
-            onLongPress: handleDuplicateHeader,
-            testId: 'header-action-plus',
-            title: 'Create new header below (long-press to duplicate current header)',
-          })}
-        </div>
-
-        <div className="header-action-drawer__row">
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-share fa-lg',
-            onClick: onShareHeader,
-            testId: 'share',
-            title: 'Share this header via email',
-          })}
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-calendar-check fa-lg',
-            onClick: onDeadlineClick,
-            testId: 'drawer-action-deadline',
-            title: 'Set deadline datetime',
-          })}
-          {this.iconWithFFClickCatcher({
-            className: 'far fa-calendar-check fa-lg',
-            onClick: onScheduledClick,
-            testId: 'drawer-action-scheduled',
-            title: 'Set scheduled datetime',
-          })}
-          {hasActiveClock
-            ? this.iconWithFFClickCatcher({
-                className: 'fas fa-hourglass-end fa-lg',
-                onClick: onClockInOutClick,
-                testId: 'org-clock-out',
-                title: 'Clock out (Stop the clock)',
-              })
-            : this.iconWithFFClickCatcher({
-                className: 'fas fa-hourglass-start fa-lg',
-                onClick: onClockInOutClick,
-                testId: 'org-clock-in',
-                title: 'Clock in (Start the clock)',
-              })}
-
-          {this.iconWithFFClickCatcher({
-            className: 'fas fa-file-export fa-lg',
-            onClick: onRefileHeader,
-            testId: 'org-refile',
-            title: 'Refile this header to another header',
-          })}
-          {this.iconWithFFClickCatcher({
-            className: 'far fa-sticky-note fa-lg',
-            onClick: onAddNote,
-            title: 'Add a note',
-          })}
-          {onAttachFiles &&
-            this.iconWithFFClickCatcher({
-              className: 'fas fa-paperclip fa-lg',
-              onClick: onAttachFiles,
-              testId: 'eli-attach',
-              title: 'Adjuntar imagen o archivo (se sube a assets/año en Dropbox)',
-            })}
-          {onExportPdf &&
-            this.iconWithFFClickCatcher({
-              className: 'fas fa-file-pdf fa-lg',
-              onClick: onExportPdf,
-              testId: 'eli-print-header',
-              title: 'Exportar este encabezado y sus subencabezados a PDF',
-            })}
+        <div className="header-action-drawer__grid" style={{ '--eli-icon-count': icons.length }}>
+          {icons.map((icon) => (
+            <React.Fragment key={icon.className + (icon.testId || '')}>
+              {this.iconWithFFClickCatcher(icon)}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     );

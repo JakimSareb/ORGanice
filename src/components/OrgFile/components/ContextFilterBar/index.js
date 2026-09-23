@@ -6,12 +6,13 @@ import { List } from 'immutable';
 import './stylesheet.css';
 
 import * as orgActions from '../../../../actions/org';
-import { collectContexts, TODO_FILTER_KEYWORDS } from '../../../../lib/gtd_contexts';
+import { availableFacets } from '../../../../lib/gtd_contexts';
 
 // ORG Mode para Eli: barras de filtro.
 //  - Contextos GTD: de las líneas "#+TAGS:" (solo etiquetas que empiezan por @).
 //  - Estado: TODO, NEXT, WAITING, MAYBE, PROJECT.
-// Dentro de una fila, varios seleccionados = cualquiera de ellos; entre filas se combinan (Y).
+// Solo se muestran los contextos y estados presentes con los filtros actuales. Varios contextos
+// seleccionados = deben cumplirse todos (Y); varios estados = cualquiera de ellos (O).
 const ChipRow = ({ label, items, selected, onToggle, onClear }) => (
   <div className="context-filter-bar" role="group" aria-label={label}>
     <span className="context-filter-bar__label">{label}</span>
@@ -33,10 +34,8 @@ const ChipRow = ({ label, items, selected, onToggle, onClear }) => (
   </div>
 );
 
-function ContextFilterBar({ contexts, selectedContexts, selectedTodos, org }) {
-  const allContexts = contexts.concat(
-    selectedContexts.filter((c) => !contexts.includes(c)).toArray()
-  );
+function ContextFilterBar({ contexts, todos, selectedContexts, selectedTodos, org }) {
+  const allContexts = contexts;
   return (
     <div className="context-filter-bars">
       {allContexts.length > 0 && (
@@ -48,22 +47,29 @@ function ContextFilterBar({ contexts, selectedContexts, selectedTodos, org }) {
           onClear={org.clearContextFilter}
         />
       )}
-      <ChipRow
-        label="Estado"
-        items={TODO_FILTER_KEYWORDS}
-        selected={selectedTodos}
-        onToggle={org.toggleTodoFilter}
-        onClear={org.clearTodoFilter}
-      />
+      {todos.length > 0 && (
+        <ChipRow
+          label="Estado"
+          items={todos}
+          selected={selectedTodos}
+          onToggle={org.toggleTodoFilter}
+          onClear={org.clearTodoFilter}
+        />
+      )}
     </div>
   );
 }
 
-const mapStateToProps = (state) => ({
-  contexts: collectContexts(state.org.present.get('files')),
-  selectedContexts: state.org.present.get('contextFilter') || List(),
-  selectedTodos: state.org.present.get('todoFilter') || List(),
-});
+const mapStateToProps = (state) => {
+  const selectedContexts = state.org.present.get('contextFilter') || List();
+  const selectedTodos = state.org.present.get('todoFilter') || List();
+  const { contexts, todos } = availableFacets(
+    state.org.present.get('files'),
+    selectedContexts,
+    selectedTodos
+  );
+  return { contexts, todos, selectedContexts, selectedTodos };
+};
 
 const mapDispatchToProps = (dispatch) => ({
   org: bindActionCreators(orgActions, dispatch),

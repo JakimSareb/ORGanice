@@ -3,6 +3,8 @@ import {
   resolveDropboxPath,
   mediaKind,
   relativeLinkFor,
+  backupPathFor,
+  originalPathForBackup,
   assetsDirFor,
   sanitizeFileName,
 } from './eli_media';
@@ -45,4 +47,11 @@ test('el parser de organice produce enlaces con uri y título', () => {
   expect(links[0].uri).toBe('file:Assets/2026/a.jpg');
   expect(links[1].uri).toBe('./Assets/2026/b.png');
   expect(links[1].title).toBe('Plano');
+});
+
+test('copias de seguridad en la subcarpeta backups', () => {
+  expect(backupPathFor('/Notas/gtd.org')).toBe('/Notas/backups/gtd.org.organice-bak');
+  expect(backupPathFor('/gtd.org.gpg')).toBe('/backups/gtd.org.gpg.organice-bak');
+  expect(originalPathForBackup('/Notas/backups/gtd.org.gpg.organice-bak')).toBe('/Notas/gtd.org.gpg');
+  expect(originalPathForBackup('/Notas/gtd.org.gpg.organice-bak')).toBe('/Notas/gtd.org.gpg');
 });

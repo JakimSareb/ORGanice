@@ -16,11 +16,14 @@ Cambios respecto al original:
   **Encabezados** (título de cualquier encabezado) o **Texto** (título + contenido).
 - **Agenda con vencidas**: el día de hoy muestra una sección *Vencidas* con las tareas abiertas
   cuyo SCHEDULED o DEADLINE ya pasó y los días de retraso.
-- **Ficheros principales** (botón ★), **filtro por estado** (TODO, NEXT, WAITING, MAYBE, PROJECT)
-  y **previsualización de YouTube**.
+- **Ficheros principales** (botón de hojas), **filtro por estado** (TODO, NEXT, WAITING, MAYBE,
+  PROJECT), **previsualización de YouTube**, **prioridad [#A]** con estrella, **archivar** como
+  Emacs, **pegar archivos** con elección de tamaño, **fecha inactiva**, **fases de la Luna**,
+  **uso sin conexión** y **copias en `backups/`**. Detalles en el README del repositorio.
 - **Filtro por contextos GTD**: botones generados a partir de las líneas `#+TAGS:` de tus ficheros
   (solo las etiquetas que empiezan por `@`, p. ej. `#+TAGS: @casa(c) @oficina(o) @llamadas`).
-  Aparecen en Buscar, Lista de tareas y Agenda. Varios seleccionados = cualquiera de ellos.
+  Aparecen en Buscar, Lista de tareas y Agenda. Solo se muestran los presentes; varios contextos
+  seleccionados deben cumplirse a la vez.
   Respeta la herencia de etiquetas de Org.
 - **Cifrado GPG** (compatible con GnuPG y Emacs):
   - Ficheros `*.org.gpg` (binario, como EPA) y `*.org.asc` (ASCII): se descifran al abrir y se
