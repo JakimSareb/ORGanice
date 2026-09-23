@@ -1,3 +1,4 @@
+import { openPrintPreview } from '../../../EliTools';
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -671,6 +672,7 @@ class Header extends PureComponent {
                   onRefileHeader={this.handleRefileHeaderRequest}
                   onAddNote={this.handleAddNoteClick}
                   onAttachFiles={this.handleAttachFiles}
+                  onExportPdf={() => openPrintPreview(header.get('id'))}
                   onDuplicateHeader={this.handleDuplicateHeader}
                 />
               </Collapse>

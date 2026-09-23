@@ -14,9 +14,12 @@ import { STATIC_FILE_PREFIX } from '../../../../lib/org_utils';
 
 // ORG Mode para Eli: muestra un enlace Org a un fichero de Dropbox (imagen, vídeo, audio u
 // otro). Las imágenes se ven en línea (miniatura); al pulsar se abre el original.
+const selectClient = (state) => state.syncBackend.get('client');
+const selectPath = (state) => state.org.present.get('path');
+
 export default function EliMedia({ target, title }) {
-  const client = useSelector((state) => state.syncBackend.get('client'));
-  const orgPath = useSelector((state) => state.org.present.get('path'));
+  const client = useSelector(selectClient);
+  const orgPath = useSelector(selectPath);
   const path =
     orgPath && !orgPath.startsWith(STATIC_FILE_PREFIX) ? resolveDropboxPath(orgPath, target) : null;
   const kind = mediaKind(target);

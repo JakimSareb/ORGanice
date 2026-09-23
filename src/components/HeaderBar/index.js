@@ -1,3 +1,6 @@
+import { openRawEditor, openPrintPreview } from '../EliTools';
+import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
+const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -293,6 +296,22 @@ class HeaderBar extends PureComponent {
             <Fragment>
               <i className={undoIconClassName} onClick={this.handleUndoClick} title="Undo" />
               <i className={redoIconClassName} onClick={this.handleRedoClick} title="Redo" />
+              {!isStaticFile(path) && (
+                <Fragment>
+                  <i
+                    className="fas fa-align-left header-bar__actions__item"
+                    onClick={openRawEditor}
+                    title="Editar como texto plano"
+                    data-testid="eli-raw-edit"
+                  />
+                  <i
+                    className="fas fa-file-pdf header-bar__actions__item"
+                    onClick={() => openPrintPreview(null)}
+                    title="Exportar el fichero a PDF"
+                    data-testid="eli-print-file"
+                  />
+                </Fragment>
+              )}
               <i
                 className="fas fa-question-circle header-bar__actions__item"
                 onClick={this.handleHelpClick}

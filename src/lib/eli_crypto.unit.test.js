@@ -1,6 +1,7 @@
 /**
  * @jest-environment node
  */
+/* global Buffer */
 // Pruebas de interoperabilidad con GnuPG real (se omiten si no hay `gpg`).
 import { execFileSync } from 'child_process';
 import fs from 'fs';

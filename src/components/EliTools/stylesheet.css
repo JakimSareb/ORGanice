@@ -1,0 +1,192 @@
+@import '../../colors.css';
+
+/* ---------- Editor de texto plano ---------- */
+.eli-raw,
+.eli-print {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: var(--base3);
+  color: var(--base00);
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.eli-raw__bar,
+.eli-print__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--base2);
+  background: var(--base2);
+}
+.eli-raw__title {
+  font-weight: bold;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.eli-raw__path {
+  font-weight: normal;
+  font-size: 0.75em;
+  color: var(--base1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eli-raw__btn {
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+.eli-raw__textarea {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  outline: none;
+  resize: none;
+  padding: 10px 12px;
+  font-family: Menlo, 'SF Mono', Consolas, Courier, monospace;
+  font-size: 15px; /* 16px en iPhone evita el zoom automático */
+  line-height: 1.45;
+  background: var(--base3);
+  color: var(--base00);
+  tab-size: 2;
+}
+@media (max-width: 600px) {
+  .eli-raw__textarea {
+    font-size: 16px;
+  }
+}
+
+/* ---------- Vista previa / PDF ---------- */
+.eli-print__hint {
+  font-size: 0.85em;
+  color: var(--base1);
+  padding: 6px 12px;
+}
+.eli-print__doc {
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 18px 40px;
+  background: #fff;
+  color: #222;
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.eli-print__doctitle {
+  font-size: 1.8em;
+  margin: 0.2em 0 0.6em;
+}
+.eli-print__heading {
+  margin: 1em 0 0.25em;
+  line-height: 1.3;
+}
+.eli-print__heading.h1,
+h1.eli-print__heading {
+  font-size: 1.45em;
+}
+h2.eli-print__heading {
+  font-size: 1.25em;
+}
+h3.eli-print__heading {
+  font-size: 1.1em;
+}
+h4.eli-print__heading,
+h5.eli-print__heading,
+h6.eli-print__heading {
+  font-size: 1em;
+}
+.eli-print__todo {
+  font-weight: bold;
+  color: #cb4b16;
+}
+.eli-print__todo--done {
+  color: #859900;
+}
+.eli-print__tags {
+  float: right;
+  font-weight: normal;
+  font-size: 0.75em;
+  color: #888;
+  font-family: Menlo, Courier, monospace;
+}
+.eli-print__planning {
+  font-family: Menlo, Courier, monospace;
+  font-size: 0.8em;
+  color: #666;
+}
+.eli-print__body {
+  white-space: pre-wrap;
+}
+.eli-print__encrypted {
+  font-style: italic;
+  color: #888;
+}
+.eli-print__doc img {
+  max-width: 100%;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.eli-print__doc table {
+  border-collapse: collapse;
+  white-space: normal;
+}
+.eli-print__doc td,
+.eli-print__doc th {
+  border: 1px solid #ccc;
+  padding: 2px 6px;
+}
+.eli-print__doc a {
+  color: #268bd2;
+}
+.eli-print__doc .eli-media__player {
+  display: none; /* vídeo/audio no se imprimen; queda el nombre enlazado */
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  @page {
+    margin: 16mm 14mm;
+  }
+  html.eli-printing body > *:not(#eli-print-portal) {
+    display: none !important;
+  }
+  html.eli-printing,
+  html.eli-printing body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .eli-print {
+    position: static !important;
+    display: block !important;
+    background: #fff;
+  }
+  .eli-no-print {
+    display: none !important;
+  }
+  .eli-print__doc {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .eli-print__heading {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
+
+/* Casillas de listas visibles sobre fondo blanco */
+.eli-print__doc .checkbox {
+  border: 1px solid #888;
+  border-radius: 3px;
+  background-color: #fff !important;
+}
+.eli-print__doc .checkbox .fa-square {
+  color: #fff;
+}

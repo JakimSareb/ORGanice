@@ -18,6 +18,7 @@ import LoadingIndicator from '../LoadingIndicator';
 import OrgFile from '../OrgFile';
 import Settings from '../Settings';
 import EncryptionSettings from '../EncryptionSettings';
+import EliTools from '../EliTools';
 import KeyboardShortcutsEditor from '../KeyboardShortcutsEditor';
 import CaptureTemplatesEditor from '../CaptureTemplatesEditor';
 import FileSettingsEditor from '../FileSettingsEditor';
@@ -166,6 +167,7 @@ class Entry extends PureComponent {
       <div className={className}>
         <HeaderBar />
         <LoadingIndicator message={loadingMessage} />
+        <EliTools />
 
         {isAuthenticated &&
           ([

@@ -99,6 +99,7 @@ export default class HeaderActionDrawer extends PureComponent {
       onAddNote,
       onDuplicateHeader,
       onAttachFiles,
+      onExportPdf,
     } = this.props;
 
     // Create a fallback function for onDuplicateHeader if not provided
@@ -215,6 +216,13 @@ export default class HeaderActionDrawer extends PureComponent {
               onClick: onAttachFiles,
               testId: 'eli-attach',
               title: 'Adjuntar imagen o archivo (se sube a Assets/año en Dropbox)',
+            })}
+          {onExportPdf &&
+            this.iconWithFFClickCatcher({
+              className: 'fas fa-file-pdf fa-lg',
+              onClick: onExportPdf,
+              testId: 'eli-print-header',
+              title: 'Exportar este encabezado y sus subencabezados a PDF',
             })}
         </div>
       </div>
