@@ -1,5 +1,6 @@
 import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
+import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -267,10 +268,13 @@ class OrgFile extends PureComponent {
   }
 
   handleRemoveHeaderHotKey() {
-    const { selectedHeaderId } = this.props;
-
-    this.props.org.selectNextSiblingHeader(selectedHeaderId);
-    this.props.org.removeHeader(selectedHeaderId);
+    const { selectedHeaderId, headers } = this.props;
+    // ORG Mode para Eli: pedir confirmación antes de borrar
+    confirmRemoveHeader(headers, selectedHeaderId).then((ok) => {
+      if (!ok) return;
+      this.props.org.selectNextSiblingHeader(selectedHeaderId);
+      this.props.org.removeHeader(selectedHeaderId);
+    });
   }
 
   handleMoveHeaderUpHotKey() {

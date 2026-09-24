@@ -86,9 +86,6 @@ export default class HeaderActionDrawer extends PureComponent {
       onDescriptionClick,
       onTagsClick,
       onPropertiesClick,
-      isNarrowed,
-      onNarrow,
-      onWiden,
       onAddNewHeader,
       onDeadlineClick,
       onClockInOutClick,
@@ -192,19 +189,6 @@ export default class HeaderActionDrawer extends PureComponent {
         title: 'Adjuntar imagen o archivo (se sube a assets/año en Dropbox)',
       },
       // Estructura y salida
-      isNarrowed
-        ? {
-            className: 'fas fa-expand fa-lg',
-            onClick: onWiden,
-            title: 'Widen (Cancelling the narrowing.)',
-          }
-        : {
-            className: 'fas fa-compress fa-lg',
-            onClick: onNarrow,
-            testId: 'header-action-narrow',
-            title:
-              'Narrow to subtree (focusing in on some portion of the buffer, making the rest temporarily inaccessible.)',
-          },
       {
         className: 'fas fa-plus fa-lg',
         onClick: onAddNewHeader,

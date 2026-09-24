@@ -71,19 +71,14 @@
 /* ORG Mode para Eli: rejilla equilibrada de iconos */
 .header-action-drawer__grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   justify-items: center;
   align-items: center;
   row-gap: 14px;
   padding: 10px 0 6px;
 }
 .header-action-drawer__grid .header-action-drawer__ff-click-catcher-container {
-  padding: 4px 8px; /* zona táctil algo mayor */
-}
-@media (min-width: 560px) {
-  .header-action-drawer__grid {
-    grid-template-columns: repeat(9, 1fr);
-  }
+  padding: 4px 6px; /* zona táctil algo mayor */
 }
 @media (min-width: 1000px) {
   .header-action-drawer__grid {

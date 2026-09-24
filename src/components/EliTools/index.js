@@ -566,7 +566,7 @@ function FavoritesPopup({ currentPath, onClose }) {
                   <span className="eli-fav__name">
                     {/\.(gpg|asc)$/i.test(p) && <i className="fas fa-lock" />} {fileName(p)}
                   </span>
-                  <span className="eli-fav__dir">{fileDir(p)}</span>
+                  {fileDir(p) !== '/' && <span className="eli-fav__dir">{fileDir(p)}</span>}
                 </button>
                 <button
                   className="eli-fav__remove"

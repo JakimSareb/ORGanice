@@ -245,6 +245,36 @@ class HeaderBar extends PureComponent {
     );
   }
 
+  // ORG Mode para Eli: Narrow/Widen siempre en el mismo sitio (barra superior)
+  renderNarrowButton() {
+    const { narrowedHeaderId, selectedHeaderId } = this.props;
+    if (narrowedHeaderId) {
+      return (
+        <i
+          className="fas fa-expand header-bar__actions__item eli-narrow-btn is-active"
+          onClick={() => this.props.org.widenHeader()}
+          title="Widen: volver a ver el fichero entero"
+          data-testid="eli-widen"
+        />
+      );
+    }
+    const enabled = !!selectedHeaderId;
+    return (
+      <i
+        className={classNames('fas fa-compress header-bar__actions__item eli-narrow-btn', {
+          'header-bar__actions__item--disabled': !enabled,
+        })}
+        onClick={() => enabled && this.props.org.narrowHeader(selectedHeaderId)}
+        title={
+          enabled
+            ? 'Narrow: mostrar solo el encabezado seleccionado'
+            : 'Narrow: selecciona primero un encabezado'
+        }
+        data-testid="eli-narrow"
+      />
+    );
+  }
+
   handleChangelogClick() {
     this.props.base.restoreStaticFile('changelog');
     this.props.base.pushModalPage('changelog');
@@ -329,6 +359,7 @@ class HeaderBar extends PureComponent {
               <i className={redoIconClassName} onClick={this.handleRedoClick} title="Redo" />
               {!isStaticFile(path) && (
                 <Fragment>
+                  {this.renderNarrowButton()}
                   <i
                     className="fas fa-align-left header-bar__actions__item"
                     onClick={openRawEditor}
@@ -424,6 +455,14 @@ const mapStateToProps = (state) => {
     activeModalPage: state.base.get('modalPageStack', List()).last(),
     shouldShowTitleInOrgFile: state.base.get('shouldShowTitleInOrgFile'),
     path: state.org.present.get('path'),
+    narrowedHeaderId: state.org.present.getIn(
+      ['files', state.org.present.get('path'), 'narrowedHeaderId'],
+      null
+    ),
+    selectedHeaderId: state.org.present.getIn(
+      ['files', state.org.present.get('path'), 'selectedHeaderId'],
+      null
+    ),
     isUndoEnabled: state.org.past.length > 0,
     isRedoEnabled: state.org.future.length > 0,
     syncBackendType: state.syncBackend.get('client') && state.syncBackend.get('client').type,

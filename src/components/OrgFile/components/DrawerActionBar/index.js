@@ -16,6 +16,7 @@ import DrawerActionButtons from './components/DrawerActionButtons';
 import { getSelectedHeader } from '../../../../lib/org_utils';
 import { getCurrentTimestampAsText } from '../../../../lib/timestamps';
 import { insertIntoField, openUploadDialog } from '../../../EliTools';
+import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 
 // ORG Mode para Eli: campo de texto que se está editando en la ventana de edición del
 // encabezado (título o descripción), si lo hay.
@@ -145,9 +146,14 @@ class DrawerActionBar extends PureComponent {
       this.props.base.closePopup();
       return;
     }
-    this.props.base.closePopup();
-    this.props.org.selectHeader(null);
-    this.props.org.removeHeader(this.props.header.get('id'));
+    // ORG Mode para Eli: pedir confirmación antes de borrar
+    const headerId = this.props.header.get('id');
+    confirmRemoveHeader(this.props.headers, headerId).then((ok) => {
+      if (!ok) return;
+      this.props.base.closePopup();
+      this.props.org.selectHeader(null);
+      this.props.org.removeHeader(headerId);
+    });
   }
 
   render() {
@@ -181,6 +187,7 @@ const mapStateToProps = (state) => {
   const activePopup = state.base.get('activePopup');
   return {
     selectedHeaderId: file.get('selectedHeaderId'),
+    headers: file.get('headers'),
     header: getSelectedHeader(state),
     activePopupType: !!activePopup ? activePopup.get('type') : null,
   };

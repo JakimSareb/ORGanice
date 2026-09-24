@@ -207,32 +207,46 @@ h6.eli-print__heading {
 }
 .eli-fav__list li {
   display: flex;
-  align-items: stretch;
-  gap: 6px;
-  margin-bottom: 6px;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
 }
+/* ORG Mode para Eli: un fichero por línea (carpeta a la derecha solo si no es la raíz) */
 .eli-fav__item {
   flex: 1;
+  min-width: 0;
   text-align: left;
   border: 1px solid var(--base2);
   background: var(--base3);
+  color: var(--base01);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 7px 10px;
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: 8px;
   cursor: pointer;
-  color: var(--base00);
-  font-size: 16px;
+  font: inherit;
+}
+.eli-fav__item:hover {
+  background: var(--base2);
 }
 .eli-fav__item.is-current {
   border-color: var(--magenta, #d33682);
 }
 .eli-fav__name {
   font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .eli-fav__dir {
+  margin-left: auto;
   font-size: 0.75em;
   color: var(--base1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl; /* si es larga, se ve el final de la ruta */
 }
 .eli-fav__remove {
   border: 0;

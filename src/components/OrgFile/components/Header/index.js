@@ -1,5 +1,6 @@
 import { getPriority } from '../../../../lib/eli_priority';
 import { openPrintPreview, openUploadDialog } from '../../../EliTools';
+import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -154,9 +155,12 @@ class Header extends PureComponent {
       }
 
       if (dragStartX >= 2 * currentDragX) {
-        this.setState({
-          isPlayingRemoveAnimation: true,
-          heightBeforeRemove: this.containerDiv.offsetHeight,
+        // ORG Mode para Eli: pedir confirmación antes de borrar
+        const height = this.containerDiv.offsetHeight;
+        confirmRemoveHeader(this.props.headers, this.props.header.get('id')).then((ok) => {
+          if (ok && this.containerDiv) {
+            this.setState({ isPlayingRemoveAnimation: true, heightBeforeRemove: height });
+          }
         });
       }
     }
