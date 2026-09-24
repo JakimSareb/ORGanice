@@ -16,6 +16,7 @@ import * as syncActions from '../../../../actions/sync_backend';
 import ActionButton from '../../../OrgFile/components/ActionDrawer/components/ActionButton';
 import Drawer from '../../../UI/Drawer';
 import AgendaModal from '../../../OrgFile/components/AgendaModal';
+import EliErrorBoundary from '../../../EliErrorBoundary';
 
 const ensureCompleteFilename = (fileName) => {
   return /\.org(\.gpg|\.asc)?$/.test(fileName) ? fileName : `${fileName}.org`;
@@ -27,7 +28,8 @@ const ActionDrawer = ({ org, files, syncBackend, path, agendaFilesToLoad }) => {
   const history = useHistory();
   const openAgenda = () => {
     // Descargar los ficheros de la agenda que aún no estén cargados
-    agendaFilesToLoad.forEach((p) => syncBackend.downloadFile(p));
+    // (en silencio: si alguno no existe, no se muestra ningún error)
+    agendaFilesToLoad.forEach((p) => org.loadFileQuietly(p));
     setShowAgenda(true);
   };
   const openFileFromAgenda = (filePath) => {
@@ -99,7 +101,9 @@ const ActionDrawer = ({ org, files, syncBackend, path, agendaFilesToLoad }) => {
       </div>
       {showAgenda && (
         <Drawer onClose={() => setShowAgenda(false)} maxSize>
-          <AgendaModal onClose={() => setShowAgenda(false)} onOpenFile={openFileFromAgenda} />
+          <EliErrorBoundary label="la agenda" onClose={() => setShowAgenda(false)}>
+            <AgendaModal onClose={() => setShowAgenda(false)} onOpenFile={openFileFromAgenda} />
+          </EliErrorBoundary>
         </Drawer>
       )}
     </>

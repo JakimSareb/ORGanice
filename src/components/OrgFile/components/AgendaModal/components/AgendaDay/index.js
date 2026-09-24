@@ -56,7 +56,7 @@ export default class AgendaDay extends PureComponent {
     const result = [];
     files.forEach((file, path) => {
       const todoKeywordSets = file.get('todoKeywordSets');
-      file.get('headers').forEach((header) => {
+      (file.get('headers') || List()).forEach((header) => {
         const todoKeyword = header.getIn(['titleLine', 'todoKeyword']);
         if (!todoKeyword || isTodoKeywordCompleted(todoKeywordSets, todoKeyword)) return;
         if (isHabit(header)) return;
@@ -90,7 +90,8 @@ export default class AgendaDay extends PureComponent {
     return (
       <div className="agenda-day__overdue">
         <div className="agenda-day__overdue-title" onClick={this.toggleOverdue}>
-          <i className={`fas fa-caret-${expanded ? 'down' : 'right'}`} /> Vencidas ({overdue.length})
+          <i className={`fas fa-caret-${expanded ? 'down' : 'right'}`} /> Vencidas ({overdue.length}
+          )
         </div>
         {expanded &&
           overdue.map(({ planningItem, header, daysOverdue }) => (
@@ -98,7 +99,10 @@ export default class AgendaDay extends PureComponent {
               key={`${header.get('path')}-${planningItem.get('id')}`}
               className="agenda-day__overdue-item"
             >
-              <div className="agenda-day__overdue-days" title={getPlanningItemTypeText(planningItem)}>
+              <div
+                className="agenda-day__overdue-days"
+                title={getPlanningItemTypeText(planningItem)}
+              >
                 {daysOverdue} {daysOverdue === 1 ? 'día' : 'días'}
                 <span className="agenda-day__overdue-type">
                   {planningItem.get('type') === 'DEADLINE' ? 'límite' : 'programada'}{' '}
@@ -272,7 +276,7 @@ export default class AgendaDay extends PureComponent {
       ...files
         .mapEntries(([path, file]) => [
           path,
-          file.get('headers').map((header) => header.set('path', path)),
+          (file.get('headers') || List()).map((header) => header.set('path', path)),
         ])
         .valueSeq()
     );

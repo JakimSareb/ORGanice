@@ -1579,7 +1579,9 @@ export const updateLogEntryTime = (state, action) => {
 export const determineIncludedFiles = (files, fileSettings, path, settingValue, includeByDefault) =>
   files.mapEntries(([filePath, file]) => [
     filePath,
-    file.update('headers', (headers) => {
+    file.update('headers', (maybeHeaders) => {
+      // ORG Mode para Eli: un fichero que no llegó a cargarse puede no tener encabezados
+      const headers = maybeHeaders || List();
       const fileSetting = fileSettings.find((setting) => filePath === setting.get('path'));
       // always include the viewed file
       if (path === filePath) {

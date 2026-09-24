@@ -12,6 +12,7 @@ import {
 
 import runAllMigrations from './migrations';
 import { BrowserRouter } from 'react-router-dom';
+import EliErrorBoundary from './components/EliErrorBoundary';
 
 import { DragDropContext } from 'react-beautiful-dnd';
 
@@ -203,7 +204,9 @@ export default class App extends PureComponent {
       <DragDropContext onDragEnd={this.handleDragEnd}>
         <BrowserRouter basename={BASE_PATH}>
           <Provider store={this.store}>
-            <Turnout />
+            <EliErrorBoundary label="la app">
+              <Turnout />
+            </EliErrorBoundary>
           </Provider>
         </BrowserRouter>
       </DragDropContext>

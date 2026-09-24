@@ -17,12 +17,14 @@ import { getSelectedHeader } from '../../../../lib/org_utils';
 import { getCurrentTimestampAsText } from '../../../../lib/timestamps';
 import { insertIntoField, openUploadDialog } from '../../../EliTools';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
+import { insertLinkInto } from '../../../../lib/eli_links';
 
 // ORG Mode para Eli: campo de texto que se está editando en la ventana de edición del
 // encabezado (título o descripción), si lo hay.
 const activeEditField = () =>
   document.querySelector(
-    '.header-content__edit-container textarea, .title-line__edit-container textarea'
+    '.header-content__edit-container textarea, .title-line__edit-container textarea, ' +
+      'textarea.eli-note-textarea'
   );
 
 class DrawerActionBar extends PureComponent {
@@ -40,6 +42,7 @@ class DrawerActionBar extends PureComponent {
       'handleRemoveHeader',
       'handleInsertInactiveDate',
       'handleAttachFiles',
+      'handleInsertLink',
     ]);
   }
 
@@ -140,6 +143,11 @@ class DrawerActionBar extends PureComponent {
     input.click();
   }
 
+  // ORG Mode para Eli: enlace [[enlace][descripción]] en el cursor del título o la descripción
+  handleInsertLink() {
+    insertLinkInto(activeEditField(), insertIntoField);
+  }
+
   handleRemoveHeader() {
     if (this.props.captureMode) {
       // In capture mode, "delete" discards the capture by closing the popup
@@ -172,6 +180,7 @@ class DrawerActionBar extends PureComponent {
           onRemoveHeader={this.handleRemoveHeader}
           onInsertInactiveDate={this.handleInsertInactiveDate}
           onAttachFiles={this.handleAttachFiles}
+          onInsertLink={this.handleInsertLink}
           editRawValues={this.props.editRawValues}
           setEditRawValues={this.props.setEditRawValues}
           restorePreferEditRawValues={this.props.restorePreferEditRawValues}

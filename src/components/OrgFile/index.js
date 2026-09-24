@@ -2,6 +2,7 @@ import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_con
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
+import EliErrorBoundary from '../EliErrorBoundary';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -757,7 +758,9 @@ class OrgFile extends PureComponent {
         );
       case 'agenda':
         return (
-          <AgendaModal headers={headers} onClose={this.getPopupCloseAction(activePopupType)} />
+          <EliErrorBoundary label="la agenda" onClose={() => this.props.base.closePopup()}>
+            <AgendaModal headers={headers} onClose={this.getPopupCloseAction(activePopupType)} />
+          </EliErrorBoundary>
         );
       case 'search':
         return (

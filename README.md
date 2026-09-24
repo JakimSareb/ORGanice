@@ -68,6 +68,10 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
 - **Refile a un fichero**: además de debajo de un encabezado, se puede mover al nivel superior
   (al final) de cualquier fichero: los cargados aparecen arriba y *Otro fichero de Dropbox…*
   lista todos los `.org` (sin `backups/`).
+- **Enlaces**: botón 🔗 al editar el título, la descripción o una nota (y en el texto plano):
+  pega el enlace del portapapeles y pide la descripción → `[[enlace][descripción]]`.
+- **Agenda** también desde el explorador de ficheros; Escape la cierra; al pulsar una tarea se
+  abre su fichero con la tarea centrada en pantalla.
 - **Borrar encabezados con confirmación** (tecla Retroceso, papelera o deslizar a la izquierda).
 - **Narrow/Widen** siempre en la barra superior (actúa sobre el encabezado seleccionado).
 - **Seguridad reforzada** (ver abajo).

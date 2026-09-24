@@ -78,3 +78,48 @@ body {
   background-color: #f6e58d;
   color: #222;
 }
+
+/* ORG Mode para Eli: aviso de error en lugar de pantalla vacía */
+.eli-error {
+  margin: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--base3, #fdf6e3);
+  color: var(--base00, #657b83);
+  border: 1px solid #dc322f;
+}
+.eli-error__title {
+  font-weight: bold;
+  color: #dc322f;
+  margin-bottom: 8px;
+}
+.eli-error__detail {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  max-height: 30vh;
+  overflow: auto;
+}
+.eli-error__buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ORG Mode para Eli: diálogo de enlace */
+.eli-link__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85em;
+}
+.eli-link__label .eli-prompt__input {
+  font-size: 16px;
+}
+.eli-link__preview {
+  font-family: Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--base1, #93a1a1);
+  word-break: break-all;
+  min-height: 1em;
+}

@@ -33,6 +33,7 @@ export default class DrawerActionButtons extends PureComponent {
       onRemoveHeader,
       onInsertInactiveDate,
       onAttachFiles,
+      onInsertLink,
       activePopupType,
       editRawValues,
       setEditRawValues,
@@ -130,6 +131,16 @@ export default class DrawerActionButtons extends PureComponent {
               onClick: onAttachFiles,
               title: 'Adjuntar archivos (assets/AAAA)',
               testId: 'drawer-action-attach',
+              keepFocus: true,
+            })}
+
+          {onInsertLink &&
+            ['title-editor', 'description-editor', 'note-editor'].includes(activePopupType) &&
+            this.iconWithFFClickCatcher({
+              className: 'fas fa-link fa-lg',
+              onClick: onInsertLink,
+              title: 'Insertar enlace [[enlace][descripción]]',
+              testId: 'drawer-action-link',
               keepFocus: true,
             })}
 

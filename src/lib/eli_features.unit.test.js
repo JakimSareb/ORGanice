@@ -303,3 +303,12 @@ describe('refile al nivel superior de un fichero', () => {
     expect(out(state.getIn(['files', '/a.org']))).toBe('* Uno\n* Tres\n* Dos\n');
   });
 });
+
+describe('enlaces Org', () => {
+  const { formatOrgLink } = require('./eli_links');
+  test('formato [[enlace][descripción]]', () => {
+    expect(formatOrgLink('https://orgmode.org', 'Org Mode')).toBe('[[https://orgmode.org][Org Mode]]');
+    expect(formatOrgLink(' https://a.b ', '')).toBe('[[https://a.b]]');
+    expect(formatOrgLink('', 'x')).toBe('');
+  });
+});

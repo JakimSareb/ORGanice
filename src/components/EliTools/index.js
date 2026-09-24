@@ -36,6 +36,7 @@ import {
 import { phasesForThreeMonths, moonState } from '../../lib/lunar';
 import { getCurrentTimestampAsText, getTimestampAsText } from '../../lib/timestamps';
 import { setPlanning, narrowAt } from '../../lib/eli_raw_tools';
+import { insertLinkInto } from '../../lib/eli_links';
 import { List } from 'immutable';
 
 // ORG Mode para Eli: herramientas de fichero
@@ -334,6 +335,15 @@ function RawEditor({ path, initialText, narrow: initialNarrow, onClose, dontInde
           data-testid="eli-raw-inactive"
         >
           <i className="far fa-calendar-plus" /> <span>Fecha</span>
+        </button>
+        <button
+          className="eli-raw__tool"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => insertLinkInto(ref.current, insertIntoField)}
+          title="Insertar enlace [[enlace][descripción]]"
+          data-testid="eli-raw-link"
+        >
+          <i className="fas fa-link" /> <span>Enlace</span>
         </button>
         <button
           className="eli-raw__tool"

@@ -290,6 +290,27 @@ export const selectHeaderAndOpenParents = (path, headerId, { widen = false } = {
   dispatch({ type: 'OPEN_PARENTS_OF_HEADER', headerId });
   // select header after the file is displayed to allow the header to scroll into view
   setTimeout(() => dispatch(selectHeader(headerId)), 0);
+  // ORG Mode para Eli: centrar en pantalla el encabezado (se reintenta mientras se abre el
+  // fichero y termina la animación del cajón)
+  if (widen) centerHeaderInView(headerId);
+};
+
+export const centerHeaderInView = (headerId) => {
+  if (typeof document === 'undefined' || !headerId) return;
+  let tries = 0;
+  const attempt = () => {
+    tries++;
+    const esc = window.CSS && window.CSS.escape ? window.CSS.escape(headerId) : headerId;
+    const el = document.querySelector(`[data-header-id="${esc}"]`);
+    if (el) {
+      el.scrollIntoView({ block: 'center' });
+      // organice puede desplazar después al seleccionado: se vuelve a centrar
+      if (tries < 3) setTimeout(attempt, 250);
+      return;
+    }
+    if (tries < 20) setTimeout(attempt, 150);
+  };
+  setTimeout(attempt, 200);
 };
 
 /**
@@ -1146,5 +1167,22 @@ export const refileToFileTop = (targetPath) => async (dispatch, getState) => {
   } catch (e) {
     dispatch(hideLoadingMessage());
     showMessage('No se pudo mover', (e && (e.eliMessage || e.message)) || String(e));
+  }
+};
+
+// ORG Mode para Eli: carga un fichero sin mensajes (p. ej. los de la agenda desde el explorador).
+// Si no existe o falla, no pasa nada.
+export const loadFileQuietly = (path) => async (dispatch, getState) => {
+  const client = getState().syncBackend.get('client');
+  if (!client || !path || getState().org.present.getIn(['files', path, 'headers'])) return;
+  try {
+    const contents = await withTimeout(client.getFileContents(path), 20000, 'timeout');
+    if (getState().org.present.getIn(['files', path, 'headers'])) return;
+    dispatch(parseFile(path, contents));
+    dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+    dispatch(setDirty(false, path));
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('ORGanice: no se pudo cargar', path, e);
   }
 };
