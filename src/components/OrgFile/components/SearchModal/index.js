@@ -7,6 +7,7 @@ import './stylesheet.css';
 
 import classNames from 'classnames';
 import HeaderListView from './components/HeaderListView';
+import RefileFileTargets from './components/RefileFileTargets';
 import TabButtons from '../../../UI/TabButtons';
 
 import { isMobileBrowser, isIos } from '../../../../lib/browser_utils';
@@ -164,6 +165,9 @@ function SearchModal(props) {
         // better CSS juggler than me is welcome to improve on it.
         style={isMobileBrowser ? undefined : { overflow: 'auto' }}
       >
+        {context === 'refile' && (
+          <RefileFileTargets onPick={(p) => props.onClose(p, null, { toFileTop: true })} />
+        )}
         <HeaderListView
           onHeaderClick={handleHeaderClick}
           dateDisplayType={dateDisplayType}

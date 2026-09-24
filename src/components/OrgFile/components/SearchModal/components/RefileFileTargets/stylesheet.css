@@ -1,0 +1,65 @@
+.eli-refile-files {
+  margin: 4px 0 8px;
+}
+.eli-refile-files__title {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--base1);
+  margin: 10px 0 4px;
+}
+.eli-refile-file {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: var(--base3);
+  color: var(--base01);
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin: 3px 0;
+  cursor: pointer;
+}
+.eli-refile-file:hover {
+  background: var(--base2);
+}
+.eli-refile-file__name {
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.eli-refile-file__tag {
+  font-size: 0.75em;
+  color: var(--base1);
+}
+.eli-refile-file__dir {
+  margin-left: auto;
+  font-size: 0.75em;
+  color: var(--base1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+}
+.eli-refile-files__more {
+  font: inherit;
+  font-size: 0.9em;
+  background: transparent;
+  border: 1px dashed var(--base1);
+  color: var(--base01);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 3px 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.eli-refile-files__muted {
+  font-size: 0.85em;
+  color: var(--base1);
+  padding: 4px 2px;
+}

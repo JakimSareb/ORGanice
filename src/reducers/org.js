@@ -598,8 +598,33 @@ const moveItemAcrossFiles = ({ fromList, fromIndex, toList, toIndex, item }) => 
   return [fromList, toList];
 };
 
+// ORG Mode para Eli: refile al nivel superior de un fichero (sin encabezado de destino): el
+// subárbol pasa a nivel 1 al final del fichero, como org-refile a un fichero en Emacs.
+export const refileSubtreeToFileTop = (state, action) => {
+  const { sourcePath, sourceHeaderId, targetPath } = action;
+  let sourceHeaders = state.getIn(['files', sourcePath, 'headers']);
+  if (!sourceHeaders || !state.getIn(['files', targetPath, 'headers'])) return state;
+  const index = indexOfHeaderWithId(sourceHeaders, sourceHeaderId);
+  if (index < 0) return state;
+  const root = sourceHeaders.get(index);
+  const subtree = List([root]).concat(subheadersOfHeaderWithId(sourceHeaders, sourceHeaderId));
+  const shift = 1 - root.get('nestingLevel');
+  const moved = subtree.map((h) => h.set('nestingLevel', h.get('nestingLevel') + shift));
+  const parentId = parentIdOfHeaderWithId(sourceHeaders, sourceHeaderId);
+  sourceHeaders = sourceHeaders.splice(index, subtree.size);
+  state = state.setIn(['files', sourcePath, 'headers'], sourceHeaders);
+  state = state.updateIn(['files', targetPath, 'headers'], (headers) => headers.concat(moved));
+  if (parentId) {
+    state = state.updateIn(['files', sourcePath], (file) =>
+      updateCookiesOfHeaderWithId(file, parentId)
+    );
+  }
+  return state;
+};
+
 const refileSubtree = (state, action) => {
   const { sourcePath, sourceHeaderId, targetPath, targetHeaderId } = action;
+  if (!targetHeaderId) return refileSubtreeToFileTop(state, action);
   const moveItem = sourcePath === targetPath ? moveItemInFile : moveItemAcrossFiles;
   let sourceHeaders = state.getIn(['files', sourcePath, 'headers']);
   let targetHeaders = state.getIn(['files', targetPath, 'headers']);
@@ -1801,7 +1826,8 @@ const toggleContextFilter = (state, action) => {
 const toggleTodoFilter = (state, action) => {
   let selected = state.get('todoFilter') || List();
   if (action.clear) selected = List();
-  else if (selected.includes(action.keyword)) selected = selected.filter((k) => k !== action.keyword);
+  else if (selected.includes(action.keyword))
+    selected = selected.filter((k) => k !== action.keyword);
   else selected = selected.push(action.keyword);
   state = state.set('todoFilter', selected);
   const searchContext = state.getIn(['search', 'context']);

@@ -65,6 +65,9 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   cabeceras `:crypt:` aún cifradas salen como «[contenido cifrado]».
 - **Cifrado GPG** compatible con GnuPG y Emacs: ficheros `*.org.gpg` / `*.org.asc` y cabeceras
   `:crypt:` (org-crypt); simétrico o con clave pública/privada.
+- **Refile a un fichero**: además de debajo de un encabezado, se puede mover al nivel superior
+  (al final) de cualquier fichero: los cargados aparecen arriba y *Otro fichero de Dropbox…*
+  lista todos los `.org` (sin `backups/`).
 - **Borrar encabezados con confirmación** (tecla Retroceso, papelera o deslizar a la izquierda).
 - **Narrow/Widen** siempre en la barra superior (actúa sobre el encabezado seleccionado).
 - **Seguridad reforzada** (ver abajo).

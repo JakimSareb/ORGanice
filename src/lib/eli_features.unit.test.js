@@ -278,3 +278,28 @@ describe('búsqueda en el texto con contexto', () => {
     expect(snippetsFor('', terms)).toEqual([]);
   });
 });
+
+describe('refile al nivel superior de un fichero', () => {
+  const { refileSubtreeToFileTop } = require('../reducers/org');
+  const { parseOrg } = require('./parse_org');
+  const { exportOrg } = require('./export_org');
+  const { fromJS } = require('immutable');
+  const out = (file) =>
+    exportOrg({ headers: file.get('headers'), linesBeforeHeadings: file.get('linesBeforeHeadings'), dontIndent: true });
+  test('a otro fichero, al final y en nivel 1 con sus hijos', () => {
+    const a = parseOrg('* Proyectos\n** TODO mover [1/2]\n*** hijo\n** otro\n');
+    const b = parseOrg('#+TITLE: B\n* Existente\n');
+    let state = fromJS({ files: {} }).setIn(['files', '/a.org'], a).setIn(['files', '/b.org'], b);
+    const id = a.get('headers').get(1).get('id');
+    state = refileSubtreeToFileTop(state, { sourcePath: '/a.org', sourceHeaderId: id, targetPath: '/b.org' });
+    expect(out(state.getIn(['files', '/a.org']))).toBe('* Proyectos\n** otro\n');
+    expect(out(state.getIn(['files', '/b.org']))).toBe('#+TITLE: B\n* Existente\n* TODO mover [1/2]\n** hijo\n');
+  });
+  test('dentro del mismo fichero', () => {
+    const a = parseOrg('* Uno\n** Dos\n* Tres\n');
+    let state = fromJS({ files: {} }).setIn(['files', '/a.org'], a);
+    const id = a.get('headers').get(1).get('id');
+    state = refileSubtreeToFileTop(state, { sourcePath: '/a.org', sourceHeaderId: id, targetPath: '/a.org' });
+    expect(out(state.getIn(['files', '/a.org']))).toBe('* Uno\n* Tres\n* Dos\n');
+  });
+});

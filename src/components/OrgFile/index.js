@@ -500,8 +500,13 @@ class OrgFile extends PureComponent {
     }
   }
 
-  handleRefilePopupClose(targetPath, targetHeaderId) {
+  handleRefilePopupClose(targetPath, targetHeaderId, options) {
     this.props.base.closePopup();
+    // ORG Mode para Eli: al nivel superior de un fichero
+    if (targetPath && options && options.toFileTop) {
+      this.props.org.refileToFileTop(targetPath);
+      return;
+    }
     // When the user closes the drawer without selecting a header, do
     // not trigger refiling.
     if (targetHeaderId) {

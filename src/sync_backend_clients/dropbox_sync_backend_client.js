@@ -1,4 +1,3 @@
-
 import { getDropboxClientId } from '../lib/dropbox_client_id';
 import { appRootUrl } from '../lib/base_path';
 import { isEmpty } from 'lodash';
@@ -255,6 +254,23 @@ export default () => {
       dbx.filesUpload({ path, contents: blob, mode: { '.tag': 'add' }, autorename: true })
     ).then((response) => response.result.path_display);
 
+  // ORG Mode para Eli: todos los ficheros .org (también .org.gpg/.org.asc) del Dropbox de la app,
+  // sin copias de seguridad ni ficheros de archivo
+  const listOrgFiles = () =>
+    withDbx(async (dbx) => {
+      let response = await dbx.filesListFolder({ path: '', recursive: true, limit: 2000 });
+      let entries = response.result.entries;
+      while (response.result.has_more && entries.length < 20000) {
+        response = await dbx.filesListFolderContinue({ cursor: response.result.cursor });
+        entries = entries.concat(response.result.entries);
+      }
+      return entries
+        .filter((e) => e['.tag'] === 'file')
+        .map((e) => e.path_display)
+        .filter((p) => /\.org(\.gpg|\.asc)?$/i.test(p) && !/\/backups\//i.test(p))
+        .sort((a, b) => a.localeCompare(b));
+    });
+
   // ¿Existe el fichero? (organice no resuelve getFileContents cuando no existe)
   const pathExists = (path) =>
     withDbx((dbx) => dbx.filesGetMetadata({ path })).then(
@@ -273,6 +289,7 @@ export default () => {
     getThumbnailBlob,
     getTemporaryLink,
     uploadBinaryFile,
+    listOrgFiles,
     isSignedIn,
     getDirectoryListing,
     getMoreDirectoryListing,

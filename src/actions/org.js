@@ -1109,3 +1109,42 @@ const subheadersOfHeaderWithIdForArchive = (headers, headerId) => {
   for (let i = index + 1; i < headers.size && headers.getIn([i, 'nestingLevel']) > level; i++) n++;
   return n;
 };
+
+// ORG Mode para Eli: refile del encabezado seleccionado al nivel superior de un fichero
+// (al final, nivel 1). Si el fichero no está cargado, se descarga antes.
+export const refileToFileTop = (targetPath) => async (dispatch, getState) => {
+  const present = getState().org.present;
+  const sourcePath = present.get('path');
+  const headerId = present.getIn(['files', sourcePath, 'selectedHeaderId']);
+  if (!sourcePath || !headerId || !targetPath) return;
+  const client = getState().syncBackend.get('client');
+  try {
+    if (!getState().org.present.getIn(['files', targetPath, 'headers'])) {
+      dispatch(setLoadingMessage(`Abriendo ${targetPath}…`));
+      const contents = await withTimeout(
+        client.getFileContents(targetPath),
+        30000,
+        'Dropbox no responde'
+      );
+      dispatch(parseFile(targetPath, contents));
+      dispatch(setLastSyncAt(addSeconds(new Date(), 5), targetPath));
+      dispatch(setDirty(false, targetPath));
+      dispatch(hideLoadingMessage());
+    }
+    dispatch(selectHeader(null));
+    dispatch(refileSubtree(sourcePath, headerId, targetPath, null));
+    if (targetPath !== sourcePath) {
+      dispatch(sync({ path: targetPath, shouldSuppressMessages: true }));
+    }
+    dispatch(sync({ path: sourcePath, shouldSuppressMessages: true }));
+    dispatch(
+      setDisappearingLoadingMessage(
+        `Movido a ${targetPath.split('/').pop()} (nivel superior)`,
+        2500
+      )
+    );
+  } catch (e) {
+    dispatch(hideLoadingMessage());
+    showMessage('No se pudo mover', (e && (e.eliMessage || e.message)) || String(e));
+  }
+};
