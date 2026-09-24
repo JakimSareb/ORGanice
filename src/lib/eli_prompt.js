@@ -97,3 +97,58 @@ export const askConfirm = ({ title, message, okLabel = 'Aceptar', cancelLabel = 
     document.body.appendChild(overlay);
     setTimeout(() => overlay.querySelector('.eli-prompt__ok').focus(), 30);
   });
+
+// Pide un texto (sustituye a window.prompt, que no es fiable en las apps de la pantalla de
+// inicio). Devuelve Promise<string|null>.
+export const askText = ({
+  title,
+  message = '',
+  placeholder = '',
+  value = '',
+  okLabel = 'Aceptar',
+}) =>
+  new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'eli-prompt__overlay';
+    overlay.innerHTML = `
+      <form class="eli-prompt__box" autocomplete="off" data-testid="eli-ask-text">
+        <div class="eli-prompt__title"></div>
+        <div class="eli-prompt__message"></div>
+        <input type="text" class="eli-prompt__input" autocapitalize="off" autocorrect="off" spellcheck="false" />
+        <div class="eli-prompt__error"></div>
+        <div class="eli-prompt__buttons">
+          <button type="button" class="btn eli-prompt__cancel">Cancelar</button>
+          <button type="submit" class="btn eli-prompt__ok"></button>
+        </div>
+      </form>`;
+    overlay.querySelector('.eli-prompt__title').textContent = title;
+    overlay.querySelector('.eli-prompt__message').textContent = message;
+    overlay.querySelector('.eli-prompt__ok').textContent = okLabel;
+    const input = overlay.querySelector('.eli-prompt__input');
+    input.placeholder = placeholder;
+    input.value = value;
+    const done = (v) => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        done(null);
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(null));
+    overlay.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!input.value.trim()) {
+        overlay.querySelector('.eli-prompt__error').textContent = 'Escribe un nombre.';
+        input.focus();
+        return;
+      }
+      done(input.value.trim());
+    });
+    document.body.appendChild(overlay);
+    setTimeout(() => input.focus(), 50);
+  });

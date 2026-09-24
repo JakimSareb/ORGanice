@@ -1186,3 +1186,29 @@ export const loadFileQuietly = (path) => async (dispatch, getState) => {
     console.warn('ORGanice: no se pudo cargar', path, e);
   }
 };
+
+// ORG Mode para Eli: crea un fichero nuevo en Dropbox y lo deja cargado. Devuelve true si ha ido
+// bien; si falla, muestra el motivo.
+export const createNewFile = (path, content) => async (dispatch, getState) => {
+  const client = getState().syncBackend.get('client');
+  dispatch(setLoadingMessage(`Creando ${path}…`));
+  try {
+    if (client.pathExists && (await withTimeout(client.pathExists(path), 15000, 'timeout'))) {
+      dispatch(hideLoadingMessage());
+      showMessage('Ya existe', `${path} ya existe en Dropbox.`);
+      return false;
+    }
+    await withTimeout(client.createFile(path, content), 30000, 'Dropbox no responde');
+    dispatch(parseFile(path, content));
+    dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+    dispatch(setDirty(false, path));
+    dispatch(setDisappearingLoadingMessage(`Creado ${path}`, 2000));
+    return true;
+  } catch (e) {
+    dispatch(hideLoadingMessage());
+    const detail =
+      (e && (e.error_summary || (e.error && e.error.error_summary) || e.message)) || String(e);
+    showMessage('No se pudo crear el fichero', `${path}: ${detail}`);
+    return false;
+  }
+};

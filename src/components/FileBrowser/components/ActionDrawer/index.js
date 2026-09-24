@@ -6,7 +6,6 @@ import React, { Fragment, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import _ from 'lodash';
 
 import './../../../OrgFile/components/ActionDrawer/stylesheet.css';
 
@@ -17,6 +16,7 @@ import ActionButton from '../../../OrgFile/components/ActionDrawer/components/Ac
 import Drawer from '../../../UI/Drawer';
 import AgendaModal from '../../../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../../../EliErrorBoundary';
+import { askText, showMessage } from '../../../../lib/eli_prompt';
 
 const ensureCompleteFilename = (fileName) => {
   return /\.org(\.gpg|\.asc)?$/.test(fileName) ? fileName : `${fileName}.org`;
@@ -37,20 +37,28 @@ const ActionDrawer = ({ org, files, syncBackend, path, agendaFilesToLoad }) => {
     history.push(`/file${filePath}`);
   };
 
-  const handleAddNewOrgFileClick = () => {
-    const content = '* First header\nExtend the file from here.';
-    let fileName = prompt('New filename:');
-
-    if (!fileName) return;
-
-    fileName = ensureCompleteFilename(fileName);
-    let newPath = `${path}/${fileName}`;
-
-    if (_.includes(files, newPath)) {
-      alert('File already exists. Aborting.');
-    } else {
-      syncBackend.createFile(newPath, content);
-      org.addNewFile(newPath, content);
+  // ORG Mode para Eli: crear un fichero con un diálogo propio (window.prompt no es fiable en las
+  // apps de la pantalla de inicio), avisando si algo falla, y abrirlo al terminar.
+  const handleAddNewOrgFileClick = async () => {
+    const name = await askText({
+      title: 'Nuevo fichero',
+      message: `Se creará en ${path || '/'}`,
+      placeholder: 'nombre (se añade .org)',
+      okLabel: 'Crear',
+    });
+    if (!name) return;
+    const fileName = ensureCompleteFilename(name.replace(/[\\/:*?"<>|]/g, '-'));
+    const newPath = `${path}/${fileName}`;
+    if (files.includes(newPath.toLowerCase())) {
+      showMessage('Ya existe', `Ya hay un fichero llamado ${fileName} en esta carpeta.`);
+      return;
+    }
+    const title = fileName.replace(/\.org(\.gpg|\.asc)?$/i, '');
+    const content = `#+TITLE: ${title}\n\n* Primer encabezado\n`;
+    const ok = await org.createNewFile(newPath, content);
+    if (ok) {
+      syncBackend.getDirectoryListing(path);
+      history.push(`/file${newPath}`);
     }
   };
 
@@ -113,7 +121,8 @@ const ActionDrawer = ({ org, files, syncBackend, path, agendaFilesToLoad }) => {
 const mapStateToProps = (state) => {
   const path = state.syncBackend.get('currentPath');
   let files = state.syncBackend.getIn(['currentFileBrowserDirectoryListing', 'listing']);
-  files = files ? files.map((e) => e.get('id')).toJS() : [];
+  // ORG Mode para Eli: rutas en minúsculas (Dropbox no distingue mayúsculas)
+  files = files ? files.map((e) => (e.get('path') || '').toLowerCase()).toJS() : [];
   const loaded = state.org.present.get('files');
   const agendaFilesToLoad = state.org.present
     .get('fileSettings')
