@@ -41,12 +41,7 @@ test('ámbito de búsqueda: tareas / encabezados / texto', () => {
   expect(search('presupuesto', 'headers')).toEqual([]);
   expect(search('presupuesto', 'text')).toEqual(['Llamar a Ana', 'Notas']);
   expect(search('presupuesto', 'tasks')).toEqual([]);
-  expect(search('', 'tasks')).toEqual([
-    'Llamar a Ana',
-    'Comprar pan',
-    'Revisar correo',
-    'Hecha',
-  ]);
+  expect(search('', 'tasks')).toEqual(['Llamar a Ana', 'Comprar pan', 'Revisar correo', 'Hecha']);
   expect(search('-DONE', 'tasks')).toEqual(['Llamar a Ana', 'Comprar pan', 'Revisar correo']);
   expect(search('pan', 'headers')).toEqual(['Comprar pan']);
 });
@@ -147,9 +142,7 @@ test('filtros: solo etiquetas con @ presentes en tareas abiertas; editor con las
   const files = Map({ '/a.org': f });
   // Solo @ presentes en tareas abiertas: ni las sin @, ni las declaradas sin usar, ni DONE/notas
   expect(availableFacets(files, List(), List()).contexts).toEqual(['@calle', '@casa']);
-  expect(
-    allTagsForEditor(f.get('headers'), f.get('fileConfigLines').toJS())
-  ).toEqual([
+  expect(allTagsForEditor(f.get('headers'), f.get('fileConfigLines').toJS())).toEqual([
     'casa',
     'recados',
     'ordenador',
@@ -222,7 +215,7 @@ describe('nombre de la app y del fichero', () => {
     expect(fileDisplayName('/GTD/tareas.org')).toBe('tareas');
     expect(fileDisplayName('/GTD/secreto.org.gpg')).toBe('secreto');
     expect(fileDisplayName('/x/diario.org_archive')).toBe('diario.org_archive');
-    expect(windowTitleFor('/a/b.org')).toBe('b · ORGanice');
+    expect(windowTitleFor('/a/b.org')).toBe('ORGanice');
     expect(windowTitleFor(null)).toBe('ORGanice');
   });
 });
@@ -247,5 +240,23 @@ describe('agenda: modo Log', () => {
     ]);
     expect(items[0].hasTime).toBe(true);
     expect(items[0].header.get('path')).toBe('/a.org');
+  });
+});
+
+describe('atajos de organice fuera de sus ventanas', () => {
+  const { shouldIgnoreOrganiceHotkey } = require('./eli_hotkeys');
+  afterEach(() => (document.body.innerHTML = ''));
+  test('Retroceso en el editor de texto plano o en el diálogo de adjuntos no borra encabezados', () => {
+    document.body.innerHTML =
+      '<div class="org-file-container" id="c"><textarea id="own"></textarea></div>' +
+      '<div class="eli-prompt__overlay"><input id="name" type="text"></div>';
+    const c = document.getElementById('c');
+    expect(shouldIgnoreOrganiceHotkey({ target: document.getElementById('name') }, c)).toBe(true);
+    expect(shouldIgnoreOrganiceHotkey({ target: c }, c)).toBe(true); // ventana abierta
+    document.querySelector('.eli-prompt__overlay').remove();
+    expect(shouldIgnoreOrganiceHotkey({ target: c }, c)).toBe(false);
+    expect(shouldIgnoreOrganiceHotkey({ target: document.getElementById('own') }, c)).toBe(false);
+    document.body.insertAdjacentHTML('beforeend', '<input id="out" type="search">');
+    expect(shouldIgnoreOrganiceHotkey({ target: document.getElementById('out') }, c)).toBe(true);
   });
 });

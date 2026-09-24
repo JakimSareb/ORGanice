@@ -1,4 +1,5 @@
 import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
+import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -833,7 +834,7 @@ class OrgFile extends PureComponent {
       callback(event);
     };
 
-    const handlers = {
+    const organiceHandlers = {
       selectNextVisibleHeader: this.checkPopup(
         preventDefault(this.handleSelectNextVisibleHeaderHotKey)
       ),
@@ -855,6 +856,12 @@ class OrgFile extends PureComponent {
       moveHeaderRight: this.checkPopupAndHeader(preventDefault(this.handleMoveHeaderRightHotKey)),
       undo: this.checkPopupAndHeader(preventDefault(this.handleUndoHotKey)),
     };
+    // ORG Mode para Eli: los atajos de organice (p. ej. Retroceso = borrar encabezado) no deben
+    // actuar mientras se escribe en las ventanas propias (texto plano, adjuntos, frases…).
+    const handlers = _.mapValues(organiceHandlers, (handler) => (event) => {
+      if (shouldIgnoreOrganiceHotkey(event, this.container)) return;
+      return handler(event);
+    });
 
     const setPopupCloseActionValuesAccessor = (v) => {
       this.setState({ popupCloseActionValuesAccessor: v });

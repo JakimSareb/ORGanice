@@ -9,6 +9,6 @@ export const fileDisplayName = (path) => {
   return base.replace(/\.(gpg|asc)$/i, '').replace(/\.org$/i, '') || base;
 };
 
-// Título de la pestaña / ventana: "tareas · ORGanice"
-export const windowTitleFor = (path) =>
-  path ? `${fileDisplayName(path)} · ${APP_NAME}` : APP_NAME;
+// Título de la ventana: siempre "ORGanice". El nombre del fichero ya se ve en la barra de la
+// app; repetirlo en la barra de título de la ventana instalada lo mostraba dos veces.
+export const windowTitleFor = () => APP_NAME;
