@@ -1,5 +1,6 @@
 import { openRawEditor, openPrintPreview, openMoonPhases } from '../EliTools';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
+import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
 const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
@@ -191,6 +192,16 @@ class HeaderBar extends PureComponent {
         return this.renderFileBrowserBackButton();
       case 'changelog':
         return this.renderFileBrowserBackButton();
+      case 'encryption':
+        return (
+          <div
+            className="header-bar__back-button"
+            onClick={() => backToSettings(this.props.history)}
+          >
+            <i className="fas fa-chevron-left" />
+            <span className="header-bar__back-button__directory-path">Settings</span>
+          </div>
+        );
       default:
         return <div />;
     }
@@ -224,6 +235,8 @@ class HeaderBar extends PureComponent {
         return titleContainerWithText('Sample');
       case 'sign_in':
         return titleContainerWithText('Sign in');
+      case 'encryption':
+        return titleContainerWithText('Seguridad');
       case 'settings':
         return titleContainerWithText('Settings');
       default:

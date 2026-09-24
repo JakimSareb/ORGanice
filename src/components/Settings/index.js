@@ -408,7 +408,11 @@ const Settings = ({
         <button className="btn settings-btn" onClick={handleFileSettingsClick}>
           File settings
         </button>
-        <Link to="/encryption" className="btn settings-btn">
+        <Link
+          to="/encryption"
+          className="btn settings-btn"
+          onClick={() => (window.__eliCameFromSettings = true)}
+        >
           <i className="fas fa-lock" /> Seguridad y cifrado
         </Link>
 

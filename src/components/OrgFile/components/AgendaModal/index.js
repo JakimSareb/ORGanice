@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -49,6 +49,19 @@ function AgendaModal(props) {
   } = props;
 
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // ORG Mode para Eli: Escape cierra la agenda y vuelve a donde se estaba
+  const { onClose } = props;
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (document.querySelector('.eli-prompt__overlay')) return;
+      e.preventDefault();
+      onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
   const [dateDisplayType, setDateDisplayType] = useState('absolute');
   // ORG Mode para Eli: modo Log (mostrar/ocultar tareas terminadas según su CLOSED:)
   const [showLog, setShowLog] = useState(() => {
@@ -91,6 +104,8 @@ function AgendaModal(props) {
   function handleHeaderClick(path, headerId) {
     props.onClose();
     props.org.selectHeaderAndOpenParents(path, headerId, { widen: true });
+    // ORG Mode para Eli: abierta desde el explorador de ficheros, hay que ir al fichero
+    if (props.onOpenFile) props.onOpenFile(path, headerId);
   }
 
   function handlePreviousDateClick() {

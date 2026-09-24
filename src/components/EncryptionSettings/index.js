@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { BASE_PATH } from '../../lib/base_path';
 
 import './stylesheet.css';
@@ -37,7 +37,17 @@ const download = (filename, text) => {
   }, 1000);
 };
 
+// ORG Mode para Eli: volver atrás en el historial (no añadir otra entrada /settings, que
+// hacía que «Back» en Ajustes volviera aquí en bucle)
+export const backToSettings = (history) => {
+  const cameFromSettings = window.__eliCameFromSettings;
+  window.__eliCameFromSettings = false;
+  if (cameFromSettings) history.goBack();
+  else history.replace('/settings');
+};
+
 export default function EncryptionSettings() {
+  const history = useHistory();
   const [keys, setKeys] = useState([]);
   const [mode, setMode] = useState(getDefaultMode());
   const [pasted, setPasted] = useState('');
@@ -91,7 +101,9 @@ export default function EncryptionSettings() {
       const imported = await importKeys(data);
       report(
         `Importadas ${imported.length} clave(s): ` +
-          imported.map((k) => `${k.userIDs[0] || k.keyID} (${k.isPrivate ? 'privada' : 'pública'})`).join(', ')
+          imported
+            .map((k) => `${k.userIDs[0] || k.keyID} (${k.isPrivate ? 'privada' : 'pública'})`)
+            .join(', ')
       );
       setPasted('');
       refresh();
@@ -152,7 +164,6 @@ export default function EncryptionSettings() {
   return (
     <div className="eli-encryption">
       <h2>Seguridad y cifrado</h2>
-
       <h3>Bloqueo por inactividad</h3>
       <label>
         Bloquear tras{' '}
@@ -168,10 +179,9 @@ export default function EncryptionSettings() {
       <p className="eli-encryption__help">
         Al bloquearse, la app guarda lo pendiente en Dropbox, olvida frases de paso y claves
         desbloqueadas y se recarga, de modo que el texto descifrado desaparece de la memoria. Solo
-        actúa si hay algo cifrado abierto o alguna frase recordada. En el iPhone también se comprueba
-        al volver a la app.
+        actúa si hay algo cifrado abierto o alguna frase recordada. En el iPhone también se
+        comprueba al volver a la app.
       </p>
-
       <h3>Copia local de ficheros sin cifrar</h3>
       <label className="eli-encryption__radio">
         <input type="checkbox" checked={persistPlain} onChange={handlePersistPlain} /> Guardar en
@@ -184,28 +194,34 @@ export default function EncryptionSettings() {
         cambio de dejar una copia legible en este dispositivo. Los ficheros cifrados y las cabeceras
         :crypt: descifradas nunca se guardan, esté como esté esta opción.
       </p>
-
       <h2>Cifrado (GPG)</h2>
       <p className="eli-encryption__help">
         Ficheros <code>.org.gpg</code> / <code>.org.asc</code> y cabeceras con la etiqueta{' '}
         <code>:crypt:</code> (org-crypt). Compatible con GnuPG y Emacs. Las frases de paso solo se
         guardan en memoria mientras la app está abierta.
       </p>
-
       <h3>Modo para cifrar contenido nuevo</h3>
       <label className="eli-encryption__radio">
-        <input type="radio" checked={mode === 'symmetric'} onChange={() => handleMode('symmetric')} />{' '}
+        <input
+          type="radio"
+          checked={mode === 'symmetric'}
+          onChange={() => handleMode('symmetric')}
+        />{' '}
         Simétrico (frase de paso) — equivale a <code>org-crypt-key nil</code>
       </label>
       <label className="eli-encryption__radio">
-        <input type="radio" checked={mode === 'publickey'} onChange={() => handleMode('publickey')} />{' '}
+        <input
+          type="radio"
+          checked={mode === 'publickey'}
+          onChange={() => handleMode('publickey')}
+        />{' '}
         Clave pública (a tus claves privadas importadas)
       </label>
       <p className="eli-encryption__help">
         Los ficheros existentes se vuelven a cifrar siempre igual que estaban (misma frase o mismos
-        destinatarios). En una cabecera, la propiedad <code>:CRYPTKEY:</code> manda sobre este ajuste.
+        destinatarios). En una cabecera, la propiedad <code>:CRYPTKEY:</code> manda sobre este
+        ajuste.
       </p>
-
       <h3>Claves en este navegador</h3>
       {keys.length === 0 ? (
         <p className="eli-encryption__help">Ninguna clave importada.</p>
@@ -233,7 +249,6 @@ export default function EncryptionSettings() {
           ))}
         </ul>
       )}
-
       <h3>Importar clave</h3>
       <p className="eli-encryption__help">
         Exporta tu clave desde GnuPG con{' '}
@@ -251,7 +266,6 @@ export default function EncryptionSettings() {
       <button className="btn" disabled={!pasted.trim()} onClick={() => doImport(pasted)}>
         Importar texto pegado
       </button>
-
       <h3>Crear un par de claves nuevo</h3>
       <div className="eli-encryption__gen">
         <input
@@ -285,7 +299,6 @@ export default function EncryptionSettings() {
           {busy ? 'Generando…' : 'Generar (Curve25519)'}
         </button>
       </div>
-
       <h3>Sesión</h3>
       <button
         className="btn"
@@ -299,15 +312,21 @@ export default function EncryptionSettings() {
       <button className="btn" onClick={() => window.location.replace(`${BASE_PATH}/files`)}>
         Bloquear ahora (olvidar y recargar)
       </button>
-
       {message && (
         <div className={`eli-encryption__message ${message.isError ? 'is-error' : ''}`}>
           {message.text}
         </div>
       )}
-
       <p>
-        <Link to="/settings">← Volver a Ajustes</Link>
+        <a
+          href="#volver"
+          onClick={(e) => {
+            e.preventDefault();
+            backToSettings(history);
+          }}
+        >
+          ← Volver a Ajustes
+        </a>
       </p>
     </div>
   );
