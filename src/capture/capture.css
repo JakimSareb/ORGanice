@@ -1,0 +1,127 @@
+:root {
+  --cap-bg: #fdf6e3;
+  --cap-fg: #586e75;
+  --cap-muted: #93a1a1;
+  --cap-line: #e5ddc8;
+  --cap-accent: #d33682;
+  --cap-card: #fffdf6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cap-bg: #1c1f24;
+    --cap-fg: #d8dee9;
+    --cap-muted: #8a93a3;
+    --cap-line: #343a44;
+    --cap-accent: #e0609a;
+    --cap-card: #242931;
+  }
+}
+html,
+body {
+  margin: 0;
+  background: var(--cap-bg);
+  color: var(--cap-fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Verdana, sans-serif;
+}
+#capture {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cap__head {
+  border-bottom: 1px solid var(--cap-line);
+  padding-bottom: 8px;
+}
+.cap__brand {
+  font-weight: bold;
+  font-size: 18px;
+  color: var(--cap-accent);
+}
+.cap__sub {
+  font-size: 13px;
+  color: var(--cap-muted);
+  word-break: break-word;
+}
+.cap__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--cap-muted);
+}
+.cap__input {
+  font: inherit;
+  font-size: 16px;
+  color: var(--cap-fg);
+  background: var(--cap-card);
+  border: 1px solid var(--cap-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.cap__note {
+  resize: vertical;
+}
+.cap__buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cap__btn {
+  font: inherit;
+  font-size: 16px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--cap-line);
+  background: var(--cap-card);
+  color: var(--cap-fg);
+  text-decoration: none;
+  cursor: pointer;
+}
+.cap__btn--primary {
+  background: var(--cap-accent);
+  border-color: var(--cap-accent);
+  color: #fff;
+}
+.cap__btn:disabled {
+  opacity: 0.6;
+}
+.cap__status,
+.cap__hint {
+  font-size: 13px;
+  color: var(--cap-muted);
+  word-break: break-word;
+}
+.cap__error {
+  color: #dc322f;
+}
+.cap__ok {
+  font-size: 18px;
+  color: #859900;
+}
+.cap__preview,
+.cap__code {
+  font-family: Menlo, Consolas, monospace;
+  font-size: 12px;
+  background: var(--cap-card);
+  border: 1px solid var(--cap-line);
+  border-radius: 6px;
+  padding: 8px;
+  word-break: break-all;
+  display: block;
+}
+.cap__chip {
+  display: inline-block;
+  margin: 2px 6px 2px 0;
+}
+.cap__link {
+  background: none;
+  border: 0;
+  color: var(--cap-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}

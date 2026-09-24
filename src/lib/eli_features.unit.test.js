@@ -312,3 +312,45 @@ describe('enlaces Org', () => {
     expect(formatOrgLink('', 'x')).toBe('');
   });
 });
+
+describe('captura rápida', () => {
+  const core = require('../capture/capture_core');
+  const tpl = {
+    description: 'INBOX',
+    letter: 'i',
+    template: '\n:Created: %U\n:Source: Organice2000\n',
+    shouldPrepend: true,
+    headerPaths: [],
+    file: '/inbox.org',
+  };
+  test('parámetros, plantilla y encabezado', () => {
+    const p = core.parseCaptureParams('?k=abc&t=inbox&url=https%3A%2F%2Fa.b%2Fx&title=Hola%20mundo');
+    expect(p).toMatchObject({ appKey: 'abc', template: 'inbox', url: 'https://a.b/x', title: 'Hola mundo' });
+    expect(core.findTemplate([tpl], 'inbox')).toBe(tpl);
+    expect(core.findTemplate([tpl], 'i')).toBe(tpl);
+    expect(core.defaultHeadline(p)).toBe('[[https://a.b/x][Hola mundo]]');
+    const e = core.buildEntry({ template: tpl, headline: '[[u][t]]', note: 'algo' });
+    expect(e.title).toBe('[[u][t]]');
+    expect(e.bodyLines[0]).toMatch(/^:Created: \[\d{4}-\d\d-\d\d \w{3} \d\d:\d\d\]$/);
+    expect(e.bodyLines).toContain('algo');
+  });
+  test('insertar al principio (tras la cabecera), al final y bajo un encabezado', () => {
+    const entry = { title: 'Nuevo', bodyLines: ['cuerpo'] };
+    const file = '#+TITLE: Inbox\n\n* Uno\n* Dos\n';
+    expect(core.insertEntry(file, entry, { shouldPrepend: true })).toBe(
+      '#+TITLE: Inbox\n\n* Nuevo\ncuerpo\n* Uno\n* Dos\n'
+    );
+    expect(core.insertEntry(file, entry, { shouldPrepend: false })).toBe(
+      '#+TITLE: Inbox\n\n* Uno\n* Dos\nNuevo'.replace('Nuevo', '* Nuevo\ncuerpo\n')
+    );
+    const tree = '#+TODO: TODO NEXT | DONE\n* NEXT Proyectos :x:\n** a\n* Otros\n';
+    expect(core.insertEntry(tree, entry, { headerPaths: ['Proyectos'], shouldPrepend: false })).toBe(
+      '#+TODO: TODO NEXT | DONE\n* NEXT Proyectos :x:\n** a\n** Nuevo\ncuerpo\n* Otros\n'
+    );
+    expect(core.insertEntry(tree, entry, { headerPaths: ['Proyectos'], shouldPrepend: true })).toBe(
+      '#+TODO: TODO NEXT | DONE\n* NEXT Proyectos :x:\n** Nuevo\ncuerpo\n** a\n* Otros\n'
+    );
+    expect(() => core.insertEntry(tree, entry, { headerPaths: ['Nada'] })).toThrow(/Nada/);
+    expect(core.insertEntry('', entry, {})).toBe('* Nuevo\ncuerpo\n');
+  });
+});

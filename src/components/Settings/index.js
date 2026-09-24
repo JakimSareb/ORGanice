@@ -416,6 +416,10 @@ const Settings = ({
           <i className="fas fa-lock" /> Seguridad y cifrado
         </Link>
 
+        <a href="capture.html" className="btn settings-btn" data-testid="eli-capture-setup">
+          <i className="fas fa-share-square" /> Captura rápida (Atajos / marcador)
+        </a>
+
         <hr className="settings-button-separator" />
 
         <Link to="/changelog" className="btn settings-btn">

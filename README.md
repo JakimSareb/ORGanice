@@ -111,6 +111,25 @@ separado.
 En la carpeta `eli/` del paquete descargable: doble clic en `Arrancar (Mac).command` →
 `http://localhost:3000/ORGanice/`.
 
+## Captura rápida desde el iPhone (menú Compartir)
+
+Página `capture.html`: recibe un enlace, se conecta al Dropbox de la **App key que va en el propio
+enlace** (cada App key es un entorno independiente, con su propio permiso en el navegador) y
+añade una entrada usando la plantilla de captura de organice guardada en `.organice-config.json`
+de ese entorno (`t=INBOX`, por nombre o letra). Parámetros: `k` App key · `t` plantilla ·
+`f` fichero (opcional) · `url` · `title` · `text` · `auto=1` (guardar sin preguntar).
+
+1. En cada app de Dropbox → Settings → *Redirect URIs*, añade
+   `https://jakimsareb.github.io/ORGanice/capture.html`.
+2. Ajustes → *Captura rápida* genera la dirección para el Atajo y un marcador para el ordenador.
+3. Atajo de iOS «Enviar a ORGanice» (Mostrar en hoja de compartir; URL y páginas de Safari):
+   *Obtener detalles de páginas web de Safari* (URL y Nombre) → *Codificar URL* de cada uno →
+   *Texto* `https://jakimsareb.github.io/ORGanice/capture.html?k=APPKEY&t=INBOX&url=…&title=…` →
+   *Abrir URLs*. Para dos entornos, *Elegir del menú* con una dirección (App key) por opción.
+
+La primera vez en cada navegador pide conectar con Dropbox. Los ficheros `.gpg`/`.asc` también
+funcionan (pide la frase de paso).
+
 ## Seguridad
 
 **Dónde está cada cosa**

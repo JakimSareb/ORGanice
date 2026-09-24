@@ -114,5 +114,8 @@
     "edge >= 100",
     "firefox >= 100"
   ],
-  "source": "public/index.html"
+  "source": [
+    "public/index.html",
+    "public/capture.html"
+  ]
 }
