@@ -1,6 +1,7 @@
 import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
+import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -487,10 +488,15 @@ class OrgFile extends PureComponent {
     this.props.base.closePopup();
   }
 
-  handleSearchPopupClose(path, headerId) {
+  handleSearchPopupClose(path, headerId, reveal) {
     this.props.base.closePopup();
     if (path && headerId) {
       this.props.org.selectHeaderAndOpenParents(path, headerId);
+      // ORG Mode para Eli: ir al lugar exacto del texto encontrado
+      if (reveal && reveal.term) {
+        this.props.org.openHeader(headerId);
+        revealTextInHeader(headerId, reveal.term, reveal.occurrence);
+      }
     }
   }
 

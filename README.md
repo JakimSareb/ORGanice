@@ -5,7 +5,8 @@ sin Emacs): lee y escribe tus ficheros `.org` directamente en **Dropbox**, desde
 o el iPhone. Conserva toda la funcionalidad de organice y añade:
 
 - **Búsqueda con ámbito**: *Tareas* (solo encabezados con TODO/DONE…), *Encabezados* (título) o
-  *Texto* (título + contenido).
+  *Texto* (título + contenido). En *Texto*, debajo de cada resultado se ven las líneas donde
+  aparece lo buscado; al pulsar una, la app abre el encabezado, va a ese punto y lo resalta.
 - **Agenda con vencidas**: el día de hoy muestra las tareas abiertas cuyo SCHEDULED o DEADLINE ya
   pasó y cuántos días llevan vencidas.
 - **Ficheros principales**: botón de hojas en la barra inferior (también en el explorador) para

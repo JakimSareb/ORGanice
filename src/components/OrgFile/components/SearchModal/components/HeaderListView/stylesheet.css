@@ -21,3 +21,26 @@
   font-size: 12px;
   font-family: Courier;
 }
+
+/* ORG Mode para Eli: fragmentos del texto encontrado */
+.eli-search-snippets {
+  margin: 2px 0 4px 18px;
+}
+.eli-search-snippet {
+  font-size: 0.85em;
+  color: var(--base00);
+  border-left: 2px solid var(--base1);
+  padding: 2px 8px;
+  margin: 2px 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.eli-search-snippet:hover {
+  background: var(--base2);
+}
+.eli-search-snippet mark {
+  background: #f6e58d;
+  color: #333;
+  border-radius: 2px;
+  padding: 0 1px;
+}

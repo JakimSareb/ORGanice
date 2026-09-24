@@ -39,8 +39,8 @@ function SearchModal(props) {
   const bookmarkChosen = bookmarks.contains(searchFilter);
   const canSaveBookmark = searchFilterValid && searchFilter.length !== 0;
 
-  function handleHeaderClick(path, headerId) {
-    props.onClose(path, headerId);
+  function handleHeaderClick(path, headerId, reveal) {
+    props.onClose(path, headerId, reveal);
   }
 
   function handleToggleDateDisplayType() {

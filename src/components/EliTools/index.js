@@ -23,6 +23,7 @@ import {
   toggleEliFavoriteFile,
   uploadFilesAndGetLinks,
   appendLinesToHeader,
+  resetFileDisplay,
 } from '../../actions/org';
 import { isEncryptedPath } from '../../lib/eli_crypto';
 import {
@@ -541,6 +542,13 @@ function FavoritesPopup({ currentPath, onClose }) {
 
   const open = (p) => {
     onClose();
+    if (p === currentPath) return;
+    // Cambiar de fichero como al volver al explorador: guardar el actual y soltarlo; si no,
+    // organice redirige de vuelta al fichero abierto
+    if (currentPath && !currentPath.startsWith(STATIC_FILE_PREFIX)) {
+      dispatch(sync({ path: currentPath }));
+    }
+    dispatch(resetFileDisplay());
     history.push(`/file${p}`);
   };
 

@@ -11,11 +11,19 @@ import { millisDuration } from '../../../../../../lib/timestamps';
 
 import TitleLine from '../../../TitleLine';
 import { getBreadcrumbsStringFunction } from '../../../../../../lib/org_utils';
+import {
+  searchTerms,
+  snippetsFor,
+  findOccurrences,
+} from '../../../../../../lib/eli_search_snippets';
 
 function HeaderListView(props) {
   const { context } = props;
-  function handleHeaderClick(path, headerId) {
-    return () => props.onHeaderClick(path, headerId);
+  function handleHeaderClick(path, headerId, reveal) {
+    return (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      props.onHeaderClick(path, headerId, reveal);
+    };
   }
 
   // Populate filteredHeaders
@@ -29,7 +37,9 @@ function HeaderListView(props) {
     }
   }, [context, props.org]);
 
-  const { headers, allHeaders, showClockedTimes } = props;
+  const { headers, allHeaders, showClockedTimes, searchFilterExpr, searchScope } = props;
+  // ORG Mode para Eli: en la búsqueda de Texto, fragmentos con contexto debajo de cada resultado
+  const terms = context === 'search' && searchScope === 'text' ? searchTerms(searchFilterExpr) : [];
 
   return (
     <div className="agenda-day__container">
@@ -37,6 +47,14 @@ function HeaderListView(props) {
         {Array.from(headers.entries(), ([path, headersOfFile]) => {
           const getBreadcrumbs = getBreadcrumbsStringFunction(allHeaders, path);
           return headersOfFile.map((header) => {
+            const snippets = terms.length ? snippetsFor(header.get('rawDescription'), terms) : [];
+            const titleMatches =
+              terms.length > 0 &&
+              findOccurrences(header.getIn(['titleLine', 'rawTitle']) || '', terms).length > 0;
+            const firstReveal =
+              snippets.length && !titleMatches
+                ? { term: snippets[0].term, occurrence: snippets[0].occurrence }
+                : undefined;
             return (
               <div key={header.get('id')} className="agenda-day__header-container">
                 <div className="search__breadcrumbs">{getBreadcrumbs(header)}</div>
@@ -48,13 +66,32 @@ function HeaderListView(props) {
                     isSelected={false}
                     shouldDisableActions
                     shouldDisableExplicitWidth
-                    onClick={handleHeaderClick(path, header.get('id'))}
+                    onClick={handleHeaderClick(path, header.get('id'), firstReveal)}
                     addition={
                       showClockedTimes && header.get('totalFilteredTimeLoggedRecursive') !== 0
                         ? millisDuration(header.get('totalFilteredTimeLoggedRecursive'))
                         : null
                     }
                   />
+                  {snippets.length > 0 && (
+                    <div className="eli-search-snippets" data-testid="eli-search-snippets">
+                      {snippets.map((sn, i) => (
+                        <div
+                          key={i}
+                          className="eli-search-snippet"
+                          onClick={handleHeaderClick(path, header.get('id'), {
+                            term: sn.term,
+                            occurrence: sn.occurrence,
+                          })}
+                          title="Ir a este texto"
+                        >
+                          {sn.before}
+                          <mark>{sn.match}</mark>
+                          {sn.after}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -71,6 +108,8 @@ const mapStateToProps = (state) => {
     allHeaders: files.map((file) => file.get('headers')),
     headers: state.org.present.getIn(['search', 'filteredHeaders']) || Map(),
     showClockedTimes: state.org.present.getIn(['search', 'showClockedTimes']),
+    searchFilterExpr: state.org.present.getIn(['search', 'searchFilterExpr']),
+    searchScope: state.org.present.getIn(['search', 'scope']) || 'headers',
   };
 };
 

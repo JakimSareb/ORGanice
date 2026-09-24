@@ -260,3 +260,21 @@ describe('atajos de organice fuera de sus ventanas', () => {
     expect(shouldIgnoreOrganiceHotkey({ target: document.getElementById('out') }, c)).toBe(true);
   });
 });
+
+describe('búsqueda en el texto con contexto', () => {
+  const { searchTerms, snippetsFor } = require('./eli_search_snippets');
+  const parser = require('./headline_filter_parser');
+  test('fragmentos con el término y su contexto', () => {
+    const terms = searchTerms(parser.parse('factura -DONE'));
+    expect(terms.map((t) => t.text)).toEqual(['factura']);
+    const desc =
+      'Primera línea sin nada\nHay que pagar la Factura de la luz antes del viernes porque si no nos cortan el suministro eléctrico\notra factura más\n';
+    const sn = snippetsFor(desc, terms);
+    expect(sn).toHaveLength(2);
+    expect(sn[0].match).toBe('Factura');
+    expect(sn[0].before).toBe('Hay que pagar la ');
+    expect(sn[0].after.endsWith('…')).toBe(true);
+    expect(sn[1].occurrence).toBe(1);
+    expect(snippetsFor('', terms)).toEqual([]);
+  });
+});
