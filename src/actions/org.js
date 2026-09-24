@@ -280,8 +280,13 @@ export const setPath = (path) => (dispatch) => {
   dispatch({ type: ActionTypes.CLEAR_HISTORY });
 };
 
-export const selectHeaderAndOpenParents = (path, headerId) => (dispatch) => {
+export const selectHeaderAndOpenParents = (path, headerId, { widen = false } = {}) => (
+  dispatch
+) => {
   dispatch(setPath(path));
+  // ORG Mode para Eli: desde la agenda o la lista de tareas se sale del modo narrow para que
+  // el encabezado pulsado siempre se vea
+  if (widen) dispatch(widenHeader());
   dispatch({ type: 'OPEN_PARENTS_OF_HEADER', headerId });
   // select header after the file is displayed to allow the header to scroll into view
   setTimeout(() => dispatch(selectHeader(headerId)), 0);

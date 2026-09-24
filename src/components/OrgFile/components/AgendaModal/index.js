@@ -90,7 +90,7 @@ function AgendaModal(props) {
 
   function handleHeaderClick(path, headerId) {
     props.onClose();
-    props.org.selectHeaderAndOpenParents(path, headerId);
+    props.org.selectHeaderAndOpenParents(path, headerId, { widen: true });
   }
 
   function handlePreviousDateClick() {
