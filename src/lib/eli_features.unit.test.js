@@ -354,3 +354,23 @@ describe('captura rápida', () => {
     expect(core.insertEntry('', entry, {})).toBe('* Nuevo\ncuerpo\n');
   });
 });
+
+describe('CLOSED al terminar una tarea', () => {
+  const { updateClosedTimestamp } = require('../reducers/org');
+  const { parseOrg } = require('./parse_org');
+  const { exportOrg } = require('./export_org');
+  test('se añade al pasar a DONE/CANCELLED y se quita al reabrir', () => {
+    let file = parseOrg('#+TODO: TODO NEXT | DONE CANCELLED\n* TODO tarea\nSCHEDULED: <2026-09-24 Thu>\n');
+    const t = new Date(2026, 8, 24, 13, 5);
+    file = file.setIn(['headers', 0, 'titleLine', 'todoKeyword'], 'DONE');
+    file = updateClosedTimestamp(file, 0, 'TODO', 'DONE', t);
+    const out = (f) => exportOrg({ headers: f.get('headers'), linesBeforeHeadings: f.get('linesBeforeHeadings'), dontIndent: true });
+    expect(out(file)).toContain('* DONE tarea\nCLOSED: [2026-09-24 Thu 13:05] SCHEDULED: <2026-09-24 Thu>');
+    // DONE -> CANCELLED: se mantiene
+    expect(updateClosedTimestamp(file, 0, 'DONE', 'CANCELLED', t)).toBe(file);
+    file = file.setIn(['headers', 0, 'titleLine', 'todoKeyword'], 'TODO');
+    file = updateClosedTimestamp(file, 0, 'DONE', 'TODO', t);
+    expect(out(file)).toContain('* TODO tarea\nSCHEDULED: <2026-09-24 Thu>');
+    expect(out(file)).not.toContain('CLOSED');
+  });
+});

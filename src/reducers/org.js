@@ -268,6 +268,7 @@ const setTodoState = (state, action) => {
     });
   } else {
     state = state.setIn(['headers', headerIndex, 'titleLine', 'todoKeyword'], newTodoState);
+    state = updateClosedTimestamp(state, headerIndex, currentTodoState, newTodoState, timestamp);
   }
 
   state = updateCookiesOfParentOfHeaderWithId(state, existingHeaderId);
@@ -2232,7 +2233,36 @@ function updateHeadlines({
       timestamp,
     });
   // Update simple headline (without repeaters)
-  return state.setIn(['headers', headerIndex, 'titleLine', 'todoKeyword'], newTodoState);
+  state = state.setIn(['headers', headerIndex, 'titleLine', 'todoKeyword'], newTodoState);
+  return updateClosedTimestamp(state, headerIndex, currentTodoState, newTodoState, timestamp);
+}
+
+// ORG Mode para Eli: como `org-log-done 'time` de Emacs. Al pasar a un estado terminado (DONE,
+// CANCELLED…) se añade `CLOSED: [fecha hora]`; al volver a un estado abierto, se quita.
+export function updateClosedTimestamp(
+  state,
+  headerIndex,
+  currentTodoState,
+  newTodoState,
+  timestamp
+) {
+  const completed = (kw) =>
+    !!kw &&
+    (state.get('todoKeywordSets') || List()).some((set) =>
+      (set.get('completedKeywords') || List()).includes(kw)
+    );
+  const wasDone = completed(currentTodoState);
+  const isDone = completed(newTodoState);
+  if (wasDone === isDone) return state;
+  const path = ['headers', headerIndex, 'planningItems'];
+  const withoutClosed = (items) => (items || List()).filter((p) => p.get('type') !== 'CLOSED');
+  if (!isDone) return state.updateIn(path, withoutClosed);
+  const closed = fromJS({
+    id: generateId(),
+    type: 'CLOSED',
+    timestamp: timestampForDate(timestamp || new Date(), { isActive: false, withStartTime: true }),
+  });
+  return state.updateIn(path, (items) => withoutClosed(items).unshift(closed));
 }
 
 /**

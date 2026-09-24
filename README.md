@@ -72,6 +72,9 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   pega el enlace del portapapeles y pide la descripción → `[[enlace][descripción]]`.
 - **Agenda** también desde el explorador de ficheros; Escape la cierra; al pulsar una tarea se
   abre su fichero con la tarea centrada en pantalla.
+- **CLOSED al terminar**: al pasar una tarea a un estado terminado (DONE, CANCELLED…) se añade
+  `CLOSED: [fecha hora]`, y se quita si se reabre (como `org-log-done 'time`). Los estados
+  también se ofrecen en «Edit full title».
 - **Borrar encabezados con confirmación** (tecla Retroceso, papelera o deslizar a la izquierda).
 - **Narrow/Widen** siempre en la barra superior (actúa sobre el encabezado seleccionado).
 - **Seguridad reforzada** (ver abajo).

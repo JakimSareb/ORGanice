@@ -327,7 +327,8 @@ class UnifiedHeaderEditor extends PureComponent {
       <>
         <h2 className="drawer-modal__title">{editRawValues ? 'Edit full title' : 'Edit title'}</h2>
 
-        {editRawValues ? null : (
+        {/* ORG Mode para Eli: los estados también en «Edit full title» */}
+        {
           <div className="todo-container">
             <TabButtons
               buttons={todoKeywordSet
@@ -361,7 +362,7 @@ class UnifiedHeaderEditor extends PureComponent {
               </button>
             ) : null}
           </div>
-        )}
+        }
 
         <div className="title-line__edit-container">
           <textarea
