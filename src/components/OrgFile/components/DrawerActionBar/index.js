@@ -14,6 +14,15 @@ import _ from 'lodash';
 import DrawerActionButtons from './components/DrawerActionButtons';
 
 import { getSelectedHeader } from '../../../../lib/org_utils';
+import { getCurrentTimestampAsText } from '../../../../lib/timestamps';
+import { insertIntoField, openUploadDialog } from '../../../EliTools';
+
+// ORG Mode para Eli: campo de texto que se está editando en la ventana de edición del
+// encabezado (título o descripción), si lo hay.
+const activeEditField = () =>
+  document.querySelector(
+    '.header-content__edit-container textarea, .title-line__edit-container textarea'
+  );
 
 class DrawerActionBar extends PureComponent {
   constructor(props) {
@@ -28,6 +37,8 @@ class DrawerActionBar extends PureComponent {
       'handleShowScheduledModal',
       'handleShowNoteModal',
       'handleRemoveHeader',
+      'handleInsertInactiveDate',
+      'handleAttachFiles',
     ]);
   }
 
@@ -92,6 +103,42 @@ class DrawerActionBar extends PureComponent {
     this.props.base.activatePopup('note-editor');
   }
 
+  // ORG Mode para Eli: fecha inactiva de hoy en el cursor del texto que se edita; si no se
+  // está editando texto, al final del contenido del encabezado.
+  handleInsertInactiveDate() {
+    const stamp = getCurrentTimestampAsText({ isActive: false });
+    const field = activeEditField();
+    if (field) {
+      insertIntoField(field, stamp, field.selectionStart, field.selectionEnd);
+      return;
+    }
+    const { captureMode, selectedHeaderId } = this.props;
+    if (!captureMode && selectedHeaderId) this.props.org.insertInactiveDate(selectedHeaderId);
+  }
+
+  // ORG Mode para Eli: adjuntar archivos (se suben a assets/AAAA); el enlace va al cursor del
+  // texto que se edita o, si no, al final del encabezado.
+  handleAttachFiles() {
+    const field = activeEditField();
+    const target = field
+      ? { el: field, start: field.selectionStart, end: field.selectionEnd }
+      : null;
+    const { captureMode, selectedHeaderId } = this.props;
+    const headerId = captureMode ? null : selectedHeaderId;
+    if (!target && !headerId) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files || []);
+      input.remove();
+      if (files.length) openUploadDialog({ files, headerId, target, source: 'attach' });
+    });
+    document.body.appendChild(input);
+    input.click();
+  }
+
   handleRemoveHeader() {
     if (this.props.captureMode) {
       // In capture mode, "delete" discards the capture by closing the popup
@@ -117,6 +164,8 @@ class DrawerActionBar extends PureComponent {
           onScheduledClick={this.handleShowScheduledModal}
           onAddNote={this.handleShowNoteModal}
           onRemoveHeader={this.handleRemoveHeader}
+          onInsertInactiveDate={this.handleInsertInactiveDate}
+          onAttachFiles={this.handleAttachFiles}
           editRawValues={this.props.editRawValues}
           setEditRawValues={this.props.setEditRawValues}
           restorePreferEditRawValues={this.props.restorePreferEditRawValues}

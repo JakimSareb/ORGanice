@@ -1,6 +1,6 @@
-# ORG Mode para Eli
+# ORGanice
 
-Versión propia de [organice](https://github.com/200ok-ch/organice) (Org Mode en el navegador,
+*ORG Mode para Eli.* Versión propia de [organice](https://github.com/200ok-ch/organice) (Org Mode en el navegador,
 sin Emacs): lee y escribe tus ficheros `.org` directamente en **Dropbox**, desde el Mac, Windows
 o el iPhone. Conserva toda la funcionalidad de organice y añade:
 
@@ -18,11 +18,17 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   encabezado y sus hijos a `<fichero>_archive` (o al destino de `#+ARCHIVE:` / propiedad
   `ARCHIVE`), con las propiedades ARCHIVE_TIME, ARCHIVE_FILE, ARCHIVE_OLPATH, ARCHIVE_CATEGORY,
   ARCHIVE_TODO y ARCHIVE_ITAGS. Si el fichero está cifrado, el archivo también.
-- **Pegar archivos**: al pegar una imagen o un fichero se abre un diálogo de confirmación; las
+- **Pegar archivos**: al pegar una imagen o un fichero se abre un diálogo de confirmación donde
+  se puede cambiar el nombre (se propone el actual; la extensión se conserva); las
   imágenes se pueden subir en tamaño pequeño (800 px), mediano (1600 px), grande (2560 px) u
-  original, viendo el peso de cada opción. También con el clip 📎.
-- **Fecha inactiva**: icono que añade `[AAAA-MM-DD Día]` de hoy (y botón en el editor de texto
-  plano).
+  original, viendo el peso de cada opción. También con el clip 📎 (en los iconos del encabezado,
+  en la barra de la ventana de edición y en el editor de texto plano).
+- **Nombre del fichero en la cabecera**: dentro de un fichero se ve su nombre arriba (con 🔒 si
+  está cifrado) y en la pestaña del navegador.
+- **Agenda con Log**: botón *Log* que muestra u oculta las tareas terminadas en el día de su
+  `CLOSED:` (como la tecla `l` de org-agenda).
+- **Fecha inactiva**: icono que añade `[AAAA-MM-DD Día]` de hoy; en la ventana de edición del
+  título o la descripción se inserta donde está el cursor.
 - **Fases de la Luna**: botón 🌙 en la barra superior, como `M-x lunar-phases` de Emacs.
 - **Sin conexión**: la app abre sin red (service worker); un indicador rosa arriba a la derecha
   avisa y, al volver la conexión, se sincroniza sola. Para editar ficheros sin conexión entre
@@ -35,7 +41,8 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   privacidad mejorada, youtube-nocookie.com).
 - **Contextos GTD**: botones de filtro generados desde las líneas `#+TAGS:` de tus ficheros
   (en los filtros solo aparecen las etiquetas que empiezan por `@` presentes en tareas abiertas).
-  El editor de etiquetas ofrece primero las declaradas en `#+TAGS:`. En Buscar,
+  El editor de etiquetas muestra aparte las declaradas en `#+TAGS:` (del fichero abierto y de
+  los demás ficheros cargados) y después el resto de etiquetas usadas. En Buscar,
   Lista de tareas y Agenda. Solo se muestran los contextos y estados presentes con los filtros
   actuales; varios contextos seleccionados deben cumplirse a la vez. Respeta la herencia de
   etiquetas.
@@ -48,7 +55,9 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
 - **Editar como texto plano**: botón ≡ en la barra superior; edita el fichero abierto tal cual,
   como en un búfer de Emacs (⌘/Ctrl+S guarda, Esc cancela). Si hay un encabezado en modo
   *narrow*, edita solo ese encabezado con sus subencabezados y lo vuelve a colocar en su sitio
-  (comprueba que conserve su nivel; si lo vacías, pregunta antes de eliminarlo).
+  (comprueba que conserve su nivel; si lo vacías, pregunta antes de eliminarlo). Botones:
+  SCHEDULED y DEADLINE (en el encabezado donde está el cursor), fecha inactiva, Adjuntar y
+  Narrow/Widen (enfocar el encabezado del cursor o volver al fichero entero).
 - **Exportar a PDF**: botón PDF en la barra superior (fichero entero) o en cada encabezado (ese
   encabezado con sus subencabezados). Abre una vista previa → *PDF / Imprimir* → *Guardar como
   PDF* (en el iPhone: compartir → *Guardar en Archivos*). Incluye imágenes, tablas y listas; las

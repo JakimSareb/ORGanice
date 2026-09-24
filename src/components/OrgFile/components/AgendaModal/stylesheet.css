@@ -66,3 +66,30 @@
 .agenda__priority-item .title-line {
   margin-top: 0;
 }
+
+/* ORG Mode para Eli: botón Log */
+.agenda__timeframe-header-container {
+  position: relative;
+}
+.agenda__log-toggle {
+  position: absolute;
+  right: 0;
+  font: inherit;
+  font-size: 13px;
+  padding: 3px 10px;
+  border: 1px solid var(--base1);
+  border-radius: 999px;
+  background: var(--base3);
+  color: var(--base01);
+  cursor: pointer;
+}
+.agenda__log-toggle.is-active {
+  background: var(--base01);
+  border-color: var(--base01);
+  color: var(--base3);
+}
+@media (max-width: 420px) {
+  .agenda__timeframe-header-container {
+    padding-right: 56px;
+  }
+}

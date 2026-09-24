@@ -1,4 +1,4 @@
-import { allTagsForEditor } from '../../lib/gtd_contexts';
+import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -27,11 +27,7 @@ import { ActionCreators as undoActions } from 'redux-undo';
 
 import sampleCaptureTemplates from '../../lib/sample_capture_templates';
 import { calculateActionedKeybindings } from '../../lib/keybindings';
-import {
-  extractAllOrgProperties,
-  changelogHash,
-  STATIC_FILE_PREFIX,
-} from '../../lib/org_utils';
+import { extractAllOrgProperties, changelogHash, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import {
   parseTitleLine,
@@ -785,7 +781,7 @@ class OrgFile extends PureComponent {
   render() {
     const {
       headers,
-      fileConfigLines,
+      tagConfigLines,
       linesBeforeHeadings,
       shouldDisableDirtyIndicator,
       shouldDisableSyncButtons,
@@ -971,7 +967,8 @@ class OrgFile extends PureComponent {
                   onRemovePlanningItem={
                     this.state.captureMode ? this.handleCaptureRemovePlanningItem : null
                   }
-                  allTags={allTagsForEditor(headers, fileConfigLines)}
+                  allTags={allTagsForEditor(headers, tagConfigLines)}
+                  declaredTags={declaredTagsFromConfigLines(tagConfigLines)}
                   allOrgProperties={extractAllOrgProperties(headers)}
                   getPopupCloseAction={this.getPopupCloseAction}
                   onSwitch={() => {
@@ -1021,6 +1018,14 @@ const mapStateToProps = (state) => {
     files,
     headers,
     fileConfigLines: file.get('fileConfigLines') ? file.get('fileConfigLines').toJS() : [],
+    // ORG Mode para Eli: etiquetas de #+TAGS: del fichero abierto y, después, de los demás
+    // ficheros cargados (p. ej. si los contextos se declaran en otro fichero)
+    tagConfigLines: [path]
+      .concat(Array.from(files.keys()).filter((p) => p !== path))
+      .flatMap((p) => {
+        const lines = files.getIn([p, 'fileConfigLines']);
+        return lines ? lines.toJS().filter((l) => /^#\+TAGS:/i.test(String(l).trim())) : [];
+      }),
     linesBeforeHeadings,
     selectedHeaderId,
     isDirty: file.get('isDirty'),

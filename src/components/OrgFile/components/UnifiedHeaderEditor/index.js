@@ -433,6 +433,7 @@ class UnifiedHeaderEditor extends PureComponent {
       onCreatePlanningItem,
       onRemovePlanningItem,
       allTags,
+      declaredTags,
       allOrgProperties,
       getPopupCloseAction,
     } = this.props;
@@ -444,7 +445,12 @@ class UnifiedHeaderEditor extends PureComponent {
         return this.renderDescriptionEditor();
       case 'tags-editor':
         return (
-          <TagsEditorModal header={selectedHeader} allTags={allTags} onChange={handleTagsChange} />
+          <TagsEditorModal
+            header={selectedHeader}
+            allTags={allTags}
+            declaredTags={declaredTags}
+            onChange={handleTagsChange}
+          />
         );
       case 'property-list-editor':
         return selectedHeader ? (

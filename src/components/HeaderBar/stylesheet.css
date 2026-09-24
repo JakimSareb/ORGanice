@@ -107,3 +107,28 @@
     padding: 2px 8px;
   }
 }
+
+/* ORG Mode para Eli: nombre del fichero abierto en la cabecera */
+.header-bar--file {
+  grid-template-columns: minmax(1.5em, max-content) minmax(0, 1fr) auto;
+  column-gap: 8px;
+}
+.header-bar--file .header-bar__back-button {
+  max-width: 28vw;
+}
+.header-bar__title--file {
+  white-space: nowrap;
+  line-height: 30px;
+  font-weight: bold;
+}
+.eli-title-lock {
+  font-size: 0.7em;
+  margin-right: 6px;
+  opacity: 0.6;
+  vertical-align: middle;
+}
+@media (max-width: 480px) {
+  .header-bar__title--file {
+    font-size: 17px;
+  }
+}

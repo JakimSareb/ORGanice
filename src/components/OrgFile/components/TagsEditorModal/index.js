@@ -64,26 +64,46 @@ export default class TagsEditorModal extends PureComponent {
     const { allTags } = this.state;
 
     const headerTags = header.getIn(['titleLine', 'tags']);
+    const declared = (this.props.declaredTags || []).filter((tag) => !!tag);
+    const others = allTags.filter((tag) => !!tag && !declared.includes(tag));
+    const renderTag = (tag) => {
+      const className = classNames('all-tags__tag', {
+        'all-tags__tag--in-use': headerTags.includes(tag),
+      });
+      return (
+        <div
+          className={className}
+          key={tag}
+          onClick={this.handleExistingTagClick(tag)}
+          data-testid={`tags-editor-tag-${tag}`}
+          data-in-use={headerTags.includes(tag) ? 'true' : 'false'}
+        >
+          {tag}
+        </div>
+      );
+    };
 
     return (
       <>
         <h2 className="drawer-modal__title" data-testid="tags-editor-modal-title">
-          Edit tags
+          Etiquetas
         </h2>
 
         <datalist id="drawer-modal__datalist-tag-names">
-          {allTags.map((tagName, idx) => (
-            <option key={idx} value={tagName} />
-          ))}
+          {Array.from(new Set([...(this.props.declaredTags || []), ...allTags])).map(
+            (tagName, idx) => (
+              <option key={idx} value={tagName} />
+            )
+          )}
         </datalist>
 
         {headerTags.size === 0 ? (
           <div className="no-tags-message">
-            This header doesn't have any tags.
+            Este encabezado no tiene etiquetas.
             <br />
             <br />
-            Click the <i className="fas fa-plus" /> button to add a new one, or choose from the list
-            of all of your tags below.
+            Toca una de las etiquetas de abajo o pulsa <i className="fas fa-plus" /> para escribir
+            una nueva.
           </div>
         ) : (
           <Droppable droppableId="tags-editor-droppable" type="TAG">
@@ -140,29 +160,34 @@ export default class TagsEditorModal extends PureComponent {
 
         <hr className="tags-editor__separator" />
 
-        <h2 className="tags-editor__title">All tags</h2>
+        {/* ORG Mode para Eli: primero las etiquetas declaradas en #+TAGS:, luego el resto */}
+        {declared.length > 0 && (
+          <>
+            <h2 className="tags-editor__title">Etiquetas de #+TAGS:</h2>
+            <div className="all-tags-container" data-testid="tags-editor-declared-tags">
+              {declared.map(renderTag)}
+            </div>
+          </>
+        )}
 
-        <div className="all-tags-container" data-testid="tags-editor-all-tags-container">
-          {allTags
-            .filter((tag) => !!tag)
-            .map((tag) => {
-              const className = classNames('all-tags__tag', {
-                'all-tags__tag--in-use': headerTags.includes(tag),
-              });
+        {others.length > 0 && (
+          <>
+            <h2 className="tags-editor__title">
+              {declared.length > 0 ? 'Otras etiquetas usadas' : 'Todas las etiquetas'}
+            </h2>
+            <div className="all-tags-container" data-testid="tags-editor-all-tags-container">
+              {others.map(renderTag)}
+            </div>
+          </>
+        )}
 
-              return (
-                <div
-                  className={className}
-                  key={tag}
-                  onClick={this.handleExistingTagClick(tag)}
-                  data-testid={`tags-editor-tag-${tag}`}
-                  data-in-use={headerTags.includes(tag) ? 'true' : 'false'}
-                >
-                  {tag}
-                </div>
-              );
-            })}
-        </div>
+        {declared.length === 0 && others.length === 0 && (
+          <div className="no-tags-message">
+            Aún no hay etiquetas. Decláralas en la cabecera del fichero, p. ej.
+            <br />
+            <code>#+TAGS: @casa @oficina @recados</code>
+          </div>
+        )}
       </>
     );
   }

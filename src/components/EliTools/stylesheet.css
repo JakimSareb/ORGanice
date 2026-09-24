@@ -372,3 +372,89 @@ h6.eli-print__heading {
 .eli-moon__time {
   color: var(--base1);
 }
+.eli-upload__files li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.eli-upload__name {
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.eli-upload__name-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px; /* evita el zoom del iPhone */
+  padding: 3px 6px;
+  border: 1px solid var(--base1);
+  border-radius: 4px;
+  background: var(--base3);
+  color: var(--base00);
+}
+.eli-upload__ext {
+  padding-left: 2px;
+  color: var(--base1);
+}
+
+/* Editor de texto plano: barra de herramientas */
+.eli-raw__tools {
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--base2);
+}
+.eli-raw__tool {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 10px;
+  border: 1px solid var(--base1);
+  border-radius: 999px;
+  background: var(--base3);
+  color: var(--base01);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.eli-raw__tool:hover {
+  background: var(--base2);
+}
+.eli-raw__tool.is-active {
+  background: var(--base01);
+  color: var(--base3);
+  border-color: var(--base01);
+}
+.eli-raw__planning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--base2);
+  border-bottom: 1px solid var(--base1);
+}
+.eli-raw__planning input {
+  font-size: 16px;
+  padding: 3px 6px;
+  border: 1px solid var(--base1);
+  border-radius: 4px;
+  background: var(--base3);
+  color: var(--base00);
+}
+@media (max-width: 480px) {
+  .eli-raw__tools {
+    gap: 4px;
+    padding: 5px 8px;
+  }
+  .eli-raw__tool {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}

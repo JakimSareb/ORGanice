@@ -204,8 +204,10 @@ export default class SyncServiceSignIn extends PureComponent {
 // para crear la app de Dropbox cuando la app no trae una App key incluida.
 function EliDropboxSignIn({ onConnect }) {
   const builtIn = getBuiltInDropboxClientId();
-  const [showAdvanced, setShowAdvanced] = useState(!builtIn || !!getCustomDropboxClientId());
-  const [showGuide, setShowGuide] = useState(!builtIn);
+  // Si ya hay una App key (incluida en la app o guardada en este navegador), basta con el botón
+  const hasKey = !!getDropboxClientId();
+  const [showAdvanced, setShowAdvanced] = useState(!hasKey);
+  const [showGuide, setShowGuide] = useState(!hasKey);
   const [copied, setCopied] = useState(false);
   const redirect = appRootUrl();
 
@@ -223,9 +225,9 @@ function EliDropboxSignIn({ onConnect }) {
     <div className="sync-service-sign-in-container eli-signin">
       <h2 className="eli-signin__title">Conectar con Dropbox</h2>
       <p className="sync-service-sign-in__help-text">
-        La app lee y guarda tus ficheros .org directamente en tu Dropbox. Se abrirá la web de
-        Dropbox para que autorices el acceso; solo hay que hacerlo una vez en cada dispositivo y la
-        app queda vinculada.
+        ORGanice lee y guarda tus ficheros .org directamente en tu Dropbox. Pulsa el logo: se abrirá
+        la web de Dropbox para que autorices el acceso (tu contraseña solo la ve Dropbox). Se hace
+        una vez en cada dispositivo y la app queda vinculada.
       </p>
 
       <div className="sync-service-container">
@@ -234,11 +236,9 @@ function EliDropboxSignIn({ onConnect }) {
         </a>
       </div>
 
-      {builtIn && (
+      {hasKey && (
         <button className="eli-signin__link" onClick={() => setShowAdvanced(!showAdvanced)}>
-          {showAdvanced
-            ? 'Ocultar opciones avanzadas'
-            : 'Opciones avanzadas (usar otra app de Dropbox)'}
+          {showAdvanced ? 'Ocultar opciones avanzadas' : 'Opciones avanzadas (cambiar la App key)'}
         </button>
       )}
 

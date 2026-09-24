@@ -92,3 +92,35 @@
   flex: 1;
   min-width: 0;
 }
+
+/* ORG Mode para Eli: modo Log (tareas terminadas en su fecha CLOSED:) */
+.agenda-day__log {
+  margin: 6px 0 10px;
+  border-left: 3px solid var(--green);
+  padding-left: 8px;
+}
+.agenda-day__log-title {
+  color: var(--green);
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.agenda-day__log-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+.agenda-day__log-time {
+  font-family: Courier;
+  color: var(--green);
+  min-width: 42px;
+  white-space: nowrap;
+}
+.agenda-day__log-header {
+  flex: 1;
+  min-width: 0;
+}
+.agenda-day__log-header .title-line {
+  margin-top: 0;
+}

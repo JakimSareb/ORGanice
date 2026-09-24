@@ -32,6 +32,7 @@ import {
 } from 'date-fns';
 import classNames from 'classnames';
 import { List } from 'immutable';
+import { closedItemsForDay } from '../../../../../../lib/eli_agenda_log';
 
 export default class AgendaDay extends PureComponent {
   constructor(props) {
@@ -121,6 +122,34 @@ export default class AgendaDay extends PureComponent {
     );
   }
 
+  // ORG Mode para Eli: modo Log, tareas terminadas en su fecha CLOSED:
+  renderLog(items) {
+    if (!items.length) return null;
+    return (
+      <div className="agenda-day__log" data-testid="eli-agenda-log">
+        <div className="agenda-day__log-title">
+          <i className="fas fa-check" /> Terminadas ({items.length})
+        </div>
+        {items.map(({ key, header, date, hasTime }) => (
+          <div key={key} className="agenda-day__log-item">
+            <div className="agenda-day__log-time">{hasTime ? format(date, 'HH:mm') : ''}</div>
+            <div className="agenda-day__log-header">
+              <TitleLine
+                header={header}
+                color="var(--base03)"
+                hasContent={false}
+                isSelected={false}
+                shouldDisableActions
+                shouldDisableExplicitWidth
+                onClick={this.handleHeaderClick(header.get('path'), header.get('id'))}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   handleHeaderClick(path, headerId) {
     return () => this.props.onHeaderClick(path, headerId);
   }
@@ -170,6 +199,8 @@ export default class AgendaDay extends PureComponent {
 
         <div className="agenda-day__headers-container">
           {this.renderOverdue(overdue)}
+          {this.props.showLog &&
+            this.renderLog(closedItemsForDay(this.props.logFiles || files, dateStart, dateEnd))}
           <div>
             {planningItemsAndHeaders.map(([planningItem, header]) => {
               const planningItemDate = dateForTimestamp(planningItem.get('timestamp'));

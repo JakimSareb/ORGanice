@@ -19,6 +19,7 @@ import {
   sync,
   narrowHeader,
   widenHeader,
+  openHeader,
   toggleEliFavoriteFile,
   uploadFilesAndGetLinks,
   appendLinesToHeader,
@@ -32,7 +33,8 @@ import {
   pastedName,
 } from '../../lib/eli_image';
 import { phasesForThreeMonths, moonState } from '../../lib/lunar';
-import { getCurrentTimestampAsText } from '../../lib/timestamps';
+import { getCurrentTimestampAsText, getTimestampAsText } from '../../lib/timestamps';
+import { setPlanning, narrowAt } from '../../lib/eli_raw_tools';
 import { List } from 'immutable';
 
 // ORG Mode para Eli: herramientas de fichero
@@ -105,11 +107,17 @@ export const validateSubtreeText = (text, level) => {
   return { ok: true };
 };
 
-function RawEditor({ path, initialText, narrow, onClose }) {
+function RawEditor({ path, initialText, narrow: initialNarrow, onClose, dontIndent }) {
   const dispatch = useDispatch();
   const [text, setText] = useState(initialText);
+  // ORG Mode para Eli: el narrow se puede cambiar dentro del editor (botón Narrow/Widen)
+  const [narrow, setNarrow] = useState(initialNarrow || null);
+  const [planning, setPlanningPrompt] = useState(null); // { type, date, time }
   const ref = useRef(null);
-  const changed = text !== initialText;
+  const wrap = (n, t) => (n ? n.before + t + n.after : t);
+  const originalFull = wrap(initialNarrow, initialText);
+  const changed = wrap(narrow, text) !== originalFull;
+  const narrowChanged = (initialNarrow ? initialNarrow.index : -1) !== (narrow ? narrow.index : -1);
 
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
@@ -125,8 +133,111 @@ function RawEditor({ path, initialText, narrow, onClose }) {
     onClose();
   };
 
+  const placeCursor = (pos) =>
+    requestAnimationFrame(() => {
+      const el = ref.current;
+      if (!el) return;
+      try {
+        el.focus();
+        el.setSelectionRange(pos, pos);
+      } catch (e) {}
+    });
+
+  const cursorPos = () => (ref.current ? ref.current.selectionStart : 0);
+
+  const toggleNarrow = () => {
+    const pos = cursorPos();
+    if (narrow) {
+      // Widen: volver al fichero entero sin perder lo escrito
+      setText(narrow.before + text + narrow.after);
+      setNarrow(null);
+      placeCursor(narrow.before.length + pos);
+      return;
+    }
+    const n = narrowAt(text, pos);
+    if (!n) {
+      window.alert('Coloca el cursor dentro de un encabezado para enfocarlo (narrow).');
+      return;
+    }
+    setNarrow({ before: n.before, after: n.after, level: n.level, index: n.index, title: n.title });
+    setText(n.text);
+    placeCursor(n.cursor);
+  };
+
+  const openPlanning = (type) => {
+    const now = new Date();
+    const pad = (x) => String(x).padStart(2, '0');
+    setPlanningPrompt({
+      type,
+      date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+      time: '',
+      pos: cursorPos(),
+    });
+  };
+
+  const applyPlanning = () => {
+    if (!planning || !planning.date) return;
+    const [y, m, d] = planning.date.split('-').map(Number);
+    const [hh, mm] = (planning.time || '').split(':').map(Number);
+    const date = new Date(y, m - 1, d, hh || 0, mm || 0);
+    const stamp = getTimestampAsText(date, { isActive: true, withStartTime: !!planning.time });
+    const result = setPlanning(text, planning.pos, planning.type, stamp, {
+      indent: !dontIndent,
+    });
+    setPlanningPrompt(null);
+    if (!result) {
+      window.alert('Coloca el cursor dentro de un encabezado (en su título o en su texto).');
+      return;
+    }
+    setText(result.text);
+    placeCursor(result.cursor);
+  };
+
+  const attach = () => {
+    const el = ref.current;
+    const target = el ? { el, start: el.selectionStart, end: el.selectionEnd } : null;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files || []);
+      input.remove();
+      if (files.length) openUploadDialog({ files, target, source: 'attach' });
+    });
+    document.body.appendChild(input);
+    input.click();
+  };
+
+  const insertInactive = () => {
+    const el = ref.current;
+    insertIntoField(
+      el,
+      getCurrentTimestampAsText({ isActive: false }),
+      el.selectionStart,
+      el.selectionEnd
+    );
+  };
+
+  // Enfoca en la app el encabezado que ocupa la posición `index` (tras volver a analizar)
+  const narrowAppTo = (index, level) =>
+    dispatch((d, getState) => {
+      const headers = getState().org.present.getIn(['files', path, 'headers']) || List();
+      const h = headers.get(index);
+      if (h && h.get('nestingLevel') === level) {
+        // Abrir los padres (y el propio encabezado): si no, un subencabezado quedaría oculto
+        d({ type: 'OPEN_PARENTS_OF_HEADER', headerId: h.get('id') });
+        d(openHeader(h.get('id')));
+        d(narrowHeader(h.get('id')));
+      }
+    });
+
   const save = () => {
     if (!changed) {
+      if (narrowChanged) {
+        dispatch(widenHeader());
+        if (narrow) narrowAppTo(narrow.index, narrow.level);
+      }
       onClose();
       return;
     }
@@ -153,17 +264,11 @@ function RawEditor({ path, initialText, narrow, onClose }) {
       normalized = narrow.before + normalized + narrow.after;
     }
     // Se sale del narrow antes de volver a analizar (los ids de los encabezados cambian)
-    if (narrow) dispatch(widenHeader());
+    dispatch(widenHeader());
     dispatch(parseFile(path, normalized));
-    if (narrow && !deleted) {
-      // Los encabezados reciben ids nuevos al volver a analizar el fichero: se vuelve a
-      // enfocar (narrow) el encabezado que ocupa la misma posición.
-      dispatch((d, getState) => {
-        const headers = getState().org.present.getIn(['files', path, 'headers']) || List();
-        const h = headers.get(narrow.index);
-        if (h && h.get('nestingLevel') === narrow.level) d(narrowHeader(h.get('id')));
-      });
-    }
+    // Los encabezados reciben ids nuevos al volver a analizar el fichero: se vuelve a
+    // enfocar (narrow) el encabezado que ocupa la misma posición.
+    if (narrow && !deleted) narrowAppTo(narrow.index, narrow.level);
     dispatch(setDirty(true, path));
     dispatch(sync({ path, shouldSuppressMessages: true }));
     onClose();
@@ -192,21 +297,6 @@ function RawEditor({ path, initialText, narrow, onClose }) {
         <button className="btn eli-raw__btn" onClick={cancel}>
           Cancelar
         </button>
-        <button
-          className="btn eli-raw__btn"
-          title="Insertar la fecha de hoy como fecha inactiva"
-          onClick={() => {
-            const el = ref.current;
-            insertIntoField(
-              el,
-              getCurrentTimestampAsText({ isActive: false }),
-              el.selectionStart,
-              el.selectionEnd
-            );
-          }}
-        >
-          <i className="far fa-calendar-plus" />
-        </button>
         <div className="eli-raw__title">
           {narrow ? 'Texto plano: solo este encabezado' : 'Texto plano'}
           {changed ? ' •' : ''}
@@ -216,6 +306,81 @@ function RawEditor({ path, initialText, narrow, onClose }) {
           Guardar
         </button>
       </div>
+      <div className="eli-raw__tools" role="toolbar" aria-label="Herramientas">
+        <button
+          className="eli-raw__tool"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => openPlanning('SCHEDULED')}
+          title="Programar (SCHEDULED) el encabezado donde está el cursor"
+          data-testid="eli-raw-scheduled"
+        >
+          <i className="far fa-calendar-check" /> <span>SCHEDULED</span>
+        </button>
+        <button
+          className="eli-raw__tool"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => openPlanning('DEADLINE')}
+          title="Fecha límite (DEADLINE) del encabezado donde está el cursor"
+          data-testid="eli-raw-deadline"
+        >
+          <i className="fas fa-calendar-check" /> <span>DEADLINE</span>
+        </button>
+        <button
+          className="eli-raw__tool"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={insertInactive}
+          title="Insertar la fecha de hoy como fecha inactiva"
+          data-testid="eli-raw-inactive"
+        >
+          <i className="far fa-calendar-plus" /> <span>Fecha</span>
+        </button>
+        <button
+          className="eli-raw__tool"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={attach}
+          title="Adjuntar archivos (se suben a assets/AAAA y se inserta el enlace)"
+          data-testid="eli-raw-attach"
+        >
+          <i className="fas fa-paperclip" /> <span>Adjuntar</span>
+        </button>
+        <button
+          className={'eli-raw__tool' + (narrow ? ' is-active' : '')}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={toggleNarrow}
+          title={
+            narrow
+              ? 'Widen: volver a ver el fichero entero'
+              : 'Narrow subtree: editar solo el encabezado donde está el cursor'
+          }
+          data-testid="eli-raw-narrow"
+        >
+          <i className={narrow ? 'fas fa-expand' : 'fas fa-compress'} />{' '}
+          <span>{narrow ? 'Widen' : 'Narrow'}</span>
+        </button>
+      </div>
+      {planning && (
+        <div className="eli-raw__planning" data-testid="eli-raw-planning">
+          <strong>{planning.type}:</strong>
+          <input
+            type="date"
+            value={planning.date}
+            onChange={(e) => setPlanningPrompt({ ...planning, date: e.target.value })}
+            aria-label="Fecha"
+          />
+          <input
+            type="time"
+            value={planning.time}
+            onChange={(e) => setPlanningPrompt({ ...planning, time: e.target.value })}
+            aria-label="Hora (opcional)"
+          />
+          <button className="btn eli-raw__btn eli-raw__btn--primary" onClick={applyPlanning}>
+            Poner
+          </button>
+          <button className="btn eli-raw__btn" onClick={() => setPlanningPrompt(null)}>
+            Cancelar
+          </button>
+        </div>
+      )}
       <textarea
         ref={ref}
         className="eli-raw__textarea"
@@ -463,6 +628,24 @@ export const insertIntoField = (el, text, start, end) => {
   } catch (e) {}
 };
 
+// Separa "foto.jpg" en ["foto", ".jpg"]
+export const splitExt = (name) => {
+  const m = /^(.+?)(\.[A-Za-z0-9]{1,8})?$/.exec(name || '');
+  return m ? [m[1], m[2] || ''] : [name || '', ''];
+};
+
+// Nombre final: el que escribe el usuario (sin extensión) + la extensión real del fichero
+export const renamedFile = (file, base) => {
+  const [origBase, ext] = splitExt(file.name);
+  const clean = (base || '')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '')
+    .trim()
+    .replace(/\.+$/, '');
+  const finalBase = clean || origBase;
+  if (finalBase === origBase) return file;
+  return new File([file], finalBase + ext, { type: file.type, lastModified: file.lastModified });
+};
+
 const headerLabel = (h) =>
   `${'  '.repeat(Math.max(0, h.get('nestingLevel') - 1))}${h
     .getIn(['titleLine', 'rawTitle'])
@@ -477,6 +660,7 @@ function UploadDialog({ request, path, headers, onClose }) {
     request.headerId || (headers && headers.size ? headers.first().get('id') : null)
   );
   const [busy, setBusy] = useState(false);
+  const [names, setNames] = useState([]); // nombres editables (sin extensión)
 
   useEffect(() => {
     let alive = true;
@@ -495,7 +679,10 @@ function UploadDialog({ request, path, headers, onClose }) {
           });
         }
       }
-      if (alive) setPrepared(list);
+      if (alive) {
+        setPrepared(list);
+        setNames(list.map((p) => splitExt(p.name)[0]));
+      }
     })();
     return () => {
       alive = false;
@@ -513,7 +700,9 @@ function UploadDialog({ request, path, headers, onClose }) {
   const confirm = async () => {
     if (!prepared || busy) return;
     setBusy(true);
-    const links = await dispatch(uploadFilesAndGetLinks(prepared.map(pick)));
+    const links = await dispatch(
+      uploadFilesAndGetLinks(prepared.map((p, i) => renamedFile(pick(p), names[i])))
+    );
     if (links.length) {
       if (target && target.el && document.body.contains(target.el)) {
         insertIntoField(target.el, links.join('\n'), target.start, target.end);
@@ -539,7 +728,35 @@ function UploadDialog({ request, path, headers, onClose }) {
               ) : (
                 <i className="fas fa-file" />
               )}{' '}
-              {p.name}
+              {prepared ? (
+                <span className="eli-upload__name">
+                  <input
+                    type="text"
+                    className="eli-upload__name-input"
+                    aria-label="Nombre del archivo"
+                    value={names[i] == null ? '' : names[i]}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setNames((prev) => prev.map((n, j) => (j === i ? v : n)));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        confirm();
+                      }
+                    }}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoFocus={i === 0}
+                    onFocus={(e) => e.target.select()}
+                    data-testid={`eli-upload-name-${i}`}
+                  />
+                  <span className="eli-upload__ext">{splitExt(pick(p).name)[1]}</span>
+                </span>
+              ) : (
+                p.name
+              )}
               <span className="eli-upload__muted">
                 {' '}
                 · {formatBytes(p.file.size)}
@@ -784,7 +1001,6 @@ export default function EliTools() {
     return () => document.removeEventListener('paste', onPaste);
   }, [usable, file]);
 
-
   useEffect(() => {
     const onRaw = () => {
       if (!usable) return;
@@ -832,6 +1048,7 @@ export default function EliTools() {
           path={raw.path}
           initialText={raw.text}
           narrow={raw.narrow}
+          dontIndent={dontIndent}
           onClose={() => setRaw(null)}
         />
       )}

@@ -5,10 +5,12 @@ import './stylesheet.css';
 export default class DrawerActionButtons extends PureComponent {
   // A nasty hack required to get click handling to work properly in Firefox. No idea why its
   // broken in the first place or why this fixes it.
-  iconWithFFClickCatcher({ className, onClick, title, disabled, testId = '' }) {
+  iconWithFFClickCatcher({ className, onClick, title, disabled, testId = '', keepFocus }) {
     return (
       <div
         title={title}
+        // ORG Mode para Eli: no quitar el foco (ni el cursor) del texto que se está editando
+        onMouseDown={keepFocus ? (e) => e.preventDefault() : undefined}
         onClick={!disabled ? onClick : undefined}
         className="header-action-drawer__ff-click-catcher-container"
       >
@@ -29,6 +31,8 @@ export default class DrawerActionButtons extends PureComponent {
       onScheduledClick,
       onAddNote,
       onRemoveHeader,
+      onInsertInactiveDate,
+      onAttachFiles,
       activePopupType,
       editRawValues,
       setEditRawValues,
@@ -110,6 +114,24 @@ export default class DrawerActionButtons extends PureComponent {
             disabled: 'scheduled-editor' === activePopupType,
             testId: 'drawer-action-scheduled',
           })}
+
+          {onInsertInactiveDate &&
+            this.iconWithFFClickCatcher({
+              className: 'far fa-calendar-plus fa-lg',
+              onClick: onInsertInactiveDate,
+              title: 'Insertar la fecha de hoy (inactiva)',
+              testId: 'drawer-action-inactive-date',
+              keepFocus: true,
+            })}
+
+          {onAttachFiles &&
+            this.iconWithFFClickCatcher({
+              className: 'fas fa-paperclip fa-lg',
+              onClick: onAttachFiles,
+              title: 'Adjuntar archivos (assets/AAAA)',
+              testId: 'drawer-action-attach',
+              keepFocus: true,
+            })}
 
           {this.iconWithFFClickCatcher({
             className:

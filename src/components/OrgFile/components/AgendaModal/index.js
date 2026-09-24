@@ -50,6 +50,21 @@ function AgendaModal(props) {
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dateDisplayType, setDateDisplayType] = useState('absolute');
+  // ORG Mode para Eli: modo Log (mostrar/ocultar tareas terminadas según su CLOSED:)
+  const [showLog, setShowLog] = useState(() => {
+    try {
+      return window.localStorage.getItem('eliAgendaLog') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  function toggleLog() {
+    const next = !showLog;
+    setShowLog(next);
+    try {
+      window.localStorage.setItem('eliAgendaLog', String(next));
+    } catch (e) {}
+  }
 
   const weekStartsOn = agendaStartOnWeekday < 0 ? getDay(selectedDate) : agendaStartOnWeekday;
 
@@ -192,6 +207,15 @@ function AgendaModal(props) {
         <i className="fas fa-chevron-left fa-lg" onClick={handlePreviousDateClick} />
         <div className="agenda__timeframe-header">{calculateTimeframeHeader()}</div>
         <i className="fas fa-chevron-right fa-lg" onClick={handleNextDateClick} />
+        <button
+          className={'agenda__log-toggle' + (showLog ? ' is-active' : '')}
+          onClick={toggleLog}
+          aria-pressed={showLog}
+          title="Log: mostrar u ocultar las tareas terminadas en su fecha CLOSED:"
+          data-testid="eli-agenda-log-toggle"
+        >
+          <i className="fas fa-check" /> Log
+        </button>
       </div>
 
       <div
@@ -213,6 +237,8 @@ function AgendaModal(props) {
             orgHabitPrecedingDays={orgHabitPrecedingDays}
             orgHabitFollowingDays={orgHabitFollowingDays}
             expandOverdueByDefault={agendaTimeframe === 'Day'}
+            showLog={showLog}
+            logFiles={props.logFiles}
           />
         ))}
       </div>
@@ -229,6 +255,11 @@ const mapStateToProps = (state) => {
   const fileSettings = state.org.present.get('fileSettings');
   const agendaStartOnWeekday = state.base.get('agendaStartOnWeekday');
   return {
+    // El Log muestra las terminadas aunque haya un filtro de estado (TODO, NEXT…)
+    logFiles: filterFilesByContexts(
+      determineIncludedFiles(allFiles, fileSettings, path, 'includeInAgenda', false),
+      state.org.present.get('contextFilter')
+    ),
     files: filterFilesByTodo(
       filterFilesByContexts(
         determineIncludedFiles(allFiles, fileSettings, path, 'includeInAgenda', false),

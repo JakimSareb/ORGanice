@@ -1,4 +1,5 @@
 import { openRawEditor, openPrintPreview, openMoonPhases } from '../EliTools';
+import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { getPersistPlainFiles } from '../../lib/eli_security';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
 const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
@@ -47,16 +48,30 @@ class HeaderBar extends PureComponent {
     return pathname.split('/')[1];
   }
 
+  componentDidMount() {
+    this.updateWindowTitle();
+  }
+
+  componentDidUpdate() {
+    this.updateWindowTitle();
+  }
+
+  updateWindowTitle() {
+    // No se toca mientras la vista de impresión usa su propio título
+    if (
+      document.getElementById('eli-print-portal') &&
+      document.getElementById('eli-print-portal').childElementCount
+    )
+      return;
+    const title = windowTitleFor(this.getFilename() ? this.props.path : null);
+    if (document.title !== title) document.title = title;
+  }
+
   getFilename() {
-    const {
-      location: { pathname },
-    } = this.props;
-    // only show a filename if it's a file and not a path
-    if (pathname.includes('.org')) {
-      return pathname.substring(pathname.lastIndexOf('/') + 1, pathname.lastIndexOf('.'));
-    } else {
-      return '';
-    }
+    // ORG Mode para Eli: nombre del fichero abierto (sin carpeta ni extensiones .org/.gpg/.asc)
+    const { path } = this.props;
+    if (!path || this.getPathRoot() !== 'file') return '';
+    return fileDisplayName(path);
   }
 
   renderFileBrowserBackButton() {
@@ -108,7 +123,7 @@ class HeaderBar extends PureComponent {
     return (
       <div className="header-bar__logo-container">
         <img className="header-bar__logo" src={logo} alt="Logo" width="30" height="30" />
-        <h2 className="header-bar__app-name">organice</h2>
+        <h2 className="header-bar__app-name">ORGanice</h2>
       </div>
     );
   }
@@ -214,7 +229,20 @@ class HeaderBar extends PureComponent {
       default:
     }
 
-    return titleContainerWithText(this.props.shouldShowTitleInOrgFile ? this.getFilename() : '');
+    // ORG Mode para Eli: dentro de un fichero, siempre se ve su nombre en la cabecera
+    const name = this.getFilename();
+    if (!name) return titleContainerWithText('');
+    return (
+      <div
+        className="header-bar__title header-bar__title--file"
+        onClick={this.handleHeaderBarTitleClick}
+        title={this.props.path}
+        data-testid="eli-file-title"
+      >
+        {/\.(gpg|asc)$/i.test(this.props.path) && <i className="fas fa-lock eli-title-lock" />}
+        {name}
+      </div>
+    );
   }
 
   handleChangelogClick() {
@@ -372,6 +400,7 @@ class HeaderBar extends PureComponent {
   render() {
     const className = classNames('header-bar', {
       'header-bar--with-logo': this.getPathRoot() === '',
+      'header-bar--file': !!this.getFilename() && !this.props.activeModalPage,
     });
 
     // The LP does not show the HeaderBar
