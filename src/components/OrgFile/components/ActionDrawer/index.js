@@ -351,15 +351,16 @@ const ActionDrawer = ({
           />
 
           <ActionButton
-            iconName="calendar-alt"
+            iconName="copy"
             isDisabled={false}
-            onClick={handleAgendaClick}
+            onClick={openFavorites}
+            dataTestId="eli-favorites"
             style={{
               opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
               pointerEvents:
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
-            tooltip="Show agenda"
+            tooltip="Ficheros principales"
           />
 
           {renderMovementButtons()}
@@ -380,16 +381,15 @@ const ActionDrawer = ({
           />
 
           <ActionButton
-            iconName="copy"
+            iconName="calendar-alt"
             isDisabled={false}
-            onClick={openFavorites}
-            dataTestId="eli-favorites"
+            onClick={handleAgendaClick}
             style={{
               opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
               pointerEvents:
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
-            tooltip="Ficheros principales"
+            tooltip="Show agenda"
           />
 
           {renderCaptureButtons()}

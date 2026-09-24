@@ -678,6 +678,14 @@ class Header extends PureComponent {
                   onAddNote={this.handleAddNoteClick}
                   onAttachFiles={this.handleAttachFiles}
                   onExportPdf={() => openPrintPreview(header.get('id'))}
+                  onRemoveHeader={() => {
+                    const id = header.get('id');
+                    confirmRemoveHeader(this.props.headers, id).then((ok) => {
+                      if (!ok) return;
+                      this.props.org.selectNextSiblingHeader(id);
+                      this.props.org.removeHeader(id);
+                    });
+                  }}
                   onInsertInactiveDate={() => this.props.org.insertInactiveDate(header.get('id'))}
                   onTogglePriority={() => this.props.org.togglePriorityA(header.get('id'))}
                   isPriorityA={getPriority(header) === 'A'}

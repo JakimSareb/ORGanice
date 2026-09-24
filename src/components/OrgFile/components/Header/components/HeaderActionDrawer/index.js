@@ -97,6 +97,7 @@ export default class HeaderActionDrawer extends PureComponent {
       onDuplicateHeader,
       onAttachFiles,
       onExportPdf,
+      onRemoveHeader,
       onInsertInactiveDate,
       onTogglePriority,
       isPriorityA,
@@ -116,13 +117,7 @@ export default class HeaderActionDrawer extends PureComponent {
     // ORG Mode para Eli: todos los iconos en una rejilla uniforme (5 columnas en el móvil,
     // 8 en pantallas medianas y una sola fila en pantallas anchas), agrupados por función.
     const icons = [
-      // Editar
-      {
-        className: 'fas fa-pencil-alt fa-lg',
-        onClick: onTitleClick,
-        title: 'Edit header title',
-        testId: 'drawer-action-edit-title',
-      },
+      // Prioridad (primera posición)
       onTogglePriority && {
         className: `${isPriorityA ? 'fas' : 'far'} fa-star fa-lg eli-drawer-star${
           isPriorityA ? ' is-on' : ''
@@ -130,6 +125,13 @@ export default class HeaderActionDrawer extends PureComponent {
         onClick: onTogglePriority,
         testId: 'eli-priority',
         title: isPriorityA ? 'Quitar la prioridad [#A]' : 'Marcar con prioridad [#A]',
+      },
+      // Editar
+      {
+        className: 'fas fa-pencil-alt fa-lg',
+        onClick: onTitleClick,
+        title: 'Edit header title',
+        testId: 'drawer-action-edit-title',
       },
       {
         className: 'fas fa-edit fa-lg',
@@ -219,6 +221,13 @@ export default class HeaderActionDrawer extends PureComponent {
         onClick: onExportPdf,
         testId: 'eli-print-header',
         title: 'Exportar este encabezado y sus subencabezados a PDF',
+      },
+      // Borrar (al final; pide confirmación)
+      onRemoveHeader && {
+        className: 'fas fa-trash fa-lg eli-drawer-trash',
+        onClick: onRemoveHeader,
+        testId: 'eli-remove-header',
+        title: 'Borrar este encabezado (pide confirmación)',
       },
     ].filter(Boolean);
 
