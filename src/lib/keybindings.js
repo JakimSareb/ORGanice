@@ -19,6 +19,8 @@ const DEFAULT_BINDINGS = [
   ['Abrir ficheros principales', 'openFavorites', 'f'],
   ['Capturar (después, la letra de la plantilla)', 'openCapture', 'c'],
   ['Sincronizar', 'syncFile', 's'],
+  ['Mover encabezados (flechas)', 'openMoveMenu', 'm'],
+  ['Buscar', 'openSearch', 'b'],
 ];
 
 export const calculateNamedKeybindings = (customKeybindings) =>

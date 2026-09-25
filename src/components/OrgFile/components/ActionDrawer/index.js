@@ -163,6 +163,28 @@ const ActionDrawer = ({
     };
   }, []);
 
+  // ORG Mode para Eli: tecla m (configurable) abre/cierra las flechas de mover; Esc las cierra
+  const arrowsOpen = useRef(false);
+  arrowsOpen.current = isDisplayingArrowButtons;
+  useEffect(() => {
+    const onMove = () => {
+      setIsDisplayingCaptureButtons(false);
+      setIsDisplayingArrowButtons(!arrowsOpen.current);
+    };
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || !arrowsOpen.current) return;
+      if (document.querySelector('.eli-prompt__overlay, [data-testid="drawer"]')) return;
+      e.preventDefault();
+      setIsDisplayingArrowButtons(false);
+    };
+    window.addEventListener('eli:move-menu', onMove);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('eli:move-menu', onMove);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   const renderCaptureButtons = () => {
     const availableCaptureTemplates = getAvailableCaptureTemplates();
 

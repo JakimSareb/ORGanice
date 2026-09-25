@@ -77,7 +77,10 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
   también se ofrecen en «Edit full title».
 - **Atajos de teclado** (configurables en Ajustes → Keyboard shortcuts): Esc cierra la ventana de
   edición del encabezado, `a` agenda, `f` ficheros principales, `c` + letra de la plantilla para
-  capturar, `s` sincronizar. No actúan mientras se escribe.
+  capturar, `s` sincronizar, `m` flechas de mover, `b` buscar (Esc cierra). No actúan mientras se
+  escribe. `a`, `f` y `c` también en el explorador de ficheros.
+- **Capturas**: tocar fuera o Esc guardan la captura (si tiene título); el botón *Cancel* la
+  descarta.
 - **Buscar solo en esta hoja**: botón en la búsqueda.
 - **Borrar encabezados con confirmación** (tecla Retroceso, papelera o deslizar a la izquierda).
 - **Narrow/Widen** siempre en la barra superior (actúa sobre el encabezado seleccionado).

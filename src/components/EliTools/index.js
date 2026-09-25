@@ -550,6 +550,18 @@ function FavoritesPopup({ currentPath, onClose }) {
   const canToggleCurrent = !!currentPath && !currentPath.startsWith(STATIC_FILE_PREFIX);
   const currentIsFavorite = favorites.includes(currentPath);
 
+  // Esc cierra la ventana
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
+
   const open = (p) => {
     onClose();
     if (p === currentPath) return;
@@ -656,7 +668,10 @@ export const splitExt = (name) => {
 export const renamedFile = (file, base) => {
   const [origBase, ext] = splitExt(file.name);
   const clean = (base || '')
-    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .split('')
+    .filter((c) => c.charCodeAt(0) >= 32)
+    .join('')
     .trim()
     .replace(/\.+$/, '');
   const finalBase = clean || origBase;

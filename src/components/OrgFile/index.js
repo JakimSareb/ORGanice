@@ -88,6 +88,7 @@ class OrgFile extends PureComponent {
       'handleTimestampChange',
       'getPopupCloseAction',
       'handleActivePopupClose',
+      'handleCaptureCancel',
       'getPopupSwitchAction',
       'checkPopupAndHeader',
       'checkPopup',
@@ -806,6 +807,28 @@ class OrgFile extends PureComponent {
   handleActivePopupClose() {
     const { activePopupType } = this.props;
     if (!activePopupType) return;
+    // ORG Mode para Eli: en una captura, cerrar (tocar fuera, Esc…) guarda la captura; solo el
+    // botón Cancelar la descarta. Si no se ha escrito título, no se guarda nada.
+    if (this.state.captureMode) {
+      const values = this.state.popupCloseActionValuesAccessor
+        ? this.state.popupCloseActionValuesAccessor()
+        : [];
+      const header = this.state.captureHeader;
+      const title =
+        activePopupType === 'title-editor' && values[0] !== undefined
+          ? values[0]
+          : header
+          ? header.getIn(['titleLine', 'rawTitle']) || ''
+          : '';
+      if (String(title).trim()) this.handleCaptureFromEditor();
+      else this.handleCaptureCancel();
+      return;
+    }
+    // Las ventanas de búsqueda/refile no usan los valores del editor
+    if (['search', 'refile', 'task-list'].includes(activePopupType)) {
+      this.props.base.closePopup();
+      return;
+    }
     this.getPopupCloseAction(activePopupType)(
       ...(this.state.popupCloseActionValuesAccessor
         ? this.state.popupCloseActionValuesAccessor()
@@ -818,6 +841,18 @@ class OrgFile extends PureComponent {
       captureTemplate: null,
       captureShouldPrepend: false,
     });
+    if (this.container) this.container.focus();
+  }
+
+  handleCaptureCancel() {
+    this.setState({
+      captureMode: false,
+      captureHeader: null,
+      captureTemplate: null,
+      captureShouldPrepend: false,
+      editRawValues: this.props.preferEditRawValues,
+    });
+    this.props.base.closePopup();
     if (this.container) this.container.focus();
   }
 
@@ -919,9 +954,18 @@ class OrgFile extends PureComponent {
       syncFile: this.checkPopup(
         notWhileTyping(preventDefault(() => this.props.org.sync({ forceAction: 'manual' })))
       ),
-      // Escape cierra la ventana de edición del encabezado (guardando)
+      openMoveMenu: this.checkPopup(
+        notWhileTyping(preventDefault(() => window.dispatchEvent(new CustomEvent('eli:move-menu'))))
+      ),
+      openSearch: this.checkPopup(
+        notWhileTyping(preventDefault(() => this.props.base.activatePopup('search')))
+      ),
+      // Escape cierra la ventana de edición del encabezado (guardando) y la búsqueda
       closeEditor: (event) => {
-        if (UNIFIED_EDITOR_POPUP_TYPES.includes(this.props.activePopupType)) {
+        if (
+          UNIFIED_EDITOR_POPUP_TYPES.includes(this.props.activePopupType) ||
+          ['search', 'refile', 'task-list'].includes(this.props.activePopupType)
+        ) {
           event.preventDefault();
           this.handleActivePopupClose();
         }
@@ -1051,6 +1095,7 @@ class OrgFile extends PureComponent {
                   captureShouldPrepend={this.state.captureShouldPrepend}
                   onAddNote={this.state.captureMode ? this.handleCaptureAddNote : null}
                   onCapture={this.handleCaptureFromEditor}
+                  onCaptureCancel={this.handleCaptureCancel}
                   onTogglePrepend={() =>
                     this.setState({ captureShouldPrepend: !this.state.captureShouldPrepend })
                   }
