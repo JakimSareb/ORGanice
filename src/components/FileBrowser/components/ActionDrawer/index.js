@@ -2,8 +2,9 @@
 // component, as well.
 
 import { openFavorites } from '../../../EliTools';
-import React, { Fragment, useState } from 'react';
+import React, { Fragment, useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
+import { Map, List } from 'immutable';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -17,12 +18,27 @@ import Drawer from '../../../UI/Drawer';
 import AgendaModal from '../../../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../../../EliErrorBoundary';
 import { askText, showMessage } from '../../../../lib/eli_prompt';
+import { calculateActionedKeybindings } from '../../../../lib/keybindings';
+import {
+  notWhileTyping,
+  shouldIgnoreOrganiceHotkey,
+  matchesBinding,
+} from '../../../../lib/eli_hotkeys';
+import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
 
 const ensureCompleteFilename = (fileName) => {
   return /\.org(\.gpg|\.asc)?$/.test(fileName) ? fileName : `${fileName}.org`;
 };
 
-const ActionDrawer = ({ org, files, syncBackend, path, agendaFilesToLoad }) => {
+const ActionDrawer = ({
+  org,
+  files,
+  syncBackend,
+  path,
+  agendaFilesToLoad,
+  customKeybindings,
+  captureTemplates,
+}) => {
   // ORG Mode para Eli: agenda también desde el explorador de ficheros
   const [showAgenda, setShowAgenda] = useState(false);
   const history = useHistory();
@@ -36,6 +52,45 @@ const ActionDrawer = ({ org, files, syncBackend, path, agendaFilesToLoad }) => {
     setShowAgenda(false);
     history.push(`/file${filePath}`);
   };
+
+  // ORG Mode para Eli: capturar desde el explorador: se elige la plantilla (por su letra) y se
+  // abre su fichero de destino con la ventana de captura
+  const startCapture = async () => {
+    const templates = (captureTemplates || []).filter((t) => !!t.get('file'));
+    const template = await chooseCaptureTemplate(templates);
+    if (!template) return;
+    const file = template.get('file').startsWith('/')
+      ? template.get('file')
+      : `/${template.get('file')}`;
+    window.__eliPendingCapture = {
+      path: file,
+      templateId: template.get('id'),
+      templateDescription: template.get('description'),
+    };
+    history.push(`/file${file}`);
+  };
+
+  // Atajos (los mismos que dentro de un fichero, configurables en Keyboard shortcuts)
+  const latest = useRef();
+  latest.current = { openAgenda, startCapture, showAgenda, customKeybindings };
+  useEffect(() => {
+    const onKey = notWhileTyping((event) => {
+      const { showAgenda: agendaOpen, customKeybindings: custom } = latest.current;
+      if (agendaOpen || shouldIgnoreOrganiceHotkey(event, null)) return;
+      const bindings = Object.fromEntries(calculateActionedKeybindings(custom));
+      const actions = {
+        openAgenda: () => latest.current.openAgenda(),
+        openFavorites: () => openFavorites(),
+        openCapture: () => latest.current.startCapture(),
+      };
+      const hit = Object.keys(actions).find((a) => matchesBinding(event, bindings[a]));
+      if (!hit) return;
+      event.preventDefault();
+      actions[hit]();
+    });
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   // ORG Mode para Eli: crear un fichero con un diálogo propio (window.prompt no es fiable en las
   // apps de la pantalla de inicio), avisando si algo falla, y abrirlo al terminar.
@@ -133,6 +188,8 @@ const mapStateToProps = (state) => {
     path,
     files,
     agendaFilesToLoad,
+    customKeybindings: state.base.get('customKeybindings') || Map(),
+    captureTemplates: state.capture.get('captureTemplates', List()),
   };
 };
 

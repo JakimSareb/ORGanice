@@ -166,6 +166,17 @@ class OrgFile extends PureComponent {
       this.props.org.insertPendingCapture();
     }
 
+    // ORG Mode para Eli: captura lanzada desde el explorador de ficheros (tecla c): se abre al
+    // cargar el fichero de destino
+    const eliPending = window.__eliPendingCapture;
+    if (eliPending && !!headers && !activePopupType && this.props.loadedPath === eliPending.path) {
+      window.__eliPendingCapture = null;
+      this.props.base.activatePopup('capture', {
+        templateId: eliPending.templateId,
+        templateDescription: eliPending.templateDescription,
+      });
+    }
+
     const { path } = this.props;
     if (!_.isEmpty(path) && !path.startsWith(STATIC_FILE_PREFIX) && path !== prevProps.path) {
       this.props.syncBackend.downloadFile(path);

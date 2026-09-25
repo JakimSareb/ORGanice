@@ -37,3 +37,19 @@ export const notWhileTyping = (handler) => (event) => {
   if (isEditable(target) || isEditable(document.activeElement)) return;
   return handler(event);
 };
+
+// ¿Coincide la tecla pulsada con un atajo como "a", "ctrl+z" o "escape"?
+export const matchesBinding = (event, binding) => {
+  if (!binding || !event) return false;
+  const parts = String(binding).toLowerCase().split('+');
+  const key = parts.pop();
+  const mods = new Set(parts);
+  const want = (m) => mods.has(m) || (m === 'meta' && mods.has('command'));
+  if (!!event.ctrlKey !== want('ctrl')) return false;
+  if (!!event.altKey !== (want('alt') || mods.has('option'))) return false;
+  if (!!event.metaKey !== want('meta')) return false;
+  if (!!event.shiftKey !== want('shift')) return false;
+  const pressed = (event.key || '').toLowerCase();
+  const names = { escape: 'escape', esc: 'escape', space: ' ', enter: 'enter', return: 'enter' };
+  return pressed === (names[key] || key);
+};

@@ -123,3 +123,23 @@ body {
   word-break: break-all;
   min-height: 1em;
 }
+
+/* ORG Mode para Eli: menú de captura */
+.eli-capture-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eli-capture-menu__item {
+  text-align: left;
+  padding: 8px 10px;
+}
+.eli-capture-menu__letter {
+  display: inline-block;
+  min-width: 1.6em;
+  text-align: center;
+  font-weight: bold;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  margin-right: 6px;
+}
