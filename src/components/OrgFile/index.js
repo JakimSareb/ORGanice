@@ -3,20 +3,13 @@ import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import { openFavorites } from '../EliTools';
-import {
-  notWhileTyping,
-  matchesBinding,
-  releaseStuckModifiers,
-  ELI_HOTKEY_ACTIONS,
-} from '../../lib/eli_hotkeys';
+import { notWhileTyping, matchesBinding, releaseStuckModifiers } from '../../lib/eli_hotkeys';
 import EliErrorBoundary from '../EliErrorBoundary';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
 import { Redirect } from 'react-router-dom';
-
-import { GlobalHotKeys } from 'react-hotkeys';
 
 import './stylesheet.css';
 
@@ -123,7 +116,9 @@ class OrgFile extends PureComponent {
   handleEliKeyDown(event) {
     if (!this.eliHandlers || event.defaultPrevented) return;
     const bindings = _.fromPairs(calculateActionedKeybindings(this.props.customKeybindings));
-    const action = ELI_HOTKEY_ACTIONS.find((a) => matchesBinding(event, bindings[a]));
+    // Todos los atajos (los de organice y los propios) pasan por aquí: react-hotkeys se quedaba
+    // a veces con teclas "pulsadas" y dejaba de responder (p. ej. «d» tras cerrar con Esc)
+    const action = Object.keys(this.eliHandlers).find((a) => matchesBinding(event, bindings[a]));
     if (action && this.eliHandlers[action]) this.eliHandlers[action](event);
   }
 
@@ -895,7 +890,6 @@ class OrgFile extends PureComponent {
       parsingErrorMessage,
       path,
       staticFile,
-      customKeybindings,
       orgFileErrorMessage,
       activePopupType,
       activePopupData,
@@ -929,13 +923,8 @@ class OrgFile extends PureComponent {
       return <div />;
     }
 
-    // ORG Mode para Eli: los atajos propios no van por react-hotkeys (que a veces se queda con una
-    // tecla modificadora "pulsada", p. ej. tras Cmd+Tab, y deja de responder) sino por un
-    // listener propio (handleEliKeyDown)
-    const keyMap = _.omit(
-      _.fromPairs(calculateActionedKeybindings(customKeybindings)),
-      ELI_HOTKEY_ACTIONS
-    );
+    // ORG Mode para Eli: los atajos no van por react-hotkeys (que a veces se queda con una tecla
+    // "pulsada" y deja de responder) sino por un listener propio (handleEliKeyDown)
 
     // Automatically call preventDefault on all the keyboard events that come through for
     // these hotkeys.
@@ -1013,7 +1002,7 @@ class OrgFile extends PureComponent {
     };
 
     return (
-      <GlobalHotKeys keyMap={keyMap} handlers={handlers}>
+      <>
         <div className="org-file-container" tabIndex="-1" ref={this.handleContainerRef}>
           {headers.size === 0 ? (
             <div className="org-file__parsing-error-message">
@@ -1131,7 +1120,7 @@ class OrgFile extends PureComponent {
             </Drawer>
           ) : null}
         </div>
-      </GlobalHotKeys>
+      </>
     );
   }
 }

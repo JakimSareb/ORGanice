@@ -374,3 +374,24 @@ describe('CLOSED al terminar una tarea', () => {
     expect(out(file)).not.toContain('CLOSED');
   });
 });
+
+describe('atajos: comparación de teclas', () => {
+  const { matchesBinding } = require('./eli_hotkeys');
+  const ev = (o) => ({ ctrlKey: false, altKey: false, metaKey: false, shiftKey: false, ...o });
+  test('letras, flechas, modificadores y Alt del Mac', () => {
+    expect(matchesBinding(ev({ key: 'd', code: 'KeyD' }), 'd')).toBe(true);
+    expect(matchesBinding(ev({ key: 'D', code: 'KeyD', shiftKey: true }), 'd')).toBe(false);
+    expect(matchesBinding(ev({ key: '†', code: 'KeyT', altKey: true }), 'alt+t')).toBe(true);
+    expect(matchesBinding(ev({ key: 'ArrowLeft', code: 'ArrowLeft', altKey: true, shiftKey: true }), 'alt+shift+left')).toBe(true);
+    expect(matchesBinding(ev({ key: 'ArrowUp', code: 'ArrowUp', ctrlKey: true }), 'ctrl+up')).toBe(true);
+    expect(matchesBinding(ev({ key: 'ArrowUp', code: 'ArrowUp' }), 'ctrl+up')).toBe(false);
+    expect(matchesBinding(ev({ key: 'Backspace', code: 'Backspace', ctrlKey: true }), 'ctrl+backspace')).toBe(true);
+    expect(matchesBinding(ev({ key: 'Backspace', code: 'Backspace' }), 'ctrl+backspace')).toBe(false);
+    expect(matchesBinding(ev({ key: 'Enter', code: 'Enter', ctrlKey: true, shiftKey: true }), 'ctrl+shift+enter')).toBe(true);
+    expect(matchesBinding(ev({ key: 'Tab', code: 'Tab' }), 'tab')).toBe(true);
+    expect(matchesBinding(ev({ key: 'Enter', code: 'Enter', ctrlKey: true, shiftKey: true }), 'ctrl+enter')).toBe(false);
+    expect(matchesBinding(ev({ key: '/', code: 'Digit7', ctrlKey: true, shiftKey: true }), 'ctrl+/')).toBe(true);
+    expect(matchesBinding(ev({ key: 'Escape', code: 'Escape' }), 'escape')).toBe(true);
+    expect(matchesBinding(ev({ key: 'i', code: 'KeyI', altKey: true }), 'alt+i')).toBe(true);
+  });
+});

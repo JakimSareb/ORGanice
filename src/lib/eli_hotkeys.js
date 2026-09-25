@@ -39,19 +39,69 @@ export const notWhileTyping = (handler) => (event) => {
 };
 
 // ¿Coincide la tecla pulsada con un atajo como "a", "ctrl+z" o "escape"?
+// Nombre de la tecla pulsada en el formato de los atajos de organice ("a", "up", "tab", "/"…).
+// Las letras y números se toman de la tecla física si hace falta (con Alt en el Mac la tecla
+// produce otro carácter: Alt+T = "†").
+const NAMED_KEYS = {
+  arrowup: 'up',
+  arrowdown: 'down',
+  arrowleft: 'left',
+  arrowright: 'right',
+  escape: 'escape',
+  esc: 'escape',
+  enter: 'enter',
+  tab: 'tab',
+  backspace: 'backspace',
+  delete: 'del',
+  ' ': 'space',
+  spacebar: 'space',
+};
+export const keyNameOf = (event) => {
+  const key = (event.key || '').toLowerCase();
+  if (/^[a-z0-9]$/.test(key)) return key;
+  if (NAMED_KEYS[key]) return NAMED_KEYS[key];
+  const code = event.code || '';
+  const fromCode = /^Key[A-Z]$/.test(code)
+    ? code.slice(3).toLowerCase()
+    : /^Digit\d$/.test(code)
+    ? code.slice(5)
+    : null;
+  // Con Alt (Mac) o teclas muertas el carácter no sirve: se usa la tecla física
+  if (fromCode && (event.altKey || key.length !== 1 || key === 'dead')) return fromCode;
+  return key || fromCode || '';
+};
+
+const BINDING_ALIASES = {
+  esc: 'escape',
+  return: 'enter',
+  delete: 'del',
+  '"': "'",
+  option: 'alt',
+  command: 'meta',
+  cmd: 'meta',
+  control: 'ctrl',
+};
+
+// ¿Coincide la tecla pulsada con un atajo como "a", "ctrl+z", "alt+shift+left" o "escape"?
 export const matchesBinding = (event, binding) => {
   if (!binding || !event) return false;
-  const parts = String(binding).toLowerCase().split('+');
-  const key = parts.pop();
-  const mods = new Set(parts);
-  const want = (m) => mods.has(m) || (m === 'meta' && mods.has('command'));
-  if (!!event.ctrlKey !== want('ctrl')) return false;
-  if (!!event.altKey !== (want('alt') || mods.has('option'))) return false;
-  if (!!event.metaKey !== want('meta')) return false;
-  if (!!event.shiftKey !== want('shift')) return false;
-  const pressed = (event.key || '').toLowerCase();
-  const names = { escape: 'escape', esc: 'escape', space: ' ', enter: 'enter', return: 'enter' };
-  return pressed === (names[key] || key);
+  const text = String(binding).toLowerCase().trim();
+  // "ctrl++" o "+" no se usan en organice; se separa por "+" conservando un "+" final
+  const parts = text.endsWith('++') ? [...text.slice(0, -2).split('+'), '+'] : text.split('+');
+  const rawKey = parts.pop();
+  const key = BINDING_ALIASES[rawKey] || rawKey;
+  const mods = new Set(parts.map((m) => BINDING_ALIASES[m] || m));
+  if (!!event.ctrlKey !== mods.has('ctrl')) return false;
+  if (!!event.altKey !== mods.has('alt')) return false;
+  if (!!event.metaKey !== mods.has('meta')) return false;
+  // Mayúsculas: se exige si el atajo la lleva; si no, solo importa en letras (para símbolos
+  // como "/" que en algunos teclados necesitan Mayúsculas)
+  const isSymbol = key.length === 1 && !/^[a-z0-9]$/.test(key);
+  if (mods.has('shift') !== !!event.shiftKey && (mods.has('shift') || !isSymbol)) {
+    return false;
+  }
+  const pressed = keyNameOf(event);
+  return pressed === (BINDING_ALIASES[key] || key) || (key === "'" && pressed === '"');
 };
 
 // Atajos propios de ORG Mode para Eli (se gestionan con un listener propio, no react-hotkeys)
