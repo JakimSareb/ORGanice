@@ -8,6 +8,7 @@ import captureReducer from './capture';
 import { setDirty, sync } from '../actions/org';
 
 const UNDOABLE_ACTIONS = [
+  'ELI_IN_FILE',
   'ADD_HEADER',
   'REMOVE_HEADER',
   'MOVE_HEADER_UP',

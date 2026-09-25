@@ -157,9 +157,12 @@ class Header extends PureComponent {
       if (dragStartX >= 2 * currentDragX) {
         // ORG Mode para Eli: pedir confirmación antes de borrar
         const height = this.containerDiv.offsetHeight;
-        confirmRemoveHeader(this.props.headers, this.props.header.get('id')).then((ok) => {
+        const headersBefore = this.props.headers;
+        const removedId = this.props.header.get('id');
+        confirmRemoveHeader(headersBefore, removedId).then((ok) => {
           if (ok && this.containerDiv) {
             this.setState({ isPlayingRemoveAnimation: true, heightBeforeRemove: height });
+            this.props.org.eliOfferDeleteAttachments(headersBefore, removedId);
           }
         });
       }
@@ -680,10 +683,12 @@ class Header extends PureComponent {
                   onExportPdf={() => openPrintPreview(header.get('id'))}
                   onRemoveHeader={() => {
                     const id = header.get('id');
-                    confirmRemoveHeader(this.props.headers, id).then((ok) => {
+                    const headersBefore = this.props.headers;
+                    confirmRemoveHeader(headersBefore, id).then((ok) => {
                       if (!ok) return;
                       this.props.org.selectNextSiblingHeader(id);
                       this.props.org.removeHeader(id);
+                      this.props.org.eliOfferDeleteAttachments(headersBefore, id);
                     });
                   }}
                   onInsertInactiveDate={() => this.props.org.insertInactiveDate(header.get('id'))}

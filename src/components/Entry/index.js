@@ -22,6 +22,7 @@ import EliTools from '../EliTools';
 import KeyboardShortcutsEditor from '../KeyboardShortcutsEditor';
 import CaptureTemplatesEditor from '../CaptureTemplatesEditor';
 import FileSettingsEditor from '../FileSettingsEditor';
+import GtdView from '../Gtd';
 
 import * as syncBackendActions from '../../actions/sync_backend';
 import * as orgActions from '../../actions/org';
@@ -195,6 +196,9 @@ class Entry extends PureComponent {
               <Route path="/changelog" exact={true} render={this.renderChangelogFile} />
               <Route path="/encryption" exact={true}>
                 <EncryptionSettings />
+              </Route>
+              <Route path="/gtd" exact={true}>
+                <GtdView />
               </Route>
               <Route path="/settings" exact={true}>
                 <Settings />

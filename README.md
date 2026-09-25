@@ -1,4 +1,4 @@
-# ORGanice 1.1
+# ORGanice 1.2
 
 *ORG Mode para Eli.* Versión propia de [organice](https://github.com/200ok-ch/organice) (Org Mode en el navegador,
 sin Emacs): lee y escribe tus ficheros `.org` directamente en **Dropbox**, desde el Mac, Windows
@@ -130,6 +130,29 @@ Funciona en Microsoft Edge y Google Chrome de ordenador (Windows, Mac, Linux); S
 no lo permiten. La app guarda en el navegador solo la referencia a la carpeta (IndexedDB), nunca su
 contenido; al volver a abrirla, el navegador puede pedir confirmar el permiso (botón *Permitir
 acceso*). La captura rápida (capture.html) sigue siendo solo para Dropbox.
+
+## Vista GTD (al estilo de Nirvana)
+
+Botón de lista con marcas (*Vista GTD*) de la barra superior, o `/gtd`. Menú lateral con listas, proyectos y
+áreas; a la derecha, las tareas con filtros por etiqueta, energía, tiempo y fecha. Trabaja sobre
+los mismos ficheros (los marcados para la agenda o de arranque y los de las plantillas de captura);
+todo lo que se hace aquí se ve en Emacs y al revés.
+
+| Lista | En Org |
+|---|---|
+| Inbox | encabezados sin estado del fichero de entrada (`inbox.org` o el de la plantilla «Inbox») |
+| Next / Later / Waiting / Someday | `NEXT` / `TODO` / `WAITING` / `MAYBE` |
+| Scheduled | con `SCHEDULED` posterior a hoy |
+| Proyectos | `PROJECT` (sus subencabezados con estado son sus acciones) |
+| Focus | ★ `[#A]`, o programado/vence hoy o antes |
+| Reference / Logbook | sin estado ni tareas debajo / terminadas (`DONE`, `CANCELLED`) |
+
+Áreas: propiedad `:AREA:` (se hereda). Energía `:ENERGY: alta/media/baja`; tiempo
+`:EFFORT: 0:30`. Para tener estas palabras en Emacs:
+`#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED`.
+
+Al borrar un encabezado con adjuntos (enlaces a ficheros), la app pregunta uno a uno si se
+borran también.
 
 ## Captura rápida desde el iPhone (menú Compartir)
 

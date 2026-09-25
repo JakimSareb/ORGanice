@@ -188,6 +188,17 @@ class HeaderBar extends PureComponent {
         return this.renderHomeFileBackButton();
       case 'sign_in':
         return this.renderSignInBackButton();
+      case 'gtd':
+        return (
+          <div
+            className="header-bar__back-button"
+            onClick={() => this.props.history.push('/')}
+            data-testid="gtd-back"
+          >
+            <i className="fas fa-chevron-left" />
+            <span className="header-bar__back-button__directory-path">ORGanice</span>
+          </div>
+        );
       case 'settings':
         return this.renderFileBrowserBackButton();
       case 'changelog':
@@ -237,6 +248,8 @@ class HeaderBar extends PureComponent {
         return titleContainerWithText('Sign in');
       case 'encryption':
         return titleContainerWithText('Seguridad');
+      case 'gtd':
+        return titleContainerWithText('GTD');
       case 'settings':
         return titleContainerWithText('Settings');
       default:
@@ -366,7 +379,16 @@ class HeaderBar extends PureComponent {
             </ExternalLink>
           )}
 
-          {isAuthenticated && !activeModalPage && !!path && (
+          {isAuthenticated && this.getPathRoot() !== 'gtd' && (
+            <Link to="/gtd" data-testid="eli-open-gtd">
+              <i
+                className="fas fa-tasks header-bar__actions__item"
+                title="Vista GTD (tipo Nirvana)"
+              />
+            </Link>
+          )}
+
+          {isAuthenticated && !activeModalPage && !!path && this.getPathRoot() !== 'gtd' && (
             <Fragment>
               <i className={undoIconClassName} onClick={this.handleUndoClick} title="Undo" />
               <i className={redoIconClassName} onClick={this.handleRedoClick} title="Redo" />

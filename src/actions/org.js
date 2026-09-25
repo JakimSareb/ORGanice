@@ -1,4 +1,5 @@
 import { ActionCreators, ActionTypes } from 'redux-undo';
+import { offerToDeleteAttachments } from '../lib/eli_attachments';
 import { debounce } from 'lodash';
 import {
   setLoadingMessage,
@@ -1180,6 +1181,21 @@ export const refileToFileTop = (targetPath) => async (dispatch, getState) => {
     dispatch(hideLoadingMessage());
     showMessage('No se pudo mover', (e && (e.eliMessage || e.message)) || String(e));
   }
+};
+
+// ORG Mode para Eli: tras borrar un encabezado, preguntar uno a uno por sus adjuntos.
+// `headers` son los del fichero antes de quitar el encabezado.
+export const eliOfferDeleteAttachments = (headers, headerId, path) => (dispatch, getState) => {
+  const state = getState();
+  const orgFilePath = path || state.org.present.get('path');
+  if (!orgFilePath || orgFilePath.startsWith(STATIC_FILE_PREFIX)) return Promise.resolve([]);
+  return offerToDeleteAttachments({
+    headers,
+    headerId,
+    orgFilePath,
+    client: state.syncBackend.get('client'),
+    files: state.org.present.get('files'),
+  });
 };
 
 // ORG Mode para Eli: carga un fichero sin mensajes (p. ej. los de la agenda desde el explorador).

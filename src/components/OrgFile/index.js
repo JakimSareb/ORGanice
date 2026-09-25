@@ -309,6 +309,7 @@ class OrgFile extends PureComponent {
       if (!ok) return;
       this.props.org.selectNextSiblingHeader(selectedHeaderId);
       this.props.org.removeHeader(selectedHeaderId);
+      this.props.org.eliOfferDeleteAttachments(headers, selectedHeaderId);
     });
   }
 

@@ -71,7 +71,13 @@ export const showMessage = (title, message) =>
   });
 
 // Confirmación en la propia ventana. Devuelve Promise<boolean>.
-export const askConfirm = ({ title, message, okLabel = 'Aceptar', cancelLabel = 'Cancelar' }) =>
+export const askConfirm = ({
+  title,
+  message,
+  okLabel = 'Aceptar',
+  cancelLabel = 'Cancelar',
+  focusCancel = false,
+}) =>
   new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'eli-prompt__overlay';
@@ -95,7 +101,10 @@ export const askConfirm = ({ title, message, okLabel = 'Aceptar', cancelLabel = 
     overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(false));
     overlay.querySelector('.eli-prompt__ok').addEventListener('click', () => done(true));
     document.body.appendChild(overlay);
-    setTimeout(() => overlay.querySelector('.eli-prompt__ok').focus(), 30);
+    setTimeout(
+      () => overlay.querySelector(focusCancel ? '.eli-prompt__cancel' : '.eli-prompt__ok').focus(),
+      30
+    );
   });
 
 // Pide un texto (sustituye a window.prompt, que no es fiable en las apps de la pantalla de

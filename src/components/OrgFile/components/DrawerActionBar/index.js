@@ -156,11 +156,13 @@ class DrawerActionBar extends PureComponent {
     }
     // ORG Mode para Eli: pedir confirmación antes de borrar
     const headerId = this.props.header.get('id');
-    confirmRemoveHeader(this.props.headers, headerId).then((ok) => {
+    const headersBefore = this.props.headers;
+    confirmRemoveHeader(headersBefore, headerId).then((ok) => {
       if (!ok) return;
       this.props.base.closePopup();
       this.props.org.selectHeader(null);
       this.props.org.removeHeader(headerId);
+      this.props.org.eliOfferDeleteAttachments(headersBefore, headerId);
     });
   }
 

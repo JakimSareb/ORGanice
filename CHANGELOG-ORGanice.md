@@ -1,5 +1,17 @@
 # ORGanice – historial de versiones
 
+## 1.2 (septiembre de 2026)
+
+- **Vista GTD al estilo de Nirvana** (botón de la barra superior): menú lateral con Focus, Inbox,
+  Next, Later, Waiting, Scheduled, Someday, Proyectos, Reference y Logbook, con contadores; selector
+  de áreas y búsqueda; a la derecha las tareas con filtros (etiquetas/contextos, energía, tiempo,
+  con fecha). Añadir, completar (con CLOSED), ★ Focus, editar en línea (lista, fechas, área,
+  proyecto, energía, tiempo, etiquetas, notas), mover a un proyecto, borrar, abrir en su fichero,
+  deshacer/rehacer. Guarda en Org estándar: estados, `[#A]`, `SCHEDULED`/`DEADLINE`, `:AREA:`,
+  `:ENERGY:`, `:EFFORT:`. En el móvil el menú se despliega con ☰.
+- **Adjuntos al borrar**: si el encabezado borrado tiene adjuntos, la app pregunta uno a uno si se
+  borran también (avisa si otro encabezado los usa; «Conservar» es la opción por defecto).
+
 ## 1.1 (septiembre de 2026)
 
 - **Carpeta local del ordenador** en lugar de Dropbox (pantalla de acceso → «Elegir carpeta…»).

@@ -1,6 +1,7 @@
 // ORG Mode para Eli: confirmación antes de borrar un encabezado (con sus subencabezados).
 import { askConfirm } from './eli_prompt';
 import { subheadersOfHeaderWithId } from './org_utils';
+import { attachmentCount } from './eli_attachments';
 
 let open = false;
 
@@ -9,9 +10,15 @@ export const removeHeaderMessage = (headers, headerId) => {
   if (!header) return null;
   const title = (header.getIn(['titleLine', 'rawTitle']) || '').trim() || '(sin título)';
   const subs = subheadersOfHeaderWithId(headers, headerId).size;
+  const attachments = attachmentCount(headers, headerId);
   return (
     `«${title}»` +
     (subs ? `\ny ${subs === 1 ? 'su subencabezado' : `sus ${subs} subencabezados`}` : '') +
+    (attachments
+      ? `\n\n${
+          attachments === 1 ? 'Tiene 1 adjunto' : `Tiene ${attachments} adjuntos`
+        }: después te preguntaré uno a uno si quieres borrarlos también.`
+      : '') +
     '\n\nSe puede deshacer con la flecha ↶.'
   );
 };

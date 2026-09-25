@@ -1995,6 +1995,28 @@ const moveEliFavoriteFile = (state, action) => {
   );
 };
 
+// ORG Mode para Eli (vista GTD): nuevo encabezado al final del fichero o dentro de otro
+// (al final de su subárbol), con el texto de título y cuerpo ya preparados
+const eliAddHeaderAt = (state, action) => {
+  const { titleLine, description = '', parentId, headerId } = action;
+  const headers = state.get('headers') || List();
+  let index = headers.size;
+  let level = 1;
+  if (parentId) {
+    const parentIndex = indexOfHeaderWithId(headers, parentId);
+    if (parentIndex >= 0) {
+      level = headers.getIn([parentIndex, 'nestingLevel']) + 1;
+      index = parentIndex + 1 + subheadersOfHeaderWithId(headers, parentId).size;
+    }
+  }
+  let header = newHeaderWithTitle(titleLine, level, state.get('todoKeywordSets') || List());
+  if (headerId) header = header.set('id', headerId);
+  if (description) header = _updateHeaderFromDescription(header, description);
+  state = state.set('headers', headers.insert(index, header));
+  if (parentId) state = updateCookiesOfHeaderWithId(state, parentId);
+  return state;
+};
+
 const restoreFileSettings = (state, action) => {
   if (!action.newSettings) {
     return state;
@@ -2179,6 +2201,8 @@ const reducer = (state, action) => {
       return toggleContextFilter(state, action);
     case 'TOGGLE_TODO_FILTER':
       return toggleTodoFilter(state, action);
+    case 'ELI_ADD_HEADER_AT':
+      return inFile(eliAddHeaderAt);
     case 'MOVE_ELI_FAVORITE_FILE':
       return moveEliFavoriteFile(state, action);
     case 'TOGGLE_ELI_FAVORITE_FILE':
@@ -2208,7 +2232,18 @@ const reducer = (state, action) => {
   }
 };
 
-export default (state = Map(), action) => {
+const rootOrgReducer = (state = Map(), action) => {
+  // ORG Mode para Eli: aplicar una acción a otro fichero distinto del abierto (vista GTD).
+  // Se cambia el fichero activo solo durante la acción y se restaura después.
+  if (action.type === 'ELI_IN_FILE') {
+    if (!action.path || !state.getIn(['files', action.path, 'headers'])) return state;
+    const previousPath = state.get('path');
+    let next = state.set('path', action.path);
+    (action.inner ? [].concat(action.inner) : []).forEach((inner) => {
+      next = rootOrgReducer(next, inner);
+    });
+    return next.set('path', previousPath);
+  }
   const affectedFiles = determineAffectedFiles(state, action);
   affectedFiles.forEach((path) => {
     state = state.setIn(['files', path, 'isDirty'], true);
@@ -2223,6 +2258,8 @@ export default (state = Map(), action) => {
   }
   return state;
 };
+
+export default rootOrgReducer;
 
 export const determineAffectedFiles = (state, action) => {
   if (action.dirtying) {
