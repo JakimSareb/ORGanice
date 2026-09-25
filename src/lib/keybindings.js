@@ -21,6 +21,9 @@ const DEFAULT_BINDINGS = [
   ['Sincronizar', 'syncFile', 's'],
   ['Mover encabezados (flechas)', 'openMoveMenu', 'm'],
   ['Buscar', 'openSearch', 'b'],
+  ['Seleccionar el encabezado siguiente (flecha)', 'eliSelectNext', 'down'],
+  ['Seleccionar el encabezado anterior (flecha)', 'eliSelectPrev', 'up'],
+  ['Abrir/cerrar el encabezado seleccionado (intro)', 'eliToggleOpen', 'enter'],
 ];
 
 export const calculateNamedKeybindings = (customKeybindings) =>

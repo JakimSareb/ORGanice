@@ -551,17 +551,31 @@ function FavoritesPopup({ currentPath, onClose }) {
   const canToggleCurrent = !!currentPath && !currentPath.startsWith(STATIC_FILE_PREFIX);
   const currentIsFavorite = favorites.includes(currentPath);
 
-  // Esc cierra la ventana
+  // Teclado: Esc cierra; ↑/↓ eligen; Intro abre el elegido
+  const [active, setActive] = useState(() => Math.max(0, favorites.indexOf(currentPath)));
+  const keyState = useRef();
+  keyState.current = { active, favorites };
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      e.stopPropagation();
-      onClose();
+      const { active: a, favorites: list } = keyState.current;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && list.length) {
+        e.preventDefault();
+        e.stopPropagation();
+        setActive((a + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length);
+      } else if (e.key === 'Enter' && list[a]) {
+        e.preventDefault();
+        e.stopPropagation();
+        openRef.current(list[a]);
+      }
     };
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [onClose]);
+  const openRef = useRef();
 
   const open = (p) => {
     onClose();
@@ -574,6 +588,7 @@ function FavoritesPopup({ currentPath, onClose }) {
     dispatch(resetFileDisplay());
     history.push(`/file${p}`);
   };
+  openRef.current = open;
 
   return ReactDOM.createPortal(
     <div className="eli-prompt__overlay" onClick={onClose}>
@@ -591,7 +606,11 @@ function FavoritesPopup({ currentPath, onClose }) {
             {favorites.map((p, i) => (
               <li key={p}>
                 <button
-                  className={'eli-fav__item' + (p === currentPath ? ' is-current' : '')}
+                  className={
+                    'eli-fav__item' +
+                    (p === currentPath ? ' is-current' : '') +
+                    (i === active ? ' is-active' : '')
+                  }
                   onClick={() => open(p)}
                 >
                   <span className="eli-fav__name">

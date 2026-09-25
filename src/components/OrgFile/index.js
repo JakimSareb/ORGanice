@@ -3,7 +3,12 @@ import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import { openFavorites } from '../EliTools';
-import { notWhileTyping, matchesBinding, releaseStuckModifiers } from '../../lib/eli_hotkeys';
+import {
+  notWhileTyping,
+  notOnButton,
+  matchesBinding,
+  releaseStuckModifiers,
+} from '../../lib/eli_hotkeys';
 import EliErrorBoundary from '../EliErrorBoundary';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
@@ -966,6 +971,16 @@ class OrgFile extends PureComponent {
       ),
       syncFile: this.checkPopup(
         notWhileTyping(preventDefault(() => this.props.org.sync({ forceAction: 'manual' })))
+      ),
+      // Flechas e Intro para moverse por los encabezados
+      eliSelectNext: this.checkPopup(
+        notWhileTyping(preventDefault(this.handleSelectNextVisibleHeaderHotKey))
+      ),
+      eliSelectPrev: this.checkPopup(
+        notWhileTyping(preventDefault(this.handleSelectPreviousVisibleHeaderHotKey))
+      ),
+      eliToggleOpen: this.checkPopupAndHeader(
+        notWhileTyping(notOnButton(preventDefault(this.handleToggleHeaderOpenedHotKey)))
       ),
       openMoveMenu: this.checkPopup(
         notWhileTyping(preventDefault(() => window.dispatchEvent(new CustomEvent('eli:move-menu'))))

@@ -143,3 +143,9 @@ body {
   border-radius: 4px;
   margin-right: 6px;
 }
+
+.eli-capture-menu__item.is-active,
+.eli-fav__item.is-active {
+  outline: 2px solid var(--magenta, #d33682);
+  outline-offset: 1px;
+}

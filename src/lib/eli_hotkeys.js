@@ -124,3 +124,10 @@ export const releaseStuckModifiers = () => {
     } catch (e) {}
   });
 };
+
+// Intro sobre un botón o enlace enfocado ya lo "pulsa": el atajo no debe actuar además
+export const notOnButton = (handler) => (event) => {
+  const el = document.activeElement;
+  if (el && el.closest && el.closest('button, a, [role="button"], select')) return;
+  return handler(event);
+};

@@ -12,7 +12,7 @@ export const chooseCaptureTemplate = (templates) =>
       <div class="eli-prompt__box" role="dialog" data-testid="eli-capture-menu">
         <div class="eli-prompt__title"><i class="fas fa-plus"></i> Capturar</div>
         <div class="eli-capture-menu"></div>
-        <div class="eli-prompt__message" style="font-size: 0.85em">Pulsa la letra de la plantilla (Esc para cancelar).</div>
+        <div class="eli-prompt__message" style="font-size: 0.85em">Letra de la plantilla, o ↑/↓ e Intro (Esc para cancelar).</div>
       </div>`;
     const box = overlay.querySelector('.eli-capture-menu');
     const done = (value) => {
@@ -20,8 +20,13 @@ export const chooseCaptureTemplate = (templates) =>
       overlay.remove();
       resolve(value);
     };
+    const buttons = [];
+    let active = 0;
+    const highlight = () =>
+      buttons.forEach((b, i) => b.classList.toggle('is-active', i === active));
     list.forEach((t) => {
       const b = document.createElement('button');
+      buttons.push(b);
       b.type = 'button';
       b.className = 'btn eli-capture-menu__item';
       const letter = document.createElement('span');
@@ -36,10 +41,17 @@ export const chooseCaptureTemplate = (templates) =>
       e.preventDefault();
       e.stopPropagation();
       if (e.key === 'Escape') return done(null);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        active = (active + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length;
+        highlight();
+        return;
+      }
+      if (e.key === 'Enter') return done(list[active]);
       const t = list.find((x) => (x.get('letter') || '').toLowerCase() === e.key.toLowerCase());
       if (t) done(t);
     };
     overlay.addEventListener('click', (e) => e.target === overlay && done(null));
     document.addEventListener('keydown', onKey, true);
     document.body.appendChild(overlay);
+    highlight();
   });

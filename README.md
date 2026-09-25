@@ -78,7 +78,9 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
 - **Atajos de teclado** (configurables en Ajustes → Keyboard shortcuts): Esc cierra la ventana de
   edición del encabezado, `a` agenda, `f` ficheros principales, `c` + letra de la plantilla para
   capturar, `s` sincronizar, `m` flechas de mover, `b` buscar (Esc cierra). No actúan mientras se
-  escribe. `a`, `f` y `c` también en el explorador de ficheros.
+  escribe. `a`, `f` y `c` también en el explorador de ficheros. Flechas ↑/↓ para moverse por los
+  encabezados e Intro para abrirlos/cerrarlos; en los menús de ficheros principales y de captura,
+  ↑/↓ e Intro.
 - **Capturas**: tocar fuera o Esc guardan la captura (si tiene título); el botón *Cancel* la
   descarta.
 - **Buscar solo en esta hoja**: botón en la búsqueda.
