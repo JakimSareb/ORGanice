@@ -292,7 +292,7 @@ const mapStateToProps = (state, ownProps) => {
   const editMode = !!file ? file.get('editMode') : null;
   return {
     isSelected: selectedHeaderId === ownProps.header.get('id'),
-    dontIndent: state.base.get('shouldNotIndentOnExport'),
+    dontIndent: state.base.get('eliIndentOnExport') !== true,
     selectedListItemId: !!file ? file.get('selectedListItemId') : null,
     inListTitleEditMode: editMode === 'list-title',
     inListContentsEditMode: editMode === 'list-contents',

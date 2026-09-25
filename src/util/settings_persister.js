@@ -168,6 +168,11 @@ export const persistableFields = [
     type: 'boolean',
   },
   {
+    category: 'base',
+    name: 'eliIndentOnExport',
+    type: 'boolean',
+  },
+  {
     category: 'org',
     name: 'showClockDisplay',
     type: 'boolean',

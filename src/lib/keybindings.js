@@ -16,6 +16,7 @@ const DEFAULT_BINDINGS = [
   // ORG Mode para Eli
   ['Cerrar la ventana de edición', 'closeEditor', 'escape'],
   ['Abrir la agenda', 'openAgenda', 'a'],
+  ['Abrir la vista GTD', 'openGtd', 'g'],
   ['Abrir ficheros principales', 'openFavorites', 'f'],
   ['Capturar (después, la letra de la plantilla)', 'openCapture', 'c'],
   ['Sincronizar', 'syncFile', 's'],

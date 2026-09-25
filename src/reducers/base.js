@@ -199,6 +199,8 @@ export default (state = Map(), action) => {
       return setShouldLogIntoDrawer(state, action);
     case 'SET_CLOSE_SUBHEADERS_RECURSIVELY':
       return setCloseSubheadersRecursively(state, action);
+    case 'SET_ELI_INDENT_ON_EXPORT':
+      return state.set('eliIndentOnExport', !!action.eliIndentOnExport);
     case 'SET_SHOULD_NOT_INDENT_ON_EXPORT':
       return setShouldNotIndentOnExport(state, action);
     case 'SET_HAS_UNSEEN_CHANGELOG':

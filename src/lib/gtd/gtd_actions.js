@@ -65,7 +65,7 @@ const sameDay = (a, b) =>
 export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   const header = headerOf(getState, task.path, task.id);
   if (!header) return;
-  const dontIndent = getState().base.get('shouldNotIndentOnExport');
+  const dontIndent = getState().base.get('eliIndentOnExport') !== true;
   const logIntoDrawer = getState().base.get('shouldLogIntoDrawer');
   const inner = [];
 
@@ -164,7 +164,7 @@ export const gtdToggleStar = (task) => (dispatch) =>
 export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (!target || !target.path || !getState().org.present.getIn(['files', target.path, 'headers']))
     return null;
-  const dontIndent = getState().base.get('shouldNotIndentOnExport');
+  const dontIndent = getState().base.get('eliIndentOnExport') !== true;
   const keyword =
     fields.list === 'project'
       ? 'PROJECT'

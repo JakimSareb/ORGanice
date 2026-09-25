@@ -26,7 +26,7 @@ const Settings = ({
   shouldShowTitleInOrgFile,
   shouldLogIntoDrawer,
   closeSubheadersRecursively,
-  shouldNotIndentOnExport,
+  eliIndentOnExport,
   editorDescriptionHeightValue,
   agendaDefaultDeadlineDelayValue,
   agendaDefaultDeadlineDelayUnit,
@@ -104,8 +104,7 @@ const Settings = ({
   const handleCloseSubheadersRecursively = () =>
     base.setCloseSubheadersRecursively(!closeSubheadersRecursively);
 
-  const handleShouldNotIndentOnExport = () =>
-    base.setShouldNotIndentOnExport(!shouldNotIndentOnExport);
+  const handleEliIndentOnExport = () => base.setEliIndentOnExport(!eliIndentOnExport);
 
   const handleShouldStoreSettingsInSyncBackendChange = () =>
     base.setShouldStoreSettingsInSyncBackend(!shouldStoreSettingsInSyncBackend);
@@ -233,18 +232,19 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Disable hard indent on Org export
+          Sangrar como el Emacs antiguo
           <div className="setting-label__description">
-            By default, the metadata body (including deadlines and drawers) of an exported org
-            heading is indented according to its level. If instead you prefer to keep your body text
-            flush-left, i.e.{' '}
+            Desactivado (recomendado): SCHEDULED, DEADLINE, CLOSED y los cajones (:PROPERTIES:,
+            :LOGBOOK:) se escriben pegados al margen, como Emacs con{' '}
             <ExternalLink href="https://orgmode.org/manual/Hard-indentation.html">
-              <code>(setq org-adapt-indentation nil)</code>
-            </ExternalLink>
-            , then activate this setting. The raw content text is left unchanged.
+              <code>org-adapt-indentation nil</code>
+            </ExternalLink>{' '}
+            (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
+            <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
+            encabezado. El texto de las notas no se toca.
           </div>
         </div>
-        <Switch isEnabled={shouldNotIndentOnExport} onToggle={handleShouldNotIndentOnExport} />
+        <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
       </div>
 
       <div className="setting-container">
@@ -484,7 +484,7 @@ const mapStateToProps = (state) => {
     shouldShowTitleInOrgFile: state.base.get('shouldShowTitleInOrgFile'),
     shouldLogIntoDrawer: state.base.get('shouldLogIntoDrawer'),
     closeSubheadersRecursively: state.base.get('closeSubheadersRecursively'),
-    shouldNotIndentOnExport: state.base.get('shouldNotIndentOnExport'),
+    eliIndentOnExport: state.base.get('eliIndentOnExport') === true,
     hasUnseenChangelog: state.base.get('hasUnseenChangelog'),
     showClockDisplay: state.org.present.get('showClockDisplay'),
     preferEditRawValues: state.base.get('preferEditRawValues'),

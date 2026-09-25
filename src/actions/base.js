@@ -130,6 +130,13 @@ export const setShouldNotIndentOnExport = (shouldNotIndentOnExport) => ({
   shouldNotIndentOnExport,
 });
 
+// ORG Mode para Eli: sangrar SCHEDULED/DEADLINE/cajones como el Emacs antiguo
+// (org-adapt-indentation t). Por defecto NO (como Emacs actual: nil).
+export const setEliIndentOnExport = (eliIndentOnExport) => ({
+  type: 'SET_ELI_INDENT_ON_EXPORT',
+  eliIndentOnExport,
+});
+
 export const setShouldStoreSettingsInSyncBackend = (newShouldStoreSettingsInSyncBackend) => {
   return (dispatch, getState) => {
     dispatch({

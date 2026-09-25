@@ -133,7 +133,7 @@ acceso*). La captura rápida (capture.html) sigue siendo solo para Dropbox.
 
 ## Vista GTD (al estilo de Nirvana)
 
-Botón de lista con marcas (*Vista GTD*) de la barra superior o del explorador (junto a la agenda), o `/gtd`. Arriba del menú lateral hay un acceso a la Agenda. Menú lateral con listas, proyectos y
+Botón de lista con marcas (*Vista GTD*) de la barra superior o del explorador (junto a la agenda), tecla **g**, o `/gtd`. Arriba del menú lateral hay un acceso a la Agenda. Menú lateral con listas, proyectos y
 áreas; a la derecha, las tareas con filtros por etiqueta, energía, tiempo y fecha. Trabaja sobre
 los mismos ficheros (los marcados para la agenda o de arranque y los de las plantillas de captura);
 todo lo que se hace aquí se ve en Emacs y al revés.

@@ -964,6 +964,9 @@ class OrgFile extends PureComponent {
       openAgenda: this.checkPopup(
         notWhileTyping(preventDefault(() => this.props.base.activatePopup('agenda')))
       ),
+      openGtd: this.checkPopup(
+        notWhileTyping(preventDefault(() => window.dispatchEvent(new CustomEvent('eli:open-gtd'))))
+      ),
       openFavorites: this.checkPopup(notWhileTyping(preventDefault(() => openFavorites()))),
       openCapture: this.checkPopup(
         notWhileTyping(
@@ -1171,7 +1174,7 @@ const mapStateToProps = (state) => {
     fileIsLoaded,
     selectedHeader: headers && headers.find((header) => header.get('id') === selectedHeaderId),
     customKeybindings: state.base.get('customKeybindings'),
-    dontIndent: state.base.get('shouldNotIndentOnExport'),
+    dontIndent: state.base.get('eliIndentOnExport') !== true,
     shouldLogIntoDrawer: state.base.get('shouldLogIntoDrawer'),
     shouldLiveSync: state.base.get('shouldLiveSync'),
     showDeadlineDisplay: state.base.get('showDeadlineDisplay'),

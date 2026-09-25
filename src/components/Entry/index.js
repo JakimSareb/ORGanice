@@ -40,10 +40,19 @@ class Entry extends PureComponent {
       'renderFileBrowser',
       'renderFile',
       'setChangelogUnseenChanges',
+      'openGtd',
     ]);
   }
 
+  // ORG Mode para Eli: atajo «g» (desde la hoja o el explorador) → vista GTD
+  openGtd() {
+    if (this.props.isAuthenticated && this.props.location.pathname !== '/gtd') {
+      this.props.history.push('/gtd');
+    }
+  }
+
   componentDidMount() {
+    window.addEventListener('eli:open-gtd', this.openGtd);
     this.setChangelogUnseenChanges();
     this.props.filesToLoad.forEach((path) => this.props.syncBackend.downloadFile(path));
     this.props.filesToSync.forEach((path) => this.props.org.sync({ path }));
@@ -69,6 +78,7 @@ class Entry extends PureComponent {
   }
 
   componentWillUnmount() {
+    window.removeEventListener('eli:open-gtd', this.openGtd);
     window.onbeforeunload = undefined;
   }
 

@@ -18,6 +18,10 @@
 - **Conflictos de sincronización**: aviso propio (en cualquier pantalla) que dice qué fichero, y
   deja quedarse con la versión propia, con la de Dropbox/carpeta, o ver las diferencias y elegir
   cambio a cambio (la mía, la otra o las dos). Si las dos versiones son iguales, no pregunta.
+- **Sangría como Emacs** (`org-adapt-indentation nil`): SCHEDULED, DEADLINE, CLOSED y los cajones
+  se escriben pegados al margen, así no aparecen diferencias falsas con Emacs. Para el estilo
+  antiguo: Ajustes → «Sangrar como el Emacs antiguo».
+- Atajo **g**: abre la vista GTD (desde la hoja y el explorador; configurable).
 - Estrella (prioridad [#A]) al principio del editor de título, también en «Edit full title».
 - - **Adjuntos al borrar**: si el encabezado borrado tiene adjuntos, la app pregunta uno a uno si se
   borran también (avisa si otro encabezado los usa; «Conservar» es la opción por defecto).

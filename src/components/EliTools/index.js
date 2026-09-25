@@ -1017,7 +1017,7 @@ function MoonPhases({ onClose }) {
 
 const selectPath = (state) => state.org.present.get('path');
 const selectFiles = (state) => state.org.present.get('files');
-const selectDontIndent = (state) => state.base.get('shouldNotIndentOnExport');
+const selectDontIndent = (state) => state.base.get('eliIndentOnExport') !== true;
 
 export default function EliTools() {
   const path = useSelector(selectPath);

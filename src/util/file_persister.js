@@ -51,7 +51,7 @@ const saveFunctionToDebounce = (state, path) => {
     const contents = exportOrg({
       headers: state.org.present.getIn(['files', path, 'headers']),
       linesBeforeHeadings: state.org.present.getIn(['files', path, 'linesBeforeHeadings']),
-      dontIndent: state.base.get('shouldNotIndentOnExport'),
+      dontIndent: state.base.get('eliIndentOnExport') !== true,
     });
     if (mustNotPersist(path, contents)) return;
     localStorage.setItem('files__' + path, contents);

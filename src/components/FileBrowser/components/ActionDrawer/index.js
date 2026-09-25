@@ -80,6 +80,7 @@ const ActionDrawer = ({
       const bindings = Object.fromEntries(calculateActionedKeybindings(custom));
       const actions = {
         openAgenda: () => latest.current.openAgenda(),
+        openGtd: () => window.dispatchEvent(new CustomEvent('eli:open-gtd')),
         openFavorites: () => openFavorites(),
         openCapture: () => latest.current.startCapture(),
       };

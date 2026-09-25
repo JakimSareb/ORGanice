@@ -189,7 +189,7 @@ const doSync = ({
               path,
               'linesBeforeHeadings',
             ]),
-            dontIndent: getState().base.get('shouldNotIndentOnExport'),
+            dontIndent: getState().base.get('eliIndentOnExport') !== true,
           });
           client
             .updateFile(path, contents)
@@ -233,7 +233,7 @@ const doSync = ({
               path,
               'linesBeforeHeadings',
             ]),
-            dontIndent: getState().base.get('shouldNotIndentOnExport'),
+            dontIndent: getState().base.get('eliIndentOnExport') !== true,
           });
           if (typeof contents === 'string' && sameContents(localContents, contents)) {
             dispatch(setDirty(false, path));
@@ -932,7 +932,7 @@ const exportCurrentFile = (getState) => {
     text: exportOrg({
       headers: file.get('headers'),
       linesBeforeHeadings: file.get('linesBeforeHeadings'),
-      dontIndent: state.base.get('shouldNotIndentOnExport'),
+      dontIndent: state.base.get('eliIndentOnExport') !== true,
     }),
   };
 };
@@ -1030,7 +1030,7 @@ export const appendLinesToHeader = (headerId, lines) => (dispatch, getState) => 
       createRawDescriptionText(
         header.set('rawDescription', newRaw),
         false,
-        getState().base.get('shouldNotIndentOnExport')
+        getState().base.get('eliIndentOnExport') !== true
       )
     )
   );
@@ -1126,7 +1126,7 @@ export const archiveSubtree = (headerId) => async (dispatch, getState) => {
       headerId,
       sourcePath: path,
       targetLevel: targetLevelFor(heading),
-      dontIndent: getState().base.get('shouldNotIndentOnExport'),
+      dontIndent: getState().base.get('eliIndentOnExport') !== true,
     });
     let existing = null;
     const exists = client.pathExists
