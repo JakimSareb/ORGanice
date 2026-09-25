@@ -21,6 +21,14 @@
 - **Sangría como Emacs** (`org-adapt-indentation nil`): SCHEDULED, DEADLINE, CLOSED y los cajones
   se escriben pegados al margen, así no aparecen diferencias falsas con Emacs. Para el estilo
   antiguo: Ajustes → «Sangrar como el Emacs antiguo».
+- Vista GTD: las tareas programadas para más adelante solo se ven en Scheduled; al llegar su
+  fecha (SCHEDULED o DEADLINE) vuelven a su lista y reciben ★ [#A] automáticamente (una vez; si
+  se quita a mano no vuelve; los hábitos no). Inbox = etiqueta **@inbox** (además de los
+  encabezados sin estado del fichero de entrada); al procesarla se quita @inbox. En el editor:
+  contextos de #+TAGS para marcar con un clic y enlaces de las notas que se pueden abrir.
+- Si el fichero no declara un estado (p. ej. NEXT) en su #+TODO, la vista GTD no lo escribe y
+  avisa (antes se estropeaba el título).
+- Al arrancar, una descarga que termina tarde ya no pisa cambios hechos mientras tanto.
 - Atajo **g**: abre la vista GTD (desde la hoja y el explorador; configurable).
 - Estrella (prioridad [#A]) al principio del editor de título, también en «Edit full title».
 - - **Adjuntos al borrar**: si el encabezado borrado tiene adjuntos, la app pregunta uno a uno si se

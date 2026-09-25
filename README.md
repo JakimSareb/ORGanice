@@ -140,9 +140,9 @@ todo lo que se hace aquí se ve en Emacs y al revés.
 
 | Lista | En Org |
 |---|---|
-| Inbox | encabezados sin estado del fichero de entrada (`inbox.org` o el de la plantilla «Inbox») |
+| Inbox | etiqueta `@inbox`, o encabezados sin estado del fichero de entrada (`inbox.org`) |
 | Next / Todo / Waiting / Someday | `NEXT` / `TODO` / `WAITING` / `MAYBE` |
-| Scheduled | con `SCHEDULED` posterior a hoy |
+| Scheduled | con `SCHEDULED` posterior a hoy (hasta ese día no se ven en otra lista; al llegar, ★ `[#A]` automática; igual al llegar el `DEADLINE`) |
 | Deadline | abiertas con `DEADLINE` (también vencidas), por fecha |
 | Proyectos | `PROJECT` (sus subencabezados con estado son sus acciones) |
 | Focus | ★ `[#A]`, o programado/vence hoy o antes (sin hábitos, `:STYLE: habit`) |

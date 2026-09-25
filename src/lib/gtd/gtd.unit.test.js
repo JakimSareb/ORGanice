@@ -12,6 +12,8 @@ import {
   areasOf,
   effortMinutes,
   facetsFor,
+  needsAutoPriority,
+  autoPriorityKey,
 } from './gtd_model';
 import {
   gtdSaveTask,
@@ -26,7 +28,13 @@ const TODAY = new Date(2026, 8, 25);
 const INBOX = '/inbox.org';
 const GTD = '/gtd.org';
 
-const inboxText = ['* Llamar a Juan', '* Idea suelta', 'con notas', ''].join('\n');
+const inboxText = [
+  '#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED',
+  '* Llamar a Juan',
+  '* Idea suelta',
+  'con notas',
+  '',
+].join('\n');
 const gtdText = [
   '#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED',
   '* Casa',
@@ -98,6 +106,58 @@ describe('modelo GTD', () => {
     expect(list('logbook')).toEqual(['Hecho ya']);
     expect(list('reference')).toEqual(['Referencia: recetas']);
     expect(list('focus').sort()).toEqual(['Declaración renta', 'Pagar seguro'].sort());
+  });
+
+  test('@inbox, programadas ocultas y ★ automática', () => {
+    const extra = buildTasks(
+      Map({
+        '/t.org': parseOrg(
+          [
+            '#+TODO: TODO NEXT PROJECT | DONE',
+            '* NEXT Leer artículo :@inbox:',
+            '* TODO [#A] Futura con estrella',
+            'SCHEDULED: <2026-10-01 Thu>',
+            '* TODO Llega hoy',
+            'SCHEDULED: <2026-09-25 Fri>',
+            '* TODO Hábito',
+            'SCHEDULED: <2026-09-20 Sun .+1d>',
+            ':PROPERTIES:',
+            ':STYLE: habit',
+            ':END:',
+            '* PROJECT P',
+            '** NEXT Dentro futura',
+            'SCHEDULED: <2026-10-01 Thu> DEADLINE: <2026-10-05 Mon>',
+            '** NEXT Dentro ya',
+            '',
+          ].join('\n')
+        ),
+      }),
+      []
+    );
+    const t = (title) => byTitle(extra, title);
+    expect(listOf(t('Leer artículo'), TODAY)).toBe('inbox');
+    expect(listOf(t('Futura con estrella'), TODAY)).toBe('scheduled');
+    expect(isFocus(t('Futura con estrella'), TODAY)).toBe(false);
+    expect(tasksForView(extra, { id: 'deadline' }, {}, TODAY)).toEqual([]);
+    const p = t('P');
+    expect(
+      tasksForView(extra, { type: 'project', key: p.key }, {}, TODAY).map((x) => x.title)
+    ).toEqual(['Dentro ya']);
+    expect(needsAutoPriority(t('Llega hoy'), TODAY)).toBe(true);
+    expect(needsAutoPriority(t('Hábito'), TODAY)).toBe(false);
+    expect(needsAutoPriority(t('Futura con estrella'), new Date(2026, 9, 2))).toBe(false);
+    expect(needsAutoPriority(t('Dentro futura'), TODAY)).toBe(false);
+    expect(needsAutoPriority(t('Dentro futura'), new Date(2026, 9, 1))).toBe(true);
+    expect(autoPriorityKey(t('Llega hoy'), TODAY)).toBe(autoPriorityKey(t('Llega hoy'), TODAY));
+    // DEADLINE: también al llegar su fecha; la clave cambia cuando llega la segunda fecha
+    const d = t('Dentro futura');
+    expect(needsAutoPriority(d, new Date(2026, 9, 1))).toBe(true);
+    expect(autoPriorityKey(d, new Date(2026, 9, 1))).not.toBe(
+      autoPriorityKey(d, new Date(2026, 9, 5))
+    );
+    expect(
+      tasksForView(extra, { id: 'next' }, {}, new Date(2026, 9, 1)).map((x) => x.title)
+    ).toContain('Dentro futura');
   });
 
   test('herencia de área y etiquetas, proyectos, propiedades', () => {
@@ -255,6 +315,27 @@ describe('acciones GTD sobre los ficheros', () => {
     expect(moved.project.title).toBe('Pintar salón');
     store.dispatch(gtdDeleteTask(moved));
     expect(textOf(store.state(), GTD)).not.toMatch(/Llamar/);
+  });
+
+  test('estado que el fichero no declara: no se escribe (no se estropea el título)', () => {
+    const state = makeState().setIn(
+      ['files', '/solo.org'],
+      parseOrg('#+TODO: TODO | DONE\n* TODO Algo\n')
+    );
+    let st = state;
+    const getState = () => ({ org: { present: st }, base: Map() });
+    const dispatch = (a) =>
+      typeof a === 'function' ? a(dispatch, getState) : (st = rootOrgReducer(st, a));
+    const t = buildTasks(st.get('files'), []).find((x) => x.title === 'Algo');
+    dispatch(gtdSaveTask(t, { list: 'next', rawTitle: 'Algo nuevo' }));
+    expect(textOf(st, '/solo.org')).toBe('#+TODO: TODO | DONE\n* TODO Algo\n');
+    // sin #+TODO solo existen TODO | DONE: tampoco se escribe NEXT
+    st = st.setIn(['files', '/sin.org'], parseOrg('* Llamar\n'));
+    const plain = buildTasks(st.get('files'), ['/sin.org']).find((x) => x.path === '/sin.org');
+    dispatch(gtdSaveTask(plain, { list: 'next' }));
+    expect(textOf(st, '/sin.org')).toBe('* Llamar\n');
+    dispatch(gtdSaveTask(plain, { list: 'later' }));
+    expect(textOf(st, '/sin.org')).toBe('* TODO Llamar\n');
   });
 
   test('ELI_IN_FILE sin fichero no hace nada', () => {

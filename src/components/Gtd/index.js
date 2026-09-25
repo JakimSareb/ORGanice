@@ -17,6 +17,9 @@ import {
   countsFor,
   facetsFor,
   TIME_BUCKETS,
+  INBOX_TAG,
+  needsAutoPriority,
+  autoPriorityKey,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -42,6 +45,13 @@ import TaskEditor from './TaskEditor';
 import Drawer from '../UI/Drawer';
 import AgendaModal from '../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../EliErrorBoundary';
+import { fileLinkTarget, resolveDropboxPath, openInNewTab } from '../../lib/eli_media';
+import { showMessage } from '../../lib/eli_prompt';
+
+const selectClient = (s) => s.syncBackend.get('client');
+
+// Tareas a las que ya se les puso ★ automáticamente (para no repetirlo si se quita a mano)
+const LS_AUTO_A = 'eliGtdAutoA';
 
 const selectFiles = (s) => s.org.present.get('files');
 const selectFileSettings = (s) => s.org.present.get('fileSettings');
@@ -203,6 +213,7 @@ export default function GtdView() {
   const templates = useSelector(selectTemplates);
   const canUndo = useSelector(selectCanUndo);
   const canRedo = useSelector(selectCanRedo);
+  const client = useSelector(selectClient);
 
   const [view, setView] = useState(() => readLS(LS_VIEW, { id: 'focus' }));
   const [area, setArea] = useState(() => readLS(LS_AREA, '*'));
@@ -290,14 +301,60 @@ export default function GtdView() {
   ]);
   const projectTask = view.type === 'project' ? tasks.find((t) => t.key === view.key) : null;
 
+  const declaredTags = useMemo(
+    () =>
+      declaredTagsFromConfigLines(
+        scopePaths.flatMap((p) => (files.getIn([p, 'fileConfigLines']) || List()).toArray())
+      ),
+    [files, scopePaths]
+  );
+  // Etiquetas predefinidas (contextos @ de #+TAGS, y @inbox) para elegir con un clic
+  const contextTags = useMemo(() => {
+    const at = declaredTags.filter((t) => t.startsWith('@') && t.length > 1);
+    const base = at.length ? at : declaredTags;
+    return base.some((t) => t.toLowerCase() === INBOX_TAG) ? base : [INBOX_TAG, ...base];
+  }, [declaredTags]);
+
+  // Al llegar la fecha programada, ★ [#A] automática (una sola vez por tarea y fecha)
+  useEffect(() => {
+    if (pendingLoads) return; // esperar a que terminen de cargarse los ficheros
+    const due = tasks.filter((t) => needsAutoPriority(t, today));
+    if (!due.length) return;
+    const done = new Set(readLS(LS_AUTO_A, []));
+    const fresh = due.filter((t) => !done.has(autoPriorityKey(t, today)));
+    if (!fresh.length) return;
+    fresh.forEach((t) => {
+      done.add(autoPriorityKey(t, today));
+      dispatch(gtdSaveTask(t, { priority: 'A' }));
+    });
+    writeLS(LS_AUTO_A, Array.from(done).slice(-1000));
+  }, [tasks, today, pendingLoads, dispatch]);
+
+  const openLink = (task, target) => {
+    const file = fileLinkTarget(target);
+    const path = file && resolveDropboxPath(task.path, file);
+    if (path) {
+      openInNewTab(client, path).catch((e) =>
+        showMessage('No se pudo abrir', `${path}\n\n${(e && e.message) || ''}`.trim())
+      );
+      return;
+    }
+    // Enlace a otro fichero .org: se abre en la app
+    const org = /^file:(.+\.org(?:\.gpg|\.asc)?)(?:::.*)?$/i.exec(target);
+    if (org) {
+      const orgPath = resolveDropboxPath(task.path, org[1]);
+      if (orgPath) history.push(`/file${orgPath}`);
+      return;
+    }
+    showMessage('Enlace', target);
+  };
+
   const allTags = useMemo(() => {
-    const declared = declaredTagsFromConfigLines(
-      scopePaths.flatMap((p) => (files.getIn([p, 'fileConfigLines']) || List()).toArray())
-    );
+    const declared = declaredTags;
     const used = new Set();
     tasks.forEach((t) => t.ownTags.forEach((x) => used.add(x)));
     return Array.from(new Set([...declared, ...Array.from(used).sort()]));
-  }, [tasks, files, scopePaths]);
+  }, [tasks, declaredTags]);
 
   const selectView = useCallback((v) => {
     setView(v);
@@ -353,7 +410,11 @@ export default function GtdView() {
         priority: view.id === 'focus' ? 'A' : null,
         scheduled,
         deadline: view.id === 'deadline' ? today : null,
-        tags: filters.tags,
+        // Si Inbox no va a su fichero de entrada, se marca con @inbox para que se vea en Inbox
+        tags:
+          isInbox && !inboxPaths.includes(target.path)
+            ? Array.from(new Set([...filters.tags, INBOX_TAG]))
+            : filters.tags,
       })
     );
     setNewTitle('');
@@ -639,6 +700,8 @@ export default function GtdView() {
                   projects={allProjects.filter((p) => p.key !== task.key)}
                   areas={areas}
                   allTags={allTags}
+                  contextTags={contextTags}
+                  onOpenLink={(target) => openLink(task, target)}
                   onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
                   onCancel={() => setOpenKey(null)}
                   onOpen={() => openInFile(task)}

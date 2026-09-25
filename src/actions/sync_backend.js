@@ -3,7 +3,7 @@ import { forgetRootHandle } from '../sync_backend_clients/local_folder_sync_back
 import { ActionCreators } from 'redux-undo';
 
 import { setLoadingMessage, hideLoadingMessage, clearModalStack, setIsLoading } from './base';
-import { parseFile, setDirty, setLastSyncAt, setOrgFileErrorMessage } from './org';
+import { parseFile, setDirty, setLastSyncAt, setOrgFileErrorMessage, sync } from './org';
 import { localStorageAvailable, persistField } from '../util/settings_persister';
 import { createGitlabOAuth } from '../sync_backend_clients/gitlab_sync_backend_client';
 
@@ -137,6 +137,12 @@ export const downloadFile = (path) => {
       .then((fileContents) => {
         dispatch(hideLoadingMessage());
         dispatch(pushBackup(path, fileContents));
+        // ORG Mode para Eli: si mientras se descargaba el fichero ya se había cargado y cambiado
+        // (p. ej. desde la vista GTD), no se pisa ese cambio: se sincroniza como siempre
+        if (getState().org.present.getIn(['files', path, 'isDirty'])) {
+          dispatch(sync({ path, shouldSuppressMessages: true }));
+          return;
+        }
         dispatch(parseFile(path, fileContents));
         dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
         dispatch(setDirty(false, path));

@@ -1,6 +1,12 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useRef } from 'react';
-import { ENERGY_LEVELS, EFFORT_OPTIONS, PRIORITY_RE } from '../../lib/gtd/gtd_model';
+import {
+  ENERGY_LEVELS,
+  EFFORT_OPTIONS,
+  PRIORITY_RE,
+  INBOX_TAG,
+  hasInboxTag,
+} from '../../lib/gtd/gtd_model';
 
 const LIST_OPTIONS = [
   { id: 'inbox', label: 'Inbox' },
@@ -41,7 +47,30 @@ export const checkboxesOf = (text) =>
     })
     .filter(Boolean);
 
+// Enlaces del texto: [[destino][descripción]], [[destino]] y direcciones web sueltas
+const ORG_LINK_RE = /\[\[([^\]]+)\](?:\[([^\]]*)\])?\]/g;
+const URL_RE = /\bhttps?:\/\/[^\s<>\][)"']+/g;
+export const linksOf = (text) => {
+  const out = [];
+  const seen = new Set();
+  const add = (target, label) => {
+    if (!target || seen.has(target)) return;
+    seen.add(target);
+    out.push({ target, label: label || target });
+  };
+  let m;
+  const t = text || '';
+  ORG_LINK_RE.lastIndex = 0;
+  while ((m = ORG_LINK_RE.exec(t))) add(m[1].trim(), (m[2] || '').trim());
+  const rest = t.replace(ORG_LINK_RE, ' ');
+  URL_RE.lastIndex = 0;
+  while ((m = URL_RE.exec(rest))) add(m[0].replace(/[.,;:]+$/, ''));
+  return out;
+};
+const isWebLink = (target) => /^(https?:|mailto:)/i.test(target);
+
 export const currentListOf = (task) => {
+  if (hasInboxTag(task)) return 'inbox';
   if (!task.keyword) return task.isInboxFile ? 'inbox' : 'reference';
   return (
     { NEXT: 'next', TODO: 'later', WAITING: 'waiting', MAYBE: 'someday' }[task.keyword] || 'later'
@@ -53,6 +82,8 @@ export default function TaskEditor({
   projects,
   areas,
   allTags,
+  contextTags = [],
+  onOpenLink,
   onSave,
   onCancel,
   onOpen,
@@ -106,10 +137,19 @@ export default function TaskEditor({
     setTagInput('');
   };
 
+  const toggleTag = (t) => setTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t]);
+
   const save = () => {
+    let finalTags = tagInput.trim() ? Array.from(new Set([...tags, tagInput.trim()])) : tags;
+    // Inbox = etiqueta @inbox: al sacarla de Inbox se quita; al llevarla a Inbox (fuera del
+    // fichero de entrada) se pone
+    const isInboxTag = (x) => x.toLowerCase() === INBOX_TAG;
+    if (list !== 'inbox') finalTags = finalTags.filter((x) => !isInboxTag(x));
+    else if (!task.isInboxFile && !finalTags.some(isInboxTag))
+      finalTags = [...finalTags, INBOX_TAG];
     const changes = {
       rawTitle: title.trim() || task.rawTitle,
-      tags: tagInput.trim() ? Array.from(new Set([...tags, tagInput.trim()])) : tags,
+      tags: finalTags,
       area: area.trim() || null,
       energy: energy || null,
       effort: effort || null,
@@ -176,10 +216,40 @@ export default function TaskEditor({
         </div>
       )}
 
+      {!encrypted && linksOf(notes).length > 0 && (
+        <div className="gtd-links" data-testid="gtd-links">
+          <span className="gtd-editor__label">Enlaces</span>
+          {linksOf(notes).map((l) =>
+            isWebLink(l.target) ? (
+              <a
+                key={l.target}
+                href={l.target}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gtd-link"
+                title={l.target}
+              >
+                <i className="fas fa-external-link-alt" /> {l.label}
+              </a>
+            ) : (
+              <button
+                key={l.target}
+                type="button"
+                className="gtd-link"
+                title={l.target}
+                onClick={() => onOpenLink && onOpenLink(l.target)}
+              >
+                <i className="fas fa-paperclip" /> {l.label}
+              </button>
+            )
+          )}
+        </div>
+      )}
+
       <div className="gtd-editor__row">
         <span className="gtd-editor__label">Lista</span>
         <div className="gtd-seg" role="radiogroup">
-          {LIST_OPTIONS.filter((o) => o.id !== 'inbox' || task.isInboxFile).map((o) => (
+          {LIST_OPTIONS.map((o) => (
             <button
               key={o.id}
               type="button"
@@ -264,18 +334,34 @@ export default function TaskEditor({
       <div className="gtd-editor__row">
         <span className="gtd-editor__label">Etiquetas</span>
         <div className="gtd-tags-edit">
-          {tags.map((t) => (
-            <span key={t} className="gtd-chip is-on">
-              {t}
-              <button
-                type="button"
-                onClick={() => setTags(tags.filter((x) => x !== t))}
-                aria-label={`Quitar ${t}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
+          {contextTags.length > 0 && (
+            <div className="gtd-tags-predefined" data-testid="gtd-editor-contexts">
+              {contextTags.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={'gtd-chip' + (tags.includes(t) ? ' is-on' : '')}
+                  onClick={() => toggleTag(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          {tags
+            .filter((t) => !contextTags.includes(t))
+            .map((t) => (
+              <span key={t} className="gtd-chip is-on">
+                {t}
+                <button
+                  type="button"
+                  onClick={() => setTags(tags.filter((x) => x !== t))}
+                  aria-label={`Quitar ${t}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
           <input
             list="gtd-alltags"
             value={tagInput}

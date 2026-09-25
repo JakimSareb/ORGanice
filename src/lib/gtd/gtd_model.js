@@ -1,8 +1,10 @@
 // ORG Mode para Eli: vista GTD (estilo Nirvana). Modelo puro: de los ficheros Org a tareas y
 // listas, sin tocar nada. Reglas (acordadas con el usuario):
-//   Inbox     = encabezados sin estado del fichero de entrada (inbox.org)
+//   Inbox     = etiqueta @inbox, o encabezados sin estado del fichero de entrada (inbox.org)
 //   Next      = NEXT · Todo (id 'later') = TODO · Waiting = WAITING · Someday = MAYBE
-//   Scheduled = con SCHEDULED posterior a hoy (hasta ese día no aparece en su lista)
+//   Scheduled = con SCHEDULED posterior a hoy (hasta ese día no aparece en ninguna otra vista;
+//               al llegar el día vuelve a su lista y se le pone [#A], salvo a los hábitos;
+//               lo mismo al llegar su DEADLINE)
 //   Projects  = PROJECT (sus descendientes son sus acciones)
 //   Focus     = ★ [#A] o programado/vence hoy o antes (abiertas; sin hábitos)
 //   Deadline  = tareas abiertas con DEADLINE (vencidas incluidas), por fecha de vencimiento
@@ -182,23 +184,55 @@ export const buildTasks = (files, inboxPaths = []) => {
   return tasks;
 };
 
+export const INBOX_TAG = '@inbox';
+export const hasInboxTag = (task) =>
+  (task.ownTags || []).some((t) => t.toLowerCase() === INBOX_TAG);
+
+// Programada para más adelante: solo se ve en Scheduled
+export const isFutureScheduled = (task, today = new Date()) =>
+  !!task.scheduled && startOfDay(task.scheduled) > startOfDay(today);
+
 // Lista a la que pertenece una tarea (una sola; Focus es aparte)
 export const listOf = (task, today = new Date()) => {
   if (task.isDone) return 'logbook';
   if (task.isProject) return 'project';
-  const t0 = startOfDay(today);
+  const inbox = hasInboxTag(task);
+  if ((task.keyword || inbox) && isFutureScheduled(task, today)) return 'scheduled';
+  // Inbox: etiqueta @inbox, o encabezados sin estado del fichero de entrada
+  if (inbox) return 'inbox';
   if (!task.keyword) {
     if (task.isInboxFile && !task.parentHasKeyword) return 'inbox';
     if (!task.hasTaskChildren && !task.parentHasKeyword) return 'reference';
     return null;
   }
-  if (task.scheduled && startOfDay(task.scheduled) > t0) return 'scheduled';
   return LIST_FOR_KEYWORD[task.keyword] || null;
 };
+
+// Ha llegado su fecha programada o su fecha límite (hoy o antes) y aún no tiene ★: se le pone
+// [#A] (no a los hábitos ni a las terminadas)
+const isDue = (date, today) => !!date && startOfDay(date) <= startOfDay(today);
+export const needsAutoPriority = (task, today = new Date()) =>
+  !!task.keyword &&
+  !task.isDone &&
+  !task.isProject &&
+  !task.isHabit &&
+  task.priority !== 'A' &&
+  (isDue(task.scheduled, today) || isDue(task.deadline, today));
+
+// Clave estable (no depende de los ids, que cambian al releer el fichero) con las fechas que ya
+// han llegado: si luego llega otra (p. ej. la límite), vuelve a ponerse la ★
+export const autoPriorityKey = (task, today = new Date()) =>
+  [
+    task.path,
+    task.title,
+    isDue(task.scheduled, today) ? `S${startOfDay(task.scheduled).toISOString()}` : '',
+    isDue(task.deadline, today) ? `D${startOfDay(task.deadline).toISOString()}` : '',
+  ].join('|');
 
 export const isFocus = (task, today = new Date()) => {
   if (task.isDone || task.isProject || !task.keyword) return false;
   if (task.isHabit) return false; // los hábitos (:STYLE: habit) no se ven en Focus
+  if (isFutureScheduled(task, today)) return false; // hasta su fecha, solo en Scheduled
   if (task.priority === 'A') return true;
   const t0 = startOfDay(today);
   if (task.scheduled && startOfDay(task.scheduled) <= t0) return true;
@@ -249,12 +283,15 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
         t.project.id === projectTask.id &&
         t.keyword &&
         !t.isDone &&
-        !t.isProject
+        !t.isProject &&
+        !isFutureScheduled(t, today)
     );
   } else if (view.id === 'focus') {
     out = tasks.filter((t) => isFocus(t, today));
   } else if (view.id === 'deadline') {
-    out = tasks.filter((t) => t.deadline && t.keyword && !t.isDone && !t.isProject);
+    out = tasks.filter(
+      (t) => t.deadline && t.keyword && !t.isDone && !t.isProject && !isFutureScheduled(t, today)
+    );
   } else {
     out = tasks.filter((t) => listOf(t, today) === view.id);
   }

@@ -7,6 +7,31 @@ import { timestampForDate } from '../timestamps';
 import generateId from '../id_generator';
 import { sync, setDirty } from '../../actions/org';
 import { KEYWORD_FOR_LIST, PRIORITY_RE } from './gtd_model';
+import { showMessage } from '../eli_prompt';
+import { fileDisplayName } from '../eli_app_name';
+
+// Estados que el fichero reconoce (#+TODO:). Si falta uno, Org lo leería como parte del título,
+// así que no se escribe y se avisa.
+const fileKeywords = (getState, path) => {
+  const sets = getState().org.present.getIn(['files', path, 'todoKeywordSets']);
+  const out = new Set();
+  (sets || List()).forEach((set) => (set.get('keywords') || List()).forEach((k) => out.add(k)));
+  if (!out.size) ['TODO', 'DONE'].forEach((k) => out.add(k));
+  return out;
+};
+const missingKeyword = (getState, path, keywords) => {
+  const known = fileKeywords(getState, path);
+  const missing = keywords.filter((k) => k && !known.has(k));
+  if (!missing.length) return false;
+  showMessage(
+    'Falta un estado en el fichero',
+    `El fichero «${fileDisplayName(path)}» no tiene el estado ${missing.join(', ')} en su línea ` +
+      `#+TODO, así que no se ha hecho el cambio (si no, se estropearía el título).\n\n` +
+      `Añade al principio del fichero, por ejemplo:\n` +
+      `#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED`
+  );
+  return true;
+};
 
 const inFile = (path, inner) => ({ type: 'ELI_IN_FILE', path, inner, dirtying: true });
 
@@ -148,6 +173,12 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   }
 
   if (!inner.length) return;
+  const newKeyword = inner.find((a) => a.type === 'SET_TODO_STATE');
+  const needed = [
+    inner.some((a) => a.type === 'UPDATE_HEADER_TITLE') ? task.keyword : null,
+    newKeyword ? newKeyword.newTodoState : null,
+  ];
+  if (missingKeyword(getState, task.path, needed)) return;
   dispatch(inFile(task.path, inner));
   syncFile(dispatch, task.path);
 };
@@ -171,6 +202,7 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
       : fields.list && Object.prototype.hasOwnProperty.call(KEYWORD_FOR_LIST, fields.list)
       ? KEYWORD_FOR_LIST[fields.list]
       : null;
+  if (missingKeyword(getState, target.path, [keyword])) return null;
   const headerId = generateId();
   const titleLine = titleLineFrom({
     keyword,

@@ -607,3 +607,40 @@
     padding: 6px 4px;
   }
 }
+
+/* Enlaces de las notas y etiquetas predefinidas en el editor */
+.gtd-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 14px;
+}
+.gtd-links .gtd-editor__label {
+  margin: 0;
+  min-width: 60px;
+}
+.gtd-link {
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 14px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gtd-tags-predefined {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.gtd-links a.gtd-link,
+.gtd-links a.gtd-link:visited {
+  color: var(--blue);
+}
