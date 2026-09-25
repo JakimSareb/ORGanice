@@ -141,16 +141,22 @@ todo lo que se hace aquí se ve en Emacs y al revés.
 | Lista | En Org |
 |---|---|
 | Inbox | encabezados sin estado del fichero de entrada (`inbox.org` o el de la plantilla «Inbox») |
-| Next / Later / Waiting / Someday | `NEXT` / `TODO` / `WAITING` / `MAYBE` |
+| Next / Todo / Waiting / Someday | `NEXT` / `TODO` / `WAITING` / `MAYBE` |
 | Scheduled | con `SCHEDULED` posterior a hoy |
 | Deadline | abiertas con `DEADLINE` (también vencidas), por fecha |
 | Proyectos | `PROJECT` (sus subencabezados con estado son sus acciones) |
-| Focus | ★ `[#A]`, o programado/vence hoy o antes |
+| Focus | ★ `[#A]`, o programado/vence hoy o antes (sin hábitos, `:STYLE: habit`) |
 | Reference / Logbook | sin estado ni tareas debajo / terminadas (`DONE`, `CANCELLED`) |
 
 Áreas: propiedad `:AREA:` (se hereda). Energía `:ENERGY: alta/media/baja`; tiempo
 `:EFFORT: 0:30`. Para tener estas palabras en Emacs:
 `#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED`.
+
+Las tareas nuevas se crean en `tasks.org` (las de Inbox, en `inbox.org`). «Abrir en el fichero»
+y los clics en la agenda abren la tarea con la vista reducida (narrow).
+
+Si hay un conflicto de sincronización (el fichero cambió en Dropbox y aquí a la vez), la app
+dice qué fichero es y deja elegir la versión o ver las diferencias y elegir cambio a cambio.
 
 Al borrar un encabezado con adjuntos (enlaces a ficheros), la app pregunta uno a uno si se
 borran también.

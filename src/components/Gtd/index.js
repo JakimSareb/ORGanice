@@ -32,6 +32,7 @@ import { ActionCreators } from 'redux-undo';
 import {
   loadFileQuietly,
   selectHeaderAndOpenParents,
+  narrowHeader,
   sync,
   eliOfferDeleteAttachments,
 } from '../../actions/org';
@@ -75,19 +76,34 @@ export const gtdFilePaths = (fileSettings, templates) => {
     }
   });
   (templates || List()).forEach((t) => t.get('file') && paths.add(norm(t.get('file'))));
+  // Ficheros por defecto para las tareas nuevas (si existen)
+  paths.add(DEFAULT_TASKS);
+  paths.add(DEFAULT_INBOX);
   return Array.from(paths);
 };
+
+const DEFAULT_TASKS = '/tasks.org';
+const DEFAULT_INBOX = '/inbox.org';
+
+// El fichero llamado así (el de ruta más corta si hay varios)
+export const pickByName = (paths, name) =>
+  paths
+    .filter((p) => p.toLowerCase().split('/').pop() === name)
+    .sort((a, b) => a.length - b.length)[0] || null;
 
 export const inboxPathsOf = (templates, loadedPaths) => {
   const fromTemplates = (templates || List())
     .filter((t) => /inbox|entrada/i.test(t.get('description') || '') && t.get('file'))
     .map((t) => norm(t.get('file')))
     .toArray();
-  if (fromTemplates.length) return Array.from(new Set(fromTemplates));
-  return loadedPaths.filter((p) => /(^|\/)inbox\.org$/i.test(p));
+  const named = loadedPaths.filter((p) => /(^|\/)inbox\.org$/i.test(p));
+  return Array.from(new Set([...fromTemplates, ...named]));
 };
 
-const tasksFileOf = (templates, loadedPaths, inboxPaths) => {
+// Tareas nuevas: en tasks.org (si no existe, el de la plantilla «Tasks» u otro fichero)
+export const tasksFileOf = (templates, loadedPaths, inboxPaths) => {
+  const named = pickByName(loadedPaths, 'tasks.org');
+  if (named) return named;
   const t = (templates || List()).find(
     (x) => /task|tarea/i.test(x.get('description') || '') && x.get('file')
   );
@@ -209,8 +225,16 @@ export default function GtdView() {
 
   // Cargar (en silencio) los ficheros que usa la vista
   const wanted = useMemo(() => gtdFilePaths(fileSettings, templates), [fileSettings, templates]);
+  const [pendingLoads, setPendingLoads] = useState(true);
   useEffect(() => {
-    wanted.forEach((p) => dispatch(loadFileQuietly(p)));
+    let alive = true;
+    setPendingLoads(true);
+    Promise.all(wanted.map((p) => Promise.resolve(dispatch(loadFileQuietly(p))).catch(() => null)))
+      .catch(() => null)
+      .then(() => alive && setPendingLoads(false));
+    return () => {
+      alive = false;
+    };
   }, [wanted, dispatch]);
   useEffect(() => {
     const t = setInterval(() => {
@@ -238,6 +262,9 @@ export default function GtdView() {
   ]);
   const inboxPaths = useMemo(() => inboxPathsOf(templates, scopePaths), [templates, scopePaths]);
   const tasksFile = tasksFileOf(templates, scopePaths, inboxPaths);
+  // Inbox nuevo: en inbox.org (si no existe, el de la plantilla de entrada)
+  const inboxFile =
+    pickByName(scopePaths, 'inbox.org') || inboxPaths.find((p) => scopePaths.includes(p)) || null;
 
   const tasks = useMemo(() => buildTasks(scopedFiles, inboxPaths), [scopedFiles, inboxPaths]);
   const counts = useMemo(() => countsFor(tasks, { area }, today), [tasks, area, today]);
@@ -295,22 +322,24 @@ export default function GtdView() {
       tags: f.tags.includes(t) ? f.tags.filter((x) => x !== t) : [...f.tags, t],
     }));
 
+  // Abrir en su fichero con la vista reducida (narrow) a la tarea o proyecto
   const openInFile = (task) => {
     dispatch(selectHeaderAndOpenParents(task.path, task.id, { widen: true }));
+    dispatch(narrowHeader(task.id));
     history.push(`/file${task.path}`);
   };
 
   const addTask = () => {
     const title = newTitle.trim();
     if (!title) return;
-    const isInbox = view.id === 'inbox' || view.id === 'focus';
+    const isInbox = view.id === 'inbox';
     let target;
     let list = view.id;
     if (view.type === 'project' && projectTask) {
       target = { path: projectTask.path, parentId: projectTask.id };
       list = 'next';
     } else {
-      target = { path: (isInbox && inboxPaths[0]) || tasksFile };
+      target = { path: (isInbox && inboxFile) || tasksFile };
       if (view.id === 'focus') list = 'next';
       if (view.id === 'scheduled' || view.id === 'logbook' || view.id === 'deadline')
         list = 'later';
@@ -385,7 +414,7 @@ export default function GtdView() {
     </button>
   );
 
-  const loading = wanted.some((p) => !files.getIn([p, 'headers']));
+  const loading = pendingLoads;
 
   return (
     <div className={'gtd' + (sideOpen ? ' is-side-open' : '')} data-testid="gtd">
@@ -525,7 +554,7 @@ export default function GtdView() {
               placeholder={
                 view.type === 'project'
                   ? 'Añadir acción al proyecto'
-                  : view.id === 'inbox' || view.id === 'focus'
+                  : view.id === 'inbox'
                   ? 'Añadir a Inbox'
                   : `Añadir a ${title}`
               }

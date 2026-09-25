@@ -1,10 +1,10 @@
 // ORG Mode para Eli: vista GTD (estilo Nirvana). Modelo puro: de los ficheros Org a tareas y
 // listas, sin tocar nada. Reglas (acordadas con el usuario):
 //   Inbox     = encabezados sin estado del fichero de entrada (inbox.org)
-//   Next      = NEXT · Later = TODO · Waiting = WAITING · Someday = MAYBE
+//   Next      = NEXT · Todo (id 'later') = TODO · Waiting = WAITING · Someday = MAYBE
 //   Scheduled = con SCHEDULED posterior a hoy (hasta ese día no aparece en su lista)
 //   Projects  = PROJECT (sus descendientes son sus acciones)
-//   Focus     = ★ [#A] o programado/vence hoy o antes (abiertas)
+//   Focus     = ★ [#A] o programado/vence hoy o antes (abiertas; sin hábitos)
 //   Deadline  = tareas abiertas con DEADLINE (vencidas incluidas), por fecha de vencimiento
 //   Logbook   = terminadas (DONE, CANCELLED…) · Reference = encabezados sin estado ni tareas debajo
 //   Áreas     = propiedad :AREA: (se hereda) · Energía :ENERGY: · Tiempo :EFFORT:
@@ -16,7 +16,7 @@ export const LISTS = [
   { id: 'focus', label: 'Focus', icon: 'fas fa-star' },
   { id: 'inbox', label: 'Inbox', icon: 'fas fa-inbox' },
   { id: 'next', label: 'Next', icon: 'fas fa-play' },
-  { id: 'later', label: 'Later', icon: 'fas fa-forward' },
+  { id: 'later', label: 'Todo', icon: 'fas fa-forward' },
   { id: 'waiting', label: 'Waiting', icon: 'fas fa-hourglass-half' },
   { id: 'scheduled', label: 'Scheduled', icon: 'far fa-calendar-alt' },
   { id: 'deadline', label: 'Deadline', icon: 'fas fa-flag' },
@@ -153,6 +153,7 @@ export const buildTasks = (files, inboxPaths = []) => {
         area,
         ownArea,
         energy: (propertyValue(header, 'ENERGY') || '').toLowerCase() || null,
+        isHabit: (propertyValue(header, 'STYLE') || '').toLowerCase() === 'habit',
         effort: propertyValue(header, 'EFFORT'),
         scheduled: planningDate(header, 'SCHEDULED'),
         deadline: planningDate(header, 'DEADLINE'),
@@ -197,6 +198,7 @@ export const listOf = (task, today = new Date()) => {
 
 export const isFocus = (task, today = new Date()) => {
   if (task.isDone || task.isProject || !task.keyword) return false;
+  if (task.isHabit) return false; // los hábitos (:STYLE: habit) no se ven en Focus
   if (task.priority === 'A') return true;
   const t0 = startOfDay(today);
   if (task.scheduled && startOfDay(task.scheduled) <= t0) return true;

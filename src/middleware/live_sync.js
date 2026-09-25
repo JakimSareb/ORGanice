@@ -6,7 +6,10 @@ export default (store) => (next) => (action) => {
   // middleware is run before the reducer. to persist the result of the action,
   // save and sync are done in a callback so they happen after the state is changed
   setTimeout(() => {
-    let dirtyFiles = determineAffectedFiles(store.getState().org.present, action);
+    // ORG Mode para Eli: sin fichero (p. ej. vista GTD sin hoja abierta) no hay nada que guardar
+    let dirtyFiles = determineAffectedFiles(store.getState().org.present, action).filter(
+      (path) => !!path
+    );
 
     dirtyFiles.forEach((path) => saveFileToLocalStorage(store.getState(), path));
     dirtyFiles.forEach((path) => persistIsDirty(true, path));

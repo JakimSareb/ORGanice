@@ -10,7 +10,16 @@
   proyecto, energía, tiempo, etiquetas, notas), mover a un proyecto, borrar, abrir en su fichero,
   deshacer/rehacer. Guarda en Org estándar: estados, `[#A]`, `SCHEDULED`/`DEADLINE`, `:AREA:`,
   `:ENERGY:`, `:EFFORT:`. En el móvil el menú se despliega con ☰.
-- **Adjuntos al borrar**: si el encabezado borrado tiene adjuntos, la app pregunta uno a uno si se
+- En la vista GTD: la lista Later se llama **Todo**; Focus no muestra los hábitos
+  (`:STYLE: habit`); las tareas nuevas van a `tasks.org` (las de Inbox, a `inbox.org`); el cuadro
+  de notas del editor es 4 veces más alto y sus casillas `- [ ]`/`+ [ ]` se marcan con un clic;
+  «Abrir en el fichero» abre la tarea o el proyecto con la vista reducida (narrow).
+- La agenda también abre la tarea pulsada con la vista reducida (narrow).
+- **Conflictos de sincronización**: aviso propio (en cualquier pantalla) que dice qué fichero, y
+  deja quedarse con la versión propia, con la de Dropbox/carpeta, o ver las diferencias y elegir
+  cambio a cambio (la mía, la otra o las dos). Si las dos versiones son iguales, no pregunta.
+- Estrella (prioridad [#A]) al principio del editor de título, también en «Edit full title».
+- - **Adjuntos al borrar**: si el encabezado borrado tiene adjuntos, la app pregunta uno a uno si se
   borran también (avisa si otro encabezado los usa; «Conservar» es la opción por defecto).
 
 ## 1.1 (septiembre de 2026)

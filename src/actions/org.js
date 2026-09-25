@@ -1,5 +1,6 @@
 import { ActionCreators, ActionTypes } from 'redux-undo';
 import { offerToDeleteAttachments } from '../lib/eli_attachments';
+import { addConflict, sameContents } from '../lib/eli_conflicts';
 import { debounce } from 'lodash';
 import {
   setLoadingMessage,
@@ -223,7 +224,29 @@ const doSync = ({
         if (isDirty && forceAction !== 'pull') {
           dispatch(hideLoadingMessage());
           dispatch(setIsLoading(false, path));
-          dispatch(activatePopup('sync-confirmation', { lastServerModifiedAt, lastSyncAt, path }));
+          // ORG Mode para Eli: conflicto. Si las dos versiones son iguales no hay nada que
+          // decidir; si no, se muestra el diálogo propio (qué fichero, cuál quedarse, diferencias)
+          const localContents = exportOrg({
+            headers: getState().org.present.getIn(['files', path, 'headers']),
+            linesBeforeHeadings: getState().org.present.getIn([
+              'files',
+              path,
+              'linesBeforeHeadings',
+            ]),
+            dontIndent: getState().base.get('shouldNotIndentOnExport'),
+          });
+          if (typeof contents === 'string' && sameContents(localContents, contents)) {
+            dispatch(setDirty(false, path));
+            dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+          } else {
+            addConflict({
+              path,
+              mine: localContents,
+              theirs: typeof contents === 'string' ? contents : '',
+              lastServerModifiedAt,
+              lastSyncAt,
+            });
+          }
         } else {
           dispatch(parseFile(path, contents));
           dispatch(setDirty(false, path));

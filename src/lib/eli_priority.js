@@ -30,3 +30,20 @@ export const titlePartsWithoutPriority = (parts) => {
   if (first.get('type') !== 'text' || !PRIORITY_RE.test(first.get('contents'))) return parts;
   return parts.update(0, (p) => p.set('contents', p.get('contents').replace(PRIORITY_RE, '')));
 };
+
+// Texto del editor de título (con o sin la palabra clave delante): ¿tiene [#A]? y conmutarla
+const splitKeyword = (text, keywords) => {
+  const m = /^(\S+)(\s+)([\s\S]*)$/.exec(text || '');
+  if (m && (keywords || []).includes(m[1])) return [m[1] + ' ', m[3]];
+  return ['', text || ''];
+};
+export const titleTextHasPriorityA = (text, keywords) => {
+  const m = PRIORITY_RE.exec(splitKeyword(text, keywords)[1]);
+  return !!m && m[1] === 'A';
+};
+export const toggledPriorityAText = (text, keywords) => {
+  const [prefix, rest] = splitKeyword(text, keywords);
+  const m = PRIORITY_RE.exec(rest);
+  const clean = rest.replace(PRIORITY_RE, '');
+  return prefix + (m && m[1] === 'A' ? clean : `[#A] ${clean}`);
+};

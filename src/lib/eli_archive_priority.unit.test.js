@@ -83,3 +83,15 @@ test('prioridad A', () => {
   expect(toggledPriorityATitle(c)).toBe('Ya');
   expect(titlePartsWithoutPriority(c.getIn(['titleLine', 'title'])).first().get('contents')).toBe('Ya');
 });
+
+test('estrella en el texto del editor de título', () => {
+  const { titleTextHasPriorityA, toggledPriorityAText } = require('./eli_priority');
+  const kw = ['TODO', 'NEXT', 'DONE'];
+  expect(toggledPriorityAText('TODO Comprar pan :casa:', kw)).toBe('TODO [#A] Comprar pan :casa:');
+  expect(toggledPriorityAText('TODO [#A] Comprar pan', kw)).toBe('TODO Comprar pan');
+  expect(toggledPriorityAText('TODO [#B] Comprar', kw)).toBe('TODO [#A] Comprar');
+  expect(toggledPriorityAText('Comprar pan', kw)).toBe('[#A] Comprar pan');
+  expect(titleTextHasPriorityA('NEXT [#A] x', kw)).toBe(true);
+  expect(titleTextHasPriorityA('[#A] x', kw)).toBe(true);
+  expect(titleTextHasPriorityA('x [#A]', kw)).toBe(false);
+});

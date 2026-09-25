@@ -23,6 +23,7 @@ import KeyboardShortcutsEditor from '../KeyboardShortcutsEditor';
 import CaptureTemplatesEditor from '../CaptureTemplatesEditor';
 import FileSettingsEditor from '../FileSettingsEditor';
 import GtdView from '../Gtd';
+import EliConflicts from '../EliConflicts';
 
 import * as syncBackendActions from '../../actions/sync_backend';
 import * as orgActions from '../../actions/org';
@@ -169,6 +170,7 @@ class Entry extends PureComponent {
         <HeaderBar />
         <LoadingIndicator message={loadingMessage} />
         <EliTools />
+        {isAuthenticated && <EliConflicts />}
 
         {isAuthenticated &&
           ([

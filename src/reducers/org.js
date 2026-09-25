@@ -2263,6 +2263,8 @@ export default rootOrgReducer;
 
 export const determineAffectedFiles = (state, action) => {
   if (action.dirtying) {
+    // ORG Mode para Eli: acciones sobre otro fichero (vista GTD): el afectado es ese fichero
+    if (action.type === 'ELI_IN_FILE') return action.path ? [action.path] : [];
     if (action.type === 'REFILE_SUBTREE') {
       return [action.sourcePath, action.targetPath];
     } else if (action.type === 'INSERT_CAPTURE' || action.type === 'INSERT_CAPTURE_FROM_HEADER') {

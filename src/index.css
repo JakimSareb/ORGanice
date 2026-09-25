@@ -156,3 +156,21 @@ body {
   color: var(--base1, #93a1a1);
   margin: 12px 0 4px;
 }
+
+/* ORG Mode para Eli: estrella (prioridad A) en el editor de título */
+.eli-title-star {
+  border: 0;
+  background: transparent;
+  color: var(--base1, #93a1a1);
+  font-size: 20px;
+  padding: 2px 8px 2px 0;
+  cursor: pointer;
+  align-self: center;
+}
+.eli-title-star.is-on {
+  color: var(--yellow, #b58900);
+}
+.eli-title-star-group {
+  display: flex;
+  align-items: center;
+}

@@ -427,6 +427,33 @@
   resize: vertical;
   font-family: inherit;
 }
+.gtd-editor__notes {
+  min-height: 16em;
+  line-height: 1.4;
+}
+.gtd-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 2px;
+  font-size: 14px;
+}
+.gtd-checklist__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.gtd-checklist__item input {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+.gtd-checklist__item.is-done span {
+  text-decoration: line-through;
+  color: var(--base1);
+}
 .gtd-editor__row {
   display: flex;
   flex-wrap: wrap;

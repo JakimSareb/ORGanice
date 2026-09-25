@@ -15,6 +15,7 @@ import DrawerActionBar from '../DrawerActionBar';
 import { generateTitleLine, createRawDescriptionText } from '../../../../lib/export_org';
 import { getCurrentTimestampAsText } from '../../../../lib/timestamps';
 import { todoKeywordSetForKeyword, timestampWithId, headerWithId } from '../../../../lib/org_utils';
+import { titleTextHasPriorityA, toggledPriorityAText } from '../../../../lib/eli_priority';
 import { isMobileBrowser } from '../../../../lib/browser_utils';
 
 // Header-editing popup types that use the unified editor
@@ -35,6 +36,7 @@ class UnifiedHeaderEditor extends PureComponent {
 
     _.bindAll(this, [
       'handleTitleTextareaRef',
+      'handleTitleStarClick',
       'handleTitleTextareaFocus',
       'handleTitleChange',
       'handleTitleFieldClick',
@@ -127,6 +129,21 @@ class UnifiedHeaderEditor extends PureComponent {
     });
     this.titleTextarea.focus();
     event.stopPropagation();
+  }
+
+  // ORG Mode para Eli: estrella (prioridad [#A]) en el editor de título
+  titleKeywords() {
+    const sets = this.props.todoKeywordSets;
+    if (!sets) return [];
+    return sets.flatMap((set) => set.get('keywords')).toArray();
+  }
+
+  handleTitleStarClick(event) {
+    event.stopPropagation();
+    this.setState({
+      titleValue: toggledPriorityAText(this.state.titleValue, this.titleKeywords()),
+    });
+    if (this.titleTextarea) this.titleTextarea.focus();
   }
 
   handleTitleTodoChange(newTodoKeyword) {
@@ -330,20 +347,40 @@ class UnifiedHeaderEditor extends PureComponent {
         {/* ORG Mode para Eli: los estados también en «Edit full title» */}
         {
           <div className="todo-container">
-            <TabButtons
-              buttons={todoKeywordSet
-                .get('keywords')
-                .filter(
-                  (todo) =>
-                    todoKeywordSet
-                      .get('completedKeywords')
-                      .filter((completed) => todo === completed).size === 0
-                )}
-              selectedButton={
-                selectedHeader ? selectedHeader.getIn(['titleLine', 'todoKeyword']) : undefined
-              }
-              onSelect={this.handleTitleTodoChange}
-            />
+            <div className="eli-title-star-group">
+              <button
+                type="button"
+                className={
+                  'eli-title-star' +
+                  (titleTextHasPriorityA(titleValue, this.titleKeywords()) ? ' is-on' : '')
+                }
+                onClick={this.handleTitleStarClick}
+                title="Prioridad A (★)"
+                data-testid="eli-title-star"
+              >
+                <i
+                  className={
+                    titleTextHasPriorityA(titleValue, this.titleKeywords())
+                      ? 'fas fa-star'
+                      : 'far fa-star'
+                  }
+                />
+              </button>
+              <TabButtons
+                buttons={todoKeywordSet
+                  .get('keywords')
+                  .filter(
+                    (todo) =>
+                      todoKeywordSet
+                        .get('completedKeywords')
+                        .filter((completed) => todo === completed).size === 0
+                  )}
+                selectedButton={
+                  selectedHeader ? selectedHeader.getIn(['titleLine', 'todoKeyword']) : undefined
+                }
+                onSelect={this.handleTitleTodoChange}
+              />
+            </div>
             <TabButtons
               buttons={todoKeywordSet.get('completedKeywords').filter((todo) => todo !== '')}
               selectedButton={
