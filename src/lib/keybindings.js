@@ -13,6 +13,12 @@ const DEFAULT_BINDINGS = [
   ['Move header left', 'moveHeaderLeft', 'alt+shift+left'],
   ['Move header right', 'moveHeaderRight', 'alt+shift+right'],
   ['Undo', 'undo', 'ctrl+/'],
+  // ORG Mode para Eli
+  ['Cerrar la ventana de edición', 'closeEditor', 'escape'],
+  ['Abrir la agenda', 'openAgenda', 'a'],
+  ['Abrir ficheros principales', 'openFavorites', 'f'],
+  ['Capturar (después, la letra de la plantilla)', 'openCapture', 'c'],
+  ['Sincronizar', 'syncFile', 's'],
 ];
 
 export const calculateNamedKeybindings = (customKeybindings) =>

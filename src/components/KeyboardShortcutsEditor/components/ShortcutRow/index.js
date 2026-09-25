@@ -22,12 +22,16 @@ export default class ShortcutRow extends PureComponent {
 
   handleRebindClick() {
     this.setState({ isEditMode: true });
-    document.addEventListener('keypress', this.handleKeyPress);
+    document.addEventListener('keydown', this.handleKeyPress);
   }
 
   handleKeyPress(event) {
+    // ORG Mode para Eli: keydown (keypress no llega para Escape ni las flechas); las teclas
+    // modificadoras solas no terminan la grabación
+    if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
+    event.preventDefault();
     this.setState({ isEditMode: false });
-    document.removeEventListener('keypress', this.handleKeyPress);
+    document.removeEventListener('keydown', this.handleKeyPress);
 
     let key = null;
     if (event.code.startsWith('Key')) {
@@ -50,6 +54,12 @@ export default class ShortcutRow extends PureComponent {
         Comma: ',',
         Period: '.',
         Slash: '/',
+        Escape: 'escape',
+        Space: 'space',
+        ArrowUp: 'up',
+        ArrowDown: 'down',
+        ArrowLeft: 'left',
+        ArrowRight: 'right',
       }[event.code];
     }
 
@@ -86,6 +96,7 @@ export default class ShortcutRow extends PureComponent {
       ['meta', '⌘'],
       ['shift', '⇧'],
       ['backspace', '⌫'],
+      ['escape', 'Esc'],
       ['return', '⏎'],
       ['enter', '⏎'],
       ['left', '←'],

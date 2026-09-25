@@ -30,3 +30,10 @@ export const shouldIgnoreOrganiceHotkey = (event, orgFileContainer) => {
   }
   return false;
 };
+
+// Atajos de una sola letra: nunca mientras se escribe en un campo de texto
+export const notWhileTyping = (handler) => (event) => {
+  const target = (event && event.target) || document.activeElement;
+  if (isEditable(target) || isEditable(document.activeElement)) return;
+  return handler(event);
+};

@@ -164,7 +164,9 @@ function AgendaModal(props) {
     return (
       <div className="agenda__priority" data-testid="eli-agenda-priority">
         <div className="agenda__priority-title">
-          <i className="fas fa-star" /> Prioritarias ({items.length})
+          <span title="Prioritarias">
+            <i className="fas fa-star" /> {items.length}
+          </span>
         </div>
         {items.map(({ header }) => (
           <div key={`${header.get('path')}-${header.get('id')}`} className="agenda__priority-item">

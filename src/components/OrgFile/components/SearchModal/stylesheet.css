@@ -60,3 +60,13 @@
   justify-content: right;
   align-items: center;
 }
+
+/* ORG Mode para Eli: buscar solo en la hoja abierta */
+.search-only-current {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.search-only-current__btn {
+  position: static !important;
+}

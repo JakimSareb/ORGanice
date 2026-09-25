@@ -1,5 +1,5 @@
 import { openFavorites } from '../../../EliTools';
-import React, { Fragment, useState, useMemo, useRef } from 'react';
+import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -120,6 +120,48 @@ const ActionDrawer = ({
 
     setIsDisplayingCaptureButtons(!isDisplayingCaptureButtons);
   };
+
+  // ORG Mode para Eli: atajo de captura (tecla c, configurable): muestra las plantillas y la
+  // siguiente tecla elige la plantilla por su letra (Escape cancela)
+  const latest = useRef();
+  latest.current = { getAvailableCaptureTemplates, handleCaptureButtonClick };
+  useEffect(() => {
+    let pendingListener = null;
+    const stopWaiting = () => {
+      if (pendingListener) document.removeEventListener('keydown', pendingListener, true);
+      pendingListener = null;
+    };
+    const onMenu = () => {
+      const templates = latest.current.getAvailableCaptureTemplates();
+      if (!templates || templates.size === 0) {
+        alert('No hay plantillas de captura para este fichero (Ajustes → Capture templates).');
+        return;
+      }
+      setIsDisplayingCaptureButtons(true);
+      stopWaiting();
+      pendingListener = (e) => {
+        if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        stopWaiting();
+        if (e.key === 'Escape') {
+          setIsDisplayingCaptureButtons(false);
+          return;
+        }
+        const template = templates.find(
+          (t) => (t.get('letter') || '').toLowerCase() === e.key.toLowerCase()
+        );
+        if (template) latest.current.handleCaptureButtonClick(template)();
+        else setIsDisplayingCaptureButtons(false);
+      };
+      document.addEventListener('keydown', pendingListener, true);
+    };
+    window.addEventListener('eli:capture-menu', onMenu);
+    return () => {
+      window.removeEventListener('eli:capture-menu', onMenu);
+      stopWaiting();
+    };
+  }, []);
 
   const renderCaptureButtons = () => {
     const availableCaptureTemplates = getAvailableCaptureTemplates();

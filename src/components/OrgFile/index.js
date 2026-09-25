@@ -2,6 +2,8 @@ import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_con
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
+import { openFavorites } from '../EliTools';
+import { notWhileTyping } from '../../lib/eli_hotkeys';
 import EliErrorBoundary from '../EliErrorBoundary';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
@@ -85,6 +87,7 @@ class OrgFile extends PureComponent {
       'handlePropertyListItemsChange',
       'handleTimestampChange',
       'getPopupCloseAction',
+      'handleActivePopupClose',
       'getPopupSwitchAction',
       'checkPopupAndHeader',
       'checkPopup',
@@ -788,6 +791,25 @@ class OrgFile extends PureComponent {
     };
   }
 
+  // Cerrar la ventana activa guardando, igual que al tocar fuera del cajón
+  handleActivePopupClose() {
+    const { activePopupType } = this.props;
+    if (!activePopupType) return;
+    this.getPopupCloseAction(activePopupType)(
+      ...(this.state.popupCloseActionValuesAccessor
+        ? this.state.popupCloseActionValuesAccessor()
+        : [])
+    );
+    this.setState({
+      editRawValues: this.props.preferEditRawValues,
+      captureMode: false,
+      captureHeader: null,
+      captureTemplate: null,
+      captureShouldPrepend: false,
+    });
+    if (this.container) this.container.focus();
+  }
+
   // Read only actions only need to be disabled when a popup is open
   checkPopup(callback) {
     return (event) => {
@@ -873,6 +895,26 @@ class OrgFile extends PureComponent {
       moveHeaderLeft: this.checkPopupAndHeader(preventDefault(this.handleMoveHeaderLeftHotKey)),
       moveHeaderRight: this.checkPopupAndHeader(preventDefault(this.handleMoveHeaderRightHotKey)),
       undo: this.checkPopupAndHeader(preventDefault(this.handleUndoHotKey)),
+      // ORG Mode para Eli: atajos propios (solo sin ventanas abiertas y sin estar escribiendo)
+      openAgenda: this.checkPopup(
+        notWhileTyping(preventDefault(() => this.props.base.activatePopup('agenda')))
+      ),
+      openFavorites: this.checkPopup(notWhileTyping(preventDefault(() => openFavorites()))),
+      openCapture: this.checkPopup(
+        notWhileTyping(
+          preventDefault(() => window.dispatchEvent(new CustomEvent('eli:capture-menu')))
+        )
+      ),
+      syncFile: this.checkPopup(
+        notWhileTyping(preventDefault(() => this.props.org.sync({ forceAction: 'manual' })))
+      ),
+      // Escape cierra la ventana de edición del encabezado (guardando)
+      closeEditor: (event) => {
+        if (UNIFIED_EDITOR_POPUP_TYPES.includes(this.props.activePopupType)) {
+          event.preventDefault();
+          this.handleActivePopupClose();
+        }
+      },
     };
     // ORG Mode para Eli: los atajos de organice (p. ej. Retroceso = borrar encabezado) no deben
     // actuar mientras se escribe en las ventanas propias (texto plano, adjuntos, frases…).
@@ -940,21 +982,7 @@ class OrgFile extends PureComponent {
 
           {activePopupType ? (
             <Drawer
-              onClose={() => {
-                this.getPopupCloseAction(activePopupType)(
-                  ...(this.state.popupCloseActionValuesAccessor
-                    ? this.state.popupCloseActionValuesAccessor()
-                    : [])
-                );
-                this.setState({
-                  editRawValues: this.props.preferEditRawValues,
-                  captureMode: false,
-                  captureHeader: null,
-                  captureTemplate: null,
-                  captureShouldPrepend: false,
-                });
-                this.container.focus();
-              }}
+              onClose={this.handleActivePopupClose}
               maxSize={this.getPopupMaxSize(activePopupType)}
             >
               {UNIFIED_EDITOR_POPUP_TYPES.includes(activePopupType) ? (

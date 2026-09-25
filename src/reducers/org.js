@@ -1643,6 +1643,9 @@ export const setSearchFilterInformation = (state, action) => {
   state = state.asMutable();
 
   if (action.scope) state.setIn(['search', 'scope'], action.scope);
+  if (typeof action.onlyCurrentFile === 'boolean') {
+    state.setIn(['search', 'onlyCurrentFile'], action.onlyCurrentFile);
+  }
   state.setIn(['search', 'context'], context);
   state.setIn(['search', 'cursorPosition'], cursorPosition);
   const scope = context === 'search' ? state.getIn(['search', 'scope']) || 'headers' : 'headers';
@@ -1666,6 +1669,10 @@ export const setSearchFilterInformation = (state, action) => {
     files = determineIncludedFiles(files, fileSettings, path, 'includeInAgenda', false);
   } else if (context === 'search') {
     files = determineIncludedFiles(files, fileSettings, path, 'includeInSearch', false);
+    // ORG Mode para Eli: buscar solo en la hoja abierta
+    if (state.getIn(['search', 'onlyCurrentFile'])) {
+      files = files.filter((_file, filePath) => filePath === path);
+    }
   } else if (context === 'task-list') {
     files = determineIncludedFiles(files, fileSettings, path, 'includeInTasklist', false);
   } else if (context === 'refile') {

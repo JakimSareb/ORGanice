@@ -830,12 +830,19 @@ export const updateLogEntryTime = (headerId, entryIndex, entryType, newTime) => 
   dirtying: true,
 });
 
-export const setSearchFilterInformation = (searchFilter, cursorPosition, context, scope) => ({
+export const setSearchFilterInformation = (
+  searchFilter,
+  cursorPosition,
+  context,
+  scope,
+  onlyCurrentFile
+) => ({
   type: 'SET_SEARCH_FILTER_INFORMATION',
   searchFilter,
   cursorPosition,
   context,
   scope,
+  onlyCurrentFile,
 });
 
 export const setShowClockDisplay = (showClockDisplay) => ({

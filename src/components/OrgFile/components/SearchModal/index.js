@@ -33,6 +33,33 @@ function SearchModal(props) {
     searchScope,
   } = props;
 
+  // ORG Mode para Eli: buscar solo en la hoja abierta (se recuerda en este navegador)
+  const [onlyCurrent, setOnlyCurrent] = useState(() => {
+    try {
+      return window.localStorage.getItem('eliSearchOnlyCurrent') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (context === 'search') {
+      props.org.setSearchFilterInformation(
+        searchFilter,
+        searchFilter.length,
+        context,
+        undefined,
+        onlyCurrent
+      );
+    }
+  }, [onlyCurrent, context]);
+  function toggleOnlyCurrent() {
+    const next = !onlyCurrent;
+    setOnlyCurrent(next);
+    try {
+      window.localStorage.setItem('eliSearchOnlyCurrent', String(next));
+    } catch (e) {}
+  }
+
   function handleScopeChange(scope) {
     props.org.setSearchFilterInformation(searchFilter, searchFilter.length, context, scope);
   }
@@ -138,6 +165,22 @@ function SearchModal(props) {
           </div>
         </div>
       )}
+
+      {context === 'search' && !activeClocks ? (
+        <div className="search-only-current">
+          <button
+            className={
+              'agenda__log-toggle search-only-current__btn' + (onlyCurrent ? ' is-active' : '')
+            }
+            onClick={toggleOnlyCurrent}
+            aria-pressed={onlyCurrent}
+            title="Buscar solo en la hoja abierta"
+            data-testid="eli-search-only-current"
+          >
+            <i className="far fa-file-alt" /> Solo esta hoja
+          </button>
+        </div>
+      ) : null}
 
       {context === 'search' && !activeClocks ? (
         <div className="search-scope-container" style={{ margin: '0.5em 0' }}>

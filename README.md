@@ -75,6 +75,10 @@ o el iPhone. Conserva toda la funcionalidad de organice y añade:
 - **CLOSED al terminar**: al pasar una tarea a un estado terminado (DONE, CANCELLED…) se añade
   `CLOSED: [fecha hora]`, y se quita si se reabre (como `org-log-done 'time`). Los estados
   también se ofrecen en «Edit full title».
+- **Atajos de teclado** (configurables en Ajustes → Keyboard shortcuts): Esc cierra la ventana de
+  edición del encabezado, `a` agenda, `f` ficheros principales, `c` + letra de la plantilla para
+  capturar, `s` sincronizar. No actúan mientras se escribe.
+- **Buscar solo en esta hoja**: botón en la búsqueda.
 - **Borrar encabezados con confirmación** (tecla Retroceso, papelera o deslizar a la izquierda).
 - **Narrow/Widen** siempre en la barra superior (actúa sobre el encabezado seleccionado).
 - **Seguridad reforzada** (ver abajo).
