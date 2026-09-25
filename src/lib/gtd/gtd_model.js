@@ -5,6 +5,7 @@
 //   Scheduled = con SCHEDULED posterior a hoy (hasta ese día no aparece en su lista)
 //   Projects  = PROJECT (sus descendientes son sus acciones)
 //   Focus     = ★ [#A] o programado/vence hoy o antes (abiertas)
+//   Deadline  = tareas abiertas con DEADLINE (vencidas incluidas), por fecha de vencimiento
 //   Logbook   = terminadas (DONE, CANCELLED…) · Reference = encabezados sin estado ni tareas debajo
 //   Áreas     = propiedad :AREA: (se hereda) · Energía :ENERGY: · Tiempo :EFFORT:
 import { List } from 'immutable';
@@ -18,6 +19,7 @@ export const LISTS = [
   { id: 'later', label: 'Later', icon: 'fas fa-forward' },
   { id: 'waiting', label: 'Waiting', icon: 'fas fa-hourglass-half' },
   { id: 'scheduled', label: 'Scheduled', icon: 'far fa-calendar-alt' },
+  { id: 'deadline', label: 'Deadline', icon: 'fas fa-flag' },
   { id: 'someday', label: 'Someday', icon: 'fas fa-cloud' },
 ];
 export const EXTRA_LISTS = [
@@ -249,6 +251,8 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
     );
   } else if (view.id === 'focus') {
     out = tasks.filter((t) => isFocus(t, today));
+  } else if (view.id === 'deadline') {
+    out = tasks.filter((t) => t.deadline && t.keyword && !t.isDone && !t.isProject);
   } else {
     out = tasks.filter((t) => listOf(t, today) === view.id);
   }
@@ -257,6 +261,7 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
     return out.sort((a, b) => (b.closed || 0) - (a.closed || 0)).slice(0, 300);
   }
   if (view.id === 'scheduled') return out.sort((a, b) => (a.scheduled || 0) - (b.scheduled || 0));
+  if (view.id === 'deadline') return out.sort((a, b) => a.deadline - b.deadline);
   if (view.type === 'project') return out; // orden del fichero
   return out.sort(byDateThenTitle);
 };

@@ -38,6 +38,9 @@ import {
 import { declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import TaskEditor from './TaskEditor';
+import Drawer from '../UI/Drawer';
+import AgendaModal from '../OrgFile/components/AgendaModal';
+import EliErrorBoundary from '../EliErrorBoundary';
 
 const selectFiles = (s) => s.org.present.get('files');
 const selectFileSettings = (s) => s.org.present.get('fileSettings');
@@ -192,6 +195,7 @@ export default function GtdView() {
   const [openKey, setOpenKey] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
+  const [showAgenda, setShowAgenda] = useState(false);
   const [today, setToday] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -308,7 +312,8 @@ export default function GtdView() {
     } else {
       target = { path: (isInbox && inboxPaths[0]) || tasksFile };
       if (view.id === 'focus') list = 'next';
-      if (view.id === 'scheduled' || view.id === 'logbook') list = 'later';
+      if (view.id === 'scheduled' || view.id === 'logbook' || view.id === 'deadline')
+        list = 'later';
     }
     const scheduled = view.id === 'scheduled' ? new Date(today.getTime() + 86400000) : null;
     dispatch(
@@ -318,6 +323,7 @@ export default function GtdView() {
         area: area !== '*' && area !== '-' ? area : null,
         priority: view.id === 'focus' ? 'A' : null,
         scheduled,
+        deadline: view.id === 'deadline' ? today : null,
         tags: filters.tags,
       })
     );
@@ -410,6 +416,17 @@ export default function GtdView() {
             data-testid="gtd-search"
           />
         </div>
+        <button
+          className="gtd-side__item gtd-side__item--agenda"
+          onClick={() => {
+            setSideOpen(false);
+            setShowAgenda(true);
+          }}
+          data-testid="gtd-agenda"
+        >
+          <i className="fas fa-calendar-alt gtd-side__icon" />
+          <span className="gtd-side__label">Agenda</span>
+        </button>
         <nav className="gtd-side__lists">{LISTS.map(renderListItem)}</nav>
         <div className="gtd-side__section">
           <span>Proyectos</span>
@@ -603,6 +620,19 @@ export default function GtdView() {
           ))}
         </div>
       </main>
+      {showAgenda && (
+        <Drawer onClose={() => setShowAgenda(false)} maxSize>
+          <EliErrorBoundary label="la agenda" onClose={() => setShowAgenda(false)}>
+            <AgendaModal
+              onClose={() => setShowAgenda(false)}
+              onOpenFile={(filePath) => {
+                setShowAgenda(false);
+                history.push(`/file${filePath}`);
+              }}
+            />
+          </EliErrorBoundary>
+        </Drawer>
+      )}
     </div>
   );
 }

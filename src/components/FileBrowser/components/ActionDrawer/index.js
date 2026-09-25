@@ -152,6 +152,14 @@ const ActionDrawer = ({
                 tooltip="Show agenda"
               />
               <ActionButton
+                iconName="tasks"
+                isDisabled={false}
+                onClick={() => history.push('/gtd')}
+                dataTestId="eli-browser-gtd"
+                style={{ ...mainButtonStyle, marginRight: 14 }}
+                tooltip="Vista GTD (Nirvana)"
+              />
+              <ActionButton
                 iconName="plus"
                 isDisabled={false}
                 onClick={handleAddNewOrgFileClick}

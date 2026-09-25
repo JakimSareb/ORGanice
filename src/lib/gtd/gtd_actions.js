@@ -183,6 +183,7 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (fields.area) props = setProperty(props, 'AREA', fields.area);
   let planning = List();
   if (fields.scheduled) planning = setPlanning(planning, 'SCHEDULED', fields.scheduled);
+  if (fields.deadline) planning = setPlanning(planning, 'DEADLINE', fields.deadline);
   const fake = fromJS({
     nestingLevel: 1,
     titleLine: { rawTitle: '', tags: [] },

@@ -94,6 +94,7 @@ describe('modelo GTD', () => {
     expect(list('waiting')).toEqual(['Presupuesto fontanero']);
     expect(list('scheduled')).toEqual(['Revisar coche']);
     expect(list('someday')).toEqual(['Aprender alemán']);
+    expect(list('deadline')).toEqual(['Pagar seguro']);
     expect(list('logbook')).toEqual(['Hecho ya']);
     expect(list('reference')).toEqual(['Referencia: recetas']);
     expect(list('focus').sort()).toEqual(['Declaración renta', 'Pagar seguro'].sort());
@@ -216,6 +217,9 @@ describe('acciones GTD sobre los ficheros', () => {
     store.dispatch(
       gtdAddTask({ path: GTD }, { title: 'Futuro', list: 'later', scheduled: new Date(2026, 9, 1) })
     );
+    store.dispatch(
+      gtdAddTask({ path: GTD }, { title: 'Vence', list: 'later', deadline: new Date(2026, 9, 2) })
+    );
     expect(textOf(store.state(), INBOX)).toMatch(/\n\* Nueva\n?$/);
     const gtd = textOf(store.state(), GTD);
     expect(gtd).toMatch(/\*\*\* TODO Mover muebles\n\*\*\* NEXT Lijar +:@casa:\n/);
@@ -224,6 +228,11 @@ describe('acciones GTD sobre los ficheros', () => {
     const tasks = tasksOf(store.state());
     expect(byTitle(tasks, 'Lijar').project.title).toBe('Pintar salón');
     expect(listOf(byTitle(tasks, 'Futuro'), TODAY)).toBe('scheduled');
+    expect(gtd).toMatch(/\* TODO Vence\n +DEADLINE: <2026-10-02/);
+    expect(tasksForView(tasks, { id: 'deadline' }, {}, TODAY).map((t) => t.title)).toEqual([
+      'Pagar seguro',
+      'Vence',
+    ]);
     // Fichero inexistente: no hace nada
     expect(store.dispatch(gtdAddTask({ path: '/nope.org' }, { title: 'X' }))).toBe(null);
     expect(store.state().getIn(['files', '/nope.org'])).toBe(undefined);

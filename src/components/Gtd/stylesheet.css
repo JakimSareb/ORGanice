@@ -60,6 +60,19 @@
   font-size: 14px;
   padding: 3px 0;
 }
+.gtd-side__item--agenda {
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.08));
+  border-radius: 6px 6px 0 0;
+}
+.gtd-side__item--agenda .gtd-side__icon {
+  color: var(--blue);
+  opacity: 1;
+}
+.gtd-side__item[data-testid='gtd-list-deadline'] .gtd-side__icon {
+  color: var(--orange);
+  opacity: 1;
+}
 .gtd-side__lists,
 .gtd-side__projects {
   display: flex;

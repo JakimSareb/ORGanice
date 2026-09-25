@@ -133,7 +133,7 @@ acceso*). La captura rápida (capture.html) sigue siendo solo para Dropbox.
 
 ## Vista GTD (al estilo de Nirvana)
 
-Botón de lista con marcas (*Vista GTD*) de la barra superior, o `/gtd`. Menú lateral con listas, proyectos y
+Botón de lista con marcas (*Vista GTD*) de la barra superior o del explorador (junto a la agenda), o `/gtd`. Arriba del menú lateral hay un acceso a la Agenda. Menú lateral con listas, proyectos y
 áreas; a la derecha, las tareas con filtros por etiqueta, energía, tiempo y fecha. Trabaja sobre
 los mismos ficheros (los marcados para la agenda o de arranque y los de las plantillas de captura);
 todo lo que se hace aquí se ve en Emacs y al revés.
@@ -143,6 +143,7 @@ todo lo que se hace aquí se ve en Emacs y al revés.
 | Inbox | encabezados sin estado del fichero de entrada (`inbox.org` o el de la plantilla «Inbox») |
 | Next / Later / Waiting / Someday | `NEXT` / `TODO` / `WAITING` / `MAYBE` |
 | Scheduled | con `SCHEDULED` posterior a hoy |
+| Deadline | abiertas con `DEADLINE` (también vencidas), por fecha |
 | Proyectos | `PROJECT` (sus subencabezados con estado son sus acciones) |
 | Focus | ★ `[#A]`, o programado/vence hoy o antes |
 | Reference / Logbook | sin estado ni tareas debajo / terminadas (`DONE`, `CANCELLED`) |

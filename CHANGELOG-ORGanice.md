@@ -2,8 +2,9 @@
 
 ## 1.2 (septiembre de 2026)
 
-- **Vista GTD al estilo de Nirvana** (botón de la barra superior): menú lateral con Focus, Inbox,
-  Next, Later, Waiting, Scheduled, Someday, Proyectos, Reference y Logbook, con contadores; selector
+- **Vista GTD al estilo de Nirvana** (botón de la barra superior y, en el explorador, junto a la
+  agenda): menú lateral con Agenda, Focus, Inbox, Next, Later, Waiting, Scheduled, Deadline,
+  Someday, Proyectos, Reference y Logbook, con contadores; selector
   de áreas y búsqueda; a la derecha las tareas con filtros (etiquetas/contextos, energía, tiempo,
   con fecha). Añadir, completar (con CLOSED), ★ Focus, editar en línea (lista, fechas, área,
   proyecto, energía, tiempo, etiquetas, notas), mover a un proyecto, borrar, abrir en su fichero,
