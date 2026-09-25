@@ -1,4 +1,5 @@
 import { backupPathFor } from '../lib/eli_media';
+import { forgetRootHandle } from '../sync_backend_clients/local_folder_sync_backend_client';
 import { ActionCreators } from 'redux-undo';
 
 import { setLoadingMessage, hideLoadingMessage, clearModalStack, setIsLoading } from './base';
@@ -30,6 +31,10 @@ export const signOut = () => (dispatch, getState) => {
     case 'GitLab':
       persistField('gitLabProject', null);
       createGitlabOAuth().reset();
+      break;
+    case 'LocalFolder':
+      // ORG Mode para Eli: olvidar la carpeta elegida
+      forgetRootHandle().catch(() => {});
       break;
     default:
   }
@@ -111,6 +116,7 @@ export const pushBackup = (pathOrFileId, contents) => {
     switch (client.type) {
       case 'Dropbox':
       case 'WebDAV':
+      case 'LocalFolder':
         // ORG Mode para Eli: las copias se guardan en la subcarpeta "backups"
         client.createFile(backupPathFor(pathOrFileId), contents);
         break;

@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react';
+import createLocalFolderSyncBackendClient from './sync_backend_clients/local_folder_sync_backend_client';
 
 import { Provider } from 'react-redux';
 import Store from './store';
@@ -13,6 +14,7 @@ import {
 import runAllMigrations from './migrations';
 import { BrowserRouter } from 'react-router-dom';
 import EliErrorBoundary from './components/EliErrorBoundary';
+import EliLocalFolderGate from './components/EliLocalFolderGate';
 
 import { DragDropContext } from 'react-beautiful-dnd';
 
@@ -91,6 +93,14 @@ export default class App extends PureComponent {
           initialState.syncBackend = Map({
             isAuthenticated: true,
             client: client,
+          });
+          break;
+        case 'LocalFolder':
+          // ORG Mode para Eli: carpeta local del ordenador
+          client = withEncryption(createLocalFolderSyncBackendClient());
+          initialState.syncBackend = Map({
+            isAuthenticated: true,
+            client,
           });
           break;
         case 'GitLab':
@@ -206,6 +216,7 @@ export default class App extends PureComponent {
           <Provider store={this.store}>
             <EliErrorBoundary label="la app">
               <Turnout />
+              <EliLocalFolderGate />
             </EliErrorBoundary>
           </Provider>
         </BrowserRouter>

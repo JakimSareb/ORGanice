@@ -1,4 +1,4 @@
-# ORGanice 1.0
+# ORGanice 1.1
 
 *ORG Mode para Eli.* Versión propia de [organice](https://github.com/200ok-ch/organice) (Org Mode en el navegador,
 sin Emacs): lee y escribe tus ficheros `.org` directamente en **Dropbox**, desde el Mac, Windows
@@ -122,6 +122,14 @@ separado.
 
 En la carpeta `eli/` del paquete descargable: doble clic en `Arrancar (Mac).command` →
 `http://localhost:3000/ORGanice/`.
+
+## Carpeta local (sin nube)
+
+En la pantalla de acceso, **«O trabaja con una carpeta de este ordenador» → Elegir carpeta…**.
+Funciona en Microsoft Edge y Google Chrome de ordenador (Windows, Mac, Linux); Safari y el iPhone
+no lo permiten. La app guarda en el navegador solo la referencia a la carpeta (IndexedDB), nunca su
+contenido; al volver a abrirla, el navegador puede pedir confirmar el permiso (botón *Permitir
+acceso*). La captura rápida (capture.html) sigue siendo solo para Dropbox.
 
 ## Captura rápida desde el iPhone (menú Compartir)
 

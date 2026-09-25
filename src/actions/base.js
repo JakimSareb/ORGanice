@@ -143,6 +143,7 @@ export const setShouldStoreSettingsInSyncBackend = (newShouldStoreSettingsInSync
         case 'Dropbox':
         case 'GitLab':
         case 'WebDAV':
+        case 'LocalFolder':
           client
             .deleteFile('/.organice-config.json')
             .catch((doesFileNotExist, error) =>

@@ -114,3 +114,22 @@
 .eli-signin__uri .btn {
   padding: 2px 10px;
 }
+
+/* ORG Mode para Eli: carpeta local */
+.eli-signin__local {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--base2);
+}
+.eli-signin__local-title {
+  font-size: 1.05em;
+  margin: 0 0 6px;
+}
+.eli-signin__local-btn {
+  font-size: 16px;
+  padding: 8px 16px;
+}
+.eli-signin__local-unsupported {
+  font-size: 0.9em;
+  color: var(--base1);
+}

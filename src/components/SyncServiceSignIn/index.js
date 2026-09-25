@@ -21,6 +21,10 @@ import {
   getCustomDropboxClientId,
 } from '../../lib/dropbox_client_id';
 import { appRootUrl } from '../../lib/base_path';
+import {
+  isLocalFolderSupported,
+  pickLocalFolder,
+} from '../../sync_backend_clients/local_folder_sync_backend_client';
 import _ from 'lodash';
 
 // WebDAV y GitLab quedan bloqueados por la política de seguridad (solo Dropbox); se conservan
@@ -200,6 +204,45 @@ export default class SyncServiceSignIn extends PureComponent {
   }
 }
 
+// ORG Mode para Eli: trabajar con una carpeta del ordenador en lugar de Dropbox
+function EliLocalFolderOption() {
+  const supported = isLocalFolderSupported();
+  const [error, setError] = useState('');
+  const choose = async () => {
+    setError('');
+    try {
+      await pickLocalFolder();
+      persistField('authenticatedSyncService', 'LocalFolder');
+      window.location = appRootUrl();
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      setError((e && e.message) || String(e));
+    }
+  };
+  return (
+    <div className="eli-signin__local" data-testid="eli-local-option">
+      <h3 className="eli-signin__local-title">
+        <i className="fas fa-laptop" /> O trabaja con una carpeta de este ordenador
+      </h3>
+      <p className="sync-service-sign-in__help-text">
+        Los ficheros .org se leen y se guardan directamente en la carpeta que elijas; no salen de tu
+        ordenador. Todo funciona igual (agenda, búsqueda, cifrado, adjuntos en assets/…).
+      </p>
+      {supported ? (
+        <button className="btn eli-signin__local-btn" onClick={choose} data-testid="eli-local-pick">
+          <i className="fas fa-folder-open" /> Elegir carpeta…
+        </button>
+      ) : (
+        <p className="eli-signin__local-unsupported">
+          Disponible en Microsoft Edge o Google Chrome de ordenador (Windows, Mac o Linux). Safari y
+          el iPhone no permiten que una web trabaje con carpetas del ordenador.
+        </p>
+      )}
+      {error && <p className="eli-signin__local-unsupported">{error}</p>}
+    </div>
+  );
+}
+
 // ORG Mode para Eli: pantalla de acceso con Dropbox (en español), con instrucciones paso a paso
 // para crear la app de Dropbox cuando la app no trae una App key incluida.
 function EliDropboxSignIn({ onConnect }) {
@@ -315,6 +358,8 @@ function EliDropboxSignIn({ onConnect }) {
           </li>
         </ol>
       )}
+
+      <EliLocalFolderOption />
     </div>
   );
 }

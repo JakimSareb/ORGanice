@@ -1,5 +1,14 @@
 # ORGanice – historial de versiones
 
+## 1.1 (septiembre de 2026)
+
+- **Carpeta local del ordenador** en lugar de Dropbox (pantalla de acceso → «Elegir carpeta…»).
+  Edge o Chrome de ordenador (File System Access API). Los ficheros no salen del ordenador; todo
+  funciona igual: explorador y subcarpetas, agenda, búsqueda, refile, cifrado, adjuntos en
+  `assets/<año>/`, copias en `backups/`, ajustes en `.organice-config.json`. Si el navegador vuelve
+  a pedir permiso, la app muestra un botón «Permitir acceso». Para cambiar a Dropbox: Ajustes →
+  Sign out.
+
 ## 1.0 (septiembre de 2026)
 
 Primera versión estable de ORGanice (ORG Mode para Eli), basada en organice (commit eedd30c).

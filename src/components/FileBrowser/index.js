@@ -36,6 +36,7 @@ const FileBrowser = ({
       case 'Dropbox':
       case 'GitLab':
       case 'WebDAV':
+      case 'LocalFolder':
         const pathParts = path.split('/');
         return pathParts.slice(0, pathParts.length - 1).join('/');
       default:
@@ -47,7 +48,7 @@ const FileBrowser = ({
 
   return (
     <div className="file-browser-container">
-      {syncBackendType === 'Dropbox' && (
+      {(syncBackendType === 'Dropbox' || syncBackendType === 'LocalFolder') && (
         <h3 className="file-browser__header">Directory: {isTopLevelDirectory ? '/' : path}</h3>
       )}
 
