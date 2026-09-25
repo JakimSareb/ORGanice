@@ -395,3 +395,28 @@ describe('atajos: comparación de teclas', () => {
     expect(matchesBinding(ev({ key: 'i', code: 'KeyI', altKey: true }), 'alt+i')).toBe(true);
   });
 });
+
+describe('orden de ficheros principales', () => {
+  const reducer = require('../reducers/org').default;
+  const { orderedFavoriteSettings } = require('../reducers/org');
+  const { fromJS } = require('immutable');
+  test('subir y bajar', () => {
+    let state = fromJS({
+      files: {},
+      fileSettings: [
+        { path: '/a.org', eliFavorite: true },
+        { path: '/b.org', eliFavorite: false },
+        { path: '/c.org', eliFavorite: true },
+        { path: '/d.org', eliFavorite: true },
+      ],
+    });
+    const order = (st) => orderedFavoriteSettings(st.get('fileSettings')).map(({ s }) => s.get('path')).toArray();
+    expect(order(state)).toEqual(['/a.org', '/c.org', '/d.org']);
+    state = reducer(state, { type: 'MOVE_ELI_FAVORITE_FILE', path: '/d.org', delta: -1 });
+    expect(order(state)).toEqual(['/a.org', '/d.org', '/c.org']);
+    state = reducer(state, { type: 'MOVE_ELI_FAVORITE_FILE', path: '/a.org', delta: 1 });
+    expect(order(state)).toEqual(['/d.org', '/a.org', '/c.org']);
+    state = reducer(state, { type: 'MOVE_ELI_FAVORITE_FILE', path: '/d.org', delta: -1 });
+    expect(order(state)).toEqual(['/d.org', '/a.org', '/c.org']);
+  });
+});

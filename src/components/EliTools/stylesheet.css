@@ -472,3 +472,20 @@ h6.eli-print__heading {
     font-size: 12px;
   }
 }
+
+.eli-fav__order {
+  display: inline-flex;
+  flex-direction: column;
+}
+.eli-fav__move {
+  border: 0;
+  background: transparent;
+  color: var(--base1);
+  padding: 0 6px;
+  line-height: 1.1;
+  cursor: pointer;
+}
+.eli-fav__move:disabled {
+  opacity: 0.25;
+  cursor: default;
+}

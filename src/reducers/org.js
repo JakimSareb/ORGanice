@@ -1964,6 +1964,37 @@ const toggleEliFavoriteFile = (state, action) => {
   );
 };
 
+// ORG Mode para Eli: orden de los ficheros principales (campo eliFavoriteOrder)
+export const orderedFavoriteSettings = (settings) =>
+  (settings || List())
+    .map((s, index) => ({ s, index }))
+    .filter(({ s }) => s.get('eliFavorite') && s.get('path'))
+    .sortBy(({ s, index }) => [
+      typeof s.get('eliFavoriteOrder') === 'number' ? s.get('eliFavoriteOrder') : 100000 + index,
+      index,
+    ])
+    .toList();
+
+const moveEliFavoriteFile = (state, action) => {
+  const { path, delta } = action;
+  const settings = state.get('fileSettings') || List();
+  const ordered = orderedFavoriteSettings(settings)
+    .map(({ s }) => s.get('path'))
+    .toArray();
+  const from = ordered.indexOf(path);
+  const to = from + delta;
+  if (from < 0 || to < 0 || to >= ordered.length) return state;
+  ordered.splice(to, 0, ordered.splice(from, 1)[0]);
+  return state.set(
+    'fileSettings',
+    settings.map((s) =>
+      ordered.includes(s.get('path'))
+        ? s.set('eliFavoriteOrder', ordered.indexOf(s.get('path')))
+        : s
+    )
+  );
+};
+
 const restoreFileSettings = (state, action) => {
   if (!action.newSettings) {
     return state;
@@ -2148,6 +2179,8 @@ const reducer = (state, action) => {
       return toggleContextFilter(state, action);
     case 'TOGGLE_TODO_FILTER':
       return toggleTodoFilter(state, action);
+    case 'MOVE_ELI_FAVORITE_FILE':
+      return moveEliFavoriteFile(state, action);
     case 'TOGGLE_ELI_FAVORITE_FILE':
       return toggleEliFavoriteFile(state, action);
     case 'SET_PATH':

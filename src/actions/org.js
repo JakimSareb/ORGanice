@@ -981,6 +981,11 @@ export const attachAssetsToHeader = (headerId, files) => async (dispatch, getSta
 // ORG Mode para Eli: filtro por estado y ficheros principales
 export const toggleTodoFilter = (keyword) => ({ type: 'TOGGLE_TODO_FILTER', keyword });
 export const clearTodoFilter = () => ({ type: 'TOGGLE_TODO_FILTER', clear: true });
+export const moveEliFavoriteFile = (path, delta) => ({
+  type: 'MOVE_ELI_FAVORITE_FILE',
+  path,
+  delta,
+});
 export const toggleEliFavoriteFile = (path, value) => ({
   type: 'TOGGLE_ELI_FAVORITE_FILE',
   path,

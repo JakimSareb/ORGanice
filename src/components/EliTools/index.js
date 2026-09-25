@@ -21,11 +21,13 @@ import {
   widenHeader,
   openHeader,
   toggleEliFavoriteFile,
+  moveEliFavoriteFile,
   uploadFilesAndGetLinks,
   appendLinesToHeader,
   resetFileDisplay,
 } from '../../actions/org';
 import { isEncryptedPath } from '../../lib/eli_crypto';
+import { orderedFavoriteSettings } from '../../reducers/org';
 import {
   IMAGE_SIZES,
   isResizableImage,
@@ -531,9 +533,8 @@ function PrintPreview({ path, file, headerId, onClose }) {
 const selectFileSettings = (state) => state.org.present.get('fileSettings');
 
 export const favoritePaths = (fileSettings) =>
-  (fileSettings || List())
-    .filter((s) => s.get('eliFavorite') && s.get('path'))
-    .map((s) => s.get('path'))
+  orderedFavoriteSettings(fileSettings)
+    .map(({ s }) => s.get('path'))
     .toArray();
 
 const fileName = (p) =>
@@ -587,7 +588,7 @@ function FavoritesPopup({ currentPath, onClose }) {
           </div>
         ) : (
           <ul className="eli-fav__list">
-            {favorites.map((p) => (
+            {favorites.map((p, i) => (
               <li key={p}>
                 <button
                   className={'eli-fav__item' + (p === currentPath ? ' is-current' : '')}
@@ -598,6 +599,26 @@ function FavoritesPopup({ currentPath, onClose }) {
                   </span>
                   {fileDir(p) !== '/' && <span className="eli-fav__dir">{fileDir(p)}</span>}
                 </button>
+                <span className="eli-fav__order">
+                  <button
+                    className="eli-fav__move"
+                    title="Subir"
+                    disabled={i === 0}
+                    onClick={() => dispatch(moveEliFavoriteFile(p, -1))}
+                    data-testid={`eli-fav-up-${i}`}
+                  >
+                    <i className="fas fa-chevron-up" />
+                  </button>
+                  <button
+                    className="eli-fav__move"
+                    title="Bajar"
+                    disabled={i === favorites.length - 1}
+                    onClick={() => dispatch(moveEliFavoriteFile(p, 1))}
+                    data-testid={`eli-fav-down-${i}`}
+                  >
+                    <i className="fas fa-chevron-down" />
+                  </button>
+                </span>
                 <button
                   className="eli-fav__remove"
                   title="Quitar de principales"
