@@ -53,3 +53,24 @@ export const matchesBinding = (event, binding) => {
   const names = { escape: 'escape', esc: 'escape', space: ' ', enter: 'enter', return: 'enter' };
   return pressed === (names[key] || key);
 };
+
+// Atajos propios de ORG Mode para Eli (se gestionan con un listener propio, no react-hotkeys)
+export const ELI_HOTKEY_ACTIONS = [
+  'closeEditor',
+  'openAgenda',
+  'openFavorites',
+  'openCapture',
+  'syncFile',
+  'openMoveMenu',
+  'openSearch',
+];
+
+// Al perder el foco la ventana (Cmd+Tab…) el navegador no envía el keyup de las teclas
+// modificadoras y react-hotkeys las cree pulsadas: se las "suelta" a mano.
+export const releaseStuckModifiers = () => {
+  ['Meta', 'Control', 'Alt', 'Shift'].forEach((key) => {
+    try {
+      document.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
+    } catch (e) {}
+  });
+};

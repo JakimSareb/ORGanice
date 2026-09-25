@@ -3,7 +3,12 @@ import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import { openFavorites } from '../EliTools';
-import { notWhileTyping } from '../../lib/eli_hotkeys';
+import {
+  notWhileTyping,
+  matchesBinding,
+  releaseStuckModifiers,
+  ELI_HOTKEY_ACTIONS,
+} from '../../lib/eli_hotkeys';
 import EliErrorBoundary from '../EliErrorBoundary';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
@@ -88,6 +93,7 @@ class OrgFile extends PureComponent {
       'handleTimestampChange',
       'getPopupCloseAction',
       'handleActivePopupClose',
+      'handleEliKeyDown',
       'handleCaptureCancel',
       'getPopupSwitchAction',
       'checkPopupAndHeader',
@@ -113,7 +119,17 @@ class OrgFile extends PureComponent {
     };
   }
 
+  // ORG Mode para Eli: atajos propios con un listener directo
+  handleEliKeyDown(event) {
+    if (!this.eliHandlers || event.defaultPrevented) return;
+    const bindings = _.fromPairs(calculateActionedKeybindings(this.props.customKeybindings));
+    const action = ELI_HOTKEY_ACTIONS.find((a) => matchesBinding(event, bindings[a]));
+    if (action && this.eliHandlers[action]) this.eliHandlers[action](event);
+  }
+
   componentDidMount() {
+    document.addEventListener('keydown', this.handleEliKeyDown);
+    window.addEventListener('blur', releaseStuckModifiers);
     const { staticFile, path } = this.props;
 
     if (!!staticFile) {
@@ -152,6 +168,8 @@ class OrgFile extends PureComponent {
   }
 
   componentWillUnmount() {
+    document.removeEventListener('keydown', this.handleEliKeyDown);
+    window.removeEventListener('blur', releaseStuckModifiers);
     const { staticFile } = this.props;
 
     if (!!staticFile) {
@@ -911,7 +929,13 @@ class OrgFile extends PureComponent {
       return <div />;
     }
 
-    const keyMap = _.fromPairs(calculateActionedKeybindings(customKeybindings));
+    // ORG Mode para Eli: los atajos propios no van por react-hotkeys (que a veces se queda con una
+    // tecla modificadora "pulsada", p. ej. tras Cmd+Tab, y deja de responder) sino por un
+    // listener propio (handleEliKeyDown)
+    const keyMap = _.omit(
+      _.fromPairs(calculateActionedKeybindings(customKeybindings)),
+      ELI_HOTKEY_ACTIONS
+    );
 
     // Automatically call preventDefault on all the keyboard events that come through for
     // these hotkeys.
@@ -977,6 +1001,7 @@ class OrgFile extends PureComponent {
       if (shouldIgnoreOrganiceHotkey(event, this.container)) return;
       return handler(event);
     });
+    this.eliHandlers = handlers;
 
     const setPopupCloseActionValuesAccessor = (v) => {
       this.setState({ popupCloseActionValuesAccessor: v });

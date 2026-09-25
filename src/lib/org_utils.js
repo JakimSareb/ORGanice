@@ -747,8 +747,13 @@ export const customFormatDistanceToNow = (datetime) => {
 };
 
 export const todoKeywordSetForKeyword = (todoKeywordSets, keyword) =>
-  todoKeywordSets.find((keywordSet) => keywordSet.get('keywords').contains(keyword)) ||
-  todoKeywordSets.first();
+  (todoKeywordSets || defaultTodoKeywordSetsForMissing()).find((keywordSet) =>
+    keywordSet.get('keywords').contains(keyword)
+  ) || (todoKeywordSets || defaultTodoKeywordSetsForMissing()).first();
+
+// ORG Mode para Eli: conjunto por defecto cuando falta el del fichero
+const defaultTodoKeywordSetsForMissing = () =>
+  fromJS([{ keywords: ['TODO', 'DONE'], completedKeywords: ['DONE'], default: true }]);
 
 export const isTodoKeywordCompleted = (todoKeywordSets, keyword) =>
   todoKeywordSetForKeyword(todoKeywordSets, keyword).get('completedKeywords').includes(keyword);
@@ -805,8 +810,11 @@ export const hasHeaderContent = (header) =>
  * @param {Object} todoKeywordSets
  */
 export const createIsTodoKeywordInDoneState = (todoKeywordSets) => {
+  // ORG Mode para Eli: sin conjuntos (ningún fichero abierto), se usan TODO | DONE
   return (todoKeyword) =>
-    todoKeywordSets.some((x) => x.get('completedKeywords').includes(todoKeyword));
+    todoKeywordSets
+      ? todoKeywordSets.some((x) => x.get('completedKeywords').includes(todoKeyword))
+      : todoKeyword === 'DONE';
 };
 
 // Regular planning items in org are written directly below headline and have type SCHEDULED, DEADLINE, CLOSED.

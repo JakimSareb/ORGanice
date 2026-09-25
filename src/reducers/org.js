@@ -1578,30 +1578,32 @@ export const updateLogEntryTime = (state, action) => {
 };
 
 export const determineIncludedFiles = (files, fileSettings, path, settingValue, includeByDefault) =>
-  files.mapEntries(([filePath, file]) => [
-    filePath,
-    file.update('headers', (maybeHeaders) => {
-      // ORG Mode para Eli: un fichero que no llegó a cargarse puede no tener encabezados
-      const headers = maybeHeaders || List();
-      const fileSetting = fileSettings.find((setting) => filePath === setting.get('path'));
-      // always include the viewed file
-      if (path === filePath) {
-        return headers;
-      } else if (fileSetting) {
-        if (fileSetting.get(settingValue)) {
+  files
+    .filter((_file, filePath) => !!filePath)
+    .mapEntries(([filePath, file]) => [
+      filePath,
+      file.update('headers', (maybeHeaders) => {
+        // ORG Mode para Eli: un fichero que no llegó a cargarse puede no tener encabezados
+        const headers = maybeHeaders || List();
+        const fileSetting = fileSettings.find((setting) => filePath === setting.get('path'));
+        // always include the viewed file
+        if (path === filePath) {
           return headers;
-        } else {
+        } else if (fileSetting) {
+          if (fileSetting.get(settingValue)) {
+            return headers;
+          } else {
+            return List();
+          }
+        } else if (filePath.startsWith(STATIC_FILE_PREFIX)) {
+          // never include static files
           return List();
+        } else {
+          // if no setting exists
+          return includeByDefault ? headers : List();
         }
-      } else if (filePath.startsWith(STATIC_FILE_PREFIX)) {
-        // never include static files
-        return List();
-      } else {
-        // if no setting exists
-        return includeByDefault ? headers : List();
-      }
-    }),
-  ]);
+      }),
+    ]);
 
 const searchHeaders = ({ searchFilterExpr = [], headersToSearch, path, scope }) => {
   let filteredHeaders;
@@ -1971,6 +1973,9 @@ const restoreFileSettings = (state, action) => {
 };
 
 const reduceInFile = (state, action, path) => (func, ...args) => {
+  // ORG Mode para Eli: sin fichero abierto (path null) no se toca nada. Antes se creaba una
+  // entrada "files[null]" vacía que rompía después la búsqueda/agenda al cambiar de hoja.
+  if (!path) return state;
   return state.updateIn(['files', path], (file) => func(file ? file : Map(), action, ...args));
 };
 

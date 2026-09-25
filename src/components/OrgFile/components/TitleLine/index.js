@@ -212,12 +212,17 @@ const mapStateToProps = (state, ownProps) => {
   const path = state.org.present.get('path');
   const file = state.org.present.getIn(['files', path]);
   const selectedHeaderId = !!file ? file.get('selectedHeaderId') : null;
+  // ORG Mode para Eli: en la agenda/búsqueda el encabezado trae su fichero (puede no ser el
+  // abierto, o no haber ninguno abierto, p. ej. desde el explorador de ficheros)
+  const ownPath = ownProps.header.get('path');
+  const ownFile = ownPath ? state.org.present.getIn(['files', ownPath]) : null;
+  const sets = (ownFile && ownFile.get('todoKeywordSets')) || (file && file.get('todoKeywordSets'));
   return {
     setShouldLogIntoDrawer: state.base.get('shouldLogIntoDrawer'),
     shouldTapTodoToAdvance: state.base.get('shouldTapTodoToAdvance'),
     closeSubheadersRecursively: state.base.get('closeSubheadersRecursively'),
     isSelected: selectedHeaderId === ownProps.header.get('id'),
-    todoKeywordSets: !!file ? file.get('todoKeywordSets') : null,
+    todoKeywordSets: sets || null,
   };
 };
 
