@@ -4,7 +4,7 @@
 //   Next      = NEXT · Todo (id 'later') = TODO · Waiting = WAITING · Someday = MAYBE
 //   Scheduled = con SCHEDULED posterior a hoy (hasta ese día no aparece en ninguna otra vista;
 //               al llegar el día vuelve a su lista y se le pone [#A], salvo a los hábitos;
-//               lo mismo al llegar su DEADLINE)
+//               lo mismo al llegar su DEADLINE). Con DEADLINE se ven siempre en su lista.
 //   Projects  = PROJECT (sus descendientes son sus acciones)
 //   Focus     = ★ [#A] o programado/vence hoy o antes (abiertas; sin hábitos)
 //   Deadline  = tareas abiertas con DEADLINE (vencidas incluidas), por fecha de vencimiento
@@ -188,16 +188,24 @@ export const INBOX_TAG = '@inbox';
 export const hasInboxTag = (task) =>
   (task.ownTags || []).some((t) => t.toLowerCase() === INBOX_TAG);
 
-// Programada para más adelante: solo se ve en Scheduled
+// Programada para más adelante
 export const isFutureScheduled = (task, today = new Date()) =>
   !!task.scheduled && startOfDay(task.scheduled) > startOfDay(today);
+
+// Oculta hasta su fecha (solo se ve en Scheduled): programada a futuro y SIN fecha límite. Las
+// que tienen DEADLINE se ven siempre en su lista (y en Deadline)
+export const isHiddenUntilScheduled = (task, today = new Date()) =>
+  isFutureScheduled(task, today) && !task.deadline;
+
+const isScheduledView = (t, today) =>
+  !t.isDone && !t.isProject && (!!t.keyword || hasInboxTag(t)) && isFutureScheduled(t, today);
 
 // Lista a la que pertenece una tarea (una sola; Focus es aparte)
 export const listOf = (task, today = new Date()) => {
   if (task.isDone) return 'logbook';
   if (task.isProject) return 'project';
   const inbox = hasInboxTag(task);
-  if ((task.keyword || inbox) && isFutureScheduled(task, today)) return 'scheduled';
+  if ((task.keyword || inbox) && isHiddenUntilScheduled(task, today)) return 'scheduled';
   // Inbox: etiqueta @inbox, o encabezados sin estado del fichero de entrada
   if (inbox) return 'inbox';
   if (!task.keyword) {
@@ -232,7 +240,7 @@ export const autoPriorityKey = (task, today = new Date()) =>
 export const isFocus = (task, today = new Date()) => {
   if (task.isDone || task.isProject || !task.keyword) return false;
   if (task.isHabit) return false; // los hábitos (:STYLE: habit) no se ven en Focus
-  if (isFutureScheduled(task, today)) return false; // hasta su fecha, solo en Scheduled
+  if (isHiddenUntilScheduled(task, today)) return false; // hasta su fecha, solo en Scheduled
   if (task.priority === 'A') return true;
   const t0 = startOfDay(today);
   if (task.scheduled && startOfDay(task.scheduled) <= t0) return true;
@@ -284,14 +292,15 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
         t.keyword &&
         !t.isDone &&
         !t.isProject &&
-        !isFutureScheduled(t, today)
+        !isHiddenUntilScheduled(t, today)
     );
   } else if (view.id === 'focus') {
     out = tasks.filter((t) => isFocus(t, today));
   } else if (view.id === 'deadline') {
-    out = tasks.filter(
-      (t) => t.deadline && t.keyword && !t.isDone && !t.isProject && !isFutureScheduled(t, today)
-    );
+    out = tasks.filter((t) => t.deadline && t.keyword && !t.isDone && !t.isProject);
+  } else if (view.id === 'scheduled') {
+    // Todas las programadas a futuro (también las que tienen DEADLINE y se ven en su lista)
+    out = tasks.filter((t) => isScheduledView(t, today));
   } else {
     out = tasks.filter((t) => listOf(t, today) === view.id);
   }

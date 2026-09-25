@@ -138,11 +138,19 @@ describe('modelo GTD', () => {
     expect(listOf(t('Leer artículo'), TODAY)).toBe('inbox');
     expect(listOf(t('Futura con estrella'), TODAY)).toBe('scheduled');
     expect(isFocus(t('Futura con estrella'), TODAY)).toBe(false);
-    expect(tasksForView(extra, { id: 'deadline' }, {}, TODAY)).toEqual([]);
+    // Con DEADLINE: se ve en su lista, en Deadline y en Scheduled aunque esté programada a futuro
+    expect(tasksForView(extra, { id: 'deadline' }, {}, TODAY).map((x) => x.title)).toEqual([
+      'Dentro futura',
+    ]);
+    expect(listOf(t('Dentro futura'), TODAY)).toBe('next');
+    expect(tasksForView(extra, { id: 'scheduled' }, {}, TODAY).map((x) => x.title)).toEqual([
+      'Futura con estrella',
+      'Dentro futura',
+    ]);
     const p = t('P');
     expect(
       tasksForView(extra, { type: 'project', key: p.key }, {}, TODAY).map((x) => x.title)
-    ).toEqual(['Dentro ya']);
+    ).toEqual(['Dentro futura', 'Dentro ya']);
     expect(needsAutoPriority(t('Llega hoy'), TODAY)).toBe(true);
     expect(needsAutoPriority(t('Hábito'), TODAY)).toBe(false);
     expect(needsAutoPriority(t('Futura con estrella'), new Date(2026, 9, 2))).toBe(false);

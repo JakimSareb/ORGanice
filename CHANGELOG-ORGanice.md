@@ -21,7 +21,8 @@
 - **Sangría como Emacs** (`org-adapt-indentation nil`): SCHEDULED, DEADLINE, CLOSED y los cajones
   se escriben pegados al margen, así no aparecen diferencias falsas con Emacs. Para el estilo
   antiguo: Ajustes → «Sangrar como el Emacs antiguo».
-- Vista GTD: las tareas programadas para más adelante solo se ven en Scheduled; al llegar su
+- Vista GTD: las tareas programadas para más adelante (sin fecha límite) solo se ven en Scheduled;
+  las que tienen DEADLINE se ven siempre en su lista y, agrupadas, en Deadline; al llegar su
   fecha (SCHEDULED o DEADLINE) vuelven a su lista y reciben ★ [#A] automáticamente (una vez; si
   se quita a mano no vuelve; los hábitos no). Inbox = etiqueta **@inbox** (además de los
   encabezados sin estado del fichero de entrada); al procesarla se quita @inbox. En el editor:
