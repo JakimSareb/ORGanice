@@ -13,6 +13,7 @@ import './stylesheet.css';
 import TabButtons from '../UI/TabButtons';
 import Switch from '../UI/Switch';
 import ExternalLink from '../UI/ExternalLink';
+import { APP_NAME, APP_VERSION } from '../../lib/eli_app_name';
 
 const Settings = ({
   fontSize,
@@ -455,6 +456,9 @@ const Settings = ({
         <button className="btn settings-btn" onClick={handleSignOutClick}>
           Sign out
         </button>
+        <div className="eli-version" data-testid="eli-version">
+          {APP_NAME} {APP_VERSION}
+        </div>
       </div>
     </div>
   );

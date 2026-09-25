@@ -1,4 +1,4 @@
-# ORGanice
+# ORGanice 1.0
 
 *ORG Mode para Eli.* Versión propia de [organice](https://github.com/200ok-ch/organice) (Org Mode en el navegador,
 sin Emacs): lee y escribe tus ficheros `.org` directamente en **Dropbox**, desde el Mac, Windows
