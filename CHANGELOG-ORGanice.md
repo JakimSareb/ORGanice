@@ -27,8 +27,10 @@
   se quita a mano no vuelve; los hábitos no). Inbox = etiqueta **@inbox** (además de los
   encabezados sin estado del fichero de entrada); al procesarla se quita @inbox. En el editor:
   contextos de #+TAGS para marcar con un clic y enlaces de las notas que se pueden abrir.
-- Si el fichero no declara un estado (p. ej. NEXT) en su #+TODO, la vista GTD no lo escribe y
-  avisa (antes se estropeaba el título).
+- Ficheros sin línea `#+TODO`: se usan los estados de Emacs del usuario (`NEXT TODO MAYBE WAITING
+  PROJECT | DONE CANCELLED`), como hace Emacs. Si un fichero declara su propio #+TODO sin un
+  estado, la vista GTD no lo escribe y avisa (antes se estropeaba el título).
+- Al abrir una tarea o proyecto en narrow (desde GTD o la agenda) se ve con todo desplegado.
 - Al arrancar, una descarga que termina tarde ya no pisa cambios hechos mientras tanto.
 - Atajo **g**: abre la vista GTD (desde la hoja y el explorador; configurable).
 - Estrella (prioridad [#A]) al principio del editor de título, también en «Edit full title».

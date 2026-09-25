@@ -8,6 +8,7 @@ import generateId from '../id_generator';
 import { sync, setDirty } from '../../actions/org';
 import { KEYWORD_FOR_LIST, PRIORITY_RE } from './gtd_model';
 import { showMessage } from '../eli_prompt';
+import { ELI_DEFAULT_KEYWORDS } from '../parse_org';
 import { fileDisplayName } from '../eli_app_name';
 
 // Estados que el fichero reconoce (#+TODO:). Si falta uno, Org lo leería como parte del título,
@@ -16,7 +17,7 @@ const fileKeywords = (getState, path) => {
   const sets = getState().org.present.getIn(['files', path, 'todoKeywordSets']);
   const out = new Set();
   (sets || List()).forEach((set) => (set.get('keywords') || List()).forEach((k) => out.add(k)));
-  if (!out.size) ['TODO', 'DONE'].forEach((k) => out.add(k));
+  if (!out.size) ELI_DEFAULT_KEYWORDS.forEach((k) => out.add(k));
   return out;
 };
 const missingKeyword = (getState, path, keywords) => {

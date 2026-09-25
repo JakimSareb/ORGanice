@@ -86,6 +86,17 @@ const openHeader = (state, action) => {
   return state.setIn(['headers', headerIndex, 'opened'], true);
 };
 
+// ORG Mode para Eli: desplegar un encabezado y todos sus subencabezados
+const eliOpenSubtree = (state, action) => {
+  const headers = state.get('headers');
+  const index = indexOfHeaderWithId(headers, action.headerId);
+  if (index < 0) return state;
+  const count = subheadersOfHeaderWithId(headers, action.headerId).size;
+  let next = headers;
+  for (let i = index; i <= index + count; i++) next = next.setIn([i, 'opened'], true);
+  return state.set('headers', next);
+};
+
 const toggleHeaderOpened = (state, action) => {
   const headers = state.get('headers');
 
@@ -2045,6 +2056,8 @@ const reducer = (state, action) => {
       return inFile(toggleHeaderOpened);
     case 'OPEN_HEADER':
       return inFile(openHeader);
+    case 'ELI_OPEN_SUBTREE':
+      return inFile(eliOpenSubtree);
     case 'SELECT_HEADER':
       return inFile(selectHeader);
     case 'SELECT_HEADER_INDEX':

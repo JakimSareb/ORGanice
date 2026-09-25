@@ -1,3 +1,4 @@
+#+TODO: TODO | DONE
 * DONE This is done
 * TODO Header with repeater
 * This is not a todo

@@ -35,7 +35,7 @@ import { ActionCreators } from 'redux-undo';
 import {
   loadFileQuietly,
   selectHeaderAndOpenParents,
-  narrowHeader,
+  eliNarrowAndExpand,
   sync,
   eliOfferDeleteAttachments,
 } from '../../actions/org';
@@ -382,7 +382,7 @@ export default function GtdView() {
   // Abrir en su fichero con la vista reducida (narrow) a la tarea o proyecto
   const openInFile = (task) => {
     dispatch(selectHeaderAndOpenParents(task.path, task.id, { widen: true }));
-    dispatch(narrowHeader(task.id));
+    dispatch(eliNarrowAndExpand(task.id));
     history.push(`/file${task.path}`);
   };
 

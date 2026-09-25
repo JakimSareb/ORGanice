@@ -753,7 +753,13 @@ export const todoKeywordSetForKeyword = (todoKeywordSets, keyword) =>
 
 // ORG Mode para Eli: conjunto por defecto cuando falta el del fichero
 const defaultTodoKeywordSetsForMissing = () =>
-  fromJS([{ keywords: ['TODO', 'DONE'], completedKeywords: ['DONE'], default: true }]);
+  fromJS([
+    {
+      keywords: ['NEXT', 'TODO', 'MAYBE', 'WAITING', 'PROJECT', 'DONE', 'CANCELLED'],
+      completedKeywords: ['DONE', 'CANCELLED'],
+      default: true,
+    },
+  ]);
 
 export const isTodoKeywordCompleted = (todoKeywordSets, keyword) =>
   todoKeywordSetForKeyword(todoKeywordSets, keyword).get('completedKeywords').includes(keyword);
@@ -814,7 +820,7 @@ export const createIsTodoKeywordInDoneState = (todoKeywordSets) => {
   return (todoKeyword) =>
     todoKeywordSets
       ? todoKeywordSets.some((x) => x.get('completedKeywords').includes(todoKeyword))
-      : todoKeyword === 'DONE';
+      : todoKeyword === 'DONE' || todoKeyword === 'CANCELLED';
 };
 
 // Regular planning items in org are written directly below headline and have type SCHEDULED, DEADLINE, CLOSED.

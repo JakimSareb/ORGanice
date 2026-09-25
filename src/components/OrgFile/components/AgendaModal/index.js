@@ -105,7 +105,7 @@ function AgendaModal(props) {
     props.onClose();
     props.org.selectHeaderAndOpenParents(path, headerId, { widen: true });
     // ORG Mode para Eli: la tarea pulsada se abre con la vista reducida (narrow)
-    props.org.narrowHeader(headerId);
+    props.org.eliNarrowAndExpand(headerId);
     // ORG Mode para Eli: abierta desde el explorador de ficheros, hay que ir al fichero
     if (props.onOpenFile) props.onOpenFile(path, headerId);
   }

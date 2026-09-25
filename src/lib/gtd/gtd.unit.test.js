@@ -337,13 +337,15 @@ describe('acciones GTD sobre los ficheros', () => {
     const t = buildTasks(st.get('files'), []).find((x) => x.title === 'Algo');
     dispatch(gtdSaveTask(t, { list: 'next', rawTitle: 'Algo nuevo' }));
     expect(textOf(st, '/solo.org')).toBe('#+TODO: TODO | DONE\n* TODO Algo\n');
-    // sin #+TODO solo existen TODO | DONE: tampoco se escribe NEXT
+    // sin #+TODO se usan los estados de Emacs del usuario (NEXT TODO MAYBE WAITING PROJECT)
     st = st.setIn(['files', '/sin.org'], parseOrg('* Llamar\n'));
     const plain = buildTasks(st.get('files'), ['/sin.org']).find((x) => x.path === '/sin.org');
     dispatch(gtdSaveTask(plain, { list: 'next' }));
-    expect(textOf(st, '/sin.org')).toBe('* Llamar\n');
-    dispatch(gtdSaveTask(plain, { list: 'later' }));
-    expect(textOf(st, '/sin.org')).toBe('* TODO Llamar\n');
+    expect(textOf(st, '/sin.org')).toBe('* NEXT Llamar\n');
+    const again = buildTasks(st.get('files'), ['/sin.org']).find((x) => x.path === '/sin.org');
+    expect(again.keyword).toBe('NEXT');
+    dispatch(gtdSaveTask(again, { list: 'waiting', rawTitle: 'Llamar hoy' }));
+    expect(textOf(st, '/sin.org')).toBe('* WAITING Llamar hoy\n');
   });
 
   test('ELI_IN_FILE sin fichero no hace nada', () => {
@@ -353,4 +355,22 @@ describe('acciones GTD sobre los ficheros', () => {
     ).toBe(s);
     expect(rootOrgReducer(s, { type: 'ELI_IN_FILE', path: null })).toBe(s);
   });
+});
+
+test('ELI_OPEN_SUBTREE despliega el encabezado y sus subencabezados', () => {
+  let s = makeState().set('path', GTD);
+  const headers = s.getIn(['files', GTD, 'headers']);
+  const casa = headers.find((h) => h.getIn(['titleLine', 'rawTitle']) === 'Casa');
+  s = rootOrgReducer(s, { type: 'ELI_OPEN_SUBTREE', headerId: casa.get('id') });
+  const after = s.getIn(['files', GTD, 'headers']);
+  const opened = after
+    .filter((h) => h.get('opened'))
+    .map((h) => h.getIn(['titleLine', 'rawTitle']).trim());
+  expect(opened.toArray()).toEqual([
+    'Casa',
+    'Pintar salón',
+    'Comprar pintura',
+    'Mover muebles',
+    'Presupuesto fontanero',
+  ]);
 });

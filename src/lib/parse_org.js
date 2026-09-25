@@ -716,10 +716,22 @@ export const _updateHeaderFromDescription = (header, rawUnstrippedDescription) =
     .set('logBookEntries', logBookEntries);
 };
 
+// ORG Mode para Eli: sin línea #+TODO en el fichero se usan los estados de la configuración
+// global de Emacs del usuario (org-todo-keywords), como hace Emacs
+export const ELI_DEFAULT_KEYWORDS = [
+  'NEXT',
+  'TODO',
+  'MAYBE',
+  'WAITING',
+  'PROJECT',
+  'DONE',
+  'CANCELLED',
+];
+export const ELI_DEFAULT_COMPLETED = ['DONE', 'CANCELLED'];
 const defaultKeywordSets = fromJS([
   {
-    keywords: ['TODO', 'DONE'],
-    completedKeywords: ['DONE'],
+    keywords: ELI_DEFAULT_KEYWORDS,
+    completedKeywords: ELI_DEFAULT_COMPLETED,
     default: true,
   },
 ]);
