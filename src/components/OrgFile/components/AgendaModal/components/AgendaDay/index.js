@@ -225,7 +225,7 @@ export default class AgendaDay extends PureComponent {
               return (
                 <div
                   key={planningItem.get('id')}
-                  className={classNames('agenda-day__header-container', {
+                  className={classNames('agenda-day__header-container agenda-day__item', {
                     'agenda-day__header-container--habit': isHabit(header),
                   })}
                 >

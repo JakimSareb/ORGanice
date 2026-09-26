@@ -43,7 +43,7 @@ const Turnout = ({ isAuthenticated }) => {
                 shouldDisableActionDrawer={false}
                 shouldDisableSyncButtons={true}
                 parsingErrorMessage={
-                  'No se ha podido cargar el contenido de sample.org. Probablemente falta definir la variable de entorno: consulta la sección Development de README.org.'
+                  'No se ha podido cargar el contenido de sample.org. Vuelve a compilar la app (ver «Desarrollo» en README.md).'
                 }
               />
             </div>

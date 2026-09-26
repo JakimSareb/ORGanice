@@ -464,6 +464,14 @@ export const moveHeaderRight = (headerId) => ({
   dirtying: true,
 });
 
+// ORG Mode para Eli: solo la línea del encabezado, sin sus subencabezados
+export const eliMoveHeaderLine = (headerId, direction) => ({
+  type: 'ELI_MOVE_HEADER_LINE',
+  headerId,
+  direction,
+  dirtying: true,
+});
+
 export const moveSubtreeLeft = (headerId) => ({
   type: 'MOVE_SUBTREE_LEFT',
   headerId,

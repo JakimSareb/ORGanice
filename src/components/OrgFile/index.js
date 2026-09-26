@@ -909,15 +909,14 @@ class OrgFile extends PureComponent {
     if (this.state.hasUncaughtError) {
       return (
         <div className="error-message-container">
-          Uh oh, you ran into a bug!
+          Vaya, algo ha fallado al mostrar este fichero.
           <br />
           <br />
-          This was probably the result of an error in attempting to parse your org file. It'd be
-          super helpful if you could{' '}
-          <ExternalLink href="https://github.com/200ok-ch/organice/issues/new">
-            create an issue
+          Tu fichero no se ha modificado. Recarga la página; si vuelve a pasar, avísanos en{' '}
+          <ExternalLink href="https://github.com/JakimSareb/ORGanice/issues/new">
+            GitHub
           </ExternalLink>{' '}
-          (and include the org file if possible!)
+          (si puedes, con un trozo del fichero que lo provoca).
         </div>
       );
     }
@@ -1096,10 +1095,12 @@ class OrgFile extends PureComponent {
                       : (direction) => {
                           const id = this.props.selectedHeader.get('id');
                           const org = this.props.org;
-                          if (direction === 'left') org.moveSubtreeLeft(id);
-                          else if (direction === 'right') org.moveSubtreeRight(id);
-                          else if (direction === 'up') org.moveHeaderUp(id);
-                          else if (direction === 'down') org.moveHeaderDown(id);
+                          // Solo el encabezado, sin arrastrar sus subencabezados
+                          const level = this.props.selectedHeader.get('nestingLevel');
+                          if (direction === 'left') {
+                            if (level > 1) org.moveHeaderLeft(id);
+                          } else if (direction === 'right') org.moveHeaderRight(id);
+                          else org.eliMoveHeaderLine(id, direction);
                         }
                   }
                   handleTagsChange={

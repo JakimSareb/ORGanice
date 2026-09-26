@@ -404,23 +404,28 @@ class UnifiedHeaderEditor extends PureComponent {
             {this.props.onMoveSubtree && (
               <div className="eli-title-indent">
                 {[
-                  ['up', 'fa-arrow-up', 'Subir (antes del encabezado anterior)', 'eli-title-up'],
+                  [
+                    'up',
+                    'fa-arrow-up',
+                    'Subir el encabezado una línea (sin sus subencabezados)',
+                    'eli-title-up',
+                  ],
                   [
                     'down',
                     'fa-arrow-down',
-                    'Bajar (después del encabezado siguiente)',
+                    'Bajar el encabezado una línea (sin sus subencabezados)',
                     'eli-title-down',
                   ],
                   [
                     'left',
                     'fa-arrow-left',
-                    'Subir de nivel (hacia fuera), con sus subencabezados',
+                    'Subir de nivel (hacia fuera), solo el encabezado',
                     'eli-title-outdent',
                   ],
                   [
                     'right',
                     'fa-arrow-right',
-                    'Bajar de nivel (hacia dentro), con sus subencabezados',
+                    'Bajar de nivel (hacia dentro), solo el encabezado',
                     'eli-title-indent',
                   ],
                 ].map(([direction, icon, title, testId]) => (

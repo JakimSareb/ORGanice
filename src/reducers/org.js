@@ -488,6 +488,18 @@ const moveHeaderUp = (state, action) => {
   return state.set('headers', headers);
 };
 
+// ORG Mode para Eli: mover solo la línea del encabezado (sin sus subencabezados) una posición
+// arriba o abajo, conservando los niveles
+const eliMoveHeaderLine = (state, action) => {
+  const headers = state.get('headers');
+  const index = indexOfHeaderWithId(headers, action.headerId);
+  const other = action.direction === 'up' ? index - 1 : index + 1;
+  if (index < 0 || other < 0 || other >= headers.size) return state;
+  const a = headers.get(index);
+  const b = headers.get(other);
+  return state.set('headers', headers.set(index, b).set(other, a));
+};
+
 const moveHeaderDown = (state, action) => {
   let headers = state.get('headers');
   const { header, headerIndex } = indexAndHeaderWithId(headers, action.headerId);
@@ -2079,6 +2091,8 @@ const reducer = (state, action) => {
       return inFile(openHeader);
     case 'ELI_OPEN_SUBTREE':
       return inFile(eliOpenSubtree);
+    case 'ELI_MOVE_HEADER_LINE':
+      return inFile(eliMoveHeaderLine);
     case 'SELECT_HEADER':
       return inFile(selectHeader);
     case 'SELECT_HEADER_INDEX':

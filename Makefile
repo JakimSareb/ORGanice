@@ -21,15 +21,3 @@ test: setup
 test-update-snapshots: setup
 	yarn test -u
 
-.PHONY: docs
-docs:
-	./bin/compile_doc.sh
-
-.PHONY: deploy-docs
-deploy-docs: docs
-	./bin/compile_doc_and_upload.sh
-
-.PHONY: deploy
-deploy:
-	./bin/compile_and_upload.sh
-	./bin/compile_doc_and_upload.sh

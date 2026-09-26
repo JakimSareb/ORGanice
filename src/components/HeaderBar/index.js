@@ -237,13 +237,13 @@ class HeaderBar extends PureComponent {
       case 'file_settings_editor':
         return titleContainerWithText('Ficheros');
       case 'sample':
-        return titleContainerWithText('Ejemplo');
+        return titleContainerWithText('Manual');
       default:
     }
 
     switch (this.getPathRoot()) {
       case 'sample':
-        return titleContainerWithText('Ejemplo');
+        return titleContainerWithText('Manual');
       case 'sign_in':
         return titleContainerWithText('Iniciar sesión');
       case 'encryption':
@@ -374,7 +374,7 @@ class HeaderBar extends PureComponent {
           )}
 
           {!isAuthenticated && (
-            <ExternalLink href="https://github.com/200ok-ch/organice">
+            <ExternalLink href="https://github.com/JakimSareb/ORGanice">
               <i className="fab fa-github header-bar__actions__item" />
             </ExternalLink>
           )}

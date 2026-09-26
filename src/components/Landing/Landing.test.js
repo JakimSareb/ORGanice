@@ -7,11 +7,11 @@ import Landing from './';
 afterEach(cleanup);
 
 test('<Landing /> renders', () => {
-  const { container } = render(
+  const { getByTestId } = render(
     <MemoryRouter>
       <Landing />
     </MemoryRouter>
   );
-
-  expect(container).toMatchSnapshot();
+  expect(getByTestId('landing-sign-in-hero').getAttribute('href')).toBe('/sign_in');
+  expect(getByTestId('landing-live-demo-hero').getAttribute('href')).toBe('/sample');
 });

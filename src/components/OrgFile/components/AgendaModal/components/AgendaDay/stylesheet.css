@@ -126,7 +126,7 @@
 }
 
 /* ORG Mode para Eli: línea bajo la cabecera con los días que faltan, el tipo y la fecha */
-.agenda-day__header-container .agenda-day__header__header-container {
+.agenda-day__item .agenda-day__header__header-container {
   margin-top: 6px;
 }
 .agenda-day__eli-meta {
@@ -150,6 +150,6 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.agenda-day__header-container:first-child .agenda-day__header__header-container {
+.agenda-day__item:first-child .agenda-day__header__header-container {
   margin-top: 16px;
 }

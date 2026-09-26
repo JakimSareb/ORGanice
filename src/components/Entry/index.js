@@ -90,7 +90,7 @@ class Entry extends PureComponent {
         shouldDisableActions={true}
         shouldDisableSyncButtons={false}
         parsingErrorMessage={
-          'No se ha podido cargar el contenido de changelog.org. Probablemente falta definir la variable de entorno: consulta la sección Development de README.org.'
+          'No se ha podido cargar el contenido de changelog.org. Vuelve a compilar la app (ver «Desarrollo» en README.md).'
         }
       />
     );
@@ -104,7 +104,7 @@ class Entry extends PureComponent {
         shouldDisableActionDrawer={false}
         shouldDisableSyncButtons={true}
         parsingErrorMessage={
-          'No se ha podido cargar el contenido de sample.org. Probablemente falta definir la variable de entorno: consulta la sección Development de README.org.'
+          'No se ha podido cargar el contenido de sample.org. Vuelve a compilar la app (ver «Desarrollo» en README.md).'
         }
       />
     );

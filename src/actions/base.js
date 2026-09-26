@@ -34,13 +34,25 @@ export const setLastViewedFile = (lastViewedPath) => ({
   lastViewedPath,
 });
 
+// ORG Mode para Eli: el manual de muestra lleva fechas relativas a hoy: %HOY%, %HOY+3%,
+// %HOY-1 10:00% → «2026-09-26 Sat», «2026-09-29 Tue», «2026-09-25 Fri 10:00»
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const expandSampleDates = (text, today = new Date()) =>
+  (text || '').replace(/%HOY([+-]\d+)?( \d{1,2}:\d{2})?%/g, (_m, offset, time) => {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (+offset || 0));
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${
+      DAY_NAMES[d.getDay()]
+    }${time || ''}`;
+  });
+
 export const restoreStaticFile = (staticFile, lastViewedFilePath) => {
   return (dispatch) => {
     dispatch(setLastViewedFile(lastViewedFilePath));
 
     const fileContents = {
       changelog: changelogContent,
-      sample: sampleContent,
+      sample: expandSampleDates(sampleContent),
     }[staticFile];
 
     const staticFilePath = STATIC_FILE_PREFIX + staticFile;

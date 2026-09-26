@@ -1,94 +1,30 @@
 # ORGanice 1.2
 
-*ORG Mode para Eli.* Versión propia de [organice](https://github.com/200ok-ch/organice) (Org Mode en el navegador,
-sin Emacs): lee y escribe tus ficheros `.org` directamente en **Dropbox**, desde el Mac, Windows
-o el iPhone. Conserva toda la funcionalidad de organice y añade:
+<img src="src/images/logo-unicornio.svg" alt="" width="96" align="right">
 
-- **Búsqueda con ámbito**: *Tareas* (solo encabezados con TODO/DONE…), *Encabezados* (título) o
-  *Texto* (título + contenido). En *Texto*, debajo de cada resultado se ven las líneas donde
-  aparece lo buscado; al pulsar una, la app abre el encabezado, va a ese punto y lo resalta.
-- **Agenda con vencidas**: el día de hoy muestra las tareas abiertas cuyo SCHEDULED o DEADLINE ya
-  pasó y cuántos días llevan vencidas.
-- **Ficheros principales**: botón de hojas en la barra inferior (también en el explorador) para
-  abrir con un toque los ficheros que elijas. Se marcan desde el propio botón, con el icono de hojas
-  del explorador o en Ajustes → File settings. Se guardan con los ajustes de organice
-  (sincronizables vía Dropbox con «Store settings in sync backend»).
-- **Prioridad**: estrella en los iconos del encabezado para marcar/desmarcar `[#A]` (se ve como ★
-  amarilla); la agenda muestra arriba del todo las tareas abiertas con prioridad.
-- **Archivar** como `org-archive-subtree` de Emacs (icono de archivador, pide confirmación): mueve el
-  encabezado y sus hijos a `<fichero>_archive` (o al destino de `#+ARCHIVE:` / propiedad
-  `ARCHIVE`), con las propiedades ARCHIVE_TIME, ARCHIVE_FILE, ARCHIVE_OLPATH, ARCHIVE_CATEGORY,
-  ARCHIVE_TODO y ARCHIVE_ITAGS. Si el fichero está cifrado, el archivo también.
-- **Pegar archivos**: al pegar una imagen o un fichero se abre un diálogo de confirmación donde
-  se puede cambiar el nombre (se propone el actual; la extensión se conserva); las
-  imágenes se pueden subir en tamaño pequeño (800 px), mediano (1600 px), grande (2560 px) u
-  original, viendo el peso de cada opción. También con el clip 📎 (en los iconos del encabezado,
-  en la barra de la ventana de edición y en el editor de texto plano).
-- **Nombre del fichero en la cabecera**: dentro de un fichero se ve su nombre arriba (con 🔒 si
-  está cifrado) y en la pestaña del navegador.
-- **Agenda con Log**: botón *Log* que muestra u oculta las tareas terminadas en el día de su
-  `CLOSED:` (como la tecla `l` de org-agenda).
-- **Fecha inactiva**: icono que añade `[AAAA-MM-DD Día]` de hoy; en la ventana de edición del
-  título o la descripción se inserta donde está el cursor.
-- **Fases de la Luna**: botón 🌙 en la barra superior, como `M-x lunar-phases` de Emacs.
-- **Sin conexión**: la app abre sin red (service worker); un indicador rosa arriba a la derecha
-  avisa y, al volver la conexión, se sincroniza sola. Para editar ficheros sin conexión entre
-  sesiones, activa la copia local en Ajustes → Seguridad y cifrado.
-- **Copias de seguridad** en la subcarpeta `backups/` de cada carpeta.
-- **Filtro por estado**: TODO, NEXT, WAITING, MAYBE, PROJECT (en Buscar, Lista de tareas y Agenda),
-  combinable con los contextos. Los estados deben estar declarados en el fichero, p. ej.
-  `#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE`.
-- **YouTube**: los enlaces a vídeos de YouTube muestran un reproductor de 300 px (modo de
-  privacidad mejorada, youtube-nocookie.com).
-- **Contextos GTD**: botones de filtro generados desde las líneas `#+TAGS:` de tus ficheros
-  (en los filtros solo aparecen las etiquetas que empiezan por `@` presentes en tareas abiertas).
-  El editor de etiquetas muestra aparte las declaradas en `#+TAGS:` (del fichero abierto y de
-  los demás ficheros cargados) y después el resto de etiquetas usadas. En Buscar,
-  Lista de tareas y Agenda. Solo se muestran los contextos y estados presentes con los filtros
-  actuales; varios contextos seleccionados deben cumplirse a la vez. Respeta la herencia de
-  etiquetas.
-- **Imágenes y multimedia desde Dropbox**: los enlaces Org a imágenes (`[[file:assets/2026/foto.jpg]]`,
-  `[[./assets/2026/foto.jpg][Descripción]]`) se ven dentro de la nota (miniatura generada por
-  Dropbox; al pulsar se abre el original). Vídeo y audio con reproductor; PDF y otros ficheros se
-  abren al pulsar. Botón 📎 en cada encabezado para subir fotos, vídeos o archivos a
-  `assets/<año>/` (junto al fichero `.org`) e insertar el enlace. Nunca sobrescribe: si el nombre
-  existe, Dropbox lo renombra.
-- **Editar como texto plano**: botón ≡ en la barra superior; edita el fichero abierto tal cual,
-  como en un búfer de Emacs (⌘/Ctrl+S guarda, Esc cancela). Si hay un encabezado en modo
-  *narrow*, edita solo ese encabezado con sus subencabezados y lo vuelve a colocar en su sitio
-  (comprueba que conserve su nivel; si lo vacías, pregunta antes de eliminarlo). Botones:
-  SCHEDULED y DEADLINE (en el encabezado donde está el cursor), fecha inactiva, Adjuntar y
-  Narrow/Widen (enfocar el encabezado del cursor o volver al fichero entero).
-- **Exportar a PDF**: botón PDF en la barra superior (fichero entero) o en cada encabezado (ese
-  encabezado con sus subencabezados). Abre una vista previa → *PDF / Imprimir* → *Guardar como
-  PDF* (en el iPhone: compartir → *Guardar en Archivos*). Incluye imágenes, tablas y listas; las
-  cabeceras `:crypt:` aún cifradas salen como «[contenido cifrado]».
-- **Cifrado GPG** compatible con GnuPG y Emacs: ficheros `*.org.gpg` / `*.org.asc` y cabeceras
-  `:crypt:` (org-crypt); simétrico o con clave pública/privada.
-- **Refile a un fichero**: además de debajo de un encabezado, se puede mover al nivel superior
-  (al final) de cualquier fichero: los cargados aparecen arriba y *Otro fichero de Dropbox…*
-  lista todos los `.org` (sin `backups/`).
-- **Enlaces**: botón 🔗 al editar el título, la descripción o una nota (y en el texto plano):
-  pega el enlace del portapapeles y pide la descripción → `[[enlace][descripción]]`.
-- **Agenda** también desde el explorador de ficheros; Escape la cierra; al pulsar una tarea se
-  abre su fichero con la tarea centrada en pantalla.
-- **CLOSED al terminar**: al pasar una tarea a un estado terminado (DONE, CANCELLED…) se añade
-  `CLOSED: [fecha hora]`, y se quita si se reabre (como `org-log-done 'time`). Los estados
-  también se ofrecen en «Edit full title».
-- **Atajos de teclado** (configurables en Ajustes → Keyboard shortcuts): Esc cierra la ventana de
-  edición del encabezado, `a` agenda, `f` ficheros principales, `c` + letra de la plantilla para
-  capturar, `s` sincronizar, `m` flechas de mover, `b` buscar (Esc cierra). No actúan mientras se
-  escribe. `a`, `f` y `c` también en el explorador de ficheros. Flechas ↑/↓ para moverse por los
-  encabezados e Intro para abrirlos/cerrarlos; en los menús de ficheros principales y de captura,
-  ↑/↓ e Intro.
-- **Capturas**: tocar fuera o Esc guardan la captura (si tiene título); el botón *Cancel* la
-  descarta.
-- **Buscar solo en esta hoja**: botón en la búsqueda.
-- **Borrar encabezados con confirmación** (tecla Retroceso, papelera o deslizar a la izquierda).
-- **Narrow/Widen** siempre en la barra superior (actúa sobre el encabezado seleccionado).
-- **Seguridad reforzada** (ver abajo).
+**ORGanice** es un editor de ficheros [Org Mode](https://orgmode.org) para el móvil y el
+ordenador. Lee y escribe tus ficheros `.org` directamente en **Dropbox** (o en una carpeta de tu
+ordenador), con una **vista GTD** al estilo de Nirvana, una **agenda** clara y total
+compatibilidad con Emacs.
 
 App publicada: **https://jakimsareb.github.io/ORGanice/**
+
+## Documentación
+
+- **Manual de uso**: [`sample.org`](sample.org). Es también el fichero de práctica de la app: en la
+  pantalla de inicio, «Probar con el manual», o dentro de la app en Ajustes → *Manual de uso*.
+- **Novedades**: [`changelog.org`](changelog.org) (en la app: Ajustes → *Novedades*).
+
+## Qué ofrece
+
+- Vista GTD: Focus, Inbox, Next, Todo, Waiting, Scheduled, Deadline, Someday, proyectos, áreas,
+  contextos, energía y tiempo; arrastrar tareas entre listas.
+- Agenda con vencidas, prioritarias, hábitos y registro de lo terminado.
+- Todo Org Mode: estados, prioridades, etiquetas, fechas y repeticiones, tablas, listas con
+  casillas, reloj, adjuntos, enlaces, búsqueda, refile y archivado.
+- Sincronización con avisos de conflicto y diferencias; uso sin conexión; copias de seguridad.
+- Cifrado GPG compatible con Emacs y bloqueo por inactividad.
+- Interfaz en español, atajos de teclado configurables y captura rápida desde el iPhone.
 
 ## Puesta en marcha
 
@@ -115,7 +51,7 @@ App publicada: **https://jakimsareb.github.io/ORGanice/**
 
 ### 3. Conectar con Dropbox
 
-*Sign in* → escribe la App key → logo de Dropbox → autoriza. Cada dispositivo se conecta por
+*Iniciar sesión* → escribe la App key → logo de Dropbox → autoriza. Cada dispositivo se conecta por
 separado.
 
 ### Uso local en el Mac (opcional, sin GitHub)
@@ -130,36 +66,6 @@ Funciona en Microsoft Edge y Google Chrome de ordenador (Windows, Mac, Linux); S
 no lo permiten. La app guarda en el navegador solo la referencia a la carpeta (IndexedDB), nunca su
 contenido; al volver a abrirla, el navegador puede pedir confirmar el permiso (botón *Permitir
 acceso*). La captura rápida (capture.html) sigue siendo solo para Dropbox.
-
-## Vista GTD (al estilo de Nirvana)
-
-Botón de lista con marcas (*Vista GTD*) de la barra superior o del explorador (junto a la agenda), tecla **g**, o `/gtd`. Arriba del menú lateral hay un acceso a la Agenda. Menú lateral con listas, proyectos y
-áreas; a la derecha, las tareas con filtros por etiqueta, energía, tiempo y fecha. Trabaja sobre
-los mismos ficheros (los marcados para la agenda o de arranque y los de las plantillas de captura);
-todo lo que se hace aquí se ve en Emacs y al revés.
-
-| Lista | En Org |
-|---|---|
-| Inbox | etiqueta `@inbox`, o encabezados sin estado del fichero de entrada (`inbox.org`) |
-| Next / Todo / Waiting / Someday | `NEXT` / `TODO` / `WAITING` / `MAYBE` |
-| Scheduled | con `SCHEDULED` posterior a hoy (sin `DEADLINE`, hasta ese día no se ven en otra lista; al llegar, ★ `[#A]` automática; igual al llegar el `DEADLINE`) |
-| Deadline | abiertas con `DEADLINE` (también vencidas), por fecha; además siguen en su lista |
-| Proyectos | `PROJECT` (sus subencabezados con estado son sus acciones) |
-| Focus | ★ `[#A]`, o programado/vence hoy o antes (sin hábitos, `:STYLE: habit`) |
-| Reference / Logbook | sin estado ni tareas debajo / terminadas (`DONE`, `CANCELLED`) |
-
-Áreas: propiedad `:AREA:` (se hereda). Energía `:ENERGY: alta/media/baja`; tiempo
-`:EFFORT: 0:30`. Para tener estas palabras en Emacs:
-`#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED`.
-
-Las tareas nuevas se crean en `tasks.org` (las de Inbox, en `inbox.org`). «Abrir en el fichero»
-y los clics en la agenda abren la tarea con la vista reducida (narrow).
-
-Si hay un conflicto de sincronización (el fichero cambió en Dropbox y aquí a la vez), la app
-dice qué fichero es y deja elegir la versión o ver las diferencias y elegir cambio a cambio.
-
-Al borrar un encabezado con adjuntos (enlaces a ficheros), la app pregunta uno a uno si se
-borran también.
 
 ## Captura rápida desde el iPhone (menú Compartir)
 
@@ -239,7 +145,11 @@ yarn --ignore-engines build      # compila en dist/ para /ORGanice/
 npx jest src/lib                 # pruebas (incluye interoperabilidad con GnuPG si está instalado)
 ```
 
+Cada cambio visible para quien usa la app se documenta en el manual (`sample.org`) y en las
+novedades (`changelog.org`). El manual admite fechas relativas a hoy (`%HOY%`, `%HOY+3%`,
+`%HOY-1 10:00%`) para que la agenda de ejemplo siempre tenga contenido.
+
 ## Licencia
 
-AGPL-3.0, como organice (ver `LICENSE`). Basado en organice, commit `eedd30c` (agosto 2026);
-documentación original en `README-organice.org`.
+AGPL-3.0, como organice (ver `LICENSE`). Basado en [organice](https://github.com/200ok-ch/organice),
+commit `eedd30c` (agosto 2026).

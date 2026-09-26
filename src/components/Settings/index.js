@@ -92,15 +92,6 @@ const Settings = ({
 }) => {
   const history = useHistory();
 
-  // This looks like hardcoding where it would be possible to dispatch
-  // on the `location.origin`, but here we assure that every instance
-  // of organice has a valid link to documentation. Self-building does
-  // not insure that, because building and hosting docs is not part of
-  // the application itself.
-  const documentationHost = window.location.origin.match(/staging.organice.200ok.ch/)
-    ? 'https://staging.organice.200ok.ch'
-    : 'https://organice.200ok.ch';
-
   const handleSignOutClick = () => {
     if (window.confirm('¿Seguro que quieres cerrar sesión?')) {
       syncBackend.signOut();
@@ -506,20 +497,13 @@ const Settings = ({
           )}
         </Link>
 
-        <Link to="/sample" className="btn settings-btn">
-          Ayuda
+        <Link to="/sample" className="btn settings-btn" data-testid="eli-manual">
+          <i className="fas fa-book" /> Manual de uso
         </Link>
 
         <button className="btn settings-btn">
-          <ExternalLink href={`${documentationHost}/documentation.html`}>
-            Documentación
-            <i className="fas fa-external-link-alt fa-sm" />
-          </ExternalLink>{' '}
-        </button>
-
-        <button className="btn settings-btn">
-          <ExternalLink href="https://github.com/200ok-ch/organice">
-            Repositorio en GitHub
+          <ExternalLink href="https://github.com/JakimSareb/ORGanice">
+            ORGanice en GitHub
             <i className="fas fa-external-link-alt fa-sm" />
           </ExternalLink>{' '}
         </button>
