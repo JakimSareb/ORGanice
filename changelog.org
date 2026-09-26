@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.4 (septiembre de 2026)
+** Vista GTD
+- Logbook: buscador propio que busca solo entre las terminadas (título, notas, etiquetas y área). Con una búsqueda, «Archivar estas» archiva solo las encontradas.
+- En las filas del Logbook ya no hay casilla ni ★; se editan abriendo la tarea.
+
 * 2.3 (septiembre de 2026)
 ** Vista GTD
 - Logbook: «Archivar todas» archiva de una vez las tareas terminadas que aún no se han archivado (con sus subencabezados, en el fichero _archive, como en Emacs). También hay un botón «Archivar» en cada sección (esta semana, la pasada…). Las que tienen alguna subtarea abierta no se archivan.

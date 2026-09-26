@@ -287,6 +287,14 @@ export const matchesFilters = (task, filters) => {
     const q = text.toLowerCase();
     if (!`${task.title} ${task.description}`.toLowerCase().includes(q)) return false;
   }
+  // ORG Mode para Eli: búsqueda propia del Logbook (título, notas, etiquetas y área)
+  if (filters && filters.logText) {
+    const words = filters.logText.toLowerCase().split(/\s+/).filter(Boolean);
+    const hay = `${task.title} ${task.description} ${(task.tags || []).join(' ')} ${
+      task.area || ''
+    }`.toLowerCase();
+    if (!words.every((w) => hay.includes(w))) return false;
+  }
   return true;
 };
 

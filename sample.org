@@ -153,6 +153,7 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 - Al añadir una tarea, se abre su editor para completar los datos.
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
+- *Logbook*: tiene su propio buscador («Buscar en las terminadas…»), que busca solo entre las terminadas (título, notas, etiquetas y área). En sus filas no hay casilla ni ★: para cambiar algo, toca la tarea y se abre su editor.
 - *Archivar las terminadas*: en Logbook, «Archivar todas» archiva de una vez todas las terminadas (con sus subencabezados), como org-archive-subtree de Emacs, en el fichero _archive de cada fichero. Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
 - *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
 

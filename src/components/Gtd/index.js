@@ -148,6 +148,7 @@ function TaskRow({
   showProject,
   onPointerDown,
   isDragging,
+  hideActions = false,
 }) {
   const due = task.deadline;
   const overdue = due && due < today;
@@ -162,28 +163,34 @@ function TaskRow({
       data-testid="gtd-task"
     >
       <div className="gtd-task__row" onClick={onToggleOpen} onPointerDown={onPointerDown}>
-        <button
-          className={'gtd-check' + (task.isDone ? ' is-on' : '')}
-          onClick={(e) => {
-            e.stopPropagation();
-            dispatch(gtdToggleDone(task));
-          }}
-          title={task.isDone ? 'Reabrir' : 'Completar'}
-          data-testid="gtd-check"
-        >
-          {task.isDone ? <i className="fas fa-check" /> : null}
-        </button>
-        <button
-          className={'gtd-star' + (task.priority === 'A' ? ' is-on' : '')}
-          onClick={(e) => {
-            e.stopPropagation();
-            dispatch(gtdToggleStar(task));
-          }}
-          title="Focus (★ [#A])"
-          data-testid="gtd-star"
-        >
-          <i className={task.priority === 'A' ? 'fas fa-star' : 'far fa-star'} />
-        </button>
+        {/* ORG Mode para Eli: en el Logbook no se reabre ni se pone ★ desde la fila (se edita
+            abriendo la tarea) */}
+        {!hideActions && (
+          <>
+            <button
+              className={'gtd-check' + (task.isDone ? ' is-on' : '')}
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch(gtdToggleDone(task));
+              }}
+              title={task.isDone ? 'Reabrir' : 'Completar'}
+              data-testid="gtd-check"
+            >
+              {task.isDone ? <i className="fas fa-check" /> : null}
+            </button>
+            <button
+              className={'gtd-star' + (task.priority === 'A' ? ' is-on' : '')}
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch(gtdToggleStar(task));
+              }}
+              title="Focus (★ [#A])"
+              data-testid="gtd-star"
+            >
+              <i className={task.priority === 'A' ? 'fas fa-star' : 'far fa-star'} />
+            </button>
+          </>
+        )}
         <div className="gtd-task__main">
           <div className="gtd-task__title">{task.title || '(sin título)'}</div>
           <div className="gtd-task__meta">
@@ -256,6 +263,7 @@ export default function GtdView() {
     (filters.time ? 1 : 0) +
     (filters.dated ? 1 : 0);
   const [text, setText] = useState('');
+  const [logText, setLogText] = useState('');
   const [openKey, setOpenKey] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
@@ -328,14 +336,11 @@ export default function GtdView() {
     today,
   ]);
   const facets = useMemo(() => facetsFor(baseList), [baseList]);
-  const visible = useMemo(() => tasksForView(tasks, view, { area, text, ...filters }, today), [
-    tasks,
-    view,
-    area,
-    text,
-    filters,
-    today,
-  ]);
+  const logSearch = view.id === 'logbook' ? logText : '';
+  const visible = useMemo(
+    () => tasksForView(tasks, view, { area, text, ...filters, logText: logSearch }, today),
+    [tasks, view, area, text, filters, today, logSearch]
+  );
   // ORG Mode para Eli: en Scheduled, los hábitos van siempre abajo, en su propia sección; en el
   // Logbook, secciones por fecha de cierre (esta semana, la pasada, el mes pasado, este año…)
   const splitHabits = view.id === 'scheduled';
@@ -367,13 +372,13 @@ export default function GtdView() {
   const isLogbook = view.id === 'logbook';
   const archivable = useMemo(() => {
     if (!isLogbook) return { ok: [], blocked: [] };
-    const f = { area, text, ...filters };
+    const f = { area, text, ...filters, logText: logSearch };
     const { ok, blocked } = archivableDone(tasks);
     return {
       ok: ok.filter((t) => matchesFilters(t, f)),
       blocked: blocked.filter((t) => matchesFilters(t, f)),
     };
-  }, [isLogbook, tasks, area, text, filters]);
+  }, [isLogbook, tasks, area, text, filters, logSearch]);
   const archivableBySection = useMemo(() => {
     const out = {};
     archivable.ok.forEach((t) => {
@@ -940,11 +945,33 @@ export default function GtdView() {
         )}
 
         {isLogbook && (
+          <div className="gtd-log-search">
+            <i className="fas fa-search" />
+            <input
+              value={logText}
+              onChange={(e) => setLogText(e.target.value)}
+              placeholder="Buscar en las terminadas…"
+              data-testid="gtd-log-search"
+            />
+            {logText && (
+              <button
+                type="button"
+                onClick={() => setLogText('')}
+                aria-label="Borrar la búsqueda"
+                title="Borrar la búsqueda"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        )}
+        {isLogbook && (
           <div className="gtd-archive-bar" data-testid="gtd-archive-bar">
             <span>
               {archivable.ok.length === 1
                 ? '1 terminada sin archivar'
                 : `${archivable.ok.length} terminadas sin archivar`}
+              {logSearch ? ' (con esta búsqueda)' : ''}
               {archivable.blocked.length > 0 && (
                 <span
                   className="gtd-archive-bar__note"
@@ -962,7 +989,7 @@ export default function GtdView() {
               onClick={() => archiveTasks(archivable.ok)}
               data-testid="gtd-archive-all"
             >
-              <i className="fas fa-archive" /> Archivar todas
+              <i className="fas fa-archive" /> {logSearch ? 'Archivar estas' : 'Archivar todas'}
             </button>
           </div>
         )}
@@ -1012,6 +1039,7 @@ export default function GtdView() {
                 dispatch={dispatch}
                 today={today}
                 showProject={view.type !== 'project'}
+                hideActions={isLogbook}
               />
               {openKey === task.key && (
                 <TaskEditor

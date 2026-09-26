@@ -1027,3 +1027,34 @@
   text-transform: none;
   cursor: pointer;
 }
+.gtd-log-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0 10px;
+  height: 38px;
+  border: 1px solid var(--base1);
+  border-radius: 8px;
+  background: var(--base3);
+}
+.gtd-log-search i {
+  color: var(--base00);
+  opacity: 0.6;
+}
+.gtd-log-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--base01);
+  font-size: 15px;
+  outline: none;
+}
+.gtd-log-search button {
+  border: 0;
+  background: none;
+  color: var(--base00);
+  font-size: 18px;
+  cursor: pointer;
+}
