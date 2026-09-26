@@ -14,6 +14,7 @@ import { getCurrentTimestampAsText } from '../../../../../../lib/timestamps';
 
 import _ from 'lodash';
 import classNames from 'classnames';
+import EliFormatBar from '../../../../../EliFormatBar';
 import { Map } from 'immutable';
 
 export default class ListPart extends PureComponent {
@@ -24,6 +25,7 @@ export default class ListPart extends PureComponent {
       'handleListItemSelect',
       'handleCheckboxClick',
       'handleTextareaBlur',
+      'handleEliTextareaKeyDown',
       'handleListTitleChange',
       'handleListContentsChange',
       'handleInsertTimestampListTitle',
@@ -126,6 +128,15 @@ export default class ListPart extends PureComponent {
     // https://github.com/200ok-ch/organice/discussions/950
     e.stopPropagation();
     return this.props.subPartDataAndHandlers.onCheckboxClick(itemId);
+  }
+
+  // ORG Mode para Eli: Esc deja de editar el elemento (guardando, igual que al salir del cuadro)
+  handleEliTextareaKeyDown(event) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      event.target.blur();
+    }
   }
 
   handleTextareaBlur() {
@@ -240,6 +251,7 @@ export default class ListPart extends PureComponent {
             )}
             {isItemSelected && inListTitleEditMode ? (
               <div className="list-title-line__edit-container">
+                <EliFormatBar compact getField={() => this.textarea} />
                 <textarea
                   autoFocus
                   className="textarea"
@@ -248,6 +260,7 @@ export default class ListPart extends PureComponent {
                   ref={this.handleTextareaRef}
                   value={listTitleValues.get(item.get('id'))}
                   onBlur={this.handleTextareaBlur}
+                  onKeyDown={this.handleEliTextareaKeyDown}
                   onChange={this.handleListTitleChange}
                 />
                 <div
@@ -272,6 +285,7 @@ export default class ListPart extends PureComponent {
           </Collapse>
           {isItemSelected && inListContentsEditMode ? (
             <div className="list-contents__edit-container">
+              <EliFormatBar compact getField={() => this.textarea} />
               <textarea
                 autoFocus
                 className="textarea"
@@ -279,6 +293,7 @@ export default class ListPart extends PureComponent {
                 ref={this.handleTextareaRef}
                 value={listContentsValues.get(item.get('id'))}
                 onBlur={this.handleTextareaBlur}
+                onKeyDown={this.handleEliTextareaKeyDown}
                 onChange={this.handleListContentsChange}
               />
               <div

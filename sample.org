@@ -49,6 +49,11 @@ Selecciona este encabezado y toca el lápiz.
 - Las *flechas azules* de la derecha mueven solo este encabezado: ↑ y ↓ una línea arriba o abajo, ← y → un nivel hacia fuera o hacia dentro. Sus subencabezados se quedan donde están.
 - Con el *tabulador* saltas al siguiente editor: título → descripción → etiquetas → fecha límite → fecha programada (mayúsculas + tabulador, al revés).
 - Tocando otra vez el lápiz de la barra inferior pasas a «Editar título completo», con el texto tal cual (estado, prioridad y etiquetas incluidos).
+** Formato del texto
+Encima de los editores (título, descripción, notas, elementos de lista y editor de la vista GTD) hay botones de formato: *negrita*, /cursiva/, _subrayado_, +tachado+, ~código~ y =literal=.
+- Selecciona el texto y toca el botón: se le ponen los marcadores de Org Mode. Si ya los tenía, se quitan.
+- Sin seleccionar nada, pone los dos marcadores y deja el cursor en medio para escribir.
+- Si seleccionas varias líneas, se marca cada una por separado (así lo entiende Emacs).
 *** Muéveme con las flechas
 *** Y a mí también
 
@@ -201,7 +206,7 @@ Toca una casilla para marcarla. El contador del título se actualiza solo.
 - Primer elemento
   Este texto cuelga del primer elemento: tócalo y queda seleccionado el elemento.
 - Segundo elemento
-  Con un elemento seleccionado, Intro edita su línea y Ctrl+d (o tu atajo de «editar descripción») el texto de debajo.
+  Con un elemento seleccionado, Intro edita su línea y Ctrl+d (o tu atajo de «editar descripción») el texto de debajo. Esc deja de editar.
 ** Una tabla
 | Día    | Kilómetros |
 |--------+------------|

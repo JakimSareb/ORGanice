@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 1.4 (septiembre de 2026)
+** Formato del texto
+- Botones de negrita, cursiva, subrayado, tachado, código y literal en los editores de título, descripción, notas, elementos de lista y en el editor de la vista GTD. Ponen o quitan los marcadores de Org Mode en el texto seleccionado.
+** Hoja
+- En los elementos de lista, Esc deja de editar (guardando lo escrito).
+- En pantallas grandes, la app vuelve a estar centrada y con su ancho de siempre (en la 1.3 quedaba estrecha y a la izquierda).
+
 * 1.3 (septiembre de 2026)
 ** Vista GTD
 - El editor de tareas ya no tiene Guardar ni Cancelar: se guarda solo al salir (tocar fuera, otra tarea, Esc o Intro). Tiene Deshacer y Rehacer.

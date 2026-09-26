@@ -1,5 +1,6 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useRef } from 'react';
+import EliFormatBar from '../EliFormatBar';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -254,6 +255,14 @@ export default function TaskEditor({
         placeholder="Título"
         data-testid="gtd-editor-title"
       />
+      {!encrypted && (
+        <EliFormatBar
+          compact
+          getField={() =>
+            document.activeElement === titleRef.current ? titleRef.current : notesRef.current
+          }
+        />
+      )}
       <textarea
         ref={notesRef}
         className="gtd-editor__notes"
