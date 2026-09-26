@@ -97,3 +97,24 @@
   width: 50px;
   margin-right: 10px;
 }
+
+/* ORG Mode para Eli: ajustes de texto */
+.eli-line-setting .setting-label {
+  width: 100%;
+}
+.eli-line-setting__input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6px;
+  font-family: Menlo, Consolas, monospace;
+  font-size: 13px;
+  padding: 6px;
+}
+.eli-line-setting__error {
+  color: var(--red);
+  font-size: 13px;
+}
+.eli-line-setting__reset {
+  margin-top: 4px;
+  font-size: 13px;
+}

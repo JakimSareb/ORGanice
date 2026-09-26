@@ -13,6 +13,7 @@
 import { List } from 'immutable';
 import { attributedStringToRawText } from '../export_org';
 import { dateForTimestamp } from '../timestamps';
+import { DEFAULT_ENERGY, DEFAULT_EFFORT } from '../eli_todo_defaults';
 
 export const LISTS = [
   { id: 'focus', label: 'Focus', icon: 'fas fa-star' },
@@ -40,24 +41,16 @@ export const KEYWORD_FOR_LIST = {
 };
 const LIST_FOR_KEYWORD = { NEXT: 'next', TODO: 'later', WAITING: 'waiting', MAYBE: 'someday' };
 
-export const ENERGY_LEVELS = ['baja', 'media', 'alta'];
+// Energía y tiempo: como en Emacs, «#+PROPERTY: Energy_ALL …» y «#+PROPERTY: Effort_ALL …»
+// (valores por defecto en lib/eli_todo_defaults)
+export const ENERGY_LEVELS = DEFAULT_ENERGY;
+export const EFFORT_OPTIONS = DEFAULT_EFFORT;
 export const TIME_BUCKETS = [
-  { id: '5', label: '≤ 5 min', max: 5 },
-  { id: '15', label: '≤ 15 min', max: 15 },
+  { id: '10', label: '≤ 10 min', max: 10 },
   { id: '30', label: '≤ 30 min', max: 30 },
   { id: '60', label: '≤ 1 h', max: 60 },
-  { id: 'more', label: '> 1 h', min: 61 },
-];
-export const EFFORT_OPTIONS = [
-  '0:05',
-  '0:10',
-  '0:15',
-  '0:30',
-  '0:45',
-  '1:00',
-  '2:00',
-  '3:00',
-  '4:00',
+  { id: '120', label: '≤ 2 h', max: 120 },
+  { id: 'more', label: '> 2 h', min: 121 },
 ];
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -154,7 +147,7 @@ export const buildTasks = (files, inboxPaths = []) => {
         tags: Array.from(new Set([...inheritedTags, ...ownTags])),
         area,
         ownArea,
-        energy: (propertyValue(header, 'ENERGY') || '').toLowerCase() || null,
+        energy: propertyValue(header, 'ENERGY'),
         isHabit: (propertyValue(header, 'STYLE') || '').toLowerCase() === 'habit',
         effort: propertyValue(header, 'EFFORT'),
         scheduled: planningDate(header, 'SCHEDULED'),
@@ -187,6 +180,15 @@ export const buildTasks = (files, inboxPaths = []) => {
 export const INBOX_TAG = '@inbox';
 export const hasInboxTag = (task) =>
   (task.ownTags || []).some((t) => t.toLowerCase() === INBOX_TAG);
+
+// Etiquetas al cambiar de lista: Inbox = @inbox (se quita al sacarla; se pone al llevarla a
+// Inbox fuera del fichero de entrada)
+export const tagsForList = (task, list, tags = task.ownTags || []) => {
+  const isInboxTag = (x) => x.toLowerCase() === INBOX_TAG;
+  if (list !== 'inbox') return tags.filter((x) => !isInboxTag(x));
+  if (!task.isInboxFile && !tags.some(isInboxTag)) return [...tags, INBOX_TAG];
+  return tags;
+};
 
 // Programada para más adelante
 export const isFutureScheduled = (task, today = new Date()) =>
@@ -252,7 +254,7 @@ const matchesFilters = (task, filters) => {
   const { area, tags = [], energy, time, dated, text } = filters || {};
   if (area && area !== '*' && (task.area || '') !== (area === '-' ? '' : area)) return false;
   if (tags.length && !tags.every((t) => task.tags.includes(t))) return false;
-  if (energy && task.energy !== energy) return false;
+  if (energy && (task.energy || '').toLowerCase() !== energy.toLowerCase()) return false;
   if (time) {
     const minutes = effortMinutes(task.effort);
     const bucket = TIME_BUCKETS.find((b) => b.id === time);
@@ -353,7 +355,10 @@ export const facetsFor = (tasks) => {
       const bc = b.startsWith('@');
       return ac !== bc ? (ac ? -1 : 1) : a.localeCompare(b);
     }),
-    energy: ENERGY_LEVELS.filter((e) => energy.has(e)),
+    energy: [
+      ...DEFAULT_ENERGY.filter((e) => energy.has(e)),
+      ...Array.from(energy).filter((e) => !DEFAULT_ENERGY.includes(e)),
+    ],
     hasEffort,
     hasDates,
   };

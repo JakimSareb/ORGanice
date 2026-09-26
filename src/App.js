@@ -45,6 +45,7 @@ import {
 
 import _ from 'lodash';
 import { Map } from 'immutable';
+import { setDefaultTodoLine, setDefaultTagsLine } from './lib/eli_todo_defaults';
 
 import { configure } from 'react-hotkeys';
 // do handle hotkeys even if they come from within 'input', 'select' or 'textarea'
@@ -161,6 +162,23 @@ export default class App extends PureComponent {
 
     this.store = Store(initialState);
     this.store.subscribe(subscribeToChanges(this.store));
+    // ORG Mode para Eli: estados y etiquetas por defecto (Ajustes), también al llegar la
+    // configuración desde .organice-config.json
+    let eliTodoLine;
+    let eliTagsLine;
+    const applyEliDefaults = () => {
+      const base = this.store.getState().base;
+      if (base.get('eliTodoKeywordsLine') !== eliTodoLine) {
+        eliTodoLine = base.get('eliTodoKeywordsLine');
+        setDefaultTodoLine(eliTodoLine);
+      }
+      if (base.get('eliDefaultTagsLine') !== eliTagsLine) {
+        eliTagsLine = base.get('eliDefaultTagsLine');
+        setDefaultTagsLine(eliTagsLine);
+      }
+    };
+    applyEliDefaults();
+    this.store.subscribe(applyEliDefaults);
 
     if (!!client) {
       client.isSignedIn().then((isSignedIn) => {

@@ -644,3 +644,43 @@
 .gtd-links a.gtd-link:visited {
   color: var(--blue);
 }
+
+/* Arrastrar tareas a las listas del menú lateral */
+.gtd-task__row {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.gtd-task.is-dragging {
+  opacity: 0.45;
+}
+.gtd.is-dragging .gtd-side [data-drop] {
+  outline: 1px dashed var(--base1);
+  outline-offset: -2px;
+}
+.gtd.is-dragging .gtd-side [data-drop].is-drop {
+  outline: 2px solid var(--blue);
+  background: var(--base3);
+}
+.gtd.is-dragging .gtd-side__item.is-on.is-drop {
+  color: var(--base00);
+}
+.gtd-drag-ghost {
+  position: fixed;
+  z-index: 100001;
+  pointer-events: none;
+  transform: translate(12px, -50%);
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.gtd-seg__btn.is-done-state {
+  font-style: italic;
+}

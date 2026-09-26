@@ -1086,9 +1086,10 @@ const withTimeout = (promise, ms, message) =>
     new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
   ]);
 
-export const archiveSubtree = (headerId) => async (dispatch, getState) => {
+export const archiveSubtree = (headerId, explicitPath = null) => async (dispatch, getState) => {
   const state = getState();
-  const path = state.org.present.get('path');
+  // ORG Mode para Eli: desde la vista GTD se archiva una tarea de otro fichero
+  const path = explicitPath || state.org.present.get('path');
   const file = state.org.present.getIn(['files', path]);
   const client = state.syncBackend.get('client');
   if (!file || !path || path.startsWith(STATIC_FILE_PREFIX) || !client) return;
@@ -1156,7 +1157,17 @@ export const archiveSubtree = (headerId) => async (dispatch, getState) => {
     if (getState().org.present.getIn(['files', archivePath])) {
       dispatch(parseFile(archivePath, newText));
     }
-    dispatch(removeHeader(headerId));
+    if (path === getState().org.present.get('path')) {
+      dispatch(removeHeader(headerId));
+    } else {
+      dispatch({
+        type: 'ELI_IN_FILE',
+        path,
+        inner: { type: 'REMOVE_HEADER', headerId, dirtying: true },
+        dirtying: true,
+      });
+      dispatch(setDirty(true, path));
+    }
     dispatch(sync({ path, shouldSuppressMessages: true }));
     dispatch(setDisappearingLoadingMessage(`Archivado en ${archivePath}`, 3000));
   } catch (e) {

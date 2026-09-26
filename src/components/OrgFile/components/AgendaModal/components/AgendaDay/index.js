@@ -1,4 +1,4 @@
-import React, { PureComponent, Fragment } from 'react';
+import React, { PureComponent } from 'react';
 
 import './stylesheet.css';
 
@@ -7,7 +7,6 @@ import HabitConsistencyGraph from '../HabitConsistencyGraph';
 
 import {
   isTodoKeywordCompleted,
-  customFormatDistanceToNow,
   getPlanningItemTypeText,
   isHabit,
   isValidHabit,
@@ -27,12 +26,24 @@ import {
   isAfter,
   isEqual,
   isWithinInterval,
-  isPast,
   differenceInCalendarDays,
 } from 'date-fns';
 import classNames from 'classnames';
 import { List } from 'immutable';
 import { closedItemsForDay } from '../../../../../../lib/eli_agenda_log';
+
+// ORG Mode para Eli: días desde hoy hasta la fecha (negativo = ya pasó)
+const eliDaysFromToday = (date) => differenceInCalendarDays(date, new Date());
+const eliDaysText = (n) =>
+  n === 0
+    ? 'hoy'
+    : n === 1
+    ? 'mañana'
+    : n === -1
+    ? 'ayer'
+    : n > 0
+    ? `en ${n} días`
+    : `hace ${-n} días`;
 
 export default class AgendaDay extends PureComponent {
   constructor(props) {
@@ -162,8 +173,6 @@ export default class AgendaDay extends PureComponent {
     const {
       date,
       files,
-      dateDisplayType,
-      onToggleDateDisplayType,
       agendaDefaultDeadlineDelayValue,
       agendaDefaultDeadlineDelayUnit,
       orgHabitShowAllToday,
@@ -210,30 +219,13 @@ export default class AgendaDay extends PureComponent {
               const planningItemDate = dateForTimestamp(planningItem.get('timestamp'));
               const hasTodoKeyword = !!header.getIn(['titleLine', 'todoKeyword']);
 
-              const dateClassName = classNames('agenda-day__header-planning-date', {
-                'agenda-day__header-planning-date--overdue':
-                  hasTodoKeyword && isPast(planningItemDate),
-              });
-
               return (
-                <div key={planningItem.get('id')} className="agenda-day__header-container">
-                  <div className="agenda-day__header__planning-item-container">
-                    <div className="agenda-day__header-planning-type">
-                      {getPlanningItemTypeText(planningItem)}
-                    </div>
-                    <div className={dateClassName} onClick={onToggleDateDisplayType}>
-                      {dateDisplayType === 'absolute'
-                        ? format(planningItemDate, 'MM/dd')
-                        : customFormatDistanceToNow(planningItemDate)}
-
-                      {planningItem.getIn(['timestamp', 'startHour']) && (
-                        <Fragment>
-                          <br />
-                          {format(planningItemDate, 'h:mma')}
-                        </Fragment>
-                      )}
-                    </div>
-                  </div>
+                <div
+                  key={planningItem.get('id')}
+                  className={classNames('agenda-day__header-container', {
+                    'agenda-day__header-container--habit': isHabit(header),
+                  })}
+                >
                   <div className="agenda-day__header__header-container">
                     <TitleLine
                       header={header}
@@ -244,6 +236,33 @@ export default class AgendaDay extends PureComponent {
                       shouldDisableExplicitWidth
                       onClick={this.handleHeaderClick(header.get('path'), header.get('id'))}
                     />
+                    {/* ORG Mode para Eli: debajo de la cabecera, en una línea y en gris: cuántos
+                        días faltan (en azul), el tipo y la fecha. En los hábitos, solo el
+                        gráfico. */}
+                    {!isHabit(header) && (
+                      <div className="agenda-day__eli-meta" data-testid="eli-agenda-meta">
+                        <span
+                          className={classNames('agenda-day__eli-days', {
+                            'agenda-day__eli-days--past':
+                              hasTodoKeyword && eliDaysFromToday(planningItemDate) < 0,
+                          })}
+                        >
+                          {eliDaysText(eliDaysFromToday(planningItemDate))}
+                        </span>
+                        <span className="agenda-day__eli-type">
+                          {planningItem.get('type') === 'DEADLINE'
+                            ? 'límite'
+                            : planningItem.get('type') === 'SCHEDULED'
+                            ? 'programada'
+                            : getPlanningItemTypeText(planningItem)}
+                        </span>
+                        <span className="agenda-day__eli-date">
+                          {format(planningItemDate, 'dd/MM')}
+                          {planningItem.getIn(['timestamp', 'startHour']) &&
+                            ` ${format(planningItemDate, 'HH:mm')}`}
+                        </span>
+                      </div>
+                    )}
                     {/* Show habit consistency graph for valid habits */}
                     {isValidHabit(header) && (
                       <HabitConsistencyGraph

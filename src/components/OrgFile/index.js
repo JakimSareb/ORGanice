@@ -1,4 +1,5 @@
 import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
+import { defaultTagsLine } from '../../lib/eli_todo_defaults';
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
@@ -1167,7 +1168,9 @@ const mapStateToProps = (state) => {
       .flatMap((p) => {
         const lines = files.getIn([p, 'fileConfigLines']);
         return lines ? lines.toJS().filter((l) => /^#\+TAGS:/i.test(String(l).trim())) : [];
-      }),
+      })
+      // y las etiquetas por defecto de Ajustes
+      .concat([defaultTagsLine()]),
     linesBeforeHeadings,
     selectedHeaderId,
     isDirty: file.get('isDirty'),

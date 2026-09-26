@@ -5,10 +5,10 @@ import { ActionTypes } from 'redux-undo';
 import { createRawDescriptionText, generateTitleLine } from '../export_org';
 import { timestampForDate } from '../timestamps';
 import generateId from '../id_generator';
-import { sync, setDirty } from '../../actions/org';
+import { sync, setDirty, archiveSubtree } from '../../actions/org';
 import { KEYWORD_FOR_LIST, PRIORITY_RE } from './gtd_model';
 import { showMessage } from '../eli_prompt';
-import { ELI_DEFAULT_KEYWORDS } from '../parse_org';
+import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
 import { fileDisplayName } from '../eli_app_name';
 
 // Estados que el fichero reconoce (#+TODO:). Si falta uno, Org lo leería como parte del título,
@@ -17,7 +17,7 @@ const fileKeywords = (getState, path) => {
   const sets = getState().org.present.getIn(['files', path, 'todoKeywordSets']);
   const out = new Set();
   (sets || List()).forEach((set) => (set.get('keywords') || List()).forEach((k) => out.add(k)));
-  if (!out.size) ELI_DEFAULT_KEYWORDS.forEach((k) => out.add(k));
+  if (!out.size) defaultKeywords().forEach((k) => out.add(k));
   return out;
 };
 const missingKeyword = (getState, path, keywords) => {
@@ -63,13 +63,18 @@ export const titleLineFrom = ({ keyword, priority, rawTitle, tags }) => {
 };
 
 const setProperty = (items, name, value) => {
-  const list = (items || List()).filter(
-    (p) => (p.get('property') || '').toUpperCase() !== name.toUpperCase()
-  );
-  if (value === null || value === undefined || String(value).trim() === '') return list;
-  return list.push(
-    fromJS({ id: generateId(), property: name, value: [{ type: 'text', contents: String(value) }] })
-  );
+  const all = items || List();
+  const same = (p) => (p.get('property') || '').toUpperCase() === name.toUpperCase();
+  const empty = value === null || value === undefined || String(value).trim() === '';
+  if (empty) return all.filter((p) => !same(p));
+  const contents = fromJS([{ type: 'text', contents: String(value) }]);
+  const index = all.findIndex(same);
+  // Si ya existe, se cambia en su sitio (y con su nombre tal cual); si no, se añade
+  if (index >= 0) {
+    const kept = all.filter((p, i) => i === index || !same(p));
+    return kept.setIn([kept.findIndex(same), 'value'], contents);
+  }
+  return all.push(fromJS({ id: generateId(), property: name, value: [] }).set('value', contents));
 };
 
 const setPlanning = (items, type, date) => {
@@ -110,13 +115,13 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   if (changes.energy !== undefined && (changes.energy || null) !== (task.energy || null)) {
     h = h.set(
       'propertyListItems',
-      setProperty(h.get('propertyListItems'), 'ENERGY', changes.energy)
+      setProperty(h.get('propertyListItems'), ENERGY_PROPERTY, changes.energy)
     );
   }
   if (changes.effort !== undefined && (changes.effort || null) !== (task.effort || null)) {
     h = h.set(
       'propertyListItems',
-      setProperty(h.get('propertyListItems'), 'EFFORT', changes.effort)
+      setProperty(h.get('propertyListItems'), EFFORT_PROPERTY, changes.effort)
     );
   }
   if (h !== header) {
@@ -158,6 +163,8 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
     const keyword =
       changes.list === 'done'
         ? 'DONE'
+        : changes.list === 'cancelled'
+        ? 'CANCELLED'
         : Object.prototype.hasOwnProperty.call(KEYWORD_FOR_LIST, changes.list)
         ? KEYWORD_FOR_LIST[changes.list]
         : task.keyword;
@@ -284,3 +291,6 @@ const undoRedo = (type) => (dispatch, getState) => {
 };
 export const gtdUndo = () => undoRedo(ActionTypes.UNDO);
 export const gtdRedo = () => undoRedo(ActionTypes.REDO);
+
+// Archivar la tarea (como en la hoja: a su fichero _archive), aunque esté en otro fichero
+export const gtdArchiveTask = (task) => (dispatch) => dispatch(archiveSubtree(task.id, task.path));

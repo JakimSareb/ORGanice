@@ -4,8 +4,8 @@ import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
   PRIORITY_RE,
-  INBOX_TAG,
   hasInboxTag,
+  tagsForList,
 } from '../../lib/gtd/gtd_model';
 
 const LIST_OPTIONS = [
@@ -15,6 +15,9 @@ const LIST_OPTIONS = [
   { id: 'waiting', label: 'Waiting' },
   { id: 'someday', label: 'Someday' },
   { id: 'reference', label: 'Reference' },
+  // Estados terminados
+  { id: 'done', label: 'Done', done: true },
+  { id: 'cancelled', label: 'Cancelled', done: true },
 ];
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -70,6 +73,7 @@ export const linksOf = (text) => {
 const isWebLink = (target) => /^(https?:|mailto:)/i.test(target);
 
 export const currentListOf = (task) => {
+  if (task.isDone) return task.keyword === 'CANCELLED' ? 'cancelled' : 'done';
   if (hasInboxTag(task)) return 'inbox';
   if (!task.keyword) return task.isInboxFile ? 'inbox' : 'reference';
   return (
@@ -83,6 +87,9 @@ export default function TaskEditor({
   areas,
   allTags,
   contextTags = [],
+  energyOptions = ENERGY_LEVELS,
+  effortOptions = EFFORT_OPTIONS,
+  onArchive,
   onOpenLink,
   onSave,
   onCancel,
@@ -143,10 +150,7 @@ export default function TaskEditor({
     let finalTags = tagInput.trim() ? Array.from(new Set([...tags, tagInput.trim()])) : tags;
     // Inbox = etiqueta @inbox: al sacarla de Inbox se quita; al llevarla a Inbox (fuera del
     // fichero de entrada) se pone
-    const isInboxTag = (x) => x.toLowerCase() === INBOX_TAG;
-    if (list !== 'inbox') finalTags = finalTags.filter((x) => !isInboxTag(x));
-    else if (!task.isInboxFile && !finalTags.some(isInboxTag))
-      finalTags = [...finalTags, INBOX_TAG];
+    finalTags = tagsForList(task, list, finalTags);
     const changes = {
       rawTitle: title.trim() || task.rawTitle,
       tags: finalTags,
@@ -253,7 +257,9 @@ export default function TaskEditor({
             <button
               key={o.id}
               type="button"
-              className={'gtd-seg__btn' + (list === o.id ? ' is-on' : '')}
+              className={
+                'gtd-seg__btn' + (list === o.id ? ' is-on' : '') + (o.done ? ' is-done-state' : '')
+              }
               onClick={() => setList(o.id)}
               data-testid={`gtd-editor-list-${o.id}`}
             >
@@ -311,7 +317,7 @@ export default function TaskEditor({
           <span className="gtd-editor__label">Energía</span>
           <select value={energy} onChange={(e) => setEnergy(e.target.value)}>
             <option value="">—</option>
-            {ENERGY_LEVELS.map((e) => (
+            {Array.from(new Set([...energyOptions, ...(energy ? [energy] : [])])).map((e) => (
               <option key={e} value={e}>
                 {e}
               </option>
@@ -322,7 +328,7 @@ export default function TaskEditor({
           <span className="gtd-editor__label">Tiempo</span>
           <select value={effort} onChange={(e) => setEffort(e.target.value)}>
             <option value="">—</option>
-            {Array.from(new Set([...EFFORT_OPTIONS, ...(effort ? [effort] : [])])).map((o) => (
+            {Array.from(new Set([...effortOptions, ...(effort ? [effort] : [])])).map((o) => (
               <option key={o} value={o}>
                 {o}
               </option>
@@ -394,6 +400,17 @@ export default function TaskEditor({
         >
           <i className="fas fa-external-link-alt" /> Abrir en el fichero
         </button>
+        {onArchive && (
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--link"
+            onClick={onArchive}
+            title="Archivar (como en Emacs: al fichero _archive)"
+            data-testid="gtd-editor-archive"
+          >
+            <i className="fas fa-archive" /> Archivar
+          </button>
+        )}
         <button type="button" className="gtd-btn gtd-btn--link gtd-btn--danger" onClick={onDelete}>
           <i className="fas fa-trash" /> Borrar
         </button>

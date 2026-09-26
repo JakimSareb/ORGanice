@@ -31,6 +31,7 @@ import {
   updatePlanningItemsFromHeader,
   _updateHeaderFromDescription,
 } from '../lib/parse_org';
+import { PRIORITY_RE as ELI_PRIORITY_RE } from '../lib/eli_priority';
 import { attributedStringToRawText } from '../lib/export_org';
 import {
   indexOfHeaderWithId,
@@ -240,10 +241,29 @@ const advanceTodoState = (state, action) => {
     logIntoDrawer,
     timestamp,
   });
+  state = eliDropPriorityWhenDone(state, headerIndex, newTodoState);
 
   state = updateCookiesOfParentOfHeaderWithId(state, existingHeaderId);
 
   return state;
+};
+
+// ORG Mode para Eli: al terminar una tarea (DONE, CANCELLED…) pierde su prioridad ([#A]…).
+// También en las repetitivas, que vuelven a abrirse sin ella.
+const eliDropPriorityWhenDone = (state, headerIndex, newTodoState) => {
+  const completed =
+    !!newTodoState &&
+    (state.get('todoKeywordSets') || List()).some((set) =>
+      (set.get('completedKeywords') || List()).includes(newTodoState)
+    );
+  if (!completed) return state;
+  const rawPath = ['headers', headerIndex, 'titleLine', 'rawTitle'];
+  const raw = state.getIn(rawPath) || '';
+  if (!ELI_PRIORITY_RE.test(raw)) return state;
+  const newRaw = raw.replace(ELI_PRIORITY_RE, '');
+  return state
+    .setIn(rawPath, newRaw)
+    .setIn(['headers', headerIndex, 'titleLine', 'title'], parseMarkupAndCookies(newRaw));
 };
 
 const setTodoState = (state, action) => {
@@ -281,6 +301,7 @@ const setTodoState = (state, action) => {
     state = state.setIn(['headers', headerIndex, 'titleLine', 'todoKeyword'], newTodoState);
     state = updateClosedTimestamp(state, headerIndex, currentTodoState, newTodoState, timestamp);
   }
+  state = eliDropPriorityWhenDone(state, headerIndex, newTodoState);
 
   state = updateCookiesOfParentOfHeaderWithId(state, existingHeaderId);
 

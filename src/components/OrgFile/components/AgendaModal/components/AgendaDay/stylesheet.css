@@ -124,3 +124,32 @@
 .agenda-day__log-header .title-line {
   margin-top: 0;
 }
+
+/* ORG Mode para Eli: línea bajo la cabecera con los días que faltan, el tipo y la fecha */
+.agenda-day__header-container .agenda-day__header__header-container {
+  margin-top: 6px;
+}
+.agenda-day__eli-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 1px 0 0 2px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.8em;
+  color: var(--base1);
+}
+.agenda-day__eli-days {
+  color: var(--blue);
+  font-weight: 600;
+}
+.agenda-day__eli-days--past {
+  color: var(--orange);
+}
+.agenda-day__eli-type {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.agenda-day__header-container:first-child .agenda-day__header__header-container {
+  margin-top: 16px;
+}

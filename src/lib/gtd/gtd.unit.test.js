@@ -235,8 +235,8 @@ describe('acciones GTD sobre los ficheros', () => {
     expect(text).toMatch(/SCHEDULED: <2026-09-25 \w+>/);
     expect(text).toMatch(/DEADLINE: <2026-09-30 \w+>/);
     expect(text).toMatch(/:AREA: +Hogar/);
-    expect(text).toMatch(/:ENERGY: +alta/);
-    expect(text).toMatch(/:EFFORT: +0:15/);
+    expect(text).toMatch(/:Energy: +alta/);
+    expect(text).toMatch(/:Effort: +0:15/);
     expect(text).toMatch(/Teléfono 600/);
     // El otro fichero no cambia y la ruta abierta tampoco
     expect(store.state().get('path')).toBe(null);
@@ -247,8 +247,8 @@ describe('acciones GTD sobre los ficheros', () => {
     // Quitar propiedades y fecha
     store.dispatch(gtdSaveTask(t2, { area: null, energy: null, scheduled: null }));
     const text2 = textOf(store.state(), INBOX);
-    expect(text2).not.toMatch(/AREA|ENERGY|SCHEDULED/);
-    expect(text2).toMatch(/:EFFORT: +0:15/);
+    expect(text2).not.toMatch(/AREA|Energy|SCHEDULED/);
+    expect(text2).toMatch(/:Effort: +0:15/);
   });
 
   test('completar (CLOSED) y reabrir, estrella', () => {

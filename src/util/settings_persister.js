@@ -173,6 +173,16 @@ export const persistableFields = [
     type: 'boolean',
   },
   {
+    category: 'base',
+    name: 'eliTodoKeywordsLine',
+    type: 'string',
+  },
+  {
+    category: 'base',
+    name: 'eliDefaultTagsLine',
+    type: 'string',
+  },
+  {
     category: 'org',
     name: 'showClockDisplay',
     type: 'boolean',
@@ -265,6 +275,9 @@ const getFieldsToPersist = (state, fields) => {
                 field.name,
                 JSON.stringify(state[field.category].get(field.name) || field.default || {}),
               ]
+            : field.type === 'boolean' && field.default === undefined
+            ? // ORG Mode para Eli: sin valor por defecto, «false» también se guarda
+              [field.name, !!state[field.category].get(field.name)]
             : [field.name, state[field.category].get(field.name) || field.default];
         })
     );
@@ -469,7 +482,7 @@ export const subscribeToChanges = (store) => {
       const fieldsToPersist = getFieldsToPersist(state, persistableFields);
 
       fieldsToPersist.forEach(([name, value]) => {
-        if (name && value) localStorage.setItem(name, value);
+        if (name && (value || value === false)) localStorage.setItem(name, value);
       });
 
       if (state.base.get('shouldStoreSettingsInSyncBackend')) {

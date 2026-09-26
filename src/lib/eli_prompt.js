@@ -161,3 +161,45 @@ export const askText = ({
     document.body.appendChild(overlay);
     setTimeout(() => input.focus(), 50);
   });
+
+// Pide una fecha (calendario del sistema). Devuelve Promise<Date|null>.
+export const askDate = ({ title, message = '', value = new Date(), okLabel = 'Aceptar' }) =>
+  new Promise((resolve) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const toInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const overlay = document.createElement('div');
+    overlay.className = 'eli-prompt__overlay';
+    overlay.innerHTML = `
+      <form class="eli-prompt__box" autocomplete="off" data-testid="eli-ask-date">
+        <div class="eli-prompt__title"></div>
+        <div class="eli-prompt__message"></div>
+        <input type="date" class="eli-prompt__input" required />
+        <div class="eli-prompt__buttons">
+          <button type="button" class="btn eli-prompt__cancel">Cancelar</button>
+          <button type="submit" class="btn eli-prompt__ok"></button>
+        </div>
+      </form>`;
+    overlay.querySelector('.eli-prompt__title').textContent = title;
+    overlay.querySelector('.eli-prompt__message').textContent = message;
+    overlay.querySelector('.eli-prompt__ok').textContent = okLabel;
+    const input = overlay.querySelector('.eli-prompt__input');
+    input.value = toInput(value || new Date());
+    const done = (v) => {
+      overlay.remove();
+      resolve(v);
+    };
+    overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(null));
+    overlay.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const [y, m, d] = (input.value || '').split('-').map(Number);
+      done(y && m && d ? new Date(y, m - 1, d) : null);
+    });
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        done(null);
+      }
+    });
+    document.body.appendChild(overlay);
+    setTimeout(() => input.focus(), 30);
+  });

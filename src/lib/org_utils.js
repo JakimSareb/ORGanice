@@ -5,6 +5,7 @@ import changelogContent from 'bundle-text:../../changelog.org';
 import { formatDistanceToNow, parse } from 'date-fns';
 
 import generateId from './id_generator';
+import { defaultTodoKeywordSets, defaultCompletedKeywords } from './eli_todo_defaults';
 import { attributedStringToRawText } from './export_org';
 import substituteTemplateVariables from './capture_template_substitution';
 import { dateForTimestamp } from './timestamps';
@@ -752,14 +753,7 @@ export const todoKeywordSetForKeyword = (todoKeywordSets, keyword) =>
   ) || (todoKeywordSets || defaultTodoKeywordSetsForMissing()).first();
 
 // ORG Mode para Eli: conjunto por defecto cuando falta el del fichero
-const defaultTodoKeywordSetsForMissing = () =>
-  fromJS([
-    {
-      keywords: ['NEXT', 'TODO', 'MAYBE', 'WAITING', 'PROJECT', 'DONE', 'CANCELLED'],
-      completedKeywords: ['DONE', 'CANCELLED'],
-      default: true,
-    },
-  ]);
+const defaultTodoKeywordSetsForMissing = () => defaultTodoKeywordSets();
 
 export const isTodoKeywordCompleted = (todoKeywordSets, keyword) =>
   todoKeywordSetForKeyword(todoKeywordSets, keyword).get('completedKeywords').includes(keyword);
@@ -820,7 +814,7 @@ export const createIsTodoKeywordInDoneState = (todoKeywordSets) => {
   return (todoKeyword) =>
     todoKeywordSets
       ? todoKeywordSets.some((x) => x.get('completedKeywords').includes(todoKeyword))
-      : todoKeyword === 'DONE' || todoKeyword === 'CANCELLED';
+      : defaultCompletedKeywords().includes(todoKeyword);
 };
 
 // Regular planning items in org are written directly below headline and have type SCHEDULED, DEADLINE, CLOSED.

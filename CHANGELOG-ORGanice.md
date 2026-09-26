@@ -30,6 +30,19 @@
 - Ficheros sin línea `#+TODO`: se usan los estados de Emacs del usuario (`NEXT TODO MAYBE WAITING
   PROJECT | DONE CANCELLED`), como hace Emacs. Si un fichero declara su propio #+TODO sin un
   estado, la vista GTD no lo escribe y avisa (antes se estropeaba el título).
+- Al terminar una tarea (DONE, CANCELLED…) pierde su prioridad ([#A]…).
+- Vista GTD: arrastrar una tarea (ratón, o dejarla pulsada en el móvil) a una lista o proyecto
+  del menú lateral le aplica ese estado; a Scheduled o Deadline pide la fecha; a Focus le pone
+  ★; a Logbook la termina. En el editor: estados Done y Cancelled, botón Archivar, energía
+  (`Energy_ALL`: Low Medium High QuickWin) y tiempo (`Effort_ALL`: 0:10 … 4:00), leídos de
+  `#+PROPERTY` si el fichero los define.
+- Ajustes: «Estados de las tareas» (por defecto `#+TODO: NEXT(n) TODO(t) MAYBE(m) WAITING(w)
+  PROJECT(p) | DONE(d) CANCELLED(c) <(<) >(>)`) para ficheros sin #+TODO, y «Etiquetas por
+  defecto» (`#+TAGS: @ordenador @casa @llamadas @inbox @videos @leer @recados @anywhere`).
+- Los ficheros nuevos llevan en la cabecera #+FILETAGS, #+TAGS, #+PROPERTY (Energy_ALL,
+  Effort_ALL) y #+COLUMNS.
+- Agenda: en los hábitos solo la cabecera y el gráfico; en el resto, bajo la cabecera y en una
+  línea: cuántos días faltan (en azul), el tipo y la fecha.
 - Al abrir una tarea o proyecto en narrow (desde GTD o la agenda) se ve con todo desplegado.
 - Al arrancar, una descarga que termina tarde ya no pisa cambios hechos mientras tanto.
 - Atajo **g**: abre la vista GTD (desde la hoja y el explorador; configurable).

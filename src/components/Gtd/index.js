@@ -18,6 +18,7 @@ import {
   facetsFor,
   TIME_BUCKETS,
   INBOX_TAG,
+  tagsForList,
   needsAutoPriority,
   autoPriorityKey,
 } from '../../lib/gtd/gtd_model';
@@ -28,6 +29,7 @@ import {
   gtdAddTask,
   gtdDeleteTask,
   gtdMoveToProject,
+  gtdArchiveTask,
   gtdUndo,
   gtdRedo,
 } from '../../lib/gtd/gtd_actions';
@@ -46,7 +48,14 @@ import Drawer from '../UI/Drawer';
 import AgendaModal from '../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../EliErrorBoundary';
 import { fileLinkTarget, resolveDropboxPath, openInNewTab } from '../../lib/eli_media';
-import { showMessage } from '../../lib/eli_prompt';
+import { showMessage, askDate } from '../../lib/eli_prompt';
+import {
+  defaultTags,
+  allowedValuesFromConfigLines,
+  DEFAULT_ENERGY,
+  DEFAULT_EFFORT,
+} from '../../lib/eli_todo_defaults';
+import useTaskDrag from './useTaskDrag';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -124,15 +133,29 @@ export const tasksFileOf = (templates, loadedPaths, inboxPaths) => {
 
 const fmtDate = (d) => (d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '');
 
-function TaskRow({ task, open, onToggleOpen, dispatch, today, showProject }) {
+function TaskRow({
+  task,
+  open,
+  onToggleOpen,
+  dispatch,
+  today,
+  showProject,
+  onPointerDown,
+  isDragging,
+}) {
   const due = task.deadline;
   const overdue = due && due < today;
   return (
     <div
-      className={'gtd-task' + (open ? ' is-open' : '') + (task.isDone ? ' is-done' : '')}
+      className={
+        'gtd-task' +
+        (open ? ' is-open' : '') +
+        (task.isDone ? ' is-done' : '') +
+        (isDragging ? ' is-dragging' : '')
+      }
       data-testid="gtd-task"
     >
-      <div className="gtd-task__row" onClick={onToggleOpen}>
+      <div className="gtd-task__row" onClick={onToggleOpen} onPointerDown={onPointerDown}>
         <button
           className={'gtd-check' + (task.isDone ? ' is-on' : '')}
           onClick={(e) => {
@@ -309,11 +332,27 @@ export default function GtdView() {
     [files, scopePaths]
   );
   // Etiquetas predefinidas (contextos @ de #+TAGS, y @inbox) para elegir con un clic
+  // Contextos: los de Ajustes (por defecto) y los @ declarados en #+TAGS de los ficheros
   const contextTags = useMemo(() => {
     const at = declaredTags.filter((t) => t.startsWith('@') && t.length > 1);
-    const base = at.length ? at : declaredTags;
-    return base.some((t) => t.toLowerCase() === INBOX_TAG) ? base : [INBOX_TAG, ...base];
+    const all = Array.from(new Set([...defaultTags(), ...at]));
+    return all.some((t) => t.toLowerCase() === INBOX_TAG) ? all : [...all, INBOX_TAG];
   }, [declaredTags]);
+
+  // Energía y tiempo: «#+PROPERTY: Energy_ALL …» / «Effort_ALL …» de los ficheros, o los de
+  // por defecto
+  const configLines = useMemo(
+    () => scopePaths.flatMap((p) => (files.getIn([p, 'fileConfigLines']) || List()).toArray()),
+    [files, scopePaths]
+  );
+  const energyOptions = useMemo(
+    () => allowedValuesFromConfigLines(configLines, 'Energy', DEFAULT_ENERGY),
+    [configLines]
+  );
+  const effortOptions = useMemo(
+    () => allowedValuesFromConfigLines(configLines, 'Effort', DEFAULT_EFFORT),
+    [configLines]
+  );
 
   // Al llegar la fecha programada, ★ [#A] automática (una sola vez por tarea y fecha)
   useEffect(() => {
@@ -450,6 +489,57 @@ export default function GtdView() {
     }
   };
 
+  // Arrastrar una tarea a una lista o proyecto del menú lateral
+  const applyDrop = async (task, dropId) => {
+    setSideOpen(false);
+    const [kind, ...rest] = dropId.split(':');
+    const id = rest.join(':');
+    if (kind === 'project') {
+      const project = allProjects.find((p) => p.key === id);
+      if (!project || project.key === task.key) return;
+      if (!task.keyword) {
+        dispatch(gtdSaveTask(task, { list: 'next', tags: tagsForList(task, 'next') }));
+      }
+      dispatch(gtdMoveToProject(task, { path: project.path, id: project.id }));
+      return;
+    }
+    const day = (n) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + n);
+    if (id === 'focus') {
+      dispatch(gtdSaveTask(task, { priority: 'A' }));
+    } else if (id === 'scheduled' || id === 'deadline') {
+      const isScheduled = id === 'scheduled';
+      const date = await askDate({
+        title: isScheduled ? 'Programar (Scheduled)' : 'Fecha límite (Deadline)',
+        message: `«${task.title}»`,
+        value: isScheduled ? task.scheduled || day(1) : task.deadline || day(0),
+      });
+      if (!date) return;
+      const changes = isScheduled ? { scheduled: date } : { deadline: date };
+      if (!task.keyword) {
+        changes.list = 'later';
+        changes.tags = tagsForList(task, 'later');
+      }
+      dispatch(gtdSaveTask(task, changes));
+    } else if (id === 'logbook') {
+      dispatch(gtdSaveTask(task, { list: 'done' }));
+    } else {
+      dispatch(gtdSaveTask(task, { list: id, tags: tagsForList(task, id) }));
+    }
+  };
+  const { onPointerDown, dragging, dropTarget, clickSuppressed } = useTaskDrag({
+    onDrop: applyDrop,
+    onStart: () => {
+      setOpenKey(null);
+      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
+        setSideOpen(true);
+      }
+    },
+  });
+  const dropProps = (dropId) => ({
+    'data-drop': dropId,
+    className: dropTarget === dropId ? ' is-drop' : '',
+  });
+
   const syncAll = () =>
     scopePaths.forEach((p) => dispatch(sync({ path: p, shouldSuppressMessages: true })));
 
@@ -463,7 +553,12 @@ export default function GtdView() {
   const renderListItem = (l) => (
     <button
       key={l.id}
-      className={'gtd-side__item' + (view.id === l.id && view.type !== 'project' ? ' is-on' : '')}
+      data-drop={`list:${l.id}`}
+      className={
+        'gtd-side__item' +
+        (view.id === l.id && view.type !== 'project' ? ' is-on' : '') +
+        dropProps(`list:${l.id}`).className
+      }
       onClick={() => selectView({ id: l.id })}
       data-testid={`gtd-list-${l.id}`}
     >
@@ -478,7 +573,10 @@ export default function GtdView() {
   const loading = pendingLoads;
 
   return (
-    <div className={'gtd' + (sideOpen ? ' is-side-open' : '')} data-testid="gtd">
+    <div
+      className={'gtd' + (sideOpen ? ' is-side-open' : '') + (dragging ? ' is-dragging' : '')}
+      data-testid="gtd"
+    >
       <aside className="gtd-side">
         <div className="gtd-side__top">
           <select
@@ -538,8 +636,11 @@ export default function GtdView() {
             return (
               <button
                 key={p.key}
+                data-drop={`project:${p.key}`}
                 className={
-                  'gtd-side__item gtd-side__item--project' + (view.key === p.key ? ' is-on' : '')
+                  'gtd-side__item gtd-side__item--project' +
+                  (view.key === p.key ? ' is-on' : '') +
+                  dropProps(`project:${p.key}`).className
                 }
                 onClick={() => selectView({ type: 'project', key: p.key })}
                 data-testid="gtd-project"
@@ -688,7 +789,11 @@ export default function GtdView() {
               <TaskRow
                 task={task}
                 open={openKey === task.key}
-                onToggleOpen={() => setOpenKey(openKey === task.key ? null : task.key)}
+                onToggleOpen={() =>
+                  !clickSuppressed() && setOpenKey(openKey === task.key ? null : task.key)
+                }
+                onPointerDown={onPointerDown(task)}
+                isDragging={dragging === task.key}
                 dispatch={dispatch}
                 today={today}
                 showProject={view.type !== 'project'}
@@ -706,6 +811,12 @@ export default function GtdView() {
                   onCancel={() => setOpenKey(null)}
                   onOpen={() => openInFile(task)}
                   onDelete={() => deleteTask(task)}
+                  onArchive={() => {
+                    setOpenKey(null);
+                    dispatch(gtdArchiveTask(task));
+                  }}
+                  energyOptions={energyOptions}
+                  effortOptions={effortOptions}
                 />
               )}
             </React.Fragment>

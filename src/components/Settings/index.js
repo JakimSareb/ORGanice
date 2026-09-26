@@ -14,6 +14,51 @@ import TabButtons from '../UI/TabButtons';
 import Switch from '../UI/Switch';
 import ExternalLink from '../UI/ExternalLink';
 import { APP_NAME, APP_VERSION } from '../../lib/eli_app_name';
+import {
+  DEFAULT_TODO_LINE,
+  DEFAULT_TAGS_LINE,
+  parseTodoLine,
+  parseTagsLine,
+} from '../../lib/eli_todo_defaults';
+
+// ORG Mode para Eli: campo de texto que se guarda al salir de él (o con Intro)
+const EliLineSetting = ({ label, description, value, fallback, isValid, onSave, testId }) => {
+  const [text, setText] = React.useState(value || fallback);
+  const [error, setError] = React.useState('');
+  React.useEffect(() => setText(value || fallback), [value, fallback]);
+  const save = (v) => {
+    const line = (v || '').trim() || fallback;
+    if (!isValid(line)) {
+      setError('No es válido; se mantiene el anterior.');
+      setText(value || fallback);
+      return;
+    }
+    setError('');
+    setText(line);
+    if (line !== (value || fallback)) onSave(line);
+  };
+  return (
+    <div className="setting-container eli-line-setting">
+      <div className="setting-label">
+        {label}
+        <div className="setting-label__description">{description}</div>
+        <input
+          className="textfield eli-line-setting__input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={(e) => save(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+          spellCheck={false}
+          data-testid={testId}
+        />
+        {error && <div className="eli-line-setting__error">{error}</div>}
+        <button className="btn-passive eli-line-setting__reset" onClick={() => save(fallback)}>
+          Restablecer
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const Settings = ({
   fontSize,
@@ -27,6 +72,8 @@ const Settings = ({
   shouldLogIntoDrawer,
   closeSubheadersRecursively,
   eliIndentOnExport,
+  eliTodoKeywordsLine,
+  eliDefaultTagsLine,
   editorDescriptionHeightValue,
   agendaDefaultDeadlineDelayValue,
   agendaDefaultDeadlineDelayUnit,
@@ -123,6 +170,24 @@ const Settings = ({
 
   return (
     <div className="settings-container">
+      <EliLineSetting
+        label="Estados de las tareas"
+        description="Para los ficheros sin línea #+TODO (como la configuración global de Emacs). Antes de | los activos y después los terminados. Se aplica al volver a abrir los ficheros."
+        value={eliTodoKeywordsLine}
+        fallback={DEFAULT_TODO_LINE}
+        isValid={(l) => /^#\+(SEQ_|TYP_)?TODO:\s*\S/i.test(l) && !!parseTodoLine(l)}
+        onSave={(l) => base.setEliSetting('eliTodoKeywordsLine', l)}
+        testId="eli-setting-todo"
+      />
+      <EliLineSetting
+        label="Etiquetas por defecto (contextos)"
+        description="Se ofrecen al editar etiquetas (además de las #+TAGS de cada fichero) y se escriben en los ficheros nuevos."
+        value={eliDefaultTagsLine}
+        fallback={DEFAULT_TAGS_LINE}
+        isValid={(l) => /^#\+TAGS:\s*\S/i.test(l) && parseTagsLine(l).length > 0}
+        onSave={(l) => base.setEliSetting('eliDefaultTagsLine', l)}
+        testId="eli-setting-tags"
+      />
       <div className="setting-container">
         <div className="setting-label">Font size</div>
         <TabButtons
@@ -240,8 +305,8 @@ const Settings = ({
               <code>org-adapt-indentation nil</code>
             </ExternalLink>{' '}
             (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
-            <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
-            encabezado. El texto de las notas no se toca.
+            <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del encabezado.
+            El texto de las notas no se toca.
           </div>
         </div>
         <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
@@ -485,6 +550,8 @@ const mapStateToProps = (state) => {
     shouldLogIntoDrawer: state.base.get('shouldLogIntoDrawer'),
     closeSubheadersRecursively: state.base.get('closeSubheadersRecursively'),
     eliIndentOnExport: state.base.get('eliIndentOnExport') === true,
+    eliTodoKeywordsLine: state.base.get('eliTodoKeywordsLine'),
+    eliDefaultTagsLine: state.base.get('eliDefaultTagsLine'),
     hasUnseenChangelog: state.base.get('hasUnseenChangelog'),
     showClockDisplay: state.org.present.get('showClockDisplay'),
     preferEditRawValues: state.base.get('preferEditRawValues'),

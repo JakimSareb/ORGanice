@@ -25,6 +25,7 @@ import {
   matchesBinding,
 } from '../../../../lib/eli_hotkeys';
 import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
+import { newFileHeaderLines } from '../../../../lib/eli_todo_defaults';
 
 const ensureCompleteFilename = (fileName) => {
   return /\.org(\.gpg|\.asc)?$/.test(fileName) ? fileName : `${fileName}.org`;
@@ -110,7 +111,8 @@ const ActionDrawer = ({
       return;
     }
     const title = fileName.replace(/\.org(\.gpg|\.asc)?$/i, '');
-    const content = `#+TITLE: ${title}\n\n* Primer encabezado\n`;
+    // Cabecera de los ficheros nuevos: etiquetas, energía, tiempo y columnas (Ajustes)
+    const content = `#+TITLE: ${title}\n${newFileHeaderLines().join('\n')}\n\n* Primer encabezado\n`;
     const ok = await org.createNewFile(newPath, content);
     if (ok) {
       syncBackend.getDirectoryListing(path);
