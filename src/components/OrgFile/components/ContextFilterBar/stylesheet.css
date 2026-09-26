@@ -32,8 +32,58 @@
 }
 .context-filter-bar__label {
   font-size: 0.75em;
-  color: var(--base1);
+  color: var(--base00);
+  opacity: 0.7;
   min-width: 58px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+/* ORG Mode para Eli: filtros plegados tras «Filtrar» (como en la vista GTD) */
+.context-filter-bars__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.context-filter-bars__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--base1);
+  background: transparent;
+  color: var(--base01);
+  font-size: 0.9em;
+  font-family: inherit;
+  cursor: pointer;
+}
+.context-filter-bars__toggle.is-open {
+  background: var(--base2);
+}
+.context-filter-bars__count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+}
+.context-filter-bars__bar .context-filter-bar__chip {
+  background: none;
+  font-family: inherit;
+}
+.context-filter-bars__bar .context-filter-bar__chip.is-selected {
+  background-color: var(--blue);
+}
+.context-filter-bar__chip--clear {
+  border-style: dashed;
+}
+.context-filter-bars__panel {
+  margin-top: 8px;
+  padding: 10px 12px 4px;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
 }

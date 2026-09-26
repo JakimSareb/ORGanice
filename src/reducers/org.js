@@ -1970,7 +1970,7 @@ const addNewFile = (state, { path, content }) => {
 
 // ORG Mode para Eli: todos los ficheros de la carpeta (y subcarpetas) en la agenda, la búsqueda,
 // la lista de tareas y el refile. Los que ya tenían ajustes conservan el resto de opciones.
-const eliAddAllFileSettings = (state, { paths }) => {
+const eliAddAllFileSettings = (state, { paths, prune }) => {
   const shared = {
     includeInAgenda: true,
     includeInSearch: true,
@@ -1981,6 +1981,8 @@ const eliAddAllFileSettings = (state, { paths }) => {
     let next = settings.map((setting) =>
       paths.includes(setting.get('path')) ? setting.merge(shared) : setting
     );
+    // Modo automático: se quitan los ajustes de ficheros que ya no existen
+    if (prune) next = next.filter((setting) => paths.includes(setting.get('path')));
     const existing = new Set(next.map((setting) => setting.get('path')).toArray());
     paths
       .filter((path) => path && !existing.has(path))

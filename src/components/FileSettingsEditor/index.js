@@ -7,6 +7,8 @@ import { Droppable } from 'react-beautiful-dnd';
 import './stylesheet.css';
 
 import * as orgActions from '../../actions/org';
+import * as baseActions from '../../actions/base';
+import Switch from '../UI/Switch';
 
 import FileSetting from './components/FileSetting';
 
@@ -19,7 +21,9 @@ const FileSettingsEditor = ({
   loadedFilepaths,
   currentPathIfWithoutFileSetting,
   client,
+  allOrgFiles,
   org,
+  base,
 }) => {
   // ORG Mode para Eli: añadir de una vez todos los ficheros .org de la carpeta y subcarpetas
   const [isListing, setIsListing] = React.useState(false);
@@ -50,11 +54,28 @@ const FileSettingsEditor = ({
         `Se han encontrado ${paths.length} ficheros .org en tu carpeta y subcarpetas` +
         ` (${added} nuevos en esta lista).\n\n` +
         'Todos quedarán incluidos en la agenda (y la vista GTD), la búsqueda, la lista de ' +
-        'tareas y el refile. El resto de opciones de cada fichero no cambian.\n\n' +
+        'tareas y el refile, y los que crees más adelante se añadirán solos. Los que ' +
+        'borres se quitarán de la lista.\n\n' +
         'Con muchos ficheros, la agenda tarda más en abrirse la primera vez.',
-      okLabel: 'Añadir todos',
+      okLabel: 'Activar',
     });
-    if (ok) org.eliAddAllFileSettings(paths);
+    if (ok) {
+      base.setEliSetting('eliAllOrgFiles', true);
+      org.eliAddAllFileSettings(paths);
+    }
+  };
+
+  // Desactivar el modo automático: los ajustes se quedan como estén y se vuelven a gestionar
+  // fichero a fichero
+  const handleAllOrgFilesToggle = () => {
+    if (allOrgFiles) base.setEliSetting('eliAllOrgFiles', false);
+    else handleAddAllClick();
+  };
+  const handleRefreshClick = async () => {
+    setIsListing(true);
+    const paths = await org.eliRefreshAllOrgFiles({ force: true });
+    setIsListing(false);
+    if (!paths) showMessage('Ficheros', 'No se ha podido leer la carpeta. Comprueba la conexión.');
   };
 
   const startupSetting = fileSettings.find((setting) => setting.get('defaultOnStartup'));
@@ -80,20 +101,35 @@ const FileSettingsEditor = ({
   return (
     <div>
       <div className="eli-file-settings__common" data-testid="eli-file-settings-common">
-        <button
-          type="button"
-          className="btn settings-btn eli-file-settings__add-all"
-          onClick={handleAddAllClick}
-          disabled={isListing}
-          data-testid="eli-file-settings-add-all"
-        >
-          <i className={isListing ? 'fas fa-sync-alt fa-spin' : 'fas fa-folder-plus'} />{' '}
-          {isListing ? 'Buscando ficheros…' : 'Añadir todos los ficheros .org'}
-        </button>
-        <div className="file-setting__help-text">
-          Busca en tu carpeta y sus subcarpetas y los incluye en la agenda, la búsqueda, la lista de
-          tareas y el refile.
+        <div className="file-setting__field eli-file-settings__auto">
+          <div>
+            <div>Todos los ficheros .org, automáticamente</div>
+            <div className="file-setting__help-text">
+              Los de tu carpeta y subcarpetas, también los que crees más adelante, entran solos en
+              la agenda (y la vista GTD), la búsqueda, la lista de tareas y el refile. Desactívalo
+              para elegirlos uno a uno.
+            </div>
+          </div>
+          {isListing ? (
+            <i className="fas fa-sync-alt fa-spin" />
+          ) : (
+            <Switch isEnabled={!!allOrgFiles} onToggle={handleAllOrgFilesToggle} />
+          )}
         </div>
+        {allOrgFiles && (
+          <div className="eli-file-settings__auto-info" data-testid="eli-file-settings-auto-info">
+            {fileSettings.size} ficheros incluidos.{' '}
+            <button
+              type="button"
+              className="eli-file-settings__refresh"
+              onClick={handleRefreshClick}
+              disabled={isListing}
+              data-testid="eli-file-settings-refresh"
+            >
+              Buscar ficheros nuevos ahora
+            </button>
+          </div>
+        )}
         {fileSettings.size > 0 && (
           <label className="eli-file-settings__unique">
             <span>Fichero que se abre al iniciar (solo uno):</span>
@@ -112,45 +148,48 @@ const FileSettingsEditor = ({
           </label>
         )}
       </div>
-      <Droppable droppableId="file-setting-editor-droppable" type="FILE-SETTING">
-        {(provided) => (
-          <div
-            className="file-setting-container"
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-          >
-            {fileSettings.size === 0 ? (
-              <div className="no-file-setting-message">
-                Todavía no tienes ajustes de ficheros. Añade uno pulsando el botón{' '}
-                <i className="fas fa-plus" />.
-                <br />
-                <br />
-                Los ajustes de ficheros permiten configurar cómo se tratan ficheros concretos cuando
-                hay varios cargados. El fichero tiene que estar cargado para poder crear un ajuste.
-              </div>
-            ) : (
-              <Fragment>
-                {fileSettings.map((setting, index) => (
-                  <FileSetting
-                    key={setting.get('id')}
-                    index={index}
-                    setting={setting}
-                    path={currentPathIfWithoutFileSetting}
-                    loadedFilepaths={loadedFilepaths}
-                    onFieldPathUpdate={handleFieldPathUpdate}
-                    onDeleteSetting={handleDeleteSetting}
-                    onReorder={handleReorderSetting}
-                  />
-                ))}
+      {!allOrgFiles && (
+        <Droppable droppableId="file-setting-editor-droppable" type="FILE-SETTING">
+          {(provided) => (
+            <div
+              className="file-setting-container"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              {fileSettings.size === 0 ? (
+                <div className="no-file-setting-message">
+                  Todavía no tienes ajustes de ficheros. Añade uno pulsando el botón{' '}
+                  <i className="fas fa-plus" />.
+                  <br />
+                  <br />
+                  Los ajustes de ficheros permiten configurar cómo se tratan ficheros concretos
+                  cuando hay varios cargados. El fichero tiene que estar cargado para poder crear un
+                  ajuste.
+                </div>
+              ) : (
+                <Fragment>
+                  {fileSettings.map((setting, index) => (
+                    <FileSetting
+                      key={setting.get('id')}
+                      index={index}
+                      setting={setting}
+                      path={currentPathIfWithoutFileSetting}
+                      loadedFilepaths={loadedFilepaths}
+                      onFieldPathUpdate={handleFieldPathUpdate}
+                      onDeleteSetting={handleDeleteSetting}
+                      onReorder={handleReorderSetting}
+                    />
+                  ))}
 
-                {provided.placeholder}
-              </Fragment>
-            )}
-          </div>
-        )}
-      </Droppable>
+                  {provided.placeholder}
+                </Fragment>
+              )}
+            </div>
+          )}
+        </Droppable>
+      )}
 
-      {loadedFilepaths.length !== 0 && (
+      {!allOrgFiles && loadedFilepaths.length !== 0 && (
         <div className="new-capture-template-button-container">
           <button
             className="fas fa-plus fa-lg btn btn--circle"
@@ -176,6 +215,7 @@ const mapStateToProps = (state) => {
     .toJS();
   return {
     client: state.syncBackend.get('client'),
+    allOrgFiles: !!state.base.get('eliAllOrgFiles'),
     fileSettings,
     loadedFilepaths,
     currentPathIfWithoutFileSetting,
@@ -185,6 +225,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
   return {
     org: bindActionCreators(orgActions, dispatch),
+    base: bindActionCreators(baseActions, dispatch),
   };
 };
 

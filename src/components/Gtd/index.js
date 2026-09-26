@@ -21,6 +21,7 @@ import {
   tagsForList,
   needsAutoPriority,
   autoPriorityKey,
+  logbookGroupOf,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -332,7 +333,8 @@ export default function GtdView() {
     filters,
     today,
   ]);
-  // ORG Mode para Eli: en Scheduled, los hábitos van siempre abajo, en su propia sección
+  // ORG Mode para Eli: en Scheduled, los hábitos van siempre abajo, en su propia sección; en el
+  // Logbook, secciones por fecha de cierre (esta semana, la pasada, el mes pasado, este año…)
   const splitHabits = view.id === 'scheduled';
   const rendered = useMemo(
     () =>
@@ -341,7 +343,21 @@ export default function GtdView() {
         : visible,
     [visible, splitHabits]
   );
-  const firstHabitKey = splitHabits ? (rendered.find((t) => t.isHabit) || {}).key : null;
+  const sectionStarts = useMemo(() => {
+    const out = {};
+    if (splitHabits) {
+      const first = rendered.find((t) => t.isHabit);
+      if (first) out[first.key] = { id: 'habits', label: 'Hábitos', icon: 'fas fa-redo-alt' };
+    } else if (view.id === 'logbook') {
+      let prev = null;
+      rendered.forEach((t) => {
+        const g = logbookGroupOf(t.closed, today);
+        if (g.id !== prev) out[t.key] = { ...g, icon: 'fas fa-check' };
+        prev = g.id;
+      });
+    }
+    return out;
+  }, [rendered, splitHabits, view.id, today]);
   const projectTask = view.type === 'project' ? tasks.find((t) => t.key === view.key) : null;
 
   const declaredTags = useMemo(
@@ -892,9 +908,12 @@ export default function GtdView() {
           )}
           {rendered.map((task) => (
             <React.Fragment key={task.key}>
-              {task.key === firstHabitKey && (
-                <div className="gtd-section" data-testid="gtd-habits-section">
-                  <i className="fas fa-redo-alt" /> Hábitos
+              {sectionStarts[task.key] && (
+                <div
+                  className="gtd-section"
+                  data-testid={`gtd-section-${sectionStarts[task.key].id}`}
+                >
+                  <i className={sectionStarts[task.key].icon} /> {sectionStarts[task.key].label}
                 </div>
               )}
               <TaskRow

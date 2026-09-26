@@ -64,7 +64,14 @@ class Entry extends PureComponent {
     this.setChangelogUnseenChanges();
     this.props.filesToLoad.forEach((path) => this.props.syncBackend.downloadFile(path));
     this.props.filesToSync.forEach((path) => this.props.org.sync({ path }));
+    // ORG Mode para Eli: modo «todos los ficheros .org» (al abrir y al volver a la app)
+    this.props.org.eliRefreshAllOrgFiles({ force: true });
+    document.addEventListener('visibilitychange', this.eliOnVisible);
   }
+
+  eliOnVisible = () => {
+    if (document.visibilityState === 'visible') this.props.org.eliRefreshAllOrgFiles();
+  };
 
   // TODO: Should this maybe done on init of the application and not in the component?
   setChangelogUnseenChanges() {
@@ -88,6 +95,7 @@ class Entry extends PureComponent {
   componentWillUnmount() {
     window.removeEventListener('eli:open-gtd', this.openGtd);
     window.removeEventListener('eli:navigate', this.eliNavigate);
+    document.removeEventListener('visibilitychange', this.eliOnVisible);
     window.onbeforeunload = undefined;
   }
 

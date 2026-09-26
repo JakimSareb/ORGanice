@@ -374,3 +374,19 @@ test('ELI_OPEN_SUBTREE despliega el encabezado y sus subencabezados', () => {
     'Presupuesto fontanero',
   ]);
 });
+
+describe('logbookGroupOf', () => {
+  const { logbookGroupOf } = require('./gtd_model');
+  const today = new Date(2026, 8, 26); // sábado 26 sep 2026
+  test.each([
+    [new Date(2026, 8, 21, 10), 'week'], // lunes de esta semana
+    [new Date(2026, 8, 20), 'lastweek'],
+    [new Date(2026, 8, 14), 'lastweek'],
+    [new Date(2026, 8, 13), 'lastmonth'],
+    [new Date(2026, 7, 1), 'lastmonth'],
+    [new Date(2026, 6, 31), 'year'],
+    [new Date(2026, 0, 1), 'year'],
+    [new Date(2025, 11, 31), 'older'],
+    [null, 'older'],
+  ])('%s → %s', (closed, id) => expect(logbookGroupOf(closed, today).id).toBe(id));
+});

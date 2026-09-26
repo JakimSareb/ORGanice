@@ -200,7 +200,7 @@ export default (state = Map(), action) => {
     case 'SET_CLOSE_SUBHEADERS_RECURSIVELY':
       return setCloseSubheadersRecursively(state, action);
     case 'SET_ELI_SETTING':
-      return ['eliTodoKeywordsLine', 'eliDefaultTagsLine'].includes(action.name)
+      return ['eliTodoKeywordsLine', 'eliDefaultTagsLine', 'eliAllOrgFiles'].includes(action.name)
         ? state.set(action.name, action.value)
         : state;
     case 'SET_ELI_INDENT_ON_EXPORT':

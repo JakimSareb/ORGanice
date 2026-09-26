@@ -3,6 +3,14 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.2 (septiembre de 2026)
+** Agenda y búsqueda
+- Los filtros de contexto y estado se pliegan tras el botón *Filtrar*, como en la vista GTD; los activos se ven como etiquetas.
+** Vista GTD
+- Logbook por secciones: esta semana, la semana pasada, el mes pasado, este año y anteriores.
+** Ficheros
+- «Todos los ficheros .org, automáticamente»: un interruptor en Ajustes → Ajustes de ficheros. Incluye todos los .org de la carpeta y subcarpetas, también los que se creen más adelante (y quita los borrados). Al desactivarlo se vuelve a la gestión fichero a fichero.
+
 * 2.1 (septiembre de 2026)
 ** Hoja
 - Barra del encabezado: a la vista editar título, editar descripción, fecha límite, fecha programada y nuevo encabezado; etiquetas y nota pasan a *⋯*.

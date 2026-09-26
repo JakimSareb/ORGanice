@@ -179,6 +179,10 @@ export const createFile = (path, content) => {
         dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
         dispatch(hideLoadingMessage());
         dispatch(getDirectoryListing(dirName(path)));
+        // ORG Mode para Eli: con «todos los ficheros .org», el nuevo entra solo
+        if (getState().base.get('eliAllOrgFiles') && /\.org(\.gpg|\.asc)?$/i.test(path)) {
+          dispatch({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths: [path] });
+        }
       })
       .catch(() => {
         dispatch(hideLoadingMessage());

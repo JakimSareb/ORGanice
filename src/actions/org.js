@@ -941,6 +941,27 @@ export const deleteFileSetting = (settingId) => ({
 
 export const eliAddAllFileSettings = (paths) => ({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths });
 
+// ORG Mode para Eli: modo «todos los ficheros .org»: al abrir la app, al volver a ella (como mucho
+// cada 5 minutos) y al crear un fichero, se buscan los .org de la carpeta y subcarpetas y se
+// incluyen todos (agenda, búsqueda, lista de tareas y refile). Los que ya no existen se quitan.
+let eliLastOrgScan = 0;
+export const eliRefreshAllOrgFiles = ({ force = false } = {}) => async (dispatch, getState) => {
+  if (!getState().base.get('eliAllOrgFiles')) return null;
+  const client = getState().syncBackend.get('client');
+  if (!client || !client.listOrgFiles) return null;
+  if (!force && Date.now() - eliLastOrgScan < 5 * 60 * 1000) return null;
+  eliLastOrgScan = Date.now();
+  let paths = null;
+  try {
+    paths = await client.listOrgFiles();
+  } catch (e) {
+    return null;
+  }
+  if (!paths || !paths.length || !getState().base.get('eliAllOrgFiles')) return null;
+  dispatch({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths, prune: true });
+  return paths;
+};
+
 export const addNewEmptyFileSetting = () => (dispatch) =>
   dispatch({ type: 'ADD_NEW_EMPTY_FILE_SETTING' });
 
@@ -1373,6 +1394,9 @@ export const createNewFile = (path, content) => async (dispatch, getState) => {
     dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
     dispatch(setDirty(false, path));
     dispatch(setDisappearingLoadingMessage(`Creado ${path}`, 2000));
+    if (getState().base.get('eliAllOrgFiles') && /\.org(\.gpg|\.asc)?$/i.test(path)) {
+      dispatch({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths: [path] });
+    }
     return true;
   } catch (e) {
     dispatch(hideLoadingMessage());

@@ -5,7 +5,7 @@ import { getOpenHeaderPaths } from '../lib/org_utils';
 
 import { restoreBaseSettings } from '../actions/base';
 import { restoreCaptureSettings } from '../actions/capture';
-import { restoreFileSettings } from '../actions/org';
+import { restoreFileSettings, eliRefreshAllOrgFiles } from '../actions/org';
 
 import generateId from '../lib/id_generator';
 import { loadFilesFromLocalStorage } from './file_persister';
@@ -176,6 +176,11 @@ export const persistableFields = [
     category: 'base',
     name: 'eliTodoKeywordsLine',
     type: 'string',
+  },
+  {
+    category: 'base',
+    name: 'eliAllOrgFiles',
+    type: 'boolean',
   },
   {
     category: 'base',
@@ -469,7 +474,10 @@ export const loadSettingsFromConfigFile = (dispatch, getState) => {
         // overwrite it with a good local copy.
       }
     })
-    .catch(() => {});
+    .catch(() => {})
+    // ORG Mode para Eli: con «todos los ficheros .org», buscar los nuevos después de restaurar
+    // los ajustes (si no, la restauración pisaría la lista recién actualizada)
+    .then(() => dispatch(eliRefreshAllOrgFiles({ force: true })));
 };
 
 export const subscribeToChanges = (store) => {

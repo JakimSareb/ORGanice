@@ -118,7 +118,7 @@ Tecla *a* o el botón del calendario (abajo, en el centro).
 - Arriba, «Vencidas» (lo que se te ha pasado) y «Prioritarias» (★).
 - Justo encima de cada tarea, en una línea: cuántos días faltan (en azul), el tipo y la fecha.
 - El botón «Log» muestra lo terminado (fecha CLOSED).
-- Filtros por contexto (@casa, @ordenador…) y por estado.
+- Filtros por contexto (@casa, @ordenador…) y por estado, plegados tras el botón *Filtrar* (igual en la búsqueda). Los activos se ven como etiquetas; tócalas para quitarlos.
 - Al tocar una tarea, se abre su fichero reducido (narrow) a esa tarea, con todo desplegado, aunque esté en otro fichero.
 
 * La vista GTD (estilo Nirvana)
@@ -139,7 +139,7 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 | Someday    | MAYBE                                                                                |
 | Proyectos  | Cada PROJECT, con sus acciones                                                       |
 | Reference  | Encabezados sin estado ni tareas debajo                                              |
-| Logbook    | Terminadas                                                                           |
+| Logbook    | Terminadas, por secciones: esta semana, la pasada, el mes pasado, este año y anteriores |
 
 ** Reglas de las fechas
 - Una tarea programada para más adelante (y sin fecha límite) solo se ve en Scheduled. Cuando llega el día, vuelve a su lista.
@@ -272,7 +272,7 @@ Todos se pueden cambiar en Ajustes → Atajos de teclado.
 - *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).
-  - «Añadir todos los ficheros .org» busca en tu carpeta y subcarpetas (sin la de copias de seguridad) y los pone todos en la agenda, la búsqueda, la lista de tareas y el refile.
+  - «Todos los ficheros .org, automáticamente» (interruptor): todos los ficheros .org de tu carpeta y subcarpetas (sin la de copias de seguridad), también los que crees más adelante, entran solos en la agenda, la búsqueda, la lista de tareas y el refile; los que borres se quitan. Se revisa al abrir la app, al volver a ella y con «Buscar ficheros nuevos ahora». Al desactivarlo vuelves a elegirlos uno a uno (la lista se queda como estaba).
   - Lo que solo puede tener un fichero, como «Fichero que se abre al iniciar», se elige en su propio desplegable.
 - *Plantillas de captura* y *Atajos de teclado*.
 

@@ -383,3 +383,20 @@ export const facetsFor = (tasks) => {
     hasDates,
   };
 };
+
+// ORG Mode para Eli: secciones del Logbook según la fecha de cierre (CLOSED)
+export const logbookGroupOf = (closed, today = new Date()) => {
+  const d0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const weekStart = new Date(d0);
+  weekStart.setDate(d0.getDate() - ((d0.getDay() + 6) % 7)); // lunes
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(weekStart.getDate() - 7);
+  const lastMonthStart = new Date(d0.getFullYear(), d0.getMonth() - 1, 1);
+  const yearStart = new Date(d0.getFullYear(), 0, 1);
+  if (!closed) return { id: 'older', label: 'Anteriores' };
+  if (closed >= weekStart) return { id: 'week', label: 'Esta semana' };
+  if (closed >= lastWeekStart) return { id: 'lastweek', label: 'La semana pasada' };
+  if (closed >= lastMonthStart) return { id: 'lastmonth', label: 'El mes pasado' };
+  if (closed >= yearStart) return { id: 'year', label: 'Este año' };
+  return { id: 'older', label: 'Anteriores' };
+};
