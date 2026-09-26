@@ -662,7 +662,7 @@ describe('Render all views', () => {
           // // click pencil to edit cell
           fireEvent.click(getByTestId(editCellButtonId));
 
-          const expectedDate = getCurrentTimestampAsText({ isActive: true, withStartTime: false });
+          const expectedDate = getCurrentTimestampAsText({ isActive: false, withStartTime: false });
 
           const newValue = `${expectedDate} ${cellToClick}`;
           // click insert timestamp

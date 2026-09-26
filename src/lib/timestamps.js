@@ -232,3 +232,17 @@ export const millisDuration = (millis) => {
   }
   return dateDuration(new Date(0), new Date(millis));
 };
+
+// ORG Mode para Eli: «+ Insertar fecha» escribe la fecha de hoy como fecha inactiva en el cursor,
+// separada por espacios del texto que tenga pegado delante o detrás
+export const eliInsertTodayInactive = (text, start, end) => {
+  const value = text || '';
+  const s = start == null ? value.length : start;
+  const e = end == null || end < s ? s : end;
+  const before = value.substring(0, s);
+  const after = value.substring(e);
+  const stamp = getCurrentTimestampAsText({ isActive: false });
+  const pre = before && !/\s$/.test(before) ? ' ' : '';
+  const post = after && !/^\s/.test(after) ? ' ' : '';
+  return before + pre + stamp + post + after;
+};

@@ -180,7 +180,6 @@ class DrawerActionBar extends PureComponent {
           onScheduledClick={this.handleShowScheduledModal}
           onAddNote={this.handleShowNoteModal}
           onRemoveHeader={this.handleRemoveHeader}
-          onInsertInactiveDate={this.handleInsertInactiveDate}
           onAttachFiles={this.handleAttachFiles}
           onInsertLink={this.handleInsertLink}
           editRawValues={this.props.editRawValues}

@@ -13,7 +13,7 @@ import NoteEditorModal from '../NoteEditorModal';
 import DrawerActionBar from '../DrawerActionBar';
 
 import { generateTitleLine, createRawDescriptionText } from '../../../../lib/export_org';
-import { getCurrentTimestampAsText } from '../../../../lib/timestamps';
+import { eliInsertTodayInactive } from '../../../../lib/timestamps';
 import { todoKeywordSetForKeyword, timestampWithId, headerWithId } from '../../../../lib/org_utils';
 import { titleTextHasPriorityA, toggledPriorityAText } from '../../../../lib/eli_priority';
 import { isMobileBrowser } from '../../../../lib/browser_utils';
@@ -123,10 +123,11 @@ class UnifiedHeaderEditor extends PureComponent {
     const { titleValue } = this.state;
     const insertionIndex = this.titleTextarea.selectionStart;
     this.setState({
-      titleValue:
-        titleValue.substring(0, insertionIndex) +
-        getCurrentTimestampAsText() +
-        titleValue.substring(this.titleTextarea.selectionEnd || insertionIndex),
+      titleValue: eliInsertTodayInactive(
+        titleValue,
+        insertionIndex,
+        this.titleTextarea.selectionEnd || insertionIndex
+      ),
     });
     this.titleTextarea.focus();
     event.stopPropagation();
@@ -276,10 +277,11 @@ class UnifiedHeaderEditor extends PureComponent {
     const { descriptionValue } = this.state;
     const insertionIndex = this.descriptionTextarea.selectionStart;
     this.setState({
-      descriptionValue:
-        descriptionValue.substring(0, insertionIndex) +
-        getCurrentTimestampAsText() +
-        descriptionValue.substring(this.descriptionTextarea.selectionEnd || insertionIndex),
+      descriptionValue: eliInsertTodayInactive(
+        descriptionValue,
+        insertionIndex,
+        this.descriptionTextarea.selectionEnd || insertionIndex
+      ),
     });
     this.descriptionTextarea.focus();
   }

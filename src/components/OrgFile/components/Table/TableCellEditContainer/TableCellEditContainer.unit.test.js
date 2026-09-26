@@ -66,7 +66,7 @@ describe('TableCellEditContainer tests', () => {
   const testDescriptionItemIndex = 0;
 
   const editCellContainerId = 'edit-cell-container';
-  const expectedTimestamp = getCurrentTimestampAsText();
+  const expectedTimestamp = getCurrentTimestampAsText({ isActive: false });
 
   const randomArrayValue = pipe([shuffle, first]);
   const randomArrayIndex = pipe([range(0), randomArrayValue]);

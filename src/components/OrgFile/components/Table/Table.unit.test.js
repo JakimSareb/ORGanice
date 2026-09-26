@@ -200,7 +200,7 @@ describe('Table tests', () => {
     testStore.dispatch(enterEditMode('table'));
 
     fireEvent.click(document.querySelector('.table-cell__insert-timestamp-button'));
-    const expectedTimestamp = getCurrentTimestampAsText();
+    const expectedTimestamp = getCurrentTimestampAsText({ isActive: false });
 
     fireEvent.click(getByText(testTextOfThirdCell));
 

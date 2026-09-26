@@ -43,7 +43,7 @@ const CellEditContainer = ({ filePath, cellValue, cellId }) => {
     const insertionIndex = textareaRef.current.selectionStart;
     const newValue =
       currentCellValue.substring(0, insertionIndex) +
-      getCurrentTimestampAsText() +
+      getCurrentTimestampAsText({ isActive: false }) +
       currentCellValue.substring(textareaRef.current.selectionEnd || insertionIndex);
 
     textareaRef.current.value = newValue;

@@ -10,7 +10,7 @@ import { listPartContainsItemId } from '../../../../../../lib/org_utils';
 
 import { attributedStringToRawText } from '../../../../../../lib/export_org';
 
-import { getCurrentTimestampAsText } from '../../../../../../lib/timestamps';
+import { eliInsertTodayInactive } from '../../../../../../lib/timestamps';
 
 import _ from 'lodash';
 import classNames from 'classnames';
@@ -186,9 +186,11 @@ export default class ListPart extends PureComponent {
     this.setState({
       listTitleValues: listTitleValues.set(
         selectedListItemId,
-        listTitleValue.substring(0, insertionIndex) +
-          getCurrentTimestampAsText() +
-          listTitleValue.substring(this.textarea.selectionEnd || insertionIndex)
+        eliInsertTodayInactive(
+          listTitleValue,
+          insertionIndex,
+          this.textarea.selectionEnd || insertionIndex
+        )
       ),
     });
 
@@ -208,9 +210,11 @@ export default class ListPart extends PureComponent {
     this.setState({
       listContentsValues: listContentsValues.set(
         selectedListItemId,
-        listContentsValue.substring(0, insertionIndex) +
-          getCurrentTimestampAsText() +
-          listContentsValue.substring(this.textarea.selectionEnd || insertionIndex)
+        eliInsertTodayInactive(
+          listContentsValue,
+          insertionIndex,
+          this.textarea.selectionEnd || insertionIndex
+        )
       ),
     });
 

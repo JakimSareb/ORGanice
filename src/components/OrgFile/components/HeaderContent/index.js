@@ -13,7 +13,7 @@ import _ from 'lodash';
 import * as orgActions from '../../../../actions/org';
 import * as baseActions from '../../../../actions/base';
 
-import { getCurrentTimestampAsText } from '../../../../lib/timestamps';
+import { eliInsertTodayInactive } from '../../../../lib/timestamps';
 import { createRawDescriptionText } from '../../../../lib/export_org';
 
 import AttributedString from '../AttributedString';
@@ -149,10 +149,11 @@ class HeaderContent extends PureComponent {
     const { descriptionValue } = this.state;
     const insertionIndex = this.textarea.selectionStart;
     this.setState({
-      descriptionValue:
-        descriptionValue.substring(0, insertionIndex) +
-        getCurrentTimestampAsText() +
-        descriptionValue.substring(this.textarea.selectionEnd || insertionIndex),
+      descriptionValue: eliInsertTodayInactive(
+        descriptionValue,
+        insertionIndex,
+        this.textarea.selectionEnd || insertionIndex
+      ),
     });
     this.textarea.focus();
   }
@@ -256,27 +257,27 @@ class HeaderContent extends PureComponent {
             />
             {this.renderCryptControls(header)}
             {this.isEncryptedCryptHeader(header) ? null : (
-            <AttributedString
-              parts={header.get('description')}
-              subPartDataAndHandlers={{
-                onTableSelect: shouldDisableActions ? undefined : this.handleTableSelect,
-                onCheckboxClick: this.handleCheckboxClick,
-                onListItemSelect: this.handleListItemSelect,
-                onEnterListTitleEditMode: this.handleEnterListTitleEditMode,
-                onExitListTitleEditMode: this.handleExitListTitleEditMode,
-                onListTitleValueUpdate: this.handleListTitleValueUpdate,
-                onEnterListContentsEditMode: this.handleEnterListContentsEditMode,
-                onExitListContentsEditMode: this.handleExitListContentsEditMode,
-                onListContentsValueUpdate: this.handleListContentsValueUpdate,
-                onAddNewListItem: this.handleAddNewListItem,
-                onRemoveListItem: this.handleRemoveListItem,
-                selectedListItemId: selectedListItemId,
-                inListTitleEditMode: inListTitleEditMode,
-                inListContentsEditMode: inListContentsEditMode,
-                onTimestampClick: this.handleTimestampClick,
-                shouldDisableActions,
-              }}
-            />
+              <AttributedString
+                parts={header.get('description')}
+                subPartDataAndHandlers={{
+                  onTableSelect: shouldDisableActions ? undefined : this.handleTableSelect,
+                  onCheckboxClick: this.handleCheckboxClick,
+                  onListItemSelect: this.handleListItemSelect,
+                  onEnterListTitleEditMode: this.handleEnterListTitleEditMode,
+                  onExitListTitleEditMode: this.handleExitListTitleEditMode,
+                  onListTitleValueUpdate: this.handleListTitleValueUpdate,
+                  onEnterListContentsEditMode: this.handleEnterListContentsEditMode,
+                  onExitListContentsEditMode: this.handleExitListContentsEditMode,
+                  onListContentsValueUpdate: this.handleListContentsValueUpdate,
+                  onAddNewListItem: this.handleAddNewListItem,
+                  onRemoveListItem: this.handleRemoveListItem,
+                  selectedListItemId: selectedListItemId,
+                  inListTitleEditMode: inListTitleEditMode,
+                  inListContentsEditMode: inListContentsEditMode,
+                  onTimestampClick: this.handleTimestampClick,
+                  shouldDisableActions,
+                }}
+              />
             )}
           </Fragment>
         }
