@@ -704,7 +704,6 @@ class Header extends PureComponent {
                       this.props.org.eliOfferDeleteAttachments(headersBefore, id);
                     });
                   }}
-                  onInsertInactiveDate={() => this.props.org.insertInactiveDate(header.get('id'))}
                   onTogglePriority={() => this.props.org.togglePriorityA(header.get('id'))}
                   isPriorityA={getPriority(header) === 'A'}
                   taskState={taskStateOf(header, this.props.todoKeywordSets).kind}

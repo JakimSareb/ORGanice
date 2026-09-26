@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 1.6 (septiembre de 2026)
+** Hoja
+- La barra de iconos del encabezado ya no tiene el botón de fecha inactiva (añadía la fecha de hoy al tocarlo). Sigue en la barra de los editores y en el editor de texto plano, donde se inserta en el cursor.
+
 * 1.5 (septiembre de 2026)
 ** Temas
 - Dos temas nuevos en Ajustes → Tema, con modo claro y oscuro: *Unicornio* (los colores del logo y de la pantalla de inicio) y *Cuki* (mar aguamarina, espuma blanca y arena rosada).

@@ -30,7 +30,7 @@ Selecciona este encabezado y prueba los iconos, de izquierda a derecha:
 | Lápiz en recuadro  | Editar la descripción (el texto de debajo)                                                                        |
 | Etiquetas          | Poner o quitar etiquetas                                                                                          |
 | Nota               | Añadir una nota con la fecha                                                                                      |
-| Calendarios        | Fecha límite (DEADLINE), fecha programada (SCHEDULED) y fecha de hoy como fecha inactiva                          |
+| Calendarios        | Fecha límite (DEADLINE) y fecha programada (SCHEDULED)                                                            |
 | Reloj de arena     | Iniciar o parar el reloj. Mantenlo pulsado para ver el tiempo total del encabezado y sus subencabezados           |
 | Lista              | Propiedades (AREA, Energy, Effort…)                                                                               |
 | Clip               | Adjuntar una imagen o un fichero (se sube a assets/año, junto al fichero)                                         |
