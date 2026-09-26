@@ -14,7 +14,6 @@ import { getCurrentTimestampAsText } from '../../../../../../lib/timestamps';
 
 import _ from 'lodash';
 import classNames from 'classnames';
-import EliFormatBar from '../../../../../EliFormatBar';
 import { Map } from 'immutable';
 
 export default class ListPart extends PureComponent {
@@ -241,7 +240,6 @@ export default class ListPart extends PureComponent {
             )}
             {isItemSelected && inListTitleEditMode ? (
               <div className="list-title-line__edit-container">
-                <EliFormatBar compact getField={() => this.textarea} />
                 <textarea
                   autoFocus
                   className="textarea"
@@ -274,7 +272,6 @@ export default class ListPart extends PureComponent {
           </Collapse>
           {isItemSelected && inListContentsEditMode ? (
             <div className="list-contents__edit-container">
-              <EliFormatBar compact getField={() => this.textarea} />
               <textarea
                 autoFocus
                 className="textarea"

@@ -7,8 +7,6 @@ Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay noved
 ** Vista GTD
 - El editor de tareas ya no tiene Guardar ni Cancelar: se guarda solo al salir (tocar fuera, otra tarea, Esc o Intro). Tiene Deshacer y Rehacer.
 - En el móvil, con el menú lateral escondido, una pestaña pequeña en el borde izquierdo lo vuelve a sacar.
-** Formato del texto
-- Botones de negrita, cursiva, subrayado, tachado, código y literal en los editores de título, descripción, notas, elementos de lista y en el editor de la vista GTD. Ponen o quitan los marcadores de Org Mode en el texto seleccionado.
 ** Ajustes de ficheros
 - «Añadir todos los ficheros .org»: los de la carpeta y subcarpetas, en la agenda, búsqueda, lista de tareas y refile.
 - Desplegable para el fichero que se abre al iniciar (solo puede ser uno).

@@ -17,7 +17,6 @@ import { getCurrentTimestampAsText } from '../../../../lib/timestamps';
 import { todoKeywordSetForKeyword, timestampWithId, headerWithId } from '../../../../lib/org_utils';
 import { titleTextHasPriorityA, toggledPriorityAText } from '../../../../lib/eli_priority';
 import { isMobileBrowser } from '../../../../lib/browser_utils';
-import EliFormatBar from '../../../EliFormatBar';
 
 // Header-editing popup types that use the unified editor
 export const UNIFIED_EDITOR_POPUP_TYPES = [
@@ -450,7 +449,6 @@ class UnifiedHeaderEditor extends PureComponent {
         }
 
         <div className="title-line__edit-container">
-          <EliFormatBar getField={() => this.titleTextarea} />
           <textarea
             autoFocus
             className="textarea drag-handle"
@@ -485,7 +483,6 @@ class UnifiedHeaderEditor extends PureComponent {
         </h2>
 
         <div className="header-content__edit-container">
-          <EliFormatBar getField={() => this.descriptionTextarea} />
           <textarea
             autoFocus
             className="textarea drag-handle"

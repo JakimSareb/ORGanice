@@ -8,7 +8,6 @@ import * as baseActions from '../../../../actions/base';
 import * as orgActions from '../../../../actions/org';
 
 import _ from 'lodash';
-import EliFormatBar from '../../../EliFormatBar';
 
 class NoteEditorModal extends PureComponent {
   constructor(props) {
@@ -52,7 +51,6 @@ class NoteEditorModal extends PureComponent {
       <>
         <h2 className="drawer-modal__title">Añadir nota</h2>
         <div>Escribe una nota para añadir al encabezado:</div>
-        <EliFormatBar getField={() => this.textarea} />
         <textarea
           autoFocus
           className="textarea drag-handle eli-note-textarea"
