@@ -111,6 +111,8 @@ export default function TaskEditor({
   const [effort, setEffort] = useState(task.effort || '');
   const [scheduled, setScheduled] = useState(toDateInput(task.scheduled));
   const [deadline, setDeadline] = useState(toDateInput(task.deadline));
+  const [star, setStar] = useState(task.priority === 'A');
+  const [showContexts, setShowContexts] = useState(false);
   const [project, setProject] = useState(
     task.project ? `${task.project.path}::${task.project.id}` : ''
   );
@@ -155,6 +157,7 @@ export default function TaskEditor({
   // (clic fuera, Esc, Intro, otra tarea, otra vista…). Solo se escriben los campos que han
   // cambiado respecto a como estaban al abrirlo, para no pisar lo que llegue de otro sitio.
   const current = {
+    star,
     title,
     notes,
     list,
@@ -180,6 +183,7 @@ export default function TaskEditor({
     const { task: t, onSave: save, encrypted: enc } = propsRef.current;
     const changes = {};
     if (c.title.trim() && c.title !== b.title) changes.rawTitle = c.title.trim();
+    if (c.star !== b.star) changes.priority = c.star ? 'A' : t.priority === 'A' ? null : t.priority;
     let finalTags = c.tagInput.trim()
       ? Array.from(new Set([...c.tags, c.tagInput.trim()]))
       : c.tags;
@@ -239,205 +243,105 @@ export default function TaskEditor({
     }
   };
 
-  return (
-    <div className="gtd-editor" ref={editorRef} onKeyDown={onKeyDown} data-testid="gtd-editor">
-      <input
-        ref={titleRef}
-        className="gtd-editor__title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
-            e.preventDefault();
-            onClose();
-          }
-        }}
-        placeholder="Título"
-        data-testid="gtd-editor-title"
-      />
-      {!encrypted && (
-        <EliFormatBar
-          compact
-          getField={() =>
-            document.activeElement === titleRef.current ? titleRef.current : notesRef.current
-          }
-        />
-      )}
-      <textarea
-        ref={notesRef}
-        className="gtd-editor__notes"
-        value={encrypted ? '(contenido cifrado: ábrelo en su fichero para verlo)' : notes}
-        disabled={encrypted}
-        onChange={(e) => setNotes(e.target.value)}
-        onClick={onNotesClick}
-        placeholder="Notas"
-        rows={12}
-        data-testid="gtd-editor-notes"
-      />
-      {checkboxes.length > 0 && (
-        <div className="gtd-checklist" data-testid="gtd-checklist">
-          {checkboxes.map((c) => (
-            <label key={c.index} className={'gtd-checklist__item' + (c.checked ? ' is-done' : '')}>
-              <input
-                type="checkbox"
-                checked={c.checked}
-                ref={(el) => el && (el.indeterminate = c.partial)}
-                onChange={() => setNotes((n) => toggleCheckboxLine(n, c.index))}
-              />
-              <span>{c.label || '(sin texto)'}</span>
-            </label>
-          ))}
-        </div>
-      )}
-
-      {!encrypted && linksOf(notes).length > 0 && (
-        <div className="gtd-links" data-testid="gtd-links">
-          <span className="gtd-editor__label">Enlaces</span>
-          {linksOf(notes).map((l) =>
-            isWebLink(l.target) ? (
-              <a
-                key={l.target}
-                href={l.target}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="gtd-link"
-                title={l.target}
-              >
-                <i className="fas fa-external-link-alt" /> {l.label}
-              </a>
-            ) : (
-              <button
-                key={l.target}
-                type="button"
-                className="gtd-link"
-                title={l.target}
-                onClick={() => onOpenLink && onOpenLink(l.target)}
-              >
-                <i className="fas fa-paperclip" /> {l.label}
-              </button>
-            )
-          )}
-        </div>
-      )}
-
-      <div className="gtd-editor__row">
-        <span className="gtd-editor__label">Lista</span>
-        <div className="gtd-seg" role="radiogroup">
-          {LIST_OPTIONS.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              className={
-                'gtd-seg__btn' + (list === o.id ? ' is-on' : '') + (o.done ? ' is-done-state' : '')
-              }
-              onClick={() => setList(o.id)}
-              data-testid={`gtd-editor-list-${o.id}`}
-            >
+  const selectField = ({ icon, placeholder, value, onChange, options, testId, title }) => (
+    <label className={'gtd-ed__field' + (value ? ' has-value' : '')} title={title}>
+      <i className={icon} aria-hidden="true" />
+      <select value={value} onChange={(e) => onChange(e.target.value)} data-testid={testId}>
+        <option value="">{placeholder}</option>
+        {options.map((o) =>
+          typeof o === 'string' ? (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ) : (
+            <option key={o.value} value={o.value}>
               {o.label}
-            </button>
-          ))}
-        </div>
-      </div>
+            </option>
+          )
+        )}
+      </select>
+    </label>
+  );
 
-      <div className="gtd-editor__grid">
-        <label>
-          <span className="gtd-editor__label">Empieza (Scheduled)</span>
-          <input
-            type="date"
-            value={scheduled}
-            onChange={(e) => setScheduled(e.target.value)}
-            data-testid="gtd-editor-scheduled"
-          />
-        </label>
-        <label>
-          <span className="gtd-editor__label">Vence (Deadline)</span>
-          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-        </label>
-        <label>
-          <span className="gtd-editor__label">Área</span>
-          <input
-            list="gtd-areas"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            placeholder={task.area && !task.ownArea ? `${task.area} (heredada)` : 'Sin área'}
-            data-testid="gtd-editor-area"
-          />
-          <datalist id="gtd-areas">
-            {areas.map((a) => (
-              <option key={a} value={a} />
-            ))}
-          </datalist>
-        </label>
-        <label>
-          <span className="gtd-editor__label">Proyecto</span>
-          <select
-            value={project}
-            onChange={(e) => setProject(e.target.value)}
-            data-testid="gtd-editor-project"
+  const dateField = ({ icon, label, value, onChange, testId }) => (
+    <label className={'gtd-ed__field gtd-ed__field--date' + (value ? ' has-value' : '')}>
+      <i className={icon} aria-hidden="true" />
+      <span className="gtd-ed__field-label">{label}</span>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        data-testid={testId}
+      />
+      {value && (
+        <button
+          type="button"
+          className="gtd-ed__clear"
+          onClick={(e) => {
+            e.preventDefault();
+            onChange('');
+          }}
+          aria-label={`Quitar ${label}`}
+          title={`Quitar ${label}`}
+        >
+          ×
+        </button>
+      )}
+    </label>
+  );
+
+  const listOptions = LIST_OPTIONS.map((o) => ({ value: o.id, label: o.label }));
+
+  // ORG Mode para Eli: diseño como el de Nirvana: a la izquierda ★, título, etiquetas y notas;
+  // a la derecha, tiempo, energía, fechas, lista, proyecto y área.
+  return (
+    <div
+      className="gtd-editor gtd-editor--nirvana"
+      ref={editorRef}
+      onKeyDown={onKeyDown}
+      data-testid="gtd-editor"
+    >
+      <div className="gtd-ed__main">
+        <div className="gtd-ed__title-row">
+          <button
+            type="button"
+            className={'gtd-ed__star' + (star ? ' is-on' : '')}
+            onClick={() => setStar(!star)}
+            title={star ? 'Quitar la estrella [#A]' : 'Poner la estrella [#A]'}
+            aria-pressed={star}
+            data-testid="gtd-editor-star"
           >
-            <option value="">Sin proyecto</option>
-            {projects.map((p) => (
-              <option key={p.key} value={p.key}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="gtd-editor__label">Energía</span>
-          <select value={energy} onChange={(e) => setEnergy(e.target.value)}>
-            <option value="">—</option>
-            {Array.from(new Set([...energyOptions, ...(energy ? [energy] : [])])).map((e) => (
-              <option key={e} value={e}>
-                {e}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="gtd-editor__label">Tiempo</span>
-          <select value={effort} onChange={(e) => setEffort(e.target.value)}>
-            <option value="">—</option>
-            {Array.from(new Set([...effortOptions, ...(effort ? [effort] : [])])).map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+            <i className={star ? 'fas fa-star' : 'far fa-star'} />
+          </button>
+          <input
+            ref={titleRef}
+            className="gtd-editor__title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                onClose();
+              }
+            }}
+            placeholder="Tarea"
+            data-testid="gtd-editor-title"
+          />
+        </div>
 
-      <div className="gtd-editor__row">
-        <span className="gtd-editor__label">Etiquetas</span>
-        <div className="gtd-tags-edit">
-          {contextTags.length > 0 && (
-            <div className="gtd-tags-predefined" data-testid="gtd-editor-contexts">
-              {contextTags.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={'gtd-chip' + (tags.includes(t) ? ' is-on' : '')}
-                  onClick={() => toggleTag(t)}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-          {tags
-            .filter((t) => !contextTags.includes(t))
-            .map((t) => (
-              <span key={t} className="gtd-chip is-on">
-                {t}
-                <button
-                  type="button"
-                  onClick={() => setTags(tags.filter((x) => x !== t))}
-                  aria-label={`Quitar ${t}`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
+        <div className="gtd-ed__tags">
+          {tags.map((t) => (
+            <span key={t} className="gtd-chip is-on">
+              {t}
+              <button
+                type="button"
+                onClick={() => setTags(tags.filter((x) => x !== t))}
+                aria-label={`Quitar ${t}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
           <input
             list="gtd-alltags"
             value={tagInput}
@@ -447,10 +351,12 @@ export default function TaskEditor({
                 e.preventDefault();
                 e.stopPropagation();
                 addTag(tagInput);
+              } else if (e.key === 'Backspace' && !tagInput && tags.length) {
+                setTags(tags.slice(0, -1));
               }
             }}
             onBlur={() => tagInput && addTag(tagInput)}
-            placeholder="+ etiqueta"
+            placeholder={tags.length ? '' : 'Etiquetas (contextos, personas…)'}
             data-testid="gtd-editor-tag"
           />
           <datalist id="gtd-alltags">
@@ -458,7 +364,184 @@ export default function TaskEditor({
               <option key={t} value={t} />
             ))}
           </datalist>
+          {contextTags.length > 0 && (
+            <button
+              type="button"
+              className={'gtd-ed__tags-toggle' + (showContexts ? ' is-open' : '')}
+              onClick={() => setShowContexts(!showContexts)}
+              title="Contextos"
+              aria-expanded={showContexts}
+              data-testid="gtd-editor-contexts-toggle"
+            >
+              <i className="fas fa-caret-down" />
+            </button>
+          )}
         </div>
+        {showContexts && contextTags.length > 0 && (
+          <div className="gtd-tags-predefined" data-testid="gtd-editor-contexts">
+            {contextTags.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={'gtd-chip' + (tags.includes(t) ? ' is-on' : '')}
+                onClick={() => toggleTag(t)}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!encrypted && (
+          <EliFormatBar
+            compact
+            collapsible
+            getField={() =>
+              document.activeElement === titleRef.current ? titleRef.current : notesRef.current
+            }
+          />
+        )}
+        <textarea
+          ref={notesRef}
+          className="gtd-editor__notes"
+          value={encrypted ? '(contenido cifrado: ábrelo en su fichero para verlo)' : notes}
+          disabled={encrypted}
+          onChange={(e) => setNotes(e.target.value)}
+          onClick={onNotesClick}
+          placeholder="Notas"
+          rows={10}
+          data-testid="gtd-editor-notes"
+        />
+        {checkboxes.length > 0 && (
+          <div className="gtd-checklist" data-testid="gtd-checklist">
+            {checkboxes.map((c) => (
+              <label
+                key={c.index}
+                className={'gtd-checklist__item' + (c.checked ? ' is-done' : '')}
+              >
+                <input
+                  type="checkbox"
+                  checked={c.checked}
+                  ref={(el) => el && (el.indeterminate = c.partial)}
+                  onChange={() => setNotes((n) => toggleCheckboxLine(n, c.index))}
+                />
+                <span>{c.label || '(sin texto)'}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {!encrypted && linksOf(notes).length > 0 && (
+          <div className="gtd-links" data-testid="gtd-links">
+            <span className="gtd-editor__label">Enlaces</span>
+            {linksOf(notes).map((l) =>
+              isWebLink(l.target) ? (
+                <a
+                  key={l.target}
+                  href={l.target}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gtd-link"
+                  title={l.target}
+                >
+                  <i className="fas fa-external-link-alt" /> {l.label}
+                </a>
+              ) : (
+                <button
+                  key={l.target}
+                  type="button"
+                  className="gtd-link"
+                  title={l.target}
+                  onClick={() => onOpenLink && onOpenLink(l.target)}
+                >
+                  <i className="fas fa-paperclip" /> {l.label}
+                </button>
+              )
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="gtd-ed__side">
+        {selectField({
+          icon: 'far fa-clock',
+          placeholder: 'tiempo',
+          value: effort,
+          onChange: setEffort,
+          options: Array.from(new Set([...effortOptions, ...(effort ? [effort] : [])])),
+          testId: 'gtd-editor-effort',
+          title: 'Tiempo (Effort)',
+        })}
+        {selectField({
+          icon: 'fas fa-signal',
+          placeholder: 'energía',
+          value: energy,
+          onChange: setEnergy,
+          options: Array.from(new Set([...energyOptions, ...(energy ? [energy] : [])])),
+          testId: 'gtd-editor-energy',
+          title: 'Energía (Energy)',
+        })}
+        {dateField({
+          icon: 'fas fa-flag',
+          label: 'vence',
+          value: deadline,
+          onChange: setDeadline,
+          testId: 'gtd-editor-deadline',
+        })}
+        {dateField({
+          icon: 'far fa-calendar-alt',
+          label: 'empieza',
+          value: scheduled,
+          onChange: setScheduled,
+          testId: 'gtd-editor-scheduled',
+        })}
+
+        <div className="gtd-ed__gap" />
+
+        <label className="gtd-ed__field has-value" title="Lista o estado">
+          <i className="far fa-arrow-alt-circle-right" aria-hidden="true" />
+          <select
+            value={list}
+            onChange={(e) => setList(e.target.value)}
+            data-testid="gtd-editor-list"
+          >
+            {listOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="gtd-ed__field has-value" title="Proyecto">
+          <i className="fas fa-long-arrow-alt-right" aria-hidden="true" />
+          <select
+            value={project}
+            onChange={(e) => setProject(e.target.value)}
+            data-testid="gtd-editor-project"
+          >
+            <option value="">Suelta (sin proyecto)</option>
+            {projects.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={'gtd-ed__field' + (area ? ' has-value' : '')} title="Área">
+          <i className="far fa-folder" aria-hidden="true" />
+          <input
+            list="gtd-areas"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+            placeholder={task.area && !task.ownArea ? `${task.area} (heredada)` : 'área'}
+            data-testid="gtd-editor-area"
+          />
+          <datalist id="gtd-areas">
+            {areas.map((a) => (
+              <option key={a} value={a} />
+            ))}
+          </datalist>
+        </label>
       </div>
 
       <div className="gtd-editor__actions">
@@ -468,7 +551,7 @@ export default function TaskEditor({
           onClick={withCommit(onOpen)}
           title="Abrir en su fichero"
         >
-          <i className="fas fa-external-link-alt" /> Abrir en el fichero
+          <i className="fas fa-external-link-alt" /> Abrir
         </button>
         {onArchive && (
           <button
@@ -481,29 +564,36 @@ export default function TaskEditor({
             <i className="fas fa-archive" /> Archivar
           </button>
         )}
-        <button type="button" className="gtd-btn gtd-btn--link gtd-btn--danger" onClick={onDelete}>
+        <button
+          type="button"
+          className="gtd-btn gtd-btn--link gtd-btn--danger"
+          onClick={onDelete}
+          title="Borrar la tarea"
+        >
           <i className="fas fa-trash" /> Borrar
         </button>
         <span className="gtd-spacer" />
         <button
           type="button"
-          className="gtd-btn"
+          className="gtd-btn gtd-btn--icon"
           onClick={withCommit(onUndo)}
           disabled={!canUndo && !dirty}
           title="Deshacer"
+          aria-label="Deshacer"
           data-testid="gtd-editor-undo"
         >
-          <i className="fas fa-undo" /> Deshacer
+          <i className="fas fa-undo" />
         </button>
         <button
           type="button"
-          className="gtd-btn"
+          className="gtd-btn gtd-btn--icon"
           onClick={withCommit(onRedo)}
           disabled={!canRedo}
           title="Rehacer"
+          aria-label="Rehacer"
           data-testid="gtd-editor-redo"
         >
-          <i className="fas fa-redo" /> Rehacer
+          <i className="fas fa-redo" />
         </button>
       </div>
     </div>

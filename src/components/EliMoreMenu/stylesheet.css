@@ -1,0 +1,78 @@
+@import '../../colors.css';
+
+.eli-more {
+  position: relative;
+  display: inline-flex;
+}
+.eli-more__btn {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 1.15em;
+  line-height: 1;
+  border-radius: 6px;
+}
+.eli-more__btn.is-open {
+  background: var(--base2);
+}
+.eli-more__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 40;
+  min-width: 210px;
+  max-width: 80vw;
+  padding: 6px;
+  border: 1px solid var(--base2);
+  border-radius: 10px;
+  background: var(--base3);
+  box-shadow: 0 10px 28px var(--base0-soft);
+  display: flex;
+  flex-direction: column;
+}
+.eli-more__menu--right {
+  right: 0;
+}
+.eli-more__menu--left {
+  left: 0;
+}
+.eli-more__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--base01);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: normal;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.eli-more__item i {
+  width: 18px;
+  text-align: center;
+  color: var(--base00);
+  opacity: 0.75;
+}
+.eli-more__item:hover:not(:disabled),
+.eli-more__item.is-active {
+  background: var(--base2);
+}
+.eli-more__item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.eli-more__item--danger,
+.eli-more__item--danger i {
+  color: var(--red);
+}
+.eli-more__menu--up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}

@@ -1,10 +1,11 @@
-import { openRawEditor, openPrintPreview, openMoonPhases } from '../EliTools';
+import { openRawEditor, openPrintPreview, openMoonPhases, openFavorites } from '../EliTools';
+import EliMoreMenu from '../EliMoreMenu';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
 const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
-import React, { PureComponent, Fragment } from 'react';
+import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -303,45 +304,42 @@ class HeaderBar extends PureComponent {
     );
   }
 
-  // ORG Mode para Eli: pantalla dividida (solo en pantallas anchas)
-  renderSplitButton() {
-    if (isInsideSplitPane()) {
-      return (
-        <i
-          className="fas fa-window-maximize header-bar__actions__item"
-          onClick={() => {
-            window.top.location.href = window.location.href;
-          }}
-          title="Quitar la división y quedarse con este panel"
-          data-testid="eli-split-close"
-        />
-      );
-    }
-    if (window.self !== window.top || window.innerWidth < 900) return null;
+  // ORG Mode para Eli: pantalla dividida (solo en pantallas anchas). Dentro de un panel, botón
+  // visible para quitar la división; fuera, una opción del menú «⋯».
+  renderSplitCloseButton() {
+    if (!isInsideSplitPane()) return null;
     return (
       <i
-        className="fas fa-columns header-bar__actions__item"
+        className="fas fa-window-maximize header-bar__actions__item"
         onClick={() => {
-          const { pathname, search } = this.props.location;
-          const current = `${pathname}${search || ''}`;
-          let saved = {};
-          try {
-            saved = JSON.parse(window.localStorage.getItem('eliSplitView')) || {};
-          } catch (e) {}
-          const other =
-            saved.right && saved.right !== current
-              ? saved.right
-              : pathname.startsWith('/gtd')
-              ? '/files'
-              : '/gtd';
-          window.location.href = `${BASE_PATH}/split?l=${encodeURIComponent(
-            current
-          )}&r=${encodeURIComponent(other)}`;
+          window.top.location.href = window.location.href;
         }}
-        title="Pantalla dividida: dos vistas a la vez"
-        data-testid="eli-split-open"
+        title="Quitar la división y quedarse con este panel"
+        data-testid="eli-split-close"
       />
     );
+  }
+
+  openSplitView() {
+    const { pathname, search } = this.props.location;
+    const current = `${pathname}${search || ''}`;
+    let saved = {};
+    try {
+      saved = JSON.parse(window.localStorage.getItem('eliSplitView')) || {};
+    } catch (e) {}
+    const other =
+      saved.right && saved.right !== current
+        ? saved.right
+        : pathname.startsWith('/gtd')
+        ? '/files'
+        : '/gtd';
+    window.location.href = `${BASE_PATH}/split?l=${encodeURIComponent(
+      current
+    )}&r=${encodeURIComponent(other)}`;
+  }
+
+  canOpenSplitView() {
+    return !isInsideSplitPane() && window.self === window.top && window.innerWidth >= 900;
   }
 
   handleChangelogClick() {
@@ -400,11 +398,92 @@ class HeaderBar extends PureComponent {
       const undoIconClassName = classNames('fas fa-undo header-bar__actions__item', {
         'header-bar__actions__item--disabled': !isUndoEnabled,
       });
-      const redoIconClassName = classNames('fas fa-redo header-bar__actions__item', {
-        'header-bar__actions__item--disabled': !isRedoEnabled,
-      });
+      const inGtd = this.getPathRoot() === 'gtd';
+      const inFile = isAuthenticated && !!path && !inGtd;
+      const inRealFile = inFile && !isStaticFile(path);
+      const { narrowedHeaderId, selectedHeaderId } = this.props;
 
-      const settingsIconClassName = classNames('fas fa-cogs header-bar__actions__item');
+      // ORG Mode para Eli: a la vista solo lo de cada día; el resto en «⋯»
+      const moreItems = isAuthenticated
+        ? [
+            inFile && {
+              icon: 'fas fa-redo',
+              label: 'Rehacer',
+              onClick: this.handleRedoClick,
+              disabled: !isRedoEnabled,
+              testId: 'eli-redo',
+            },
+            inRealFile &&
+              !narrowedHeaderId && {
+                icon: 'fas fa-compress',
+                label: 'Reducir al encabezado (narrow)',
+                onClick: () => selectedHeaderId && this.props.org.narrowHeader(selectedHeaderId),
+                disabled: !selectedHeaderId,
+                title: selectedHeaderId
+                  ? 'Mostrar solo el encabezado seleccionado'
+                  : 'Selecciona primero un encabezado',
+                testId: 'eli-narrow',
+              },
+            inRealFile && {
+              icon: 'fas fa-arrows-alt',
+              label: 'Mover (flechas)',
+              onClick: () => window.dispatchEvent(new CustomEvent('eli:move-menu')),
+              testId: 'eli-move-arrows',
+            },
+            inRealFile && {
+              icon: 'fas fa-align-left',
+              label: 'Editar como texto plano',
+              onClick: openRawEditor,
+              testId: 'eli-raw-edit',
+            },
+            inRealFile && {
+              icon: 'fas fa-file-pdf',
+              label: 'Exportar a PDF',
+              onClick: () => openPrintPreview(null),
+              testId: 'eli-print-file',
+            },
+            inRealFile && {
+              icon: 'fas fa-sync-alt',
+              label: 'Sincronizar ahora',
+              onClick: () => this.props.org.sync({ forceAction: 'manual' }),
+              disabled: !online,
+              testId: 'eli-sync-now',
+            },
+            {
+              icon: 'far fa-copy',
+              label: 'Ficheros principales',
+              onClick: openFavorites,
+              testId: 'eli-favorites-menu',
+            },
+            this.canOpenSplitView() && {
+              icon: 'fas fa-columns',
+              label: 'Dos columnas',
+              onClick: () => this.openSplitView(),
+              testId: 'eli-split-open',
+            },
+            {
+              icon: 'fas fa-moon',
+              label: 'Fases de la Luna',
+              onClick: openMoonPhases,
+              testId: 'eli-moon',
+            },
+            {
+              icon: 'fas fa-gift',
+              label: 'Novedades',
+              onClick: this.handleChangelogClick,
+              testId: 'eli-changelog',
+            },
+            {
+              icon: 'fas fa-cogs',
+              label: 'Ajustes',
+              onClick: () => {
+                this.handleSettingsClick();
+                this.props.history.push('/settings');
+              },
+              testId: 'eli-settings',
+            },
+          ]
+        : [];
 
       return (
         <div className="header-bar__actions">
@@ -422,9 +501,21 @@ class HeaderBar extends PureComponent {
             </ExternalLink>
           )}
 
-          {isAuthenticated && this.renderSplitButton()}
+          {isAuthenticated && this.renderSplitCloseButton()}
 
-          {isAuthenticated && this.getPathRoot() !== 'gtd' && (
+          {isAuthenticated && inRealFile && narrowedHeaderId && (
+            <button
+              type="button"
+              className="eli-widen-pill"
+              onClick={() => this.props.org.widenHeader()}
+              title="Ampliar (widen): volver a ver el fichero entero"
+              data-testid="eli-widen"
+            >
+              <i className="fas fa-expand" /> Ver todo
+            </button>
+          )}
+
+          {isAuthenticated && !inGtd && (
             <Link to="/gtd" data-testid="eli-open-gtd">
               <i
                 className="fas fa-tasks header-bar__actions__item"
@@ -433,28 +524,13 @@ class HeaderBar extends PureComponent {
             </Link>
           )}
 
-          {isAuthenticated && !activeModalPage && !!path && this.getPathRoot() !== 'gtd' && (
-            <Fragment>
-              <i className={undoIconClassName} onClick={this.handleUndoClick} title="Deshacer" />
-              <i className={redoIconClassName} onClick={this.handleRedoClick} title="Rehacer" />
-              {!isStaticFile(path) && (
-                <Fragment>
-                  {this.renderNarrowButton()}
-                  <i
-                    className="fas fa-align-left header-bar__actions__item"
-                    onClick={openRawEditor}
-                    title="Editar como texto plano"
-                    data-testid="eli-raw-edit"
-                  />
-                  <i
-                    className="fas fa-file-pdf header-bar__actions__item"
-                    onClick={() => openPrintPreview(null)}
-                    title="Exportar el fichero a PDF"
-                    data-testid="eli-print-file"
-                  />
-                </Fragment>
-              )}
-            </Fragment>
+          {inFile && !activeModalPage && (
+            <i
+              className={undoIconClassName}
+              onClick={this.handleUndoClick}
+              title="Deshacer"
+              data-testid="eli-undo"
+            />
           )}
 
           {isAuthenticated && !online && (
@@ -480,28 +556,20 @@ class HeaderBar extends PureComponent {
             </button>
           )}
 
-          {isAuthenticated && (
+          {isAuthenticated && hasUnseenChangelog && (
             <i
-              className="fas fa-moon header-bar__actions__item"
-              onClick={openMoonPhases}
-              title="Fases de la Luna"
-              data-testid="eli-moon"
+              className="changelog-icon--has-unseen-changelog header-bar__actions__item fas fa-gift"
+              onClick={this.handleChangelogClick}
+              title="Novedades"
             />
           )}
 
           {isAuthenticated && (
-            <div>
-              {hasUnseenChangelog && (
-                <i
-                  className="changelog-icon--has-unseen-changelog header-bar__actions__item fas fa-gift"
-                  onClick={this.handleChangelogClick}
-                  title="Novedades"
-                />
-              )}
-              <Link to="/settings" onClick={this.handleSettingsClick}>
-                <i className={settingsIconClassName} title="Ajustes" />
-              </Link>
-            </div>
+            <EliMoreMenu
+              items={moreItems}
+              buttonClassName="header-bar__actions__item"
+              testId="eli-more-top"
+            />
           )}
         </div>
       );

@@ -1,4 +1,4 @@
-# ORGanice 1.2
+# ORGanice 2.0
 
 <img src="src/images/logo-unicornio.svg" alt="" width="96" align="right">
 

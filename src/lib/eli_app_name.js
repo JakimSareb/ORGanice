@@ -1,6 +1,6 @@
 // ORG Mode para Eli: nombre de la aplicación y nombre visible de los ficheros.
 export const APP_NAME = 'ORGanice';
-export const APP_VERSION = '1.7';
+export const APP_VERSION = '2.0';
 
 // "/GTD/tareas.org.gpg" -> "tareas"; "/notas/diario.org_archive" -> "diario.org_archive"
 export const fileDisplayName = (path) => {

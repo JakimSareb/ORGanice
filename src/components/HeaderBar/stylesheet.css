@@ -132,3 +132,23 @@
     font-size: 17px;
   }
 }
+
+/* ORG Mode para Eli: en narrow, etiqueta «Ver todo» para volver a ver el fichero entero */
+.eli-widen-pill {
+  border: 1px solid var(--base1);
+  background: var(--base3);
+  color: var(--base01);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  margin-right: 6px;
+  line-height: 1.6;
+}
+.header-bar__actions .eli-more {
+  margin-left: 2px;
+}
+.header-bar__actions .eli-more__btn {
+  font-size: 1.25em;
+}

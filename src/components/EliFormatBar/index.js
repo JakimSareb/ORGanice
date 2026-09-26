@@ -28,8 +28,26 @@ export const applyEmphasis = (el, marker) => {
   requestAnimationFrame(restore);
 };
 
-export default ({ getField, className = '', compact = false }) => {
+const readOpen = () => {
+  try {
+    return localStorage.getItem('eliFormatBarOpen') === '1';
+  } catch (e) {
+    return false;
+  }
+};
+
+// Plegada tras un botón «Aa» (se recuerda si se deja abierta)
+export default ({ getField, className = '', compact = false, collapsible = true }) => {
+  const [open, setOpen] = React.useState(!collapsible || readOpen());
   const keep = (e) => e.preventDefault();
+  const toggle = (e) => {
+    e.stopPropagation();
+    const next = !open;
+    setOpen(next);
+    try {
+      localStorage.setItem('eliFormatBarOpen', next ? '1' : '0');
+    } catch (err) {}
+  };
   return (
     <div
       className={`eli-format-bar ${compact ? 'eli-format-bar--compact' : ''} ${className}`}
@@ -37,23 +55,38 @@ export default ({ getField, className = '', compact = false }) => {
       onMouseDown={keep}
       onPointerDown={keep}
     >
-      {ORG_EMPHASIS.map(({ marker, icon, title, id }) => (
+      {collapsible && (
         <button
-          key={id}
           type="button"
-          className="eli-format-bar__btn"
-          title={title}
-          aria-label={title}
-          data-testid={`eli-format-${id}`}
+          className={'eli-format-bar__btn eli-format-bar__toggle' + (open ? ' is-open' : '')}
+          title={open ? 'Ocultar el formato de texto' : 'Formato de texto'}
+          aria-label="Formato de texto"
+          aria-expanded={open}
+          data-testid="eli-format-toggle"
           onMouseDown={keep}
-          onClick={(e) => {
-            e.stopPropagation();
-            applyEmphasis(getField(), marker);
-          }}
+          onClick={toggle}
         >
-          <i className={icon} />
+          Aa
         </button>
-      ))}
+      )}
+      {open &&
+        ORG_EMPHASIS.map(({ marker, icon, title, id }) => (
+          <button
+            key={id}
+            type="button"
+            className="eli-format-bar__btn"
+            title={title}
+            aria-label={title}
+            data-testid={`eli-format-${id}`}
+            onMouseDown={keep}
+            onClick={(e) => {
+              e.stopPropagation();
+              applyEmphasis(getField(), marker);
+            }}
+          >
+            <i className={icon} />
+          </button>
+        ))}
     </div>
   );
 };

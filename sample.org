@@ -20,27 +20,19 @@ Empieza tocando el encabezado «Lo básico» de aquí abajo.
 - Con el teclado: ↑ y ↓ recorren los encabezados; Intro abre o cierra el seleccionado.
 
 ** La barra de iconos del encabezado
-Selecciona este encabezado y prueba los iconos, de izquierda a derecha:
+Selecciona este encabezado. A la vista están solo los iconos de cada día; el resto, en *⋯*:
 
-| Icono              | Qué hace                                                                                                         |
-|--------------------+------------------------------------------------------------------------------------------------------------------|
-| Estrella           | Pone o quita la prioridad [#A]                                                                                    |
-| Casilla            | Termina la tarea (DONE). Con mayúsculas pulsada, la cancela (CANCELLED). Gris si no es una tarea o ya terminó    |
-| Lápiz              | Editar el título                                                                                                  |
-| Lápiz en recuadro  | Editar la descripción (el texto de debajo)                                                                        |
-| Etiquetas          | Poner o quitar etiquetas                                                                                          |
-| Nota               | Añadir una nota con la fecha                                                                                      |
-| Calendarios        | Fecha límite (DEADLINE) y fecha programada (SCHEDULED)                                                            |
-| Reloj de arena     | Iniciar o parar el reloj. Mantenlo pulsado para ver el tiempo total del encabezado y sus subencabezados           |
-| Lista              | Propiedades (AREA, Energy, Effort…)                                                                               |
-| Clip               | Adjuntar una imagen o un fichero (se sube a assets/año, junto al fichero)                                         |
-| Más                | Crear un encabezado debajo. Mantenlo pulsado para duplicar el actual                                              |
-| Mover              | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                         |
-| Archivar           | Archivar como en Emacs (al fichero _archive)                                                                      |
-| Enlace (cadena ↗)  | Copiar el enlace a este encabezado, como C-c l en Emacs                                                           |
-| Compartir          | Enviar el encabezado por correo                                                                                   |
-| PDF                | Exportar el encabezado a PDF                                                                                      |
-| Papelera           | Borrar (pide confirmación; si tiene adjuntos, pregunta también por cada uno)                                      |
+| Icono          | Qué hace                                                                                                      |
+|----------------+---------------------------------------------------------------------------------------------------------------|
+| Estrella       | Pone o quita la prioridad [#A]                                                                                 |
+| Casilla        | Termina la tarea (DONE). Con mayúsculas pulsada, la cancela (CANCELLED). Gris si no es una tarea o ya terminó |
+| Lápiz          | Editar. Con el tabulador pasas a la descripción, las etiquetas y las fechas                                    |
+| Etiquetas      | Poner o quitar etiquetas                                                                                       |
+| Calendario     | Fechas: la límite (DEADLINE) y, con el tabulador, la programada (SCHEDULED)                                    |
+| Nota           | Añadir una nota con la fecha                                                                                   |
+| Mover          | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                      |
+| Reloj de arena | Solo se ve con el reloj en marcha: tócalo para pararlo                                                         |
+| ⋯              | Descripción, fecha programada, reloj, tiempo registrado, propiedades, adjuntar, nuevo encabezado, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
 
 ** El editor de título
 Selecciona este encabezado y toca el lápiz.
@@ -50,8 +42,9 @@ Selecciona este encabezado y toca el lápiz.
 - Con el *tabulador* saltas al siguiente editor: título → descripción → etiquetas → fecha límite → fecha programada (mayúsculas + tabulador, al revés).
 - Tocando otra vez el lápiz de la barra inferior pasas a «Editar título completo», con el texto tal cual (estado, prioridad y etiquetas incluidos).
 - «+ Insertar fecha», debajo de los editores, escribe la fecha de hoy como fecha inactiva, p. ej. [%HOY%].
+- La barra de abajo del editor tiene título, descripción, etiquetas, fechas y enlace; propiedades, adjuntar, nota y borrar están en su *⋯*.
 ** Formato del texto
-Encima de los editores (título, descripción, notas, elementos de lista y editor de la vista GTD) hay botones de formato: *negrita*, /cursiva/, _subrayado_, +tachado+, ~código~ y =literal=.
+Encima de los editores (título, descripción, notas, elementos de lista y editor de la vista GTD) está el botón *Aa*; al tocarlo aparecen los botones de formato (y se quedan abiertos hasta que lo vuelvas a tocar): *negrita*, /cursiva/, _subrayado_, +tachado+, ~código~ y =literal=.
 - Selecciona el texto y toca el botón: se le ponen los marcadores de Org Mode. Si ya los tenía, se quitan.
 - Sin seleccionar nada, pone los dos marcadores y deja el cursor en medio para escribir.
 - Si seleccionas varias líneas, se marca cada una por separado (así lo entiende Emacs).
@@ -65,16 +58,13 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 *** TODO Desliza esta tarea hacia la derecha
 *** Deslízame hacia la izquierda para borrarme
 
-** La barra superior
-- *Lista con marcas*: vista GTD (tecla g).
+** La barra superior y los botones de abajo
+- Arriba, a la vista: *lista con marcas* (vista GTD, tecla g), *deshacer* y *⋯*.
+- En *⋯*: rehacer, reducir al encabezado seleccionado (narrow), mover con flechas (tecla m), editar como texto plano, PDF, sincronizar ahora (tecla s; normalmente es automático), ficheros principales (tecla f), dos columnas, fases de la Luna, novedades y ajustes.
+- En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero.
 - *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa.
-- *Flechas curvas*: deshacer y rehacer.
-- *Comprimir/expandir*: reducir la vista al encabezado seleccionado (narrow) o volver a verlo todo (widen).
-- *Líneas*: editar el fichero como texto plano, con botones para SCHEDULED, DEADLINE, adjuntar, enlaces…
-- *PDF*: exportar el fichero.
-- *Luna*: fases de la Luna.
-- *Engranajes*: Ajustes.
-- Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de esta barra, sin tapar el texto. Tócala para ocultarla.
+- Abajo quedan tres botones: *buscar*, *agenda* y *+ capturar*.
+- Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de la barra superior, sin tapar el texto. Tócala para ocultarla.
 
 * Tareas y estados
 Los estados se escriben delante del título. ORGanice usa los mismos que tu Emacs:
@@ -123,7 +113,7 @@ SCHEDULED: <%HOY% .+1d>
 Un hábito (propiedad STYLE: habit). En la agenda solo se ve su título (sin el estado) y el gráfico de constancia.
 
 * La agenda
-Tecla *a* o el botón del calendario (abajo a la derecha).
+Tecla *a* o el botón del calendario (abajo, en el centro).
 - Pestañas Día, Semana y Mes.
 - Arriba, «Vencidas» (lo que se te ha pasado) y «Prioritarias» (★).
 - Justo encima de cada tarea, en una línea: cuántos días faltan (en azul), el tipo y la fecha.
@@ -158,10 +148,11 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 
 ** Añadir, editar y organizar
 - Escribe en «Añadir» y pulsa Intro. Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org.
-- Toca una tarea para editarla: título, notas (con casillas y enlaces que se pueden tocar), lista o estado (también Done y Cancelled), fechas, área, proyecto, energía, tiempo y etiquetas. Botones: Abrir en el fichero, Archivar, Borrar, Deshacer y Rehacer.
+- Toca una tarea para editarla (como en Nirvana): a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza), lista o estado (también Done y Cancelled), proyecto («Suelta» = sin proyecto) y área. Abajo: Abrir, Archivar, Borrar, Deshacer y Rehacer.
 - No hay que guardar: lo cambiado se guarda solo al salir del editor (tocando fuera, en otra tarea, con Esc o con Intro en el título). Si te equivocas, *Deshacer*.
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
+- *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
 
 ** Áreas
 Un área agrupa tareas de una parte de tu vida (Hogar, Trabajo, Salud…). Se indica con la propiedad AREA, y los subencabezados la heredan:
@@ -276,7 +267,8 @@ Todos se pueden cambiar en Ajustes → Atajos de teclado.
 
 * Ajustes que conviene conocer
 - *Estados de las tareas* y *Etiquetas por defecto*: para los ficheros que no los definen.
-- *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio) y «Cuki» (aguamarina, espuma y arena rosada), además de los clásicos. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
+- Los ajustes están en tres secciones plegables: *Apariencia*, *Tareas y etiquetas* y *Opciones avanzadas*.
+- *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada) y «Solarized» (el clásico). Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).
   - «Añadir todos los ficheros .org» busca en tu carpeta y subcarpetas (sin la de copias de seguridad) y los pone todos en la agenda, la búsqueda, la lista de tareas y el refile.

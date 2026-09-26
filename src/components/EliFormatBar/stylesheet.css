@@ -28,3 +28,13 @@
   height: 24px;
   font-size: 12px;
 }
+.eli-format-bar__toggle {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--base00);
+}
+.eli-format-bar__toggle.is-open {
+  background: var(--base2);
+  color: var(--base01);
+}

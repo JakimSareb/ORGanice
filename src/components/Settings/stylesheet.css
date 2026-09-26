@@ -130,3 +130,48 @@
   height: 34px;
   border-right: 1px solid var(--base2);
 }
+
+/* ORG Mode para Eli: ajustes agrupados en secciones plegables */
+.eli-settings-section {
+  margin: 10px;
+  border: 1px solid var(--base2);
+  border-radius: 10px;
+  background: var(--base3);
+}
+.eli-settings-section > summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px 12px 34px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+}
+.eli-settings-section > summary::-webkit-details-marker {
+  display: none;
+}
+.eli-settings-section > summary::before {
+  content: '\f0da';
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  position: absolute;
+  left: 14px;
+  top: 13px;
+  color: var(--base00);
+  transition: transform 0.15s ease;
+}
+.eli-settings-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+.eli-settings-section__title {
+  font-weight: 600;
+  color: var(--base01);
+}
+.eli-settings-section__hint {
+  font-size: 0.85em;
+  color: var(--base00);
+  opacity: 0.75;
+}
+.eli-settings-section .setting-container:first-of-type {
+  border-top: 1px solid var(--base2);
+}

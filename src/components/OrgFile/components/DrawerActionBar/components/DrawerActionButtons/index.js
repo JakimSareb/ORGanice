@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 
 import './stylesheet.css';
+import EliMoreMenu from '../../../../../EliMoreMenu';
 
 // ORG Mode para Eli: con el tabulador se salta entre estos editores (mayúsculas + tab, al revés)
 const TAB_ORDER = [
@@ -83,7 +84,6 @@ export default class DrawerActionButtons extends PureComponent {
       onScheduledClick,
       onAddNote,
       onRemoveHeader,
-      onInsertInactiveDate,
       onAttachFiles,
       onInsertLink,
       activePopupType,
@@ -158,34 +158,6 @@ export default class DrawerActionButtons extends PureComponent {
             testId: 'drawer-action-scheduled',
           })}
 
-          {onInsertInactiveDate &&
-            this.iconWithFFClickCatcher({
-              className: 'far fa-calendar-plus fa-lg',
-              onClick: onInsertInactiveDate,
-              title: 'Insertar la fecha de hoy (inactiva)',
-              testId: 'drawer-action-inactive-date',
-              keepFocus: true,
-            })}
-
-          {this.iconWithFFClickCatcher({
-            className:
-              'fas fa-list fa-lg' +
-              ('property-list-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
-            onClick: onPropertiesClick,
-            title: 'Modificar propiedades',
-            disabled: 'property-list-editor' === activePopupType,
-            testId: 'drawer-action-properties',
-          })}
-
-          {onAttachFiles &&
-            this.iconWithFFClickCatcher({
-              className: 'fas fa-paperclip fa-lg',
-              onClick: onAttachFiles,
-              title: 'Adjuntar archivos (assets/AAAA)',
-              testId: 'drawer-action-attach',
-              keepFocus: true,
-            })}
-
           {onInsertLink &&
             ['title-editor', 'description-editor', 'note-editor'].includes(activePopupType) &&
             this.iconWithFFClickCatcher({
@@ -196,23 +168,43 @@ export default class DrawerActionButtons extends PureComponent {
               keepFocus: true,
             })}
 
-          {this.iconWithFFClickCatcher({
-            className:
-              'far fa-sticky-note fa-lg' +
-              ('note-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
-            onClick: onAddNote,
-            title: 'Añadir una nota',
-            disabled: 'note-editor' === activePopupType,
-          })}
-
-          {this.iconWithFFClickCatcher({
-            className:
-              'fas fa-trash fa-lg' +
-              ('note-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
-            onClick: onRemoveHeader,
-            title: 'Borrar este encabezado',
-            disabled: 'note-editor' === activePopupType,
-          })}
+          {/* ORG Mode para Eli: lo menos usado, en «⋯» */}
+          <div className="header-action-drawer__ff-click-catcher-container eli-drawer-more">
+            <EliMoreMenu
+              testId="eli-more-editor"
+              keepFocus
+              items={[
+                {
+                  icon: 'fas fa-list',
+                  label: 'Propiedades',
+                  onClick: onPropertiesClick,
+                  disabled: 'property-list-editor' === activePopupType,
+                  testId: 'drawer-action-properties',
+                },
+                onAttachFiles && {
+                  icon: 'fas fa-paperclip',
+                  label: 'Adjuntar archivo',
+                  onClick: onAttachFiles,
+                  testId: 'drawer-action-attach',
+                },
+                {
+                  icon: 'far fa-sticky-note',
+                  label: 'Añadir una nota',
+                  onClick: onAddNote,
+                  disabled: 'note-editor' === activePopupType,
+                  testId: 'drawer-action-note',
+                },
+                {
+                  icon: 'fas fa-trash',
+                  label: 'Borrar el encabezado',
+                  onClick: onRemoveHeader,
+                  disabled: 'note-editor' === activePopupType,
+                  danger: true,
+                  testId: 'drawer-action-remove',
+                },
+              ]}
+            />
+          </div>
         </div>
       </div>
     );

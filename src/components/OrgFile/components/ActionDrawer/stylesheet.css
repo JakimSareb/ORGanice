@@ -53,3 +53,16 @@
 .active-clock-indicator {
   background-color: var(--orange);
 }
+
+/* ORG Mode para Eli: las flechas de mover no ocupan sitio en la barra; aparecen en el centro
+   al abrirlas desde «⋯ → Mover» o con la tecla m */
+.action-drawer__arrow-buttons-container.eli-arrows {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  visibility: hidden;
+}
+.action-drawer__arrow-buttons-container.eli-arrows.is-open {
+  visibility: visible;
+}

@@ -1,4 +1,3 @@
-import { openFavorites } from '../../../EliTools';
 import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
 import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
 import { connect } from 'react-redux';
@@ -28,9 +27,6 @@ const ActionDrawer = ({
   path,
   selectedTableCellId,
   selectedListItemId,
-  isLoading,
-  online,
-  shouldDisableSyncButtons,
   activeClocks,
 }) => {
   const [isDisplayingArrowButtons, setIsDisplayingArrowButtons] = useState(false);
@@ -102,8 +98,6 @@ const ActionDrawer = ({
               )
               .includes((path || '').trim())
         );
-
-  const handleSync = () => org.sync({ forceAction: 'manual' });
 
   const handleMainArrowButtonClick = () => setIsDisplayingArrowButtons(!isDisplayingArrowButtons);
 
@@ -273,10 +267,13 @@ const ActionDrawer = ({
       <Motion style={animatedStyles}>
         {(style) => (
           <div
-            className="action-drawer__arrow-buttons-container"
+            className={
+              'action-drawer__arrow-buttons-container eli-arrows' +
+              (isDisplayingArrowButtons ? ' is-open' : '')
+            }
             style={{
-              left: style.centerXOffset,
-              pointerEvents: isDisplayingCaptureButtons ? 'none' : 'all',
+              pointerEvents:
+                isDisplayingCaptureButtons || !isDisplayingArrowButtons ? 'none' : 'all',
             }}
           >
             <ActionButton
@@ -383,33 +380,8 @@ const ActionDrawer = ({
     <div className="action-drawer-container nice-scroll">
       {
         <Fragment>
-          <ActionButton
-            iconName="cloud"
-            subIconName="sync-alt"
-            shouldSpinSubIcon={isLoading}
-            isDisabled={shouldDisableSyncButtons || !online}
-            onClick={handleSync}
-            style={{
-              opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
-              pointerEvents:
-                isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
-            }}
-            tooltip="Sincronizar cambios"
-          />
-
-          <ActionButton
-            iconName="copy"
-            isDisabled={false}
-            onClick={openFavorites}
-            dataTestId="eli-favorites"
-            style={{
-              opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
-              pointerEvents:
-                isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
-            }}
-            tooltip="Ficheros principales"
-          />
-
+          {/* ORG Mode para Eli: abajo solo Buscar, Agenda y Capturar. Sincronizar, Ficheros
+              principales y Mover (flechas) están en el menú «⋯» de arriba (y con s, f y m). */}
           {renderMovementButtons()}
 
           <ActionButton

@@ -71,7 +71,8 @@
 /* ORG Mode para Eli: rejilla equilibrada de iconos */
 .header-action-drawer__grid {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(var(--eli-icon-count, 9), 1fr);
+  max-width: 34em;
   justify-items: center;
   align-items: center;
   row-gap: 14px;
@@ -119,4 +120,13 @@
   right: -0.95em;
   font-size: 0.62em;
   line-height: 1;
+}
+
+/* ORG Mode para Eli: botón «⋯» de la barra del encabezado */
+.eli-drawer-more .eli-more__btn {
+  font-size: 1.33em;
+  color: var(--base01);
+}
+.eli-drawer-clock-on {
+  color: var(--orange);
 }

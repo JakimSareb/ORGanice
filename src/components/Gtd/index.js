@@ -245,6 +245,12 @@ export default function GtdView() {
   const [view, setView] = useState(() => readLS(LS_VIEW, { id: 'focus' }));
   const [area, setArea] = useState(() => readLS(LS_AREA, '*'));
   const [filters, setFilters] = useState({ tags: [], energy: null, time: null, dated: false });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount =
+    filters.tags.length +
+    (filters.energy ? 1 : 0) +
+    (filters.time ? 1 : 0) +
+    (filters.dated ? 1 : 0);
   const [text, setText] = useState('');
   const [openKey, setOpenKey] = useState(null);
   const [newTitle, setNewTitle] = useState('');
@@ -743,49 +749,124 @@ export default function GtdView() {
           facets.hasEffort ||
           facets.hasDates) && (
           <div className="gtd-filters" data-testid="gtd-filters">
-            {facets.tags.map((t) => (
+            {/* ORG Mode para Eli: los filtros van plegados tras «Filtrar»; fuera solo se ven los
+                que están activos */}
+            <div className="gtd-filters__bar">
               <button
-                key={t}
-                className={'gtd-chip' + (filters.tags.includes(t) ? ' is-on' : '')}
-                onClick={() => toggleTag(t)}
+                className={'gtd-chip gtd-filters__toggle' + (filtersOpen ? ' is-open' : '')}
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                aria-expanded={filtersOpen}
+                data-testid="gtd-filters-toggle"
               >
-                {t}
+                <i className="fas fa-filter" /> Filtrar
+                {activeFilterCount > 0 && (
+                  <span className="gtd-filters__count">{activeFilterCount}</span>
+                )}
               </button>
-            ))}
-            {facets.energy.map((e) => (
-              <button
-                key={e}
-                className={'gtd-chip gtd-chip--energy' + (filters.energy === e ? ' is-on' : '')}
-                onClick={() => setFilters((f) => ({ ...f, energy: f.energy === e ? null : e }))}
-              >
-                <i className="fas fa-bolt" /> {e}
-              </button>
-            ))}
-            {facets.hasEffort &&
-              TIME_BUCKETS.map((b) => (
+              {!filtersOpen &&
+                filters.tags.map((t) => (
+                  <button key={t} className="gtd-chip is-on" onClick={() => toggleTag(t)}>
+                    {t} ×
+                  </button>
+                ))}
+              {!filtersOpen && filters.energy && (
                 <button
-                  key={b.id}
-                  className={'gtd-chip gtd-chip--time' + (filters.time === b.id ? ' is-on' : '')}
-                  onClick={() => setFilters((f) => ({ ...f, time: f.time === b.id ? null : b.id }))}
+                  className="gtd-chip gtd-chip--energy is-on"
+                  onClick={() => setFilters((f) => ({ ...f, energy: null }))}
                 >
-                  <i className="far fa-clock" /> {b.label}
+                  <i className="fas fa-signal" /> {filters.energy} ×
                 </button>
-              ))}
-            {facets.hasDates && (
-              <button
-                className={'gtd-chip' + (filters.dated ? ' is-on' : '')}
-                onClick={() => setFilters((f) => ({ ...f, dated: !f.dated }))}
-              >
-                <i className="far fa-calendar-alt" /> Con fecha
-              </button>
-            )}
-            {(filters.tags.length > 0 || filters.energy || filters.time || filters.dated) && (
-              <button
-                className="gtd-chip gtd-chip--clear"
-                onClick={() => setFilters({ tags: [], energy: null, time: null, dated: false })}
-              >
-                × Quitar filtros
-              </button>
+              )}
+              {!filtersOpen && filters.time && (
+                <button
+                  className="gtd-chip gtd-chip--time is-on"
+                  onClick={() => setFilters((f) => ({ ...f, time: null }))}
+                >
+                  <i className="far fa-clock" />{' '}
+                  {(TIME_BUCKETS.find((x) => x.id === filters.time) || {}).label} ×
+                </button>
+              )}
+              {!filtersOpen && filters.dated && (
+                <button
+                  className="gtd-chip is-on"
+                  onClick={() => setFilters((f) => ({ ...f, dated: false }))}
+                >
+                  <i className="far fa-calendar-alt" /> Con fecha ×
+                </button>
+              )}
+              {activeFilterCount > 0 && (
+                <button
+                  className="gtd-chip gtd-chip--clear"
+                  onClick={() => setFilters({ tags: [], energy: null, time: null, dated: false })}
+                >
+                  Quitar filtros
+                </button>
+              )}
+            </div>
+            {filtersOpen && (
+              <div className="gtd-filters__panel" data-testid="gtd-filters-panel">
+                {facets.tags.length > 0 && (
+                  <div className="gtd-filters__group">
+                    <span className="gtd-filters__label">Contexto</span>
+                    {facets.tags.map((t) => (
+                      <button
+                        key={t}
+                        className={'gtd-chip' + (filters.tags.includes(t) ? ' is-on' : '')}
+                        onClick={() => toggleTag(t)}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {facets.energy.length > 0 && (
+                  <div className="gtd-filters__group">
+                    <span className="gtd-filters__label">Energía</span>
+                    {facets.energy.map((e) => (
+                      <button
+                        key={e}
+                        className={
+                          'gtd-chip gtd-chip--energy' + (filters.energy === e ? ' is-on' : '')
+                        }
+                        onClick={() =>
+                          setFilters((f) => ({ ...f, energy: f.energy === e ? null : e }))
+                        }
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {facets.hasEffort && (
+                  <div className="gtd-filters__group">
+                    <span className="gtd-filters__label">Tiempo</span>
+                    {TIME_BUCKETS.map((tb) => (
+                      <button
+                        key={tb.id}
+                        className={
+                          'gtd-chip gtd-chip--time' + (filters.time === tb.id ? ' is-on' : '')
+                        }
+                        onClick={() =>
+                          setFilters((f) => ({ ...f, time: f.time === tb.id ? null : tb.id }))
+                        }
+                      >
+                        {tb.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {facets.hasDates && (
+                  <div className="gtd-filters__group">
+                    <span className="gtd-filters__label">Fecha</span>
+                    <button
+                      className={'gtd-chip' + (filters.dated ? ' is-on' : '')}
+                      onClick={() => setFilters((f) => ({ ...f, dated: !f.dated }))}
+                    >
+                      Con fecha
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

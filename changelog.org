@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.0 (septiembre de 2026)
+** Interfaz más sencilla
+- Barra superior: solo GTD, Deshacer y *⋯* (con rehacer, narrow, mover, texto plano, PDF, sincronizar, ficheros principales, dos columnas, Luna, novedades y ajustes). En narrow aparece «Ver todo».
+- Abajo, solo tres botones: buscar, agenda y capturar.
+- Barra del encabezado: ★, casilla, editar, etiquetas, fechas, nota, mover y *⋯* con el resto. El reloj se ve fuera solo mientras está en marcha.
+- Editores: título, descripción, etiquetas, fechas y enlace a la vista; propiedades, adjuntar, nota y borrar en *⋯*. El formato de texto, plegado tras *Aa*.
+- Ajustes en secciones plegables (Apariencia, Tareas y etiquetas, Opciones avanzadas). Temas: Unicornio, Cuki y Solarized.
+** Vista GTD
+- Editor de tareas como el de Nirvana: ★, título, etiquetas y notas a la izquierda; tiempo, energía, vence, empieza, lista, proyecto y área a la derecha.
+- Los filtros se pliegan tras el botón *Filtrar*; los activos se ven como etiquetas.
+
 * 1.7 (septiembre de 2026)
 ** Editores
 - «+ Insertar fecha» escribe ahora la fecha de hoy como fecha inactiva ([…]) en el cursor, separada con espacios del texto de alrededor.

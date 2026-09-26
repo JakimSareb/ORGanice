@@ -240,9 +240,50 @@
 /* Filtros (chips) */
 .gtd-filters {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.gtd-filters__bar {
+  display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 12px;
+}
+.gtd-filters__toggle.is-open {
+  background: var(--base2);
+}
+.gtd-filters__count {
+  margin-left: 5px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+}
+.gtd-filters__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  background: var(--base3);
+}
+.gtd-filters__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.gtd-filters__label {
+  width: 70px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--base00);
+  opacity: 0.7;
 }
 .gtd-chip {
   display: inline-flex;
@@ -713,4 +754,224 @@
 }
 .gtd-seg__btn.is-done-state {
   font-style: italic;
+}
+
+/* ---------- ORG Mode para Eli: editor de tareas como el de Nirvana ---------- */
+.gtd-editor--nirvana {
+  --eli-muted: var(--base00);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-areas:
+    'main side'
+    'actions actions';
+  column-gap: 18px;
+  row-gap: 10px;
+  padding: 16px 16px 12px 10px;
+  background: var(--base3);
+  border: 1px solid var(--base2);
+  border-top: 0;
+  box-shadow: 0 6px 16px var(--base1-soft);
+}
+.gtd-ed__main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.gtd-ed__side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gtd-editor--nirvana .gtd-editor__actions {
+  grid-area: actions;
+  padding-left: 34px;
+}
+.gtd-ed__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gtd-ed__star {
+  flex: 0 0 26px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 22px;
+  color: var(--base1);
+  cursor: pointer;
+}
+.gtd-ed__star.is-on {
+  color: #f2b24a;
+}
+.gtd-editor--nirvana .gtd-editor__title {
+  padding: 9px 12px !important;
+  font-weight: 500;
+  font-size: 17px !important;
+}
+.gtd-editor--nirvana .gtd-ed__tags,
+.gtd-editor--nirvana .eli-format-bar,
+.gtd-editor--nirvana .gtd-editor__notes,
+.gtd-editor--nirvana .gtd-tags-predefined,
+.gtd-editor--nirvana .gtd-checklist,
+.gtd-editor--nirvana .gtd-links {
+  margin-left: 34px;
+}
+.gtd-editor--nirvana .eli-format-bar {
+  margin-top: -4px;
+  margin-bottom: -4px;
+}
+.gtd-ed__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 3px 6px 3px 8px;
+  border: 1px solid var(--base1);
+  border-radius: 6px;
+  background: var(--base3);
+}
+.gtd-editor--nirvana .gtd-ed__tags input {
+  flex: 1 1 120px;
+  min-width: 80px;
+  border: 0;
+  padding: 5px 2px;
+  background: transparent;
+  outline: none;
+}
+.gtd-ed__tags-toggle {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--base1);
+  border-radius: 4px;
+  background: var(--base3);
+  color: var(--eli-muted);
+  cursor: pointer;
+  padding: 0;
+}
+.gtd-ed__tags-toggle.is-open {
+  background: var(--base2);
+}
+.gtd-editor--nirvana .gtd-editor__notes {
+  min-height: 12em;
+  padding: 10px 12px;
+  width: auto;
+}
+.gtd-ed__field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 8px 0 10px;
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+  background: var(--base3);
+  color: var(--eli-muted);
+  box-sizing: border-box;
+}
+.gtd-ed__field > i {
+  flex: 0 0 18px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--eli-muted);
+}
+.gtd-ed__field.has-value > i {
+  color: var(--blue);
+}
+.gtd-editor--nirvana .gtd-ed__field select,
+.gtd-editor--nirvana .gtd-ed__field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-size: 15px;
+  color: var(--eli-muted);
+  outline: none;
+}
+.gtd-editor--nirvana .gtd-ed__field.has-value select,
+.gtd-editor--nirvana .gtd-ed__field.has-value input {
+  color: var(--base01);
+}
+.gtd-ed__field-label {
+  font-size: 15px;
+}
+.gtd-ed__field--date.has-value .gtd-ed__field-label {
+  display: none;
+}
+.gtd-ed__field--date input[type='date'] {
+  text-align: right;
+}
+.gtd-ed__field--date:not(.has-value) input[type='date'] {
+  color: transparent !important;
+}
+.gtd-ed__field--date:not(.has-value) input[type='date']::-webkit-datetime-edit {
+  color: transparent;
+}
+.gtd-ed__clear {
+  border: 0;
+  background: none;
+  color: var(--eli-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.gtd-ed__gap {
+  height: 18px;
+}
+.gtd-btn--icon {
+  padding: 5px 9px;
+}
+
+@media (max-width: 720px) {
+  .gtd-editor--nirvana {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'main'
+      'side'
+      'actions';
+    padding: 12px 10px 10px 6px;
+  }
+  .gtd-ed__side {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    margin-left: 34px;
+  }
+  .gtd-ed__field {
+    min-width: 0;
+    padding: 0 6px 0 8px;
+    gap: 6px;
+  }
+  .gtd-ed__gap {
+    display: none;
+  }
+  .gtd-editor--nirvana .gtd-editor__actions {
+    padding-left: 34px;
+  }
+  .gtd-editor--nirvana .gtd-editor__notes {
+    min-height: 9em;
+  }
+}
+
+/* textos «apagados» del editor: el color del texto con transparencia (vale en claro y oscuro) */
+.gtd-ed__field:not(.has-value) > i,
+.gtd-ed__field:not(.has-value) select,
+.gtd-ed__field:not(.has-value) input,
+.gtd-ed__field-label,
+.gtd-ed__tags-toggle,
+.gtd-ed__clear,
+.gtd-ed__star:not(.is-on) {
+  opacity: 0.6;
+}
+.gtd-ed__tags input::placeholder,
+.gtd-editor--nirvana .gtd-editor__notes::placeholder,
+.gtd-ed__field input::placeholder {
+  color: var(--base00);
+  opacity: 0.6;
 }
