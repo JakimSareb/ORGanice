@@ -1,6 +1,7 @@
 import EliYouTube, { youTubeId } from '../EliYouTube';
 import EliMedia from '../EliMedia';
 import { fileLinkTarget } from '../../../../lib/eli_media';
+import { parseOrgLink } from '../../../../lib/eli_org_links';
 import React from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -39,6 +40,25 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
     if (mediaTarget) {
       const hasDescription = !!part.getIn(['contents', 'title']);
       return <EliMedia key={id} target={mediaTarget} title={hasDescription ? title : null} />;
+    }
+    // ORG Mode para Eli: enlaces a ficheros Org y a encabezados (file:x.org::*Título, *Título,
+    // #id, id:…): se abren en la app, en el encabezado enlazado
+    if (parseOrgLink(uri)) {
+      return (
+        <span
+          key={id}
+          className="eli-org-link"
+          role="link"
+          tabIndex={0}
+          title={uri}
+          onClick={(e) => {
+            e.stopPropagation();
+            org.eliFollowOrgLink(uri);
+          }}
+        >
+          {title}
+        </span>
+      );
     }
     if (uri.startsWith('file:')) {
       target = uri.substr(5);

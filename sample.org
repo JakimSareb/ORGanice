@@ -37,6 +37,7 @@ Selecciona este encabezado y prueba los iconos, de izquierda a derecha:
 | Más                | Crear un encabezado debajo. Mantenlo pulsado para duplicar el actual                                              |
 | Mover              | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                         |
 | Archivar           | Archivar como en Emacs (al fichero _archive)                                                                      |
+| Enlace             | Copiar el enlace a este encabezado, como C-c l en Emacs                                                           |
 | Compartir          | Enviar el encabezado por correo                                                                                   |
 | PDF                | Exportar el encabezado a PDF                                                                                      |
 | Papelera           | Borrar (pide confirmación; si tiene adjuntos, pregunta también por cada uno)                                      |
@@ -201,6 +202,8 @@ Toca una celda para editar la tabla.
 * Enlaces, adjuntos e imágenes
 - Enlace a una web: [[https://orgmode.org][Org Mode]].
 - Botón de enlace (en el editor): pega un enlace del portapapeles y escribe su descripción; queda como [[enlace][descripción]].
+- *Enlaces a encabezados* (como C-c l y C-c C-l de Emacs): selecciona un encabezado y toca el icono de enlace de la barra; se copia algo como [[file:tareas.org::*Llamar al banco][Llamar al banco]]. Luego, en cualquier fichero, el botón de enlace del editor lo inserta con la ruta correcta. Al tocar un enlace así, la app abre el fichero y va a ese encabezado.
+- Prueba: [[*Muéveme con las flechas][ir a «Muéveme con las flechas»]] o [[*Las listas del menú lateral][ir a las listas de la vista GTD]].
 - Adjuntar (clip): la imagen o el fichero se sube a la carpeta assets/año de tu Dropbox y se inserta su enlace. Las imágenes se ven dentro del texto, y los vídeos de YouTube también.
 
 * Buscar, mover y archivar

@@ -40,7 +40,9 @@ import {
   eliNarrowAndExpand,
   sync,
   eliOfferDeleteAttachments,
+  eliFollowOrgLink,
 } from '../../actions/org';
+import { parseOrgLink } from '../../lib/eli_org_links';
 import { declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import TaskEditor from './TaskEditor';
@@ -378,11 +380,9 @@ export default function GtdView() {
       );
       return;
     }
-    // Enlace a otro fichero .org: se abre en la app
-    const org = /^file:(.+\.org(?:\.gpg|\.asc)?)(?:::.*)?$/i.exec(target);
-    if (org) {
-      const orgPath = resolveDropboxPath(task.path, org[1]);
-      if (orgPath) history.push(`/file${orgPath}`);
+    // Enlace a un fichero .org o a un encabezado: se abre en la app, en ese encabezado
+    if (parseOrgLink(target)) {
+      dispatch(eliFollowOrgLink(target, task.path));
       return;
     }
     showMessage('Enlace', target);

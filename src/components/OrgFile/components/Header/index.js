@@ -3,6 +3,7 @@ import { openPrintPreview, openUploadDialog } from '../../../EliTools';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task_state';
 import { showMessage } from '../../../../lib/eli_prompt';
+import { storeHeadingLink } from '../../../../lib/eli_org_links';
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -706,6 +707,28 @@ class Header extends PureComponent {
                       this.props.shouldLogIntoDrawer
                     );
                   }}
+                  onCopyLink={
+                    this.props.path && !this.props.path.startsWith('/__')
+                      ? async () => {
+                          const text = storeHeadingLink(
+                            this.props.path,
+                            header.getIn(['titleLine', 'rawTitle'])
+                          );
+                          let copied = false;
+                          try {
+                            await navigator.clipboard.writeText(text);
+                            copied = true;
+                          } catch (e) {}
+                          showMessage(
+                            copied ? 'Enlace copiado' : 'Enlace',
+                            (copied
+                              ? 'Pégalo donde quieras. '
+                              : 'No se ha podido copiar; cópialo a mano:\n\n') +
+                              `${text}\n\nCon el botón de enlace del editor se inserta con la ruta correcta desde cualquier fichero.`
+                          );
+                        }
+                      : null
+                  }
                   onClockTotals={() => {
                     const t = clockTotals(this.props.headers, header.get('id'));
                     if (!t) return;
@@ -756,6 +779,7 @@ const mapStateToProps = (state, ownProps) => {
     showDeadlineDisplay: state.base.get('showDeadlineDisplay'),
     headers: file.get('headers'),
     todoKeywordSets: file.get('todoKeywordSets'),
+    path,
   };
 };
 

@@ -32,3 +32,10 @@
 .attributed-string__inline-markup--underline {
   text-decoration: underline;
 }
+
+/* ORG Mode para Eli: enlaces a ficheros Org / encabezados */
+.eli-org-link {
+  text-decoration: underline;
+  cursor: pointer;
+  color: var(--blue);
+}

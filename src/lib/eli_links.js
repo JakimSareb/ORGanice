@@ -1,4 +1,5 @@
 // ORG Mode para Eli: insertar enlaces Org [[enlace][descripción]] en el texto que se edita.
+import { storedHeadingLink, headingLink } from './eli_org_links';
 
 export const formatOrgLink = (link, description) => {
   const l = (link || '').trim().replace(/\]\]/g, '%5D%5D');
@@ -84,13 +85,32 @@ export const insertLinkInto = async (el, insert) => {
   const start = el.selectionStart;
   const end = el.selectionEnd;
   const selected = (el.value || '').slice(start, end);
-  const clip = await readClipboardText();
+  let clip = await readClipboardText();
+  // Si lo copiado ya es un enlace Org completo [[enlace][descripción]], se separa
+  let clipDescription = '';
+  const whole = /^\[\[([^\]]+)\](?:\[([^\]]*)\])?\]$/.exec(clip || '');
+  // ORG Mode para Eli: el último enlace copiado a un encabezado (como org-store-link) se
+  // inserta con la ruta relativa al fichero que se está editando
+  const storedLink = storedHeadingLink();
+  let storedDescription = '';
+  if (storedLink && (!clip || clip === storedLink.clipboardText)) {
+    const m = /\/file(\/.+)$/.exec(decodeURIComponent(window.location.pathname));
+    const full = headingLink(storedLink, m ? m[1] : null);
+    const parts = /^\[\[(.+?)\]\[(.*)\]\]$/.exec(full);
+    if (parts) {
+      clip = parts[1];
+      storedDescription = parts[2];
+    }
+  } else if (whole) {
+    clip = whole[1];
+    clipDescription = whole[2] || '';
+  }
   const looksLikeUrl = (s) => /^([a-z][\w+.-]*:|\/|\.\/|~\/|www\.)/i.test(s);
   // Si lo seleccionado es un enlace, va al campo Enlace; si no, es la descripción
   const result = await askLink(
     selected && looksLikeUrl(selected)
       ? { link: selected, description: '' }
-      : { link: clip, description: selected }
+      : { link: clip, description: selected || storedDescription || clipDescription }
   );
   if (!result) {
     try {

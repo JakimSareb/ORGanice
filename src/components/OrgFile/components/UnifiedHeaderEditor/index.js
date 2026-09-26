@@ -648,6 +648,14 @@ class UnifiedHeaderEditor extends PureComponent {
               </label>
               {/* ORG Mode para Eli: Cancelar descarta lo escrito; Aceptar (o tocar fuera, o Esc)
                   guarda la captura */}
+              <button
+                className="btn capture-header-bar__capture-btn"
+                onClick={onCaptureAccept || onCapture}
+                data-testid="capture-accept-button"
+                title="Guardar esta captura (también al tocar fuera o con Esc)"
+              >
+                Aceptar
+              </button>
               {onCaptureCancel && (
                 <button
                   className="btn capture-header-bar__cancel-btn"
@@ -658,14 +666,6 @@ class UnifiedHeaderEditor extends PureComponent {
                   Cancelar
                 </button>
               )}
-              <button
-                className="btn capture-header-bar__capture-btn"
-                onClick={onCaptureAccept || onCapture}
-                data-testid="capture-accept-button"
-                title="Guardar esta captura (también al tocar fuera o con Esc)"
-              >
-                Aceptar
-              </button>
             </div>
           </div>
         )}

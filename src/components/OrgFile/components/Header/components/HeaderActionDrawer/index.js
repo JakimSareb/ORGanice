@@ -109,6 +109,7 @@ export default class HeaderActionDrawer extends PureComponent {
       taskState,
       onCompleteTask,
       onClockTotals,
+      onCopyLink,
     } = this.props;
 
     // Create a fallback function for onDuplicateHeader if not provided
@@ -233,6 +234,12 @@ export default class HeaderActionDrawer extends PureComponent {
         onClick: onArchive,
         testId: 'eli-archive',
         title: 'Archivar (como org-archive-subtree; pide confirmación)',
+      },
+      onCopyLink && {
+        className: 'fas fa-link fa-lg',
+        onClick: onCopyLink,
+        testId: 'eli-copy-link',
+        title: 'Copiar el enlace a este encabezado (como C-c l en Emacs)',
       },
       {
         className: 'fas fa-share fa-lg',

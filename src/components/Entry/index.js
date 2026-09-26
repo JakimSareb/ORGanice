@@ -41,6 +41,7 @@ class Entry extends PureComponent {
       'renderFile',
       'setChangelogUnseenChanges',
       'openGtd',
+      'eliNavigate',
     ]);
   }
 
@@ -51,8 +52,15 @@ class Entry extends PureComponent {
     }
   }
 
+  // ORG Mode para Eli: navegar a una ruta pedida desde fuera de React Router (p. ej. un enlace)
+  eliNavigate(event) {
+    const to = event && event.detail;
+    if (to && this.props.location.pathname !== to) this.props.history.push(to);
+  }
+
   componentDidMount() {
     window.addEventListener('eli:open-gtd', this.openGtd);
+    window.addEventListener('eli:navigate', this.eliNavigate);
     this.setChangelogUnseenChanges();
     this.props.filesToLoad.forEach((path) => this.props.syncBackend.downloadFile(path));
     this.props.filesToSync.forEach((path) => this.props.org.sync({ path }));
@@ -79,6 +87,7 @@ class Entry extends PureComponent {
 
   componentWillUnmount() {
     window.removeEventListener('eli:open-gtd', this.openGtd);
+    window.removeEventListener('eli:navigate', this.eliNavigate);
     window.onbeforeunload = undefined;
   }
 

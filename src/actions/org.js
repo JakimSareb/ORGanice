@@ -1,6 +1,12 @@
 import { ActionCreators, ActionTypes } from 'redux-undo';
 import { offerToDeleteAttachments } from '../lib/eli_attachments';
 import { addConflict, sameContents } from '../lib/eli_conflicts';
+import {
+  parseOrgLink,
+  findLinkedHeader,
+  findHeaderById,
+  resolveLinkedPath,
+} from '../lib/eli_org_links';
 import { debounce } from 'lodash';
 import {
   setLoadingMessage,
@@ -1248,6 +1254,65 @@ export const eliOfferDeleteAttachments = (headers, headerId, path) => (dispatch,
     client: state.syncBackend.get('client'),
     files: state.org.present.get('files'),
   });
+};
+
+// ORG Mode para Eli: seguir un enlace Org a un fichero o encabezado (file:x.org::*Título,
+// *Título, #id, id:…) como org-open-at-point: abre el fichero y va al encabezado
+export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getState) => {
+  const link = parseOrgLink(uri);
+  if (!link) return false;
+  const state = getState();
+  const files = state.org.present.get('files');
+  const base = basePath || state.org.present.get('path');
+  let targetPath = base;
+  let header = null;
+  if (link.id) {
+    const found = findHeaderById(files, link.id);
+    if (!found) {
+      showMessage(
+        'Enlace',
+        `No se encuentra el encabezado con ID ${link.id} en los ficheros abiertos.`
+      );
+      return true;
+    }
+    targetPath = found.path;
+    header = found.header;
+  } else if (link.path) {
+    const known = Array.from(
+      new Set([
+        ...Array.from(files.keys()).filter((p) => p && !p.startsWith(STATIC_FILE_PREFIX)),
+        ...state.org.present
+          .get('fileSettings')
+          .map((s) => s.get('path'))
+          .toArray(),
+      ])
+    );
+    targetPath = resolveLinkedPath(base, link.path, known);
+  }
+  if (!targetPath) return true;
+  if (!getState().org.present.getIn(['files', targetPath, 'headers'])) {
+    dispatch(setLoadingMessage('Abriendo el enlace…'));
+    await dispatch(loadFileQuietly(targetPath));
+    dispatch(hideLoadingMessage());
+  }
+  const headers = getState().org.present.getIn(['files', targetPath, 'headers']);
+  if (!headers) {
+    showMessage('Enlace', `No se ha podido abrir ${targetPath}.`);
+    return true;
+  }
+  if (!header && link.search) {
+    header = findLinkedHeader(headers, link.search);
+    if (!header) showMessage('Enlace', `No se encuentra «${link.search}» en ${targetPath}.`);
+  }
+  if (targetPath !== getState().org.present.get('path')) {
+    window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
+  }
+  if (header) {
+    dispatch(selectHeaderAndOpenParents(targetPath, header.get('id'), { widen: true }));
+  } else {
+    dispatch(setPath(targetPath));
+  }
+  return true;
 };
 
 // ORG Mode para Eli: carga un fichero sin mensajes (p. ej. los de la agenda desde el explorador).
