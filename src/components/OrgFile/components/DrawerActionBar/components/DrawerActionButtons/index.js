@@ -2,7 +2,59 @@ import React, { PureComponent } from 'react';
 
 import './stylesheet.css';
 
+// ORG Mode para Eli: con el tabulador se salta entre estos editores (mayúsculas + tab, al revés)
+const TAB_ORDER = [
+  'title-editor',
+  'description-editor',
+  'tags-editor',
+  'deadline-editor',
+  'scheduled-editor',
+];
+
 export default class DrawerActionButtons extends PureComponent {
+  constructor(props) {
+    super(props);
+    this.handleTabKey = this.handleTabKey.bind(this);
+  }
+
+  componentDidMount() {
+    window.addEventListener('keydown', this.handleTabKey, true);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.handleTabKey, true);
+  }
+
+  handleTabKey(event) {
+    if (event.key !== 'Tab' || event.ctrlKey || event.altKey || event.metaKey) return;
+    const { activePopupType } = this.props;
+    const index = TAB_ORDER.indexOf(activePopupType);
+    if (index < 0) return;
+    // Con otra ventana propia encima (p. ej. un diálogo), el tabulador funciona como siempre
+    if (document.querySelector('.eli-prompt__overlay')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const step = event.shiftKey ? -1 : 1;
+    const next = TAB_ORDER[(index + step + TAB_ORDER.length) % TAB_ORDER.length];
+    const {
+      onTitleClick,
+      onDescriptionClick,
+      onTagsClick,
+      onDeadlineClick,
+      onScheduledClick,
+      restorePreferEditRawValues,
+    } = this.props;
+    if (next === 'title-editor' || next === 'description-editor') restorePreferEditRawValues();
+    const handler = {
+      'title-editor': onTitleClick,
+      'description-editor': onDescriptionClick,
+      'tags-editor': onTagsClick,
+      'deadline-editor': onDeadlineClick,
+      'scheduled-editor': onScheduledClick,
+    }[next];
+    if (handler) handler();
+  }
+
   // A nasty hack required to get click handling to work properly in Firefox. No idea why its
   // broken in the first place or why this fixes it.
   iconWithFFClickCatcher({ className, onClick, title, disabled, testId = '', keepFocus }) {
@@ -89,16 +141,6 @@ export default class DrawerActionButtons extends PureComponent {
 
           {this.iconWithFFClickCatcher({
             className:
-              'fas fa-list fa-lg' +
-              ('property-list-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
-            onClick: onPropertiesClick,
-            title: 'Modificar propiedades',
-            disabled: 'property-list-editor' === activePopupType,
-            testId: 'drawer-action-properties',
-          })}
-
-          {this.iconWithFFClickCatcher({
-            className:
               'fas fa-calendar-check fa-lg' +
               ('deadline-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
             onClick: onDeadlineClick,
@@ -124,6 +166,16 @@ export default class DrawerActionButtons extends PureComponent {
               testId: 'drawer-action-inactive-date',
               keepFocus: true,
             })}
+
+          {this.iconWithFFClickCatcher({
+            className:
+              'fas fa-list fa-lg' +
+              ('property-list-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
+            onClick: onPropertiesClick,
+            title: 'Modificar propiedades',
+            disabled: 'property-list-editor' === activePopupType,
+            testId: 'drawer-action-properties',
+          })}
 
           {onAttachFiles &&
             this.iconWithFFClickCatcher({

@@ -167,12 +167,6 @@ export default class HeaderActionDrawer extends PureComponent {
         title: 'Modificar etiquetas',
         testId: 'drawer-action-tags',
       },
-      {
-        className: 'fas fa-list fa-lg',
-        onClick: onPropertiesClick,
-        title: 'Modificar propiedades',
-        testId: 'drawer-action-properties',
-      },
       { className: 'far fa-sticky-note fa-lg', onClick: onAddNote, title: 'Añadir una nota' },
       // Fechas y tiempo
       {
@@ -208,6 +202,12 @@ export default class HeaderActionDrawer extends PureComponent {
             testId: 'org-clock-in',
             title: 'Iniciar reloj (mantén pulsado: tiempo total registrado)',
           },
+      {
+        className: 'fas fa-list fa-lg',
+        onClick: onPropertiesClick,
+        title: 'Modificar propiedades',
+        testId: 'drawer-action-properties',
+      },
       onAttachFiles && {
         className: 'fas fa-paperclip fa-lg',
         onClick: onAttachFiles,

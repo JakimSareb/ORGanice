@@ -16,6 +16,8 @@ Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay noved
 ** Hoja
 - Barra de iconos: casilla después de la estrella (clic → DONE; mayúsculas + clic → CANCELLED). Mantener pulsado el reloj muestra el tiempo total registrado con los subencabezados.
 - Editor de título: estrella al principio y flechas para mover solo el encabezado (arriba, abajo, fuera y dentro).
+- En la edición del encabezado, el tabulador salta entre título, descripción, etiquetas, fecha límite y fecha programada.
+- El icono de propiedades está ahora justo antes del de adjuntar.
 - Al terminar una tarea pierde su prioridad.
 - Al borrar un encabezado con adjuntos, pregunta uno a uno si se borran también.
 ** Agenda
