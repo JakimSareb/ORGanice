@@ -14,7 +14,9 @@
   position: sticky;
   top: 0;
 
-  z-index: 1;
+  /* ORG Mode para Eli: por encima de la cabecera fija de la vista GTD (sus menús ⋯ se veían
+     debajo) */
+  z-index: 2;
 }
 
 .header-bar--with-logo {

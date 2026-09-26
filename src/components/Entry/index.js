@@ -24,6 +24,7 @@ import CaptureTemplatesEditor from '../CaptureTemplatesEditor';
 import FileSettingsEditor from '../FileSettingsEditor';
 import GtdView from '../Gtd';
 import EliConflicts from '../EliConflicts';
+import EliCommandPalette from '../EliCommandPalette';
 
 import * as syncBackendActions from '../../actions/sync_backend';
 import * as orgActions from '../../actions/org';
@@ -198,6 +199,7 @@ class Entry extends PureComponent {
         <LoadingIndicator message={loadingMessage} />
         <EliTools />
         {isAuthenticated && <EliConflicts />}
+        {isAuthenticated && <EliCommandPalette />}
 
         {isAuthenticated &&
           ([

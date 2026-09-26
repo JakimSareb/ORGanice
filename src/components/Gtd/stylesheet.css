@@ -172,6 +172,13 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
+  /* ORG Mode para Eli: la cabecera (con ☰ en el móvil) se queda arriba al bajar por la lista */
+  position: sticky;
+  top: -12px;
+  z-index: 1;
+  margin-top: -12px;
+  padding: 12px 0 8px;
+  background: var(--base3);
 }
 .gtd-main__menu {
   display: none;
@@ -651,6 +658,11 @@
   .gtd-main {
     padding: 8px 10px 60px;
   }
+  .gtd-main__head {
+    top: -8px;
+    margin-top: -8px;
+    padding-top: 8px;
+  }
   .gtd-main__menu {
     display: block;
   }
@@ -1057,4 +1069,120 @@
   color: var(--base00);
   font-size: 18px;
   cursor: pointer;
+}
+
+/* ORG Mode para Eli: fichero de origen de la tarea, discreto */
+.gtd-ed__file {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--base00);
+  opacity: 0.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ORG Mode para Eli: proyectos programados y dormidos en el menú lateral */
+.gtd-side__group {
+  margin-top: 4px;
+}
+.gtd-side__group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  background: none;
+  color: var(--base00);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.gtd-side__group-toggle .gtd-side__count {
+  margin-left: auto;
+}
+.gtd-side__group .gtd-side__item--project {
+  padding-left: 22px;
+  opacity: 0.8;
+}
+.gtd-side__item--all-projects {
+  font-size: 13px;
+  opacity: 0.85;
+}
+.gtd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--base1);
+  font-size: 12px;
+  color: var(--base00);
+}
+.gtd-badge--sleep {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+/* ORG Mode para Eli: vista «Todos los proyectos» */
+.gtd-projects-overview section {
+  margin-bottom: 8px;
+}
+.gtd-overview__n {
+  margin-left: 4px;
+  opacity: 0.6;
+}
+.gtd-overview__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 10px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--base2);
+  background: none;
+  color: var(--base01);
+  text-align: left;
+  cursor: pointer;
+  font-size: 15px;
+}
+.gtd-overview__row:hover {
+  background: var(--base2);
+}
+.gtd-overview__title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gtd-overview__title i {
+  opacity: 0.6;
+  margin-right: 4px;
+}
+.gtd-overview__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 12px;
+}
+.gtd-overview__next {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--base00);
+  opacity: 0.75;
+}
+.gtd-overview__next i {
+  font-size: 10px;
+  margin-right: 4px;
+}
+@media (max-width: 720px) {
+  .gtd-overview__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gtd-overview__meta {
+    justify-content: flex-start;
+  }
 }

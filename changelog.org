@@ -3,6 +3,18 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.5 (septiembre de 2026)
+** Paleta de comandos
+- Nueva: *Ctrl+K* (⌘K en el Mac; en el móvil, menú *⋯* → «Paleta de comandos»). Un solo cuadro para buscar ficheros, encabezados y tareas de todos los ficheros, listas y proyectos GTD, etiquetas y acciones de la app (nueva tarea en Inbox, capturar, agenda, sincronizar, archivar terminadas, tema, dos columnas, ajustes…). Búsqueda tolerante (cmppnt → «Comprar pintura»), recientes con la búsqueda vacía y prefijos > acciones, # etiquetas, / ficheros. Cada acción muestra su atajo.
+** Vista GTD
+- La tarea recién creada se queda arriba del todo en la lista que estás viendo.
+- En el móvil, la cabecera con el botón ☰ queda fija al bajar por la lista.
+- Scheduled en tres grupos: las normales, «Se repiten» (con repetición) y «Hábitos».
+- El editor muestra, en pequeño, el fichero donde está la tarea.
+- Proyectos dormidos (etiqueta :sleep:) y programados (PROJECT con SCHEDULED futuro): sus tareas no se ven en Next, Todo, Focus… y en el menú van a los grupos plegables «Dormidos» y «Programados». Un proyecto programado vuelve solo cuando llega su fecha.
+- El editor del proyecto («Editar el proyecto») tiene el selector Activo/Dormido y la fecha de inicio.
+- Nueva vista «Todos los proyectos»: activos, programados y dormidos, con área, inicio, vencimiento, tareas pendientes y siguiente acción, por fecha.
+
 * 2.4 (septiembre de 2026)
 ** Vista GTD
 - Logbook: buscador propio que busca solo entre las terminadas (título, notas, etiquetas y área). Con una búsqueda, «Archivar estas» archiva solo las encontradas.

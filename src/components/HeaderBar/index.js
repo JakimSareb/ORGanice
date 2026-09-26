@@ -54,7 +54,17 @@ class HeaderBar extends PureComponent {
 
   componentDidMount() {
     this.updateWindowTitle();
+    window.addEventListener('eli:split-open', this.eliOpenSplit);
   }
+
+  componentWillUnmount() {
+    window.removeEventListener('eli:split-open', this.eliOpenSplit);
+  }
+
+  // ORG Mode para Eli: «Dos columnas» pedido desde la paleta de comandos
+  eliOpenSplit = () => {
+    if (this.canOpenSplitView()) this.openSplitView();
+  };
 
   componentDidUpdate() {
     this.updateWindowTitle();
@@ -406,6 +416,12 @@ class HeaderBar extends PureComponent {
       // ORG Mode para Eli: a la vista solo lo de cada día; el resto en «⋯»
       const moreItems = isAuthenticated
         ? [
+            {
+              icon: 'fas fa-terminal',
+              label: 'Paleta de comandos (Ctrl+K)',
+              onClick: () => window.dispatchEvent(new CustomEvent('eli:palette')),
+              testId: 'eli-palette-open',
+            },
             inRealFile && {
               icon: 'fas fa-search',
               label: 'Buscar',

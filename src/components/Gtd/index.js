@@ -1,6 +1,6 @@
 // ORG Mode para Eli: vista GTD al estilo de Nirvana (menú lateral de listas y proyectos; las
 // tareas, filtradas, a la derecha). Trabaja sobre los mismos ficheros Org.
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { List } from 'immutable';
@@ -24,6 +24,8 @@ import {
   logbookGroupOf,
   archivableDone,
   matchesFilters,
+  projectState,
+  projectsOverview,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -200,11 +202,13 @@ function TaskRow({
               </span>
             )}
             {task.area && <span className="gtd-meta gtd-meta--area">{task.area}</span>}
-            {task.tags.map((t) => (
-              <span key={t} className="gtd-meta gtd-meta--tag">
-                {t}
-              </span>
-            ))}
+            {task.tags
+              .filter((t) => t.toLowerCase() !== 'sleep')
+              .map((t) => (
+                <span key={t} className="gtd-meta gtd-meta--tag">
+                  {t}
+                </span>
+              ))}
             {task.energy && (
               <span className="gtd-meta" title="Energía">
                 <i className="fas fa-bolt" /> {task.energy}
@@ -264,6 +268,10 @@ export default function GtdView() {
     (filters.dated ? 1 : 0);
   const [text, setText] = useState('');
   const [logText, setLogText] = useState('');
+  // ORG Mode para Eli: tareas creadas ahora en esta lista: se ven arriba del todo (hasta cambiar
+  // de lista)
+  const [freshKeys, setFreshKeys] = useState([]);
+  const [projGroupsOpen, setProjGroupsOpen] = useState({});
   const [openKey, setOpenKey] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
@@ -326,6 +334,19 @@ export default function GtdView() {
   const counts = useMemo(() => countsFor(tasks, { area }, today), [tasks, area, today]);
   const projects = useMemo(() => projectsOf(tasks, { area }), [tasks, area]);
   const allProjects = useMemo(() => projectsOf(tasks, {}), [tasks]);
+  const overview = useMemo(
+    () =>
+      view.id === 'projects'
+        ? projectsOverview(tasks, { area }, today)
+        : { active: [], scheduled: [], sleep: [] },
+    [view.id, tasks, area, today]
+  );
+  // ORG Mode para Eli: proyectos activos, programados (SCHEDULED a futuro) y dormidos (:sleep:)
+  const projectGroups = useMemo(() => {
+    const g = { active: [], scheduled: [], sleep: [] };
+    projects.forEach((p) => g[projectState(p, today)].push(p));
+    return g;
+  }, [projects, today]);
   const areas = useMemo(() => areasOf(tasks), [tasks]);
 
   const baseList = useMemo(() => tasksForView(tasks, view, { area, text }, today), [
@@ -344,17 +365,29 @@ export default function GtdView() {
   // ORG Mode para Eli: en Scheduled, los hábitos van siempre abajo, en su propia sección; en el
   // Logbook, secciones por fecha de cierre (esta semana, la pasada, el mes pasado, este año…)
   const splitHabits = view.id === 'scheduled';
-  const rendered = useMemo(
-    () =>
-      splitHabits
-        ? [...visible.filter((t) => !t.isHabit), ...visible.filter((t) => t.isHabit)]
-        : visible,
-    [visible, splitHabits]
-  );
+  const rendered = useMemo(() => {
+    // Scheduled: programadas normales, luego las que se repiten y al final los hábitos
+    let list = splitHabits
+      ? [
+          ...visible.filter((t) => !t.isHabit && !t.repeats),
+          ...visible.filter((t) => !t.isHabit && t.repeats),
+          ...visible.filter((t) => t.isHabit),
+        ]
+      : visible;
+    if (freshKeys.length) {
+      const fresh = freshKeys.map((k) => list.find((t) => t.key === k)).filter(Boolean);
+      if (fresh.length) list = [...fresh, ...list.filter((t) => !freshKeys.includes(t.key))];
+    }
+    return list;
+  }, [visible, splitHabits, freshKeys]);
   const sectionStarts = useMemo(() => {
     const out = {};
     if (splitHabits) {
-      const first = rendered.find((t) => t.isHabit);
+      const isFresh = (t) => freshKeys.includes(t.key);
+      const firstRep = rendered.find((t) => !isFresh(t) && !t.isHabit && t.repeats);
+      if (firstRep)
+        out[firstRep.key] = { id: 'repeats', label: 'Se repiten', icon: 'fas fa-sync-alt' };
+      const first = rendered.find((t) => !isFresh(t) && t.isHabit);
       if (first) out[first.key] = { id: 'habits', label: 'Hábitos', icon: 'fas fa-redo-alt' };
     } else if (view.id === 'logbook') {
       let prev = null;
@@ -365,7 +398,7 @@ export default function GtdView() {
       });
     }
     return out;
-  }, [rendered, splitHabits, view.id, today]);
+  }, [rendered, splitHabits, view.id, today, freshKeys]);
 
   // ORG Mode para Eli: Logbook → terminadas sin archivar (todas, no solo las 300 que se ven) y
   // botones para archivarlas de una vez, en total o por sección
@@ -479,6 +512,7 @@ export default function GtdView() {
     writeLS(LS_VIEW, v);
     setFilters({ tags: [], energy: null, time: null, dated: false }); // como Nirvana
     setOpenKey(null);
+    setFreshKeys([]);
     setSideOpen(false);
   }, []);
   const selectArea = (a) => {
@@ -537,7 +571,11 @@ export default function GtdView() {
     );
     setNewTitle('');
     // ORG Mode para Eli: la tarea nueva se abre en el editor para completar sus datos
-    if (newId) setOpenKey(`${target.path}::${newId}`);
+    if (newId) {
+      const key = `${target.path}::${newId}`;
+      setFreshKeys((k) => [key, ...k.filter((x) => x !== key)]);
+      setOpenKey(key);
+    }
   };
 
   const addProject = () => {
@@ -623,11 +661,91 @@ export default function GtdView() {
   const syncAll = () =>
     scopePaths.forEach((p) => dispatch(sync({ path: p, shouldSuppressMessages: true })));
 
+  // ORG Mode para Eli: órdenes de la paleta de comandos (ver EliCommandPalette)
+  const gtdCmdRef = useRef();
+  gtdCmdRef.current = (cmd) => {
+    if (!cmd) return;
+    if (cmd.view) selectView(cmd.view);
+    if (cmd.agenda) setShowAgenda(true);
+    if (cmd.sync) syncAll();
+    if (cmd.focusAdd) {
+      setTimeout(() => {
+        const el = document.querySelector('[data-testid="gtd-add"]');
+        if (el) el.focus();
+      }, 50);
+    }
+  };
+  useEffect(() => {
+    const onCmd = (e) => gtdCmdRef.current(e.detail);
+    window.addEventListener('eli:gtd', onCmd);
+    const pending = window.__eliGtdPending;
+    if (pending) {
+      window.__eliGtdPending = null;
+      setTimeout(() => gtdCmdRef.current(pending), 0);
+    }
+    return () => window.removeEventListener('eli:gtd', onCmd);
+  }, []);
+
+  const renderEditor = (task) => (
+    <TaskEditor
+      key={task.key + task.header.hashCode() + ':' + editorRev}
+      task={task}
+      projects={allProjects.filter((p) => p.key !== task.key)}
+      areas={areas}
+      allTags={allTags}
+      contextTags={contextTags}
+      onOpenLink={(target) => openLink(task, target)}
+      onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
+      onClose={() => setOpenKey(null)}
+      onUndo={() => {
+        dispatch(gtdUndo());
+        setEditorRev((r) => r + 1);
+      }}
+      onRedo={() => {
+        dispatch(gtdRedo());
+        setEditorRev((r) => r + 1);
+      }}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      onOpen={() => openInFile(task)}
+      onDelete={() => deleteTask(task)}
+      onArchive={() => {
+        setOpenKey(null);
+        dispatch(gtdArchiveTask(task));
+      }}
+      energyOptions={energyOptions}
+      effortOptions={effortOptions}
+    />
+  );
+
+  const renderProjectButton = (p) => {
+    const n = tasksForView(tasks, { type: 'project', key: p.key }, { area: '*' }, today).length;
+    return (
+      <button
+        key={p.key}
+        data-drop={`project:${p.key}`}
+        className={
+          'gtd-side__item gtd-side__item--project' +
+          (view.key === p.key ? ' is-on' : '') +
+          dropProps(`project:${p.key}`).className
+        }
+        onClick={() => selectView({ type: 'project', key: p.key })}
+        data-testid="gtd-project"
+      >
+        <i className="fas fa-project-diagram gtd-side__icon" />
+        <span className="gtd-side__label">{p.title}</span>
+        {n > 0 && <span className="gtd-side__count">{n}</span>}
+      </button>
+    );
+  };
+
   const title =
     view.type === 'project'
       ? projectTask
         ? projectTask.title
         : 'Proyecto'
+      : view.id === 'projects'
+      ? 'Todos los proyectos'
       : ([...LISTS, ...EXTRA_LISTS].find((l) => l.id === view.id) || {}).label;
 
   const renderListItem = (l) => (
@@ -707,30 +825,41 @@ export default function GtdView() {
           </button>
         </div>
         <nav className="gtd-side__projects">
-          {projects.length === 0 && (
-            <div className="gtd-side__empty">Sin proyectos (estado PROJECT)</div>
+          <button
+            className={
+              'gtd-side__item gtd-side__item--all-projects' +
+              (view.id === 'projects' ? ' is-on' : '')
+            }
+            onClick={() => selectView({ id: 'projects' })}
+            data-testid="gtd-all-projects"
+          >
+            <i className="fas fa-th-list gtd-side__icon" />
+            <span className="gtd-side__label">Todos los proyectos</span>
+          </button>
+          {projectGroups.active.length === 0 && (
+            <div className="gtd-side__empty">Sin proyectos activos (estado PROJECT)</div>
           )}
-          {projects.map((p) => {
-            const n = tasksForView(tasks, { type: 'project', key: p.key }, { area: '*' }, today)
-              .length;
-            return (
-              <button
-                key={p.key}
-                data-drop={`project:${p.key}`}
-                className={
-                  'gtd-side__item gtd-side__item--project' +
-                  (view.key === p.key ? ' is-on' : '') +
-                  dropProps(`project:${p.key}`).className
-                }
-                onClick={() => selectView({ type: 'project', key: p.key })}
-                data-testid="gtd-project"
-              >
-                <i className="fas fa-project-diagram gtd-side__icon" />
-                <span className="gtd-side__label">{p.title}</span>
-                {n > 0 && <span className="gtd-side__count">{n}</span>}
-              </button>
-            );
-          })}
+          {projectGroups.active.map(renderProjectButton)}
+          {[
+            ['scheduled', 'Programados', 'far fa-calendar-alt'],
+            ['sleep', 'Dormidos', 'fas fa-bed'],
+          ].map(([id, label, icon]) =>
+            projectGroups[id].length ? (
+              <div key={id} className="gtd-side__group" data-testid={`gtd-projects-${id}`}>
+                <button
+                  className="gtd-side__group-toggle"
+                  onClick={() => setProjGroupsOpen((g) => ({ ...g, [id]: !g[id] }))}
+                  aria-expanded={!!projGroupsOpen[id]}
+                  data-testid={`gtd-projects-${id}-toggle`}
+                >
+                  <i className={projGroupsOpen[id] ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
+                  <i className={icon} /> {label}
+                  <span className="gtd-side__count">{projectGroups[id].length}</span>
+                </button>
+                {projGroupsOpen[id] && projectGroups[id].map(renderProjectButton)}
+              </div>
+            ) : null
+          )}
         </nav>
         <nav className="gtd-side__lists gtd-side__lists--extra">
           {EXTRA_LISTS.map(renderListItem)}
@@ -758,7 +887,11 @@ export default function GtdView() {
           </button>
           <h1 className="gtd-main__title" data-testid="gtd-title">
             {title}
-            <span className="gtd-main__count">{visible.length}</span>
+            <span className="gtd-main__count">
+              {view.id === 'projects'
+                ? overview.active.length + overview.scheduled.length + overview.sleep.length
+                : visible.length}
+            </span>
           </h1>
           <button
             className="gtd-main__sync"
@@ -792,13 +925,91 @@ export default function GtdView() {
                 <i className="fas fa-flag" /> {fmtDate(projectTask.deadline)}
               </span>
             )}
+            {projectState(projectTask, today) === 'sleep' && (
+              <span className="gtd-badge gtd-badge--sleep" data-testid="gtd-project-sleeping">
+                <i className="fas fa-bed" /> Dormido
+              </span>
+            )}
+            {projectState(projectTask, today) === 'scheduled' && (
+              <span className="gtd-badge" data-testid="gtd-project-scheduled">
+                <i className="far fa-calendar-alt" /> Empieza el{' '}
+                {fmtDate(projectTask.scheduled || projectTask.projectStart)}
+              </span>
+            )}
+            <button
+              className="gtd-btn gtd-btn--link"
+              onClick={() => setOpenKey(openKey === projectTask.key ? null : projectTask.key)}
+              data-testid="gtd-edit-project"
+            >
+              <i className="fas fa-pen" /> Editar el proyecto
+            </button>
             <button className="gtd-btn gtd-btn--link" onClick={() => openInFile(projectTask)}>
-              <i className="fas fa-external-link-alt" /> Abrir el proyecto en su fichero
+              <i className="fas fa-external-link-alt" /> Abrir en su fichero
             </button>
           </div>
         )}
+        {projectTask && openKey === projectTask.key && renderEditor(projectTask)}
 
-        {view.id !== 'logbook' && view.id !== 'reference' && (
+        {view.id === 'projects' && (
+          <div className="gtd-projects-overview" data-testid="gtd-projects-overview">
+            {[
+              ['active', 'Activos'],
+              ['scheduled', 'Programados'],
+              ['sleep', 'Dormidos'],
+            ].map(([id, label]) =>
+              overview[id].length ? (
+                <section key={id}>
+                  <div className="gtd-section" data-testid={`gtd-overview-${id}`}>
+                    {label} <span className="gtd-overview__n">{overview[id].length}</span>
+                  </div>
+                  {overview[id].map((r) => (
+                    <button
+                      key={r.project.key}
+                      className="gtd-overview__row"
+                      onClick={() => selectView({ type: 'project', key: r.project.key })}
+                      data-testid="gtd-overview-row"
+                    >
+                      <span className="gtd-overview__title">
+                        <i className="fas fa-project-diagram" /> {r.project.title}
+                      </span>
+                      <span className="gtd-overview__meta">
+                        {r.project.area && (
+                          <span className="gtd-meta gtd-meta--area">{r.project.area}</span>
+                        )}
+                        {r.start && (
+                          <span className="gtd-date" title="Empieza (SCHEDULED)">
+                            <i className="far fa-calendar-alt" /> {fmtDate(r.start)}
+                          </span>
+                        )}
+                        {r.deadline && (
+                          <span
+                            className={'gtd-date' + (r.deadline < today ? ' gtd-date--due' : '')}
+                            title="Vence (DEADLINE)"
+                          >
+                            <i className="fas fa-flag" /> {fmtDate(r.deadline)}
+                          </span>
+                        )}
+                        <span className="gtd-meta" title="Acciones pendientes">
+                          <i className="fas fa-tasks" /> {r.pending}
+                        </span>
+                      </span>
+                      {r.next && (
+                        <span className="gtd-overview__next" title="Siguiente acción">
+                          <i className="fas fa-play" /> {r.next.title}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </section>
+              ) : null
+            )}
+            {!overview.active.length && !overview.scheduled.length && !overview.sleep.length && (
+              <div className="gtd-empty">No hay proyectos (encabezados con estado PROJECT).</div>
+            )}
+          </div>
+        )}
+
+        {view.id !== 'logbook' && view.id !== 'reference' && view.id !== 'projects' && (
           <div className="gtd-add">
             <i className="fas fa-plus" />
             <input
@@ -994,7 +1205,7 @@ export default function GtdView() {
           </div>
         )}
 
-        <div className="gtd-list">
+        <div className="gtd-list" style={view.id === 'projects' ? { display: 'none' } : undefined}>
           {loading && visible.length === 0 && <div className="gtd-empty">Cargando ficheros…</div>}
           {!loading && visible.length === 0 && (
             <div className="gtd-empty">
@@ -1041,37 +1252,7 @@ export default function GtdView() {
                 showProject={view.type !== 'project'}
                 hideActions={isLogbook}
               />
-              {openKey === task.key && (
-                <TaskEditor
-                  key={task.key + task.header.hashCode() + ':' + editorRev}
-                  task={task}
-                  projects={allProjects.filter((p) => p.key !== task.key)}
-                  areas={areas}
-                  allTags={allTags}
-                  contextTags={contextTags}
-                  onOpenLink={(target) => openLink(task, target)}
-                  onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
-                  onClose={() => setOpenKey(null)}
-                  onUndo={() => {
-                    dispatch(gtdUndo());
-                    setEditorRev((r) => r + 1);
-                  }}
-                  onRedo={() => {
-                    dispatch(gtdRedo());
-                    setEditorRev((r) => r + 1);
-                  }}
-                  canUndo={canUndo}
-                  canRedo={canRedo}
-                  onOpen={() => openInFile(task)}
-                  onDelete={() => deleteTask(task)}
-                  onArchive={() => {
-                    setOpenKey(null);
-                    dispatch(gtdArchiveTask(task));
-                  }}
-                  energyOptions={energyOptions}
-                  effortOptions={effortOptions}
-                />
-              )}
+              {openKey === task.key && renderEditor(task)}
             </React.Fragment>
           ))}
         </div>

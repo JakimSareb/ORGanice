@@ -87,6 +87,31 @@ const planningDate = (header, type) => {
   }
 };
 
+const laterDate = (a, b) => (!a ? b || null : !b ? a : a > b ? a : b);
+
+// ORG Mode para Eli: proyectos dormidos (etiqueta :sleep:, se hereda como en Org) y programados
+// (PROJECT con SCHEDULED a futuro). Sus tareas no salen en las listas hasta que despiertan.
+export const SLEEP_TAG = 'sleep';
+export const hasSleepTag = (tags) => (tags || []).some((t) => t.toLowerCase() === SLEEP_TAG);
+export const isSleeping = (task) => hasSleepTag(task.tags);
+const isFutureDate = (d, today) => !!d && startOfDay(d) > startOfDay(today);
+// Tarea (no proyecto) aparcada: dentro de algo dormido o de un proyecto que aún no empieza
+export const isParked = (task, today = new Date()) =>
+  !task.isProject && !task.isDone && (isSleeping(task) || isFutureDate(task.projectStart, today));
+export const projectState = (project, today = new Date()) => {
+  if (isSleeping(project)) return 'sleep';
+  if (isFutureDate(project.scheduled, today) || isFutureDate(project.projectStart, today))
+    return 'scheduled';
+  return 'active';
+};
+
+// ¿Alguna fecha SCHEDULED/DEADLINE con repetición (+1w, .+1d, ++1m…)?
+const hasRepeater = (header) =>
+  (header.get('planningItems') || List()).some(
+    (p) =>
+      ['SCHEDULED', 'DEADLINE'].includes(p.get('type')) && !!p.getIn(['timestamp', 'repeaterType'])
+  );
+
 export const PRIORITY_RE = /^\s*\[#([A-Z0-9])\]\s*/;
 
 // Título "limpio" (sin prioridad) y sin enlaces en bruto: [[url][texto]] → texto
@@ -169,11 +194,14 @@ const buildFileTasks = (file, path, isInboxFile) => {
         ownArea,
         energy: propertyValue(header, 'ENERGY'),
         isHabit: (propertyValue(header, 'STYLE') || '').toLowerCase() === 'habit',
+        repeats: hasRepeater(header),
         effort: propertyValue(header, 'EFFORT'),
         scheduled: planningDate(header, 'SCHEDULED'),
         deadline: planningDate(header, 'DEADLINE'),
         closed: planningDate(header, 'CLOSED'),
         project: parent ? parent.project : null,
+        // Fecha de inicio del proyecto que la contiene (SCHEDULED del PROJECT o de uno de fuera)
+        projectStart: parent ? parent.projectStart : null,
         isProject,
         isInboxFile,
         parentHasKeyword: parent ? parent.hasKeyword : false,
@@ -190,6 +218,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         tags: task.tags,
         area,
         project: isProject ? { id: header.get('id'), path, title: task.title } : task.project,
+        projectStart: isProject ? laterDate(task.scheduled, task.projectStart) : task.projectStart,
         hasKeyword: !!keyword || (parent ? parent.hasKeyword : false),
       });
     });
@@ -220,12 +249,17 @@ export const isHiddenUntilScheduled = (task, today = new Date()) =>
   isFutureScheduled(task, today) && !task.deadline;
 
 const isScheduledView = (t, today) =>
-  !t.isDone && !t.isProject && (!!t.keyword || hasInboxTag(t)) && isFutureScheduled(t, today);
+  !t.isDone &&
+  !t.isProject &&
+  !isParked(t, today) &&
+  (!!t.keyword || hasInboxTag(t)) &&
+  isFutureScheduled(t, today);
 
 // Lista a la que pertenece una tarea (una sola; Focus es aparte)
 export const listOf = (task, today = new Date()) => {
   if (task.isDone) return 'logbook';
   if (task.isProject) return 'project';
+  if (isParked(task, today)) return 'parked';
   const inbox = hasInboxTag(task);
   if ((task.keyword || inbox) && isHiddenUntilScheduled(task, today)) return 'scheduled';
   // Inbox: etiqueta @inbox, o encabezados sin estado del fichero de entrada
@@ -246,6 +280,7 @@ export const needsAutoPriority = (task, today = new Date()) =>
   !task.isDone &&
   !task.isProject &&
   !task.isHabit &&
+  !isParked(task, today) &&
   task.priority !== 'A' &&
   (isDue(task.scheduled, today) || isDue(task.deadline, today));
 
@@ -262,6 +297,7 @@ export const autoPriorityKey = (task, today = new Date()) =>
 export const isFocus = (task, today = new Date()) => {
   if (task.isDone || task.isProject || !task.keyword) return false;
   if (task.isHabit) return false; // los hábitos (:STYLE: habit) no se ven en Focus
+  if (isParked(task, today)) return false; // proyecto dormido o que aún no empieza
   if (isHiddenUntilScheduled(task, today)) return false; // hasta su fecha, solo en Scheduled
   if (task.priority === 'A') return true;
   const t0 = startOfDay(today);
@@ -327,7 +363,9 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
   } else if (view.id === 'focus') {
     out = tasks.filter((t) => isFocus(t, today));
   } else if (view.id === 'deadline') {
-    out = tasks.filter((t) => t.deadline && t.keyword && !t.isDone && !t.isProject);
+    out = tasks.filter(
+      (t) => t.deadline && t.keyword && !t.isDone && !t.isProject && !isParked(t, today)
+    );
   } else if (view.id === 'scheduled') {
     // Todas las programadas a futuro (también las que tienen DEADLINE y se ven en su lista)
     out = tasks.filter((t) => isScheduledView(t, today));
@@ -372,7 +410,7 @@ export const facetsFor = (tasks) => {
   let hasEffort = false;
   let hasDates = false;
   tasks.forEach((t) => {
-    t.tags.forEach((x) => tags.add(x));
+    t.tags.forEach((x) => x.toLowerCase() !== SLEEP_TAG && tags.add(x));
     if (t.energy) energy.add(t.energy);
     if (t.effort) hasEffort = true;
     if (t.deadline || t.scheduled) hasDates = true;
@@ -431,4 +469,42 @@ export const archivableDone = (tasks) => {
     });
   });
   return { ok, blocked };
+};
+
+// ORG Mode para Eli: vista «Todos los proyectos»: cada proyecto con su estado, fechas, acciones
+// pendientes y siguiente acción, agrupados (activos, programados, dormidos) y por fecha
+export const projectsOverview = (tasks, filters = {}, today = new Date()) => {
+  const groups = { active: [], scheduled: [], sleep: [] };
+  projectsOf(tasks, filters).forEach((p) => {
+    const actions = tasks.filter(
+      (t) =>
+        t.path === p.path &&
+        t.project &&
+        t.project.id === p.id &&
+        t.keyword &&
+        !t.isDone &&
+        !t.isProject
+    );
+    const next = actions.find((t) => t.keyword === 'NEXT') || actions[0] || null;
+    const state = projectState(p, today);
+    groups[state].push({
+      project: p,
+      state,
+      start: laterDate(p.scheduled, p.projectStart),
+      deadline: p.deadline,
+      pending: actions.length,
+      next,
+    });
+  });
+  const key = (r) => r.start || r.deadline || null;
+  const byDate = (a, b) => {
+    const da = key(a);
+    const db = key(b);
+    if (da && db && +da !== +db) return da - db;
+    if (da && !db) return -1;
+    if (!da && db) return 1;
+    return a.project.title.localeCompare(b.project.title);
+  };
+  Object.values(groups).forEach((g) => g.sort(byDate));
+  return groups;
 };

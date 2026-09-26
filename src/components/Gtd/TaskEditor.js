@@ -7,6 +7,8 @@ import {
   PRIORITY_RE,
   hasInboxTag,
   tagsForList,
+  hasSleepTag,
+  SLEEP_TAG,
 } from '../../lib/gtd/gtd_model';
 
 const LIST_OPTIONS = [
@@ -105,7 +107,12 @@ export default function TaskEditor({
   const [notes, setNotes] = useState(task.description || '');
   const [list, setList] = useState(currentListOf(task));
   const [area, setArea] = useState(task.ownArea || '');
-  const [tags, setTags] = useState(task.ownTags);
+  // ORG Mode para Eli: en un proyecto, la etiqueta :sleep: se maneja con «Activo / Dormido»
+  const isProject = !!task.isProject;
+  const [sleep, setSleep] = useState(isProject && hasSleepTag(task.ownTags));
+  const [tags, setTags] = useState(
+    isProject ? task.ownTags.filter((t) => t.toLowerCase() !== SLEEP_TAG) : task.ownTags
+  );
   const [tagInput, setTagInput] = useState('');
   const [energy, setEnergy] = useState(task.energy || '');
   const [effort, setEffort] = useState(task.effort || '');
@@ -157,6 +164,7 @@ export default function TaskEditor({
   // (clic fuera, Esc, Intro, otra tarea, otra vista…). Solo se escriben los campos que han
   // cambiado respecto a como estaban al abrirlo, para no pisar lo que llegue de otro sitio.
   const current = {
+    sleep,
     star,
     title,
     notes,
@@ -187,7 +195,9 @@ export default function TaskEditor({
     let finalTags = c.tagInput.trim()
       ? Array.from(new Set([...c.tags, c.tagInput.trim()]))
       : c.tags;
-    if (c.list !== b.list || finalTags.join(' ') !== b.tags.join(' ')) {
+    if (isProject && c.sleep) finalTags = [...finalTags, SLEEP_TAG];
+    const baseTags = isProject && b.sleep ? [...b.tags, SLEEP_TAG] : b.tags;
+    if (c.list !== b.list || finalTags.join(' ') !== baseTags.join(' ')) {
       // Inbox = etiqueta @inbox: al sacarla de Inbox se quita; al llevarla a Inbox (fuera del
       // fichero de entrada) se pone
       changes.tags = tagsForList(t, c.list, finalTags);
@@ -504,20 +514,34 @@ export default function TaskEditor({
 
         <div className="gtd-ed__gap" />
 
-        <label className="gtd-ed__field has-value" title="Lista o estado">
-          <i className="far fa-arrow-alt-circle-right" aria-hidden="true" />
-          <select
-            value={list}
-            onChange={(e) => setList(e.target.value)}
-            data-testid="gtd-editor-list"
-          >
-            {listOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {isProject ? (
+          <label className="gtd-ed__field has-value" title="Estado del proyecto">
+            <i className={sleep ? 'fas fa-bed' : 'fas fa-project-diagram'} aria-hidden="true" />
+            <select
+              value={sleep ? 'sleep' : 'active'}
+              onChange={(e) => setSleep(e.target.value === 'sleep')}
+              data-testid="gtd-editor-project-state"
+            >
+              <option value="active">Proyecto activo</option>
+              <option value="sleep">Proyecto dormido (:sleep:)</option>
+            </select>
+          </label>
+        ) : (
+          <label className="gtd-ed__field has-value" title="Lista o estado">
+            <i className="far fa-arrow-alt-circle-right" aria-hidden="true" />
+            <select
+              value={list}
+              onChange={(e) => setList(e.target.value)}
+              data-testid="gtd-editor-list"
+            >
+              {listOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="gtd-ed__field has-value" title="Proyecto">
           <i className="fas fa-long-arrow-alt-right" aria-hidden="true" />
           <select
@@ -551,6 +575,13 @@ export default function TaskEditor({
       </div>
 
       <div className="gtd-editor__actions">
+        <span
+          className="gtd-ed__file"
+          title={`Fichero: ${task.path}`}
+          data-testid="gtd-editor-file"
+        >
+          <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
+        </span>
         <button
           type="button"
           className="gtd-btn gtd-btn--link"
