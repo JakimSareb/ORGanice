@@ -109,6 +109,7 @@ class TitleLine extends PureComponent {
       headerDeadlineMap,
       deadlineString,
       isOverdue,
+      eliHideTodoKeyword,
     } = this.props;
     const { containerWidth } = this.state;
 
@@ -135,7 +136,8 @@ class TitleLine extends PureComponent {
         onClick={this.handleTitleClick}
         style={{ width: shouldDisableExplicitWidth ? '' : containerWidth }}
       >
-        {!!todoKeyword ? (
+        {/* ORG Mode para Eli: en los hábitos de la agenda no se muestra el estado */}
+        {!!todoKeyword && !eliHideTodoKeyword ? (
           <span
             // INFO: Instead of `todoKeyword.toLowerCase()` it would
             // be best to render todo-keyword--done if the keyword is

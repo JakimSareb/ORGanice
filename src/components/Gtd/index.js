@@ -236,6 +236,8 @@ export default function GtdView() {
   const files = useSelector(selectFiles);
   const fileSettings = useSelector(selectFileSettings);
   const templates = useSelector(selectTemplates);
+  // Tras deshacer/rehacer desde el editor, se vuelve a crear para que muestre lo actual
+  const [editorRev, setEditorRev] = useState(0);
   const canUndo = useSelector(selectCanUndo);
   const canRedo = useSelector(selectCanRedo);
   const client = useSelector(selectClient);
@@ -477,7 +479,6 @@ export default function GtdView() {
       const project = projectKey ? allProjects.find((p) => p.key === projectKey) : null;
       dispatch(gtdMoveToProject(task, project ? { path: project.path, id: project.id } : null));
     }
-    setOpenKey(null);
   };
 
   const deleteTask = async (task) => {
@@ -658,6 +659,18 @@ export default function GtdView() {
       </aside>
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
+      {/* ORG Mode para Eli: en el móvil, con el menú escondido, una pestaña pequeña a media
+          altura del borde izquierdo lo vuelve a sacar */}
+      <button
+        type="button"
+        className="gtd-side-tab"
+        onClick={() => setSideOpen(true)}
+        aria-label="Mostrar el menú"
+        title="Mostrar el menú"
+        data-testid="gtd-side-tab"
+      >
+        <i className="fas fa-chevron-right" />
+      </button>
 
       <main className="gtd-main">
         <header className="gtd-main__head">
@@ -800,7 +813,7 @@ export default function GtdView() {
               />
               {openKey === task.key && (
                 <TaskEditor
-                  key={task.key + task.header.hashCode()}
+                  key={task.key + task.header.hashCode() + ':' + editorRev}
                   task={task}
                   projects={allProjects.filter((p) => p.key !== task.key)}
                   areas={areas}
@@ -808,7 +821,17 @@ export default function GtdView() {
                   contextTags={contextTags}
                   onOpenLink={(target) => openLink(task, target)}
                   onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
-                  onCancel={() => setOpenKey(null)}
+                  onClose={() => setOpenKey(null)}
+                  onUndo={() => {
+                    dispatch(gtdUndo());
+                    setEditorRev((r) => r + 1);
+                  }}
+                  onRedo={() => {
+                    dispatch(gtdRedo());
+                    setEditorRev((r) => r + 1);
+                  }}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
                   onOpen={() => openInFile(task)}
                   onDelete={() => deleteTask(task)}
                   onArchive={() => {

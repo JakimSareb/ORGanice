@@ -1,0 +1,30 @@
+@import '../../colors.css';
+
+/* ORG Mode para Eli: barra de formato de texto */
+.eli-format-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 6px;
+}
+.eli-format-bar__btn {
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--base1);
+  border-radius: 6px;
+  background: var(--base3);
+  color: var(--base00);
+  font-size: 13px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.eli-format-bar__btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.eli-format-bar--compact .eli-format-bar__btn {
+  width: 28px;
+  height: 24px;
+  font-size: 12px;
+}

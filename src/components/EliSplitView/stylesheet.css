@@ -1,0 +1,30 @@
+html,
+body {
+  height: 100%;
+}
+.eli-split {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #5a4870;
+}
+.eli-split__pane {
+  border: 0;
+  height: 100%;
+  background: #fdf6e3;
+  display: block;
+}
+.eli-split__divider {
+  flex: 0 0 6px;
+  cursor: col-resize;
+  background: linear-gradient(180deg, #f59fc4, #b9a0f0);
+  touch-action: none;
+}
+.eli-split__divider:hover {
+  background: #8f6fe0;
+}
+/* Mientras se arrastra la división, los marcos no se quedan con el ratón */
+.eli-split.is-dragging .eli-split__pane {
+  pointer-events: none;
+}

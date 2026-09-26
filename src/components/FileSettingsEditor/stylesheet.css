@@ -3,3 +3,24 @@
   color: var(--base0);
   padding: 20px;
 }
+
+/* ORG Mode para Eli: opciones comunes (todos los ficheros, fichero de inicio) */
+.eli-file-settings__common {
+  margin: 4px 0 18px;
+  padding: 12px;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+}
+.eli-file-settings__add-all i {
+  margin-right: 4px;
+}
+.eli-file-settings__unique {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 0.95em;
+}
+.eli-file-settings__unique select {
+  max-width: 100%;
+}

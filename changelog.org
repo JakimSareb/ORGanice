@@ -3,6 +3,28 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 1.3 (septiembre de 2026)
+** Vista GTD
+- El editor de tareas ya no tiene Guardar ni Cancelar: se guarda solo al salir (tocar fuera, otra tarea, Esc o Intro). Tiene Deshacer y Rehacer.
+- En el móvil, con el menú lateral escondido, una pestaña pequeña en el borde izquierdo lo vuelve a sacar.
+** Formato del texto
+- Botones de negrita, cursiva, subrayado, tachado, código y literal en los editores de título, descripción, notas, elementos de lista y en el editor de la vista GTD. Ponen o quitan los marcadores de Org Mode en el texto seleccionado.
+** Ajustes de ficheros
+- «Añadir todos los ficheros .org»: los de la carpeta y subcarpetas, en la agenda, búsqueda, lista de tareas y refile.
+- Desplegable para el fichero que se abre al iniciar (solo puede ser uno).
+** Dos vistas a la vez
+- Botón de dos columnas en la barra superior (pantallas anchas): por ejemplo, GTD a un lado y un fichero al otro. Los cambios de una se ven en la otra.
+** Agenda
+- La línea con los días que faltan, el tipo y la fecha va justo encima de la tarea.
+- Los hábitos se muestran sin el estado (TODO), con más aire entre uno y otro.
+- Al tocar una tarea de otro fichero, también se abre en narrow.
+** Hoja
+- Los avisos de sincronización y apertura de ficheros son una pastilla pequeña en la barra superior; ya no tapan el texto.
+- Icono de copiar enlace: una cadena con una flechita de compartir.
+- Al seguir un enlace a otro encabezado, queda seleccionado (también en otro fichero ya abierto). Al volver a un fichero abierto se conserva lo plegado y desplegado.
+- Tocar el texto que cuelga de un elemento de lista selecciona ese elemento; Intro lo edita y el atajo de «editar descripción» edita su texto.
+- Seleccionar texto con el ratón dentro de un encabezado o de un editor ya no arrastra el encabezado.
+
 * 1.2 (septiembre de 2026)
 ** Vista GTD al estilo de Nirvana
 - Botón de la lista con marcas (barra superior y explorador) o tecla =g=.

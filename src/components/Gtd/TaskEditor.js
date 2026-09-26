@@ -1,5 +1,6 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useRef } from 'react';
+import EliFormatBar from '../EliFormatBar';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -92,9 +93,13 @@ export default function TaskEditor({
   onArchive,
   onOpenLink,
   onSave,
-  onCancel,
+  onClose,
   onOpen,
   onDelete,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
 }) {
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
@@ -146,39 +151,96 @@ export default function TaskEditor({
 
   const toggleTag = (t) => setTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t]);
 
-  const save = () => {
-    let finalTags = tagInput.trim() ? Array.from(new Set([...tags, tagInput.trim()])) : tags;
-    // Inbox = etiqueta @inbox: al sacarla de Inbox se quita; al llevarla a Inbox (fuera del
-    // fichero de entrada) se pone
-    finalTags = tagsForList(task, list, finalTags);
-    const changes = {
-      rawTitle: title.trim() || task.rawTitle,
-      tags: finalTags,
-      area: area.trim() || null,
-      energy: energy || null,
-      effort: effort || null,
-      scheduled: fromDateInput(scheduled),
-      deadline: fromDateInput(deadline),
+  // ORG Mode para Eli: sin Guardar ni Cancelar. Lo cambiado se guarda al salir del editor
+  // (clic fuera, Esc, Intro, otra tarea, otra vista…). Solo se escriben los campos que han
+  // cambiado respecto a como estaban al abrirlo, para no pisar lo que llegue de otro sitio.
+  const current = {
+    title,
+    notes,
+    list,
+    area,
+    tags,
+    tagInput,
+    energy,
+    effort,
+    scheduled,
+    deadline,
+    project,
+  };
+  const latest = useRef(current);
+  latest.current = current;
+  const baseline = useRef(null);
+  if (baseline.current === null) baseline.current = { ...current };
+  const propsRef = useRef({ onSave, task, encrypted });
+  propsRef.current = { onSave, task, encrypted };
+
+  const commit = () => {
+    const c = latest.current;
+    const b = baseline.current;
+    const { task: t, onSave: save, encrypted: enc } = propsRef.current;
+    const changes = {};
+    if (c.title.trim() && c.title !== b.title) changes.rawTitle = c.title.trim();
+    let finalTags = c.tagInput.trim()
+      ? Array.from(new Set([...c.tags, c.tagInput.trim()]))
+      : c.tags;
+    if (c.list !== b.list || finalTags.join(' ') !== b.tags.join(' ')) {
+      // Inbox = etiqueta @inbox: al sacarla de Inbox se quita; al llevarla a Inbox (fuera del
+      // fichero de entrada) se pone
+      changes.tags = tagsForList(t, c.list, finalTags);
+    }
+    if (c.area !== b.area) changes.area = c.area.trim() || null;
+    if (c.energy !== b.energy) changes.energy = c.energy || null;
+    if (c.effort !== b.effort) changes.effort = c.effort || null;
+    if (c.scheduled !== b.scheduled) changes.scheduled = fromDateInput(c.scheduled);
+    if (c.deadline !== b.deadline) changes.deadline = fromDateInput(c.deadline);
+    if (!enc && c.notes !== b.notes) changes.notes = c.notes;
+    if (c.list !== b.list) changes.list = c.list;
+    const projectChanged = c.project !== b.project;
+    if (!Object.keys(changes).length && !projectChanged) return;
+    baseline.current = { ...c, tagInput: '' };
+    save(changes, projectChanged ? c.project : undefined);
+  };
+
+  // Al desmontarse (se cierra, se abre otra tarea, se cambia de vista…) se guarda
+  useEffect(() => () => commit(), []);
+
+  // Clic o toque fuera del editor: se guarda y se cierra. Si es sobre la propia fila de la
+  // tarea, ya la cierra ella.
+  const editorRef = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const onDown = (e) => {
+      const el = editorRef.current;
+      if (!el || el.contains(e.target)) return;
+      const row = el.previousElementSibling;
+      if (row && row.contains(e.target)) return;
+      closeRef.current();
     };
-    if (!encrypted) changes.notes = notes;
-    if (list !== currentListOf(task)) changes.list = list;
-    const currentProject = task.project ? `${task.project.path}::${task.project.id}` : '';
-    onSave(changes, project !== currentProject ? project : undefined);
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, []);
+
+  const b0 = baseline.current;
+  const dirty = Object.keys(current).some((k) =>
+    k === 'tags' ? current.tags.join(' ') !== b0.tags.join(' ') : current[k] !== b0[k]
+  );
+
+  const withCommit = (fn) => () => {
+    commit();
+    if (fn) fn();
   };
 
   const onKeyDown = (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
       e.preventDefault();
       e.stopPropagation();
-      onCancel();
-    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      save();
+      onClose();
     }
   };
 
   return (
-    <div className="gtd-editor" onKeyDown={onKeyDown} data-testid="gtd-editor">
+    <div className="gtd-editor" ref={editorRef} onKeyDown={onKeyDown} data-testid="gtd-editor">
       <input
         ref={titleRef}
         className="gtd-editor__title"
@@ -187,12 +249,20 @@ export default function TaskEditor({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
             e.preventDefault();
-            save();
+            onClose();
           }
         }}
         placeholder="Título"
         data-testid="gtd-editor-title"
       />
+      {!encrypted && (
+        <EliFormatBar
+          compact
+          getField={() =>
+            document.activeElement === titleRef.current ? titleRef.current : notesRef.current
+          }
+        />
+      )}
       <textarea
         ref={notesRef}
         className="gtd-editor__notes"
@@ -395,7 +465,7 @@ export default function TaskEditor({
         <button
           type="button"
           className="gtd-btn gtd-btn--link"
-          onClick={onOpen}
+          onClick={withCommit(onOpen)}
           title="Abrir en su fichero"
         >
           <i className="fas fa-external-link-alt" /> Abrir en el fichero
@@ -404,7 +474,7 @@ export default function TaskEditor({
           <button
             type="button"
             className="gtd-btn gtd-btn--link"
-            onClick={onArchive}
+            onClick={withCommit(onArchive)}
             title="Archivar (como en Emacs: al fichero _archive)"
             data-testid="gtd-editor-archive"
           >
@@ -415,16 +485,25 @@ export default function TaskEditor({
           <i className="fas fa-trash" /> Borrar
         </button>
         <span className="gtd-spacer" />
-        <button type="button" className="gtd-btn" onClick={onCancel}>
-          Cancelar
+        <button
+          type="button"
+          className="gtd-btn"
+          onClick={withCommit(onUndo)}
+          disabled={!canUndo && !dirty}
+          title="Deshacer"
+          data-testid="gtd-editor-undo"
+        >
+          <i className="fas fa-undo" /> Deshacer
         </button>
         <button
           type="button"
-          className="gtd-btn gtd-btn--primary"
-          onClick={save}
-          data-testid="gtd-editor-save"
+          className="gtd-btn"
+          onClick={withCommit(onRedo)}
+          disabled={!canRedo}
+          title="Rehacer"
+          data-testid="gtd-editor-redo"
         >
-          Guardar
+          <i className="fas fa-redo" /> Rehacer
         </button>
       </div>
     </div>

@@ -37,7 +37,7 @@ Selecciona este encabezado y prueba los iconos, de izquierda a derecha:
 | Más                | Crear un encabezado debajo. Mantenlo pulsado para duplicar el actual                                              |
 | Mover              | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                         |
 | Archivar           | Archivar como en Emacs (al fichero _archive)                                                                      |
-| Enlace             | Copiar el enlace a este encabezado, como C-c l en Emacs                                                           |
+| Enlace (cadena ↗)  | Copiar el enlace a este encabezado, como C-c l en Emacs                                                           |
 | Compartir          | Enviar el encabezado por correo                                                                                   |
 | PDF                | Exportar el encabezado a PDF                                                                                      |
 | Papelera           | Borrar (pide confirmación; si tiene adjuntos, pregunta también por cada uno)                                      |
@@ -49,23 +49,31 @@ Selecciona este encabezado y toca el lápiz.
 - Las *flechas azules* de la derecha mueven solo este encabezado: ↑ y ↓ una línea arriba o abajo, ← y → un nivel hacia fuera o hacia dentro. Sus subencabezados se quedan donde están.
 - Con el *tabulador* saltas al siguiente editor: título → descripción → etiquetas → fecha límite → fecha programada (mayúsculas + tabulador, al revés).
 - Tocando otra vez el lápiz de la barra inferior pasas a «Editar título completo», con el texto tal cual (estado, prioridad y etiquetas incluidos).
+** Formato del texto
+Encima de los editores (título, descripción, notas, elementos de lista y editor de la vista GTD) hay botones de formato: *negrita*, /cursiva/, _subrayado_, +tachado+, ~código~ y =literal=.
+- Selecciona el texto y toca el botón: se le ponen los marcadores de Org Mode. Si ya los tenía, se quitan.
+- Sin seleccionar nada, pone los dos marcadores y deja el cursor en medio para escribir.
+- Si seleccionas varias líneas, se marca cada una por separado (así lo entiende Emacs).
 *** Muéveme con las flechas
 *** Y a mí también
 
 ** Deslizar con el dedo
 - Desliza un encabezado *hacia la derecha* para avanzar su estado (NEXT → TODO → … → DONE).
 - Desliza *hacia la izquierda* para borrarlo (pide confirmación).
+- Con el ratón, el gesto empieza en la línea del título; así, seleccionar texto dentro de un encabezado o de un editor no lo mueve.
 *** TODO Desliza esta tarea hacia la derecha
 *** Deslízame hacia la izquierda para borrarme
 
 ** La barra superior
 - *Lista con marcas*: vista GTD (tecla g).
+- *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa.
 - *Flechas curvas*: deshacer y rehacer.
 - *Comprimir/expandir*: reducir la vista al encabezado seleccionado (narrow) o volver a verlo todo (widen).
 - *Líneas*: editar el fichero como texto plano, con botones para SCHEDULED, DEADLINE, adjuntar, enlaces…
 - *PDF*: exportar el fichero.
 - *Luna*: fases de la Luna.
 - *Engranajes*: Ajustes.
+- Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de esta barra, sin tapar el texto. Tócala para ocultarla.
 
 * Tareas y estados
 Los estados se escriben delante del título. ORGanice usa los mismos que tu Emacs:
@@ -111,21 +119,22 @@ SCHEDULED: <%HOY% .+1d>
 - State "DONE"       from "TODO"       [%HOY-2 08:05%]
 - State "DONE"       from "TODO"       [%HOY-4 07:55%]
 - State "DONE"       from "TODO"       [%HOY-5 08:20%]
-Un hábito (propiedad STYLE: habit). En la agenda solo se ve su título y el gráfico de constancia.
+Un hábito (propiedad STYLE: habit). En la agenda solo se ve su título (sin el estado) y el gráfico de constancia.
 
 * La agenda
 Tecla *a* o el botón del calendario (abajo a la derecha).
 - Pestañas Día, Semana y Mes.
 - Arriba, «Vencidas» (lo que se te ha pasado) y «Prioritarias» (★).
-- Debajo de cada tarea, en una línea: cuántos días faltan (en azul), el tipo y la fecha.
+- Justo encima de cada tarea, en una línea: cuántos días faltan (en azul), el tipo y la fecha.
 - El botón «Log» muestra lo terminado (fecha CLOSED).
 - Filtros por contexto (@casa, @ordenador…) y por estado.
-- Al tocar una tarea, se abre su fichero reducido (narrow) a esa tarea, con todo desplegado.
+- Al tocar una tarea, se abre su fichero reducido (narrow) a esa tarea, con todo desplegado, aunque esté en otro fichero.
 
 * La vista GTD (estilo Nirvana)
 Botón de la lista con marcas en la barra superior, o tecla *g*. Necesitas haber iniciado sesión: trabaja con tus ficheros de la agenda, no con este manual.
 
 ** Las listas del menú lateral
+En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña pequeña del borde izquierdo, a media altura (o el botón ☰ de arriba).
 | Lista      | Qué muestra                                                                          |
 |------------+--------------------------------------------------------------------------------------|
 | Agenda     | Abre la agenda                                                                       |
@@ -148,7 +157,8 @@ Botón de la lista con marcas en la barra superior, o tecla *g*. Necesitas haber
 
 ** Añadir, editar y organizar
 - Escribe en «Añadir» y pulsa Intro. Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org.
-- Toca una tarea para editarla: título, notas (con casillas y enlaces que se pueden tocar), lista o estado (también Done y Cancelled), fechas, área, proyecto, energía, tiempo y etiquetas. Botones: Abrir en el fichero, Archivar y Borrar.
+- Toca una tarea para editarla: título, notas (con casillas y enlaces que se pueden tocar), lista o estado (también Done y Cancelled), fechas, área, proyecto, energía, tiempo y etiquetas. Botones: Abrir en el fichero, Archivar, Borrar, Deshacer y Rehacer.
+- No hay que guardar: lo cambiado se guarda solo al salir del editor (tocando fuera, en otra tarea, con Esc o con Intro en el título). Si te equivocas, *Deshacer*.
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
 
@@ -192,6 +202,11 @@ Las etiquetas van al final del título, entre dos puntos. Las que empiezan por @
 - [ ] Leche
 - [ ] Café
 Toca una casilla para marcarla. El contador del título se actualiza solo.
+** Elementos con texto debajo
+- Primer elemento
+  Este texto cuelga del primer elemento: tócalo y queda seleccionado el elemento.
+- Segundo elemento
+  Con un elemento seleccionado, Intro edita su línea y Ctrl+d (o tu atajo de «editar descripción») el texto de debajo.
 ** Una tabla
 | Día    | Kilómetros |
 |--------+------------|
@@ -202,7 +217,7 @@ Toca una celda para editar la tabla.
 * Enlaces, adjuntos e imágenes
 - Enlace a una web: [[https://orgmode.org][Org Mode]].
 - Botón de enlace (en el editor): pega un enlace del portapapeles y escribe su descripción; queda como [[enlace][descripción]].
-- *Enlaces a encabezados* (como C-c l y C-c C-l de Emacs): selecciona un encabezado y toca el icono de enlace de la barra; se copia algo como [[file:tareas.org::*Llamar al banco][Llamar al banco]]. Luego, en cualquier fichero, el botón de enlace del editor lo inserta con la ruta correcta. Al tocar un enlace así, la app abre el fichero y va a ese encabezado.
+- *Enlaces a encabezados* (como C-c l y C-c C-l de Emacs): selecciona un encabezado y toca el icono de enlace de la barra (la cadena con la flechita); se copia algo como [[file:tareas.org::*Llamar al banco][Llamar al banco]]. Luego, en cualquier fichero, el botón de enlace del editor lo inserta con la ruta correcta. Al tocar un enlace así, la app abre el fichero, va a ese encabezado y lo deja seleccionado.
 - Prueba: [[*Muéveme con las flechas][ir a «Muéveme con las flechas»]] o [[*Las listas del menú lateral][ir a las listas de la vista GTD]].
 - Adjuntar (clip): la imagen o el fichero se sube a la carpeta assets/año de tu Dropbox y se inserta su enlace. Las imágenes se ven dentro del texto, y los vídeos de YouTube también.
 
@@ -247,7 +262,7 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador). Lo
 | Tecla        | Acción                                             |
 |--------------+----------------------------------------------------|
 | ↑ / ↓        | Encabezado anterior / siguiente                    |
-| Intro        | Abrir o cerrar el encabezado                        |
+| Intro        | Abrir o cerrar el encabezado (en un elemento de lista, editarlo) |
 | Esc          | Cerrar la ventana de edición                        |
 | a            | Agenda                                              |
 | g            | Vista GTD                                           |
@@ -262,6 +277,8 @@ Todos se pueden cambiar en Ajustes → Atajos de teclado.
 - *Estados de las tareas* y *Etiquetas por defecto*: para los ficheros que no los definen.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).
+  - «Añadir todos los ficheros .org» busca en tu carpeta y subcarpetas (sin la de copias de seguridad) y los pone todos en la agenda, la búsqueda, la lista de tareas y el refile.
+  - Lo que solo puede tener un fichero, como «Fichero que se abre al iniciar», se elige en su propio desplegable.
 - *Plantillas de captura* y *Atajos de teclado*.
 
 * Compatibilidad con Emacs

@@ -46,6 +46,8 @@ import {
 import _ from 'lodash';
 import { Map } from 'immutable';
 import { setDefaultTodoLine, setDefaultTagsLine } from './lib/eli_todo_defaults';
+import { listenForSaves } from './lib/eli_multi';
+import { setLastSyncAt, sync } from './actions/org';
 
 import { configure } from 'react-hotkeys';
 // do handle hotkeys even if they come from within 'input', 'select' or 'textarea'
@@ -179,6 +181,22 @@ export default class App extends PureComponent {
     };
     applyEliDefaults();
     this.store.subscribe(applyEliDefaults);
+
+    // ORG Mode para Eli: si otra copia de la app (pantalla dividida u otra ventana) guarda un
+    // fichero que aquí está abierto, se recarga. Si aquí también había cambios sin guardar, se
+    // compara como un conflicto normal (con su aviso), nunca se pisa lo de la otra copia.
+    listenForSaves((path, at) => {
+      const file = this.store.getState().org.present.getIn(['files', path]);
+      if (!file || !file.get('headers')) return;
+      // La fecha de la última sincronización se deja justo antes del guardado de la otra copia,
+      // para que la versión del servidor cuente como más nueva (con margen por la hora del reloj)
+      this.store.dispatch(setLastSyncAt(new Date(at - 60000), path));
+      if (file.get('isDirty')) {
+        this.store.dispatch(sync({ path, shouldSuppressMessages: true }));
+      } else {
+        this.store.dispatch(sync({ path, forceAction: 'pull', shouldSuppressMessages: true }));
+      }
+    });
 
     if (!!client) {
       client.isSignedIn().then((isSignedIn) => {

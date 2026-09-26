@@ -236,7 +236,7 @@ export default class HeaderActionDrawer extends PureComponent {
         title: 'Archivar (como org-archive-subtree; pide confirmación)',
       },
       onCopyLink && {
-        className: 'fas fa-link fa-lg',
+        className: 'fas fa-link fa-lg eli-copy-link-icon',
         onClick: onCopyLink,
         testId: 'eli-copy-link',
         title: 'Copiar el enlace a este encabezado (como C-c l en Emacs)',

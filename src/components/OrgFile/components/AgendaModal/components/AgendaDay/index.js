@@ -230,16 +230,7 @@ export default class AgendaDay extends PureComponent {
                   })}
                 >
                   <div className="agenda-day__header__header-container">
-                    <TitleLine
-                      header={header}
-                      color="var(--base03)"
-                      hasContent={false}
-                      isSelected={false}
-                      shouldDisableActions
-                      shouldDisableExplicitWidth
-                      onClick={this.handleHeaderClick(header.get('path'), header.get('id'))}
-                    />
-                    {/* ORG Mode para Eli: debajo de la cabecera, en una línea y en gris: cuántos
+                    {/* ORG Mode para Eli: justo encima de la cabecera, en una línea y en gris: cuántos
                         días faltan (en azul), el tipo y la fecha. En los hábitos, solo el
                         gráfico. */}
                     {!isHabit(header) && (
@@ -266,6 +257,16 @@ export default class AgendaDay extends PureComponent {
                         </span>
                       </div>
                     )}
+                    <TitleLine
+                      eliHideTodoKeyword={isHabit(header)}
+                      header={header}
+                      color="var(--base03)"
+                      hasContent={false}
+                      isSelected={false}
+                      shouldDisableActions
+                      shouldDisableExplicitWidth
+                      onClick={this.handleHeaderClick(header.get('path'), header.get('id'))}
+                    />
                     {/* Show habit consistency graph for valid habits */}
                     {isValidHabit(header) && (
                       <HabitConsistencyGraph

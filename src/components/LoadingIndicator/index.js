@@ -36,8 +36,15 @@ export default ({ message }) => {
   return (
     <Motion style={style} onRest={handleAnimationRest}>
       {(style) => (
-        <div className="loading-indicator" style={style} onClick={handleClick}>
-          {lastMessage}
+        <div
+          className="loading-indicator"
+          style={style}
+          onClick={handleClick}
+          title={lastMessage}
+          role="status"
+        >
+          <i className="fas fa-sync-alt fa-spin" aria-hidden="true" />
+          <span className="loading-indicator__text">{lastMessage}</span>
         </div>
       )}
     </Motion>

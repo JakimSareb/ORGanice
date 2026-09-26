@@ -96,6 +96,8 @@ class OrgFile extends PureComponent {
       'handleCaptureCancel',
       'getPopupSwitchAction',
       'checkPopupAndHeader',
+      'checkPopupAndHeaderOrListItem',
+      'applyEliPendingNarrow',
       'checkPopup',
       'handleCaptureFromEditor',
       'saveCaptureTitle',
@@ -157,6 +159,7 @@ class OrgFile extends PureComponent {
     }
 
     this.activatePopup();
+    this.applyEliPendingNarrow();
   }
 
   // If a fragment is set in the URL (by the activatePopup base
@@ -180,7 +183,19 @@ class OrgFile extends PureComponent {
     }
   }
 
+  // ORG Mode para Eli: narrow pendiente (tarea pulsada en la agenda que está en otro fichero)
+  applyEliPendingNarrow() {
+    const pending = window.__eliPendingNarrow;
+    const { headers, loadedPath } = this.props;
+    if (!pending || !headers || loadedPath !== pending.path) return;
+    window.__eliPendingNarrow = null;
+    if (!headers.some((h) => h.get('id') === pending.headerId)) return;
+    this.props.org.eliNarrowAndExpand(pending.headerId);
+    this.props.org.selectHeader(pending.headerId);
+  }
+
   componentDidUpdate(prevProps) {
+    this.applyEliPendingNarrow();
     const { headers, pendingCapture, activePopupType, activePopupData } = this.props;
     if (!!pendingCapture && !!headers && headers.size > 0) {
       this.props.org.insertPendingCapture();
@@ -199,7 +214,14 @@ class OrgFile extends PureComponent {
 
     const { path } = this.props;
     if (!_.isEmpty(path) && !path.startsWith(STATIC_FILE_PREFIX) && path !== prevProps.path) {
-      this.props.syncBackend.downloadFile(path);
+      // ORG Mode para Eli: si el fichero ya está cargado, solo se sincroniza (como al montar).
+      // Volver a descargarlo lo re-leía y se perdía el encabezado seleccionado al seguir un
+      // enlace, además de lo plegado y desplegado.
+      if (this.props.fileIsLoaded(path)) {
+        this.props.org.sync({ path, shouldSuppressMessages: true });
+      } else {
+        this.props.syncBackend.downloadFile(path);
+      }
       this.props.org.setPath(path);
     }
 
@@ -276,12 +298,16 @@ class OrgFile extends PureComponent {
     this.props.org.advanceTodoState(null, this.props.shouldLogIntoDrawer);
   }
 
+  // ORG Mode para Eli: con un elemento de lista seleccionado, Intro edita su texto y «d» lo
+  // que cuelga de él (como con los encabezados)
   handleEditTitleHotKey() {
-    this.props.base.activatePopup('title-editor');
+    if (this.props.selectedListItemId) this.props.org.enterEditMode('list-title');
+    else this.props.base.activatePopup('title-editor');
   }
 
   handleEditDescriptionHotKey() {
-    this.props.base.activatePopup('description-editor');
+    if (this.props.selectedListItemId) this.props.org.enterEditMode('list-contents');
+    else this.props.base.activatePopup('description-editor');
   }
 
   handleExitEditModeHotKey() {
@@ -811,6 +837,20 @@ class OrgFile extends PureComponent {
   }
 
   // Some keyboard shortcuts only make sense when a header is selected and no popup is open
+  // ORG Mode para Eli: como checkPopupAndHeader, pero también vale con un elemento de lista
+  // seleccionado (al seleccionarlo, organice deja sin seleccionar el encabezado)
+  checkPopupAndHeaderOrListItem(callback) {
+    return (event) => {
+      if (
+        (this.props.selectedHeader || this.props.selectedListItemId) &&
+        !this.props.activePopupType &&
+        !this.props.shouldDisableActions
+      ) {
+        callback(event);
+      }
+    };
+  }
+
   checkPopupAndHeader(callback) {
     return (event) => {
       if (
@@ -950,8 +990,10 @@ class OrgFile extends PureComponent {
         preventDefault(this.handleToggleHeaderOpenedHotKey, true)
       ),
       advanceTodo: this.checkPopupAndHeader(preventDefault(this.handleAdvanceTodoHotKey)),
-      editTitle: this.checkPopupAndHeader(preventDefault(this.handleEditTitleHotKey)),
-      editDescription: this.checkPopupAndHeader(preventDefault(this.handleEditDescriptionHotKey)),
+      editTitle: this.checkPopupAndHeaderOrListItem(preventDefault(this.handleEditTitleHotKey)),
+      editDescription: this.checkPopupAndHeaderOrListItem(
+        preventDefault(this.handleEditDescriptionHotKey)
+      ),
       exitEditMode: preventDefault(this.handleExitEditModeHotKey),
       addHeader: this.checkPopupAndHeader(preventDefault(this.handleAddHeaderHotKey)),
       removeHeader: this.checkPopupAndHeader(preventDefault(this.handleRemoveHeaderHotKey, true)),
@@ -983,8 +1025,16 @@ class OrgFile extends PureComponent {
       eliSelectPrev: this.checkPopup(
         notWhileTyping(preventDefault(this.handleSelectPreviousVisibleHeaderHotKey))
       ),
-      eliToggleOpen: this.checkPopupAndHeader(
-        notWhileTyping(notOnButton(preventDefault(this.handleToggleHeaderOpenedHotKey)))
+      eliToggleOpen: this.checkPopupAndHeaderOrListItem(
+        notWhileTyping(
+          notOnButton(
+            preventDefault(() =>
+              this.props.selectedListItemId
+                ? this.props.org.enterEditMode('list-title')
+                : this.handleToggleHeaderOpenedHotKey()
+            )
+          )
+        )
       ),
       openMoveMenu: this.checkPopup(
         notWhileTyping(preventDefault(() => window.dispatchEvent(new CustomEvent('eli:move-menu'))))
@@ -1171,6 +1221,7 @@ const mapStateToProps = (state) => {
   const activePopup = state.base.get('activePopup', Map());
 
   return {
+    selectedListItemId: file.get('selectedListItemId', null),
     loadedPath: path,
     files,
     headers,

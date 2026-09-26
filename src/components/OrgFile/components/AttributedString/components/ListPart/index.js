@@ -14,6 +14,7 @@ import { getCurrentTimestampAsText } from '../../../../../../lib/timestamps';
 
 import _ from 'lodash';
 import classNames from 'classnames';
+import EliFormatBar from '../../../../../EliFormatBar';
 import { Map } from 'immutable';
 
 export default class ListPart extends PureComponent {
@@ -240,6 +241,7 @@ export default class ListPart extends PureComponent {
             )}
             {isItemSelected && inListTitleEditMode ? (
               <div className="list-title-line__edit-container">
+                <EliFormatBar compact getField={() => this.textarea} />
                 <textarea
                   autoFocus
                   className="textarea"
@@ -272,6 +274,7 @@ export default class ListPart extends PureComponent {
           </Collapse>
           {isItemSelected && inListContentsEditMode ? (
             <div className="list-contents__edit-container">
+              <EliFormatBar compact getField={() => this.textarea} />
               <textarea
                 autoFocus
                 className="textarea"
@@ -290,10 +293,21 @@ export default class ListPart extends PureComponent {
               </div>
             </div>
           ) : (
-            <AttributedString
-              parts={item.get('contents')}
-              subPartDataAndHandlers={this.props.subPartDataAndHandlers}
-            />
+            // ORG Mode para Eli: tocar el texto que cuelga de un elemento de la lista lo
+            // selecciona (salvo que se toque un enlace o un elemento anidado)
+            <div
+              className="list-part__item-contents"
+              onClick={(e) => {
+                if (e.target.closest('a, .eli-org-link, input, button')) return;
+                if (e.target.closest('li') !== e.currentTarget.closest('li')) return;
+                this.props.subPartDataAndHandlers.onListItemSelect(item.get('id'));
+              }}
+            >
+              <AttributedString
+                parts={item.get('contents')}
+                subPartDataAndHandlers={this.props.subPartDataAndHandlers}
+              />
+            </div>
           )}
         </li>
       );

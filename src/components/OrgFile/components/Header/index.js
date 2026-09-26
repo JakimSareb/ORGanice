@@ -30,6 +30,11 @@ import { Map } from 'immutable';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
 
+// ORG Mode para Eli: dentro de un cuadro de texto no se desliza ni se arrastra el encabezado
+const eliIsEditableTarget = (el) =>
+  !!(el && el.closest && el.closest('textarea, input, select, [contenteditable="true"]'));
+const eliIsInTitleLine = (el) => !!(el && el.closest && el.closest('.title-line, .header__bullet'));
+
 class Header extends PureComponent {
   SWIPE_ACTION_ACTIVATION_DISTANCE = 80;
   FREE_DRAG_ACTIVATION_DISTANCE = 10;
@@ -191,6 +196,10 @@ class Header extends PureComponent {
   }
 
   handleMouseDown(event) {
+    // ORG Mode para Eli: seleccionar texto con el ratón (en un editor o en el texto de un
+    // encabezado) no debe arrastrar el encabezado. Con el ratón, el gesto solo empieza en la
+    // línea del título.
+    if (eliIsEditableTarget(event.target) || !eliIsInTitleLine(event.target)) return;
     this.pendingPointerStart = {
       x: event.clientX,
       y: event.clientY,
@@ -222,6 +231,7 @@ class Header extends PureComponent {
   }
 
   handleTouchStart(event) {
+    if (eliIsEditableTarget(event.target)) return;
     const touch = event.changedTouches[0];
     this.pendingPointerStart = {
       x: touch.clientX,

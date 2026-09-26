@@ -553,6 +553,11 @@
   display: none;
 }
 
+/* Pestaña para sacar el menú (solo en el móvil) */
+.gtd-side-tab {
+  display: none;
+}
+
 /* ---------- Móvil: el menú lateral se despliega ---------- */
 @media (max-width: 720px) {
   .gtd-side {
@@ -569,6 +574,31 @@
   }
   .gtd.is-side-open .gtd-side {
     transform: translateX(0);
+  }
+  .gtd-side-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 15;
+    width: 14px;
+    height: 52px;
+    padding: 0;
+    border: 1px solid var(--base1);
+    border-left: 0;
+    border-radius: 0 10px 10px 0;
+    background: var(--base2);
+    color: var(--base00);
+    font-size: 11px;
+    opacity: 0.85;
+    box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+  }
+  .gtd.is-side-open .gtd-side-tab {
+    display: none;
   }
   .gtd.is-side-open .gtd-scrim {
     display: block;

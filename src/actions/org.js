@@ -1,6 +1,7 @@
 import { ActionCreators, ActionTypes } from 'redux-undo';
 import { offerToDeleteAttachments } from '../lib/eli_attachments';
 import { addConflict, sameContents } from '../lib/eli_conflicts';
+import { announceSaved } from '../lib/eli_multi';
 import {
   parseOrgLink,
   findLinkedHeader,
@@ -208,6 +209,8 @@ const doSync = ({
               dispatch(setIsLoading(false, path));
               dispatch(setDirty(false, path));
               dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+              // ORG Mode para Eli: avisar a las otras copias abiertas (pantalla dividida)
+              announceSaved(path);
             })
             .catch((error) => {
               const err = `Error al subir el fichero ${path}: ${error.toString()}`;
@@ -935,6 +938,8 @@ export const deleteFileSetting = (settingId) => ({
   type: 'DELETE_FILE_SETTING',
   settingId,
 });
+
+export const eliAddAllFileSettings = (paths) => ({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths });
 
 export const addNewEmptyFileSetting = () => (dispatch) =>
   dispatch({ type: 'ADD_NEW_EMPTY_FILE_SETTING' });

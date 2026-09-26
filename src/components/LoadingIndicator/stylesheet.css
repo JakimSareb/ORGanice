@@ -1,18 +1,43 @@
 @import '../../colors.css';
 
+/* ORG Mode para Eli: aviso pequeño en el centro de la barra superior, donde no tapa el texto
+   del fichero (antes era un recuadro grande sobre el contenido). */
 .loading-indicator {
-  color: var(--base00);
-  background-color: var(--base2);
-  font-weight: bold;
-  opacity: 0.9;
-  padding: 18px;
-  display: inline-block;
   position: fixed;
-  font-size: 20px;
+  top: 10px;
   left: 50%;
-  top: 85px;
-  width: 80%;
-  text-align: center;
   transform: translateX(-50%);
-  z-index: 1;
+  z-index: 3;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  max-width: min(40vw, 22em);
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--base00);
+  background-color: var(--base3);
+  border: 1px solid var(--base1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.loading-indicator__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loading-indicator i {
+  color: var(--blue);
+  font-size: 12px;
+}
+@media (max-width: 560px) {
+  .loading-indicator {
+    max-width: 46vw;
+    padding: 0 10px;
+    font-size: 12px;
+  }
 }

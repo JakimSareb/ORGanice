@@ -17,12 +17,6 @@
   .App:not(.landing-page),
   .App:not(.landing-page) .action-drawer-container,
   .App:not(.landing-page) .drawer-inner-container,
-  .App:not(.landing-page) .loading-indicator {
-    max-width: 60em;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
   .App:not(.landing-page) .action-drawer-container {
     max-width: 33em;
   }

@@ -125,16 +125,21 @@
   margin-top: 0;
 }
 
-/* ORG Mode para Eli: línea bajo la cabecera con los días que faltan, el tipo y la fecha */
+/* ORG Mode para Eli: línea justo encima de la cabecera con los días que faltan, el tipo y la fecha */
 .agenda-day__item .agenda-day__header__header-container {
   margin-top: 6px;
+}
+/* la línea del título de organice sube 18px (para compensar su contenedor); aquí va debajo de
+   la línea de fechas y no debe montarse sobre ella */
+.agenda-day__item .title-line {
+  margin-top: 0;
 }
 .agenda-day__eli-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
-  margin: 1px 0 0 2px;
+  margin: 0 0 1px 2px;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 0.8em;
   color: var(--base1);
@@ -151,5 +156,14 @@
   letter-spacing: 0.03em;
 }
 .agenda-day__item:first-child .agenda-day__header__header-container {
-  margin-top: 16px;
+  margin-top: 2px;
+}
+
+/* ORG Mode para Eli: hábitos sin estado; más aire entre uno y otro para que cada gráfico
+   quede con su título */
+.agenda-day__item.agenda-day__header-container--habit .agenda-day__header__header-container {
+  margin-top: 10px;
+}
+.agenda-day__header-container--habit .habit-consistency-graph {
+  margin-top: 3px;
 }

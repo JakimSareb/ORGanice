@@ -1968,6 +1968,29 @@ const addNewFile = (state, { path, content }) => {
     .setIn(['files', path, 'isDirty'], false);
 };
 
+// ORG Mode para Eli: todos los ficheros de la carpeta (y subcarpetas) en la agenda, la búsqueda,
+// la lista de tareas y el refile. Los que ya tenían ajustes conservan el resto de opciones.
+const eliAddAllFileSettings = (state, { paths }) => {
+  const shared = {
+    includeInAgenda: true,
+    includeInSearch: true,
+    includeInRefile: true,
+    includeInTasklist: true,
+  };
+  return state.update('fileSettings', (settings) => {
+    let next = settings.map((setting) =>
+      paths.includes(setting.get('path')) ? setting.merge(shared) : setting
+    );
+    const existing = new Set(next.map((setting) => setting.get('path')).toArray());
+    paths
+      .filter((path) => path && !existing.has(path))
+      .forEach((path) => {
+        next = next.push(fromJS({ id: generateId(), path, loadOnStartup: false, ...shared }));
+      });
+    return next;
+  });
+};
+
 const addNewEmptyFileSetting = (state) =>
   state.update('fileSettings', (settings) =>
     settings.push(
@@ -2270,6 +2293,8 @@ const reducer = (state, action) => {
       return deleteFileSetting(state, action);
     case 'ADD_NEW_EMPTY_FILE_SETTING':
       return addNewEmptyFileSetting(state, action);
+    case 'ELI_ADD_ALL_FILE_SETTINGS':
+      return eliAddAllFileSettings(state, action);
     case 'RESTORE_FILE_SETTINGS':
       return restoreFileSettings(state, action);
     case 'SAVE_BOOKMARK':

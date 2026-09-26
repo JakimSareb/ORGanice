@@ -10,6 +10,8 @@ import { bindActionCreators } from 'redux';
 
 import { isLandingPage } from '../../util/misc';
 
+import { isInsideSplitPane } from '../../lib/eli_multi';
+import { BASE_PATH } from '../../lib/base_path';
 import { Link, withRouter } from 'react-router-dom';
 
 import logo from 'url:../../images/logo-unicornio.svg';
@@ -301,6 +303,47 @@ class HeaderBar extends PureComponent {
     );
   }
 
+  // ORG Mode para Eli: pantalla dividida (solo en pantallas anchas)
+  renderSplitButton() {
+    if (isInsideSplitPane()) {
+      return (
+        <i
+          className="fas fa-window-maximize header-bar__actions__item"
+          onClick={() => {
+            window.top.location.href = window.location.href;
+          }}
+          title="Quitar la división y quedarse con este panel"
+          data-testid="eli-split-close"
+        />
+      );
+    }
+    if (window.self !== window.top || window.innerWidth < 900) return null;
+    return (
+      <i
+        className="fas fa-columns header-bar__actions__item"
+        onClick={() => {
+          const { pathname, search } = this.props.location;
+          const current = `${pathname}${search || ''}`;
+          let saved = {};
+          try {
+            saved = JSON.parse(window.localStorage.getItem('eliSplitView')) || {};
+          } catch (e) {}
+          const other =
+            saved.right && saved.right !== current
+              ? saved.right
+              : pathname.startsWith('/gtd')
+              ? '/files'
+              : '/gtd';
+          window.location.href = `${BASE_PATH}/split?l=${encodeURIComponent(
+            current
+          )}&r=${encodeURIComponent(other)}`;
+        }}
+        title="Pantalla dividida: dos vistas a la vez"
+        data-testid="eli-split-open"
+      />
+    );
+  }
+
   handleChangelogClick() {
     this.props.base.restoreStaticFile('changelog');
     this.props.base.pushModalPage('changelog');
@@ -378,6 +421,8 @@ class HeaderBar extends PureComponent {
               <i className="fab fa-github header-bar__actions__item" />
             </ExternalLink>
           )}
+
+          {isAuthenticated && this.renderSplitButton()}
 
           {isAuthenticated && this.getPathRoot() !== 'gtd' && (
             <Link to="/gtd" data-testid="eli-open-gtd">

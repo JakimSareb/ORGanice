@@ -5,12 +5,20 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import './fontawesome.css';
 import App from './App';
+import EliSplitView from './components/EliSplitView';
+import { BASE_PATH } from './lib/base_path';
 import { registerServiceWorker } from './lib/eli_offline';
 
 const rootElement = document.getElementById('root');
 
+// ORG Mode para Eli: /split es la pantalla dividida (dos copias de la app en marcos)
+const isSplitView = () => {
+  const path = window.location.pathname.replace(/\/+$/, '');
+  return path === `${BASE_PATH}/split` && window.self === window.top;
+};
+
 function render() {
-  ReactDOM.render(<App />, rootElement);
+  ReactDOM.render(isSplitView() ? <EliSplitView /> : <App />, rootElement);
 }
 
 render();
