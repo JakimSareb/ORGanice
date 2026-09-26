@@ -390,3 +390,20 @@ describe('logbookGroupOf', () => {
     [null, 'older'],
   ])('%s → %s', (closed, id) => expect(logbookGroupOf(closed, today).id).toBe(id));
 });
+
+describe('archivableDone', () => {
+  const { archivableDone } = require('./gtd_model');
+  const t = (index, level, keyword, isDone) => ({ path: '/a.org', key: `k${index}`, index, level, keyword, isDone });
+  test('no archiva una terminada con subtareas abiertas', () => {
+    const tasks = [
+      t(0, 1, 'DONE', true),
+      t(1, 2, 'TODO', false),
+      t(2, 1, 'DONE', true),
+      t(3, 2, 'DONE', true),
+      t(4, 2, null, false),
+    ];
+    const { ok, blocked } = archivableDone(tasks);
+    expect(ok.map((x) => x.index)).toEqual([2, 3]);
+    expect(blocked.map((x) => x.index)).toEqual([0]);
+  });
+});

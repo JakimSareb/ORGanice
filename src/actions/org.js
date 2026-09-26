@@ -1240,6 +1240,128 @@ export const archiveSubtree = (headerId, explicitPath = null) => async (dispatch
   }
 };
 
+// ORG Mode para Eli: archivar de una vez varias tareas (vista GTD → Logbook → «Archivar»).
+// items: [{ path, id }]. Una sola confirmación (la hace quien llama) y una sola escritura por
+// fichero de archivo. Cada tarea se archiva como org-archive-subtree (con sus subencabezados).
+// Devuelve { archived, skipped }.
+export const eliArchiveMany = (items) => async (dispatch, getState) => {
+  const client = getState().syncBackend.get('client');
+  if (!client || !items || !items.length) return { archived: 0, skipped: 0 };
+  if (!getState().base.get('online')) {
+    showMessage('Sin conexión', 'Para archivar hace falta conexión con Dropbox.');
+    return { archived: 0, skipped: items.length };
+  }
+  const byPath = {};
+  items.forEach(({ path, id }) => {
+    if (!path || path.startsWith(STATIC_FILE_PREFIX)) return;
+    (byPath[path] = byPath[path] || []).push(id);
+  });
+  let archived = 0;
+  let skipped = 0;
+  const total = items.length;
+  try {
+    for (const path of Object.keys(byPath)) {
+      const file = getState().org.present.getIn(['files', path]);
+      if (!file || !file.get('headers')) {
+        skipped += byPath[path].length;
+        continue;
+      }
+      const headers = file.get('headers');
+      const wanted = new Set(byPath[path]);
+      // Si también se archiva un antepasado, esta tarea ya va con él
+      const roots = [];
+      const stack = [];
+      headers.forEach((h, index) => {
+        const level = h.get('nestingLevel');
+        while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
+        const coveredByAncestor = stack.some((s) => s.wanted);
+        const isWanted = wanted.has(h.get('id'));
+        if (isWanted && !coveredByAncestor) roots.push({ id: h.get('id'), index });
+        stack.push({ level, wanted: isWanted || coveredByAncestor });
+      });
+      // Agrupar por destino (según #+ARCHIVE: o la propiedad ARCHIVE)
+      const groups = {};
+      roots.forEach((r) => {
+        const { path: archivePath, heading } = resolveArchiveLocation(
+          archiveLocationFor(file, headers, r.index),
+          path
+        );
+        if (archivePath === path) {
+          skipped++;
+          return;
+        }
+        const key = `${archivePath}\u0000${heading || ''}`;
+        (groups[key] = groups[key] || { archivePath, heading, ids: [] }).ids.push(r.id);
+      });
+      const removed = [];
+      for (const key of Object.keys(groups)) {
+        const { archivePath, heading, ids } = groups[key];
+        dispatch(
+          setLoadingMessage(`Archivando ${archived + 1}–${archived + ids.length} de ${total}…`)
+        );
+        let existing = null;
+        const exists = client.pathExists
+          ? await withTimeout(client.pathExists(archivePath), 20000, 'Dropbox no responde')
+          : false;
+        if (exists) {
+          existing = await withTimeout(
+            client.getFileContents(archivePath),
+            30000,
+            'Dropbox no responde al leer el archivo'
+          );
+        }
+        let text = existing == null ? newArchiveFileText(path) : existing;
+        inheritEncryptionMeta(archivePath, path);
+        ids.forEach((headerId) => {
+          const subtreeText = buildArchivedSubtree({
+            file,
+            headers,
+            headerId,
+            sourcePath: path,
+            targetLevel: targetLevelFor(heading),
+            dontIndent: getState().base.get('eliIndentOnExport') !== true,
+          });
+          text = insertIntoArchiveText(text, subtreeText, heading);
+        });
+        await withTimeout(
+          client.createFile(archivePath, text),
+          30000,
+          'Dropbox no responde al guardar'
+        );
+        if (getState().org.present.getIn(['files', archivePath])) {
+          dispatch(parseFile(archivePath, text));
+        }
+        removed.push(...ids);
+        archived += ids.length;
+      }
+      // Quitar del fichero de origen solo lo que ya está guardado en el archivo
+      if (removed.length) {
+        dispatch({
+          type: 'ELI_IN_FILE',
+          path,
+          inner: removed.map((headerId) => ({ type: 'REMOVE_HEADER', headerId, dirtying: true })),
+          dirtying: true,
+        });
+        dispatch(setDirty(true, path));
+        dispatch(sync({ path, shouldSuppressMessages: true }));
+      }
+    }
+    dispatch(
+      setDisappearingLoadingMessage(
+        archived === 1 ? 'Archivada 1 tarea' : `Archivadas ${archived} tareas`,
+        3000
+      )
+    );
+  } catch (e) {
+    dispatch(hideLoadingMessage());
+    showMessage(
+      'No se pudo archivar todo',
+      `Archivadas: ${archived}.\n\n` + ((e && (e.message || e.error_summary)) || String(e))
+    );
+  }
+  return { archived, skipped };
+};
+
 const subheadersOfHeaderWithIdForArchive = (headers, headerId) => {
   const index = headers.findIndex((h) => h.get('id') === headerId);
   const level = headers.getIn([index, 'nestingLevel']);

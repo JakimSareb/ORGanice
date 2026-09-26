@@ -101,10 +101,6 @@ const ActionDrawer = ({
 
   const handleMainArrowButtonClick = () => setIsDisplayingArrowButtons(!isDisplayingArrowButtons);
 
-  const handleSearchButtonClick = () => {
-    base.activatePopup('search');
-  };
-
   const handleMainCaptureButtonClick = () => {
     if (!isDisplayingCaptureButtons && getAvailableCaptureTemplates().size === 0) {
       alert(
@@ -384,10 +380,13 @@ const ActionDrawer = ({
               principales y Mover (flechas) están en el menú «⋯» de arriba (y con s, f y m). */}
           {renderMovementButtons()}
 
+          {/* ORG Mode para Eli: el botón de la vista GTD ocupa el sitio de la búsqueda (que está en
+              el menú «⋯» de arriba y con la tecla b) */}
           <ActionButton
-            iconName={'search'}
+            iconName="tasks"
             isDisabled={false}
-            onClick={handleSearchButtonClick}
+            onClick={() => window.dispatchEvent(new CustomEvent('eli:open-gtd'))}
+            dataTestId="eli-fab-gtd"
             additionalClassName={activeClocks !== 0 ? 'active-clock-indicator' : undefined}
             style={{
               opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
@@ -396,7 +395,7 @@ const ActionDrawer = ({
               pointerEvents:
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
-            tooltip="Mostrar búsqueda / lista de tareas"
+            tooltip="Vista GTD (tecla g)"
           />
 
           <ActionButton

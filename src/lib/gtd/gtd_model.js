@@ -270,7 +270,7 @@ export const isFocus = (task, today = new Date()) => {
   return false;
 };
 
-const matchesFilters = (task, filters) => {
+export const matchesFilters = (task, filters) => {
   const { area, tags = [], energy, time, dated, text } = filters || {};
   if (area && area !== '*' && (task.area || '') !== (area === '-' ? '' : area)) return false;
   if (tags.length && !tags.every((t) => task.tags.includes(t))) return false;
@@ -399,4 +399,28 @@ export const logbookGroupOf = (closed, today = new Date()) => {
   if (closed >= lastMonthStart) return { id: 'lastmonth', label: 'El mes pasado' };
   if (closed >= yearStart) return { id: 'year', label: 'Este año' };
   return { id: 'older', label: 'Anteriores' };
+};
+
+// ORG Mode para Eli: tareas terminadas que se pueden archivar (Logbook → «Archivar»). Una tarea
+// terminada con alguna subtarea todavía abierta NO se archiva (se llevaría la subtarea).
+export const archivableDone = (tasks) => {
+  const ok = [];
+  const blocked = [];
+  const byPath = {};
+  tasks.forEach((t) => (byPath[t.path] = byPath[t.path] || []).push(t));
+  Object.values(byPath).forEach((list) => {
+    const sorted = [...list].sort((a, b) => a.index - b.index);
+    sorted.forEach((t, i) => {
+      if (!t.isDone) return;
+      let open = false;
+      for (let j = i + 1; j < sorted.length && sorted[j].level > t.level; j++) {
+        if (sorted[j].keyword && !sorted[j].isDone) {
+          open = true;
+          break;
+        }
+      }
+      (open ? blocked : ok).push(t);
+    });
+  });
+  return { ok, blocked };
 };

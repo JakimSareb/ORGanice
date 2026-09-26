@@ -22,6 +22,8 @@ import {
   needsAutoPriority,
   autoPriorityKey,
   logbookGroupOf,
+  archivableDone,
+  matchesFilters,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -42,6 +44,7 @@ import {
   sync,
   eliOfferDeleteAttachments,
   eliFollowOrgLink,
+  eliArchiveMany,
 } from '../../actions/org';
 import { parseOrgLink } from '../../lib/eli_org_links';
 import { declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
@@ -51,7 +54,7 @@ import Drawer from '../UI/Drawer';
 import AgendaModal from '../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../EliErrorBoundary';
 import { fileLinkTarget, resolveDropboxPath, openInNewTab } from '../../lib/eli_media';
-import { showMessage, askDate } from '../../lib/eli_prompt';
+import { showMessage, askDate, askConfirm } from '../../lib/eli_prompt';
 import {
   defaultTags,
   allowedValuesFromConfigLines,
@@ -358,6 +361,43 @@ export default function GtdView() {
     }
     return out;
   }, [rendered, splitHabits, view.id, today]);
+
+  // ORG Mode para Eli: Logbook → terminadas sin archivar (todas, no solo las 300 que se ven) y
+  // botones para archivarlas de una vez, en total o por sección
+  const isLogbook = view.id === 'logbook';
+  const archivable = useMemo(() => {
+    if (!isLogbook) return { ok: [], blocked: [] };
+    const f = { area, text, ...filters };
+    const { ok, blocked } = archivableDone(tasks);
+    return {
+      ok: ok.filter((t) => matchesFilters(t, f)),
+      blocked: blocked.filter((t) => matchesFilters(t, f)),
+    };
+  }, [isLogbook, tasks, area, text, filters]);
+  const archivableBySection = useMemo(() => {
+    const out = {};
+    archivable.ok.forEach((t) => {
+      const g = logbookGroupOf(t.closed, today).id;
+      (out[g] = out[g] || []).push(t);
+    });
+    return out;
+  }, [archivable, today]);
+  const archiveTasks = async (list, label) => {
+    if (!list.length) return;
+    const n = list.length;
+    const ok = await askConfirm({
+      title: 'Archivar',
+      message:
+        `¿Archivar ${n === 1 ? '1 tarea terminada' : `${n} tareas terminadas`}` +
+        (label ? ` (${label.toLowerCase()})` : '') +
+        '?\n\nSe moverán con sus subencabezados al fichero _archive de su fichero, como hace ' +
+        'Emacs (org-archive-subtree).',
+      okLabel: 'Archivar',
+    });
+    if (!ok) return;
+    setOpenKey(null);
+    await dispatch(eliArchiveMany(list.map((t) => ({ path: t.path, id: t.id }))));
+  };
   const projectTask = view.type === 'project' ? tasks.find((t) => t.key === view.key) : null;
 
   const declaredTags = useMemo(
@@ -899,6 +939,34 @@ export default function GtdView() {
           </div>
         )}
 
+        {isLogbook && (
+          <div className="gtd-archive-bar" data-testid="gtd-archive-bar">
+            <span>
+              {archivable.ok.length === 1
+                ? '1 terminada sin archivar'
+                : `${archivable.ok.length} terminadas sin archivar`}
+              {archivable.blocked.length > 0 && (
+                <span
+                  className="gtd-archive-bar__note"
+                  title="Tienen alguna subtarea sin terminar: no se archivan para no llevársela"
+                >
+                  {' '}
+                  · {archivable.blocked.length} con subtareas abiertas
+                </span>
+              )}
+            </span>
+            <button
+              type="button"
+              className="gtd-btn"
+              disabled={!archivable.ok.length}
+              onClick={() => archiveTasks(archivable.ok)}
+              data-testid="gtd-archive-all"
+            >
+              <i className="fas fa-archive" /> Archivar todas
+            </button>
+          </div>
+        )}
+
         <div className="gtd-list">
           {loading && visible.length === 0 && <div className="gtd-empty">Cargando ficheros…</div>}
           {!loading && visible.length === 0 && (
@@ -914,6 +982,23 @@ export default function GtdView() {
                   data-testid={`gtd-section-${sectionStarts[task.key].id}`}
                 >
                   <i className={sectionStarts[task.key].icon} /> {sectionStarts[task.key].label}
+                  {isLogbook && (archivableBySection[sectionStarts[task.key].id] || []).length > 0 && (
+                    <button
+                      type="button"
+                      className="gtd-section__action"
+                      onClick={() =>
+                        archiveTasks(
+                          archivableBySection[sectionStarts[task.key].id],
+                          sectionStarts[task.key].label
+                        )
+                      }
+                      title="Archivar las terminadas de esta sección"
+                      data-testid={`gtd-archive-section-${sectionStarts[task.key].id}`}
+                    >
+                      <i className="fas fa-archive" /> Archivar (
+                      {archivableBySection[sectionStarts[task.key].id].length})
+                    </button>
+                  )}
                 </div>
               )}
               <TaskRow

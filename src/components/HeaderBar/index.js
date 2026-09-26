@@ -406,6 +406,12 @@ class HeaderBar extends PureComponent {
       // ORG Mode para Eli: a la vista solo lo de cada día; el resto en «⋯»
       const moreItems = isAuthenticated
         ? [
+            inRealFile && {
+              icon: 'fas fa-search',
+              label: 'Buscar',
+              onClick: () => this.props.base.activatePopup('search'),
+              testId: 'eli-search',
+            },
             inFile && {
               icon: 'fas fa-redo',
               label: 'Rehacer',
@@ -515,7 +521,8 @@ class HeaderBar extends PureComponent {
             </button>
           )}
 
-          {isAuthenticated && !inGtd && (
+          {/* En la vista de documento, la vista GTD está en el botón redondo de abajo */}
+          {isAuthenticated && !inGtd && !inRealFile && (
             <Link to="/gtd" data-testid="eli-open-gtd">
               <i
                 className="fas fa-tasks header-bar__actions__item"

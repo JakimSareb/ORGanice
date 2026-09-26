@@ -998,3 +998,32 @@
   border-color: var(--red);
   background: transparent;
 }
+
+/* ORG Mode para Eli: Logbook → archivar las terminadas */
+.gtd-archive-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--base00);
+}
+.gtd-archive-bar__note {
+  opacity: 0.7;
+}
+.gtd-section__action {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}

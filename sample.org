@@ -59,11 +59,11 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 *** Deslízame hacia la izquierda para borrarme
 
 ** La barra superior y los botones de abajo
-- Arriba, a la vista: *lista con marcas* (vista GTD, tecla g), *deshacer* y *⋯*.
-- En *⋯*: rehacer, reducir al encabezado seleccionado (narrow), mover con flechas (tecla m), editar como texto plano, PDF, sincronizar ahora (tecla s; normalmente es automático), ficheros principales (tecla f), dos columnas, fases de la Luna, novedades y ajustes.
+- Arriba, a la vista: *deshacer* y *⋯* (en el explorador de ficheros, también la *lista con marcas* de la vista GTD).
+- En *⋯*: buscar (tecla b), rehacer, reducir al encabezado seleccionado (narrow), mover con flechas (tecla m), editar como texto plano, PDF, sincronizar ahora (tecla s; normalmente es automático), ficheros principales (tecla f), dos columnas, fases de la Luna, novedades y ajustes.
 - En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero.
 - *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa.
-- Abajo quedan tres botones: *buscar*, *agenda* y *+ capturar*.
+- Abajo quedan tres botones: *vista GTD* (tecla g; se pone naranja si hay un reloj en marcha), *agenda* y *+ capturar*.
 - Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de la barra superior, sin tapar el texto. Tócala para ocultarla.
 
 * Tareas y estados
@@ -139,7 +139,7 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 | Someday    | MAYBE                                                                                |
 | Proyectos  | Cada PROJECT, con sus acciones                                                       |
 | Reference  | Encabezados sin estado ni tareas debajo                                              |
-| Logbook    | Terminadas, por secciones: esta semana, la pasada, el mes pasado, este año y anteriores |
+| Logbook    | Terminadas, por secciones: esta semana, la pasada, el mes pasado, este año y anteriores. «Archivar todas» (o «Archivar» en cada sección) las manda a su fichero _archive |
 
 ** Reglas de las fechas
 - Una tarea programada para más adelante (y sin fecha límite) solo se ve en Scheduled. Cuando llega el día, vuelve a su lista.
@@ -153,6 +153,7 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 - Al añadir una tarea, se abre su editor para completar los datos.
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
+- *Archivar las terminadas*: en Logbook, «Archivar todas» archiva de una vez todas las terminadas (con sus subencabezados), como org-archive-subtree de Emacs, en el fichero _archive de cada fichero. Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
 - *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
 
 ** Áreas
