@@ -206,7 +206,13 @@ export default function TaskEditor({
   };
 
   // Al desmontarse (se cierra, se abre otra tarea, se cambia de vista…) se guarda
-  useEffect(() => () => commit(), []);
+  const cancelledRef = useRef(false);
+  useEffect(
+    () => () => {
+      if (!cancelledRef.current) commit();
+    },
+    []
+  );
 
   // Clic o toque fuera del editor: se guarda y se cierra. Si es sobre la propia fila de la
   // tarea, ya la cierra ella.
@@ -594,6 +600,27 @@ export default function TaskEditor({
           data-testid="gtd-editor-redo"
         >
           <i className="fas fa-redo" />
+        </button>
+        <button
+          type="button"
+          className="gtd-btn gtd-btn--cancel"
+          onClick={() => {
+            cancelledRef.current = true;
+            onClose();
+          }}
+          title="Descartar los cambios y cerrar"
+          data-testid="gtd-editor-cancel"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          className="gtd-btn gtd-btn--primary"
+          onClick={() => onClose()}
+          title="Guardar y cerrar"
+          data-testid="gtd-editor-save"
+        >
+          Guardar
         </button>
       </div>
     </div>

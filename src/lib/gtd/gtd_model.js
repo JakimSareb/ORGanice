@@ -109,14 +109,34 @@ const completedKeywordsOf = (file) =>
  * @param files Immutable Map path → file
  * @param inboxPaths rutas de los ficheros de entrada
  */
+// ORG Mode para Eli: las tareas de cada fichero se calculan una vez y se reutilizan mientras el
+// fichero no cambie (los ficheros son inmutables: si no cambian, son el mismo objeto). Así, volver
+// a la vista GTD o cambiar de lista no recalcula miles de encabezados.
+const fileTasksCache = new WeakMap();
+
 export const buildTasks = (files, inboxPaths = []) => {
   const tasks = [];
   if (!files) return tasks;
   files.forEach((file, path) => {
     if (!path || !file || !file.get('headers')) return;
+    const isInboxFile = inboxPaths.includes(path);
+    const cached = fileTasksCache.get(file);
+    if (cached && cached.path === path && cached.isInboxFile === isInboxFile) {
+      for (const t of cached.tasks) tasks.push(t);
+      return;
+    }
+    const fileTasks = buildFileTasks(file, path, isInboxFile);
+    fileTasksCache.set(file, { path, isInboxFile, tasks: fileTasks });
+    for (const t of fileTasks) tasks.push(t);
+  });
+  return tasks;
+};
+
+const buildFileTasks = (file, path, isInboxFile) => {
+  const tasks = [];
+  {
     const headers = file.get('headers');
     const done = completedKeywordsOf(file);
-    const isInboxFile = inboxPaths.includes(path);
     const stack = []; // antepasados: {level, tags, area, keyword, project, isTaskish}
     const byIndex = [];
     headers.forEach((header, index) => {
@@ -173,7 +193,7 @@ export const buildTasks = (files, inboxPaths = []) => {
         hasKeyword: !!keyword || (parent ? parent.hasKeyword : false),
       });
     });
-  });
+  }
   return tasks;
 };
 

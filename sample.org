@@ -26,13 +26,13 @@ Selecciona este encabezado. A la vista están solo los iconos de cada día; el r
 |----------------+---------------------------------------------------------------------------------------------------------------|
 | Estrella       | Pone o quita la prioridad [#A]                                                                                 |
 | Casilla        | Termina la tarea (DONE). Con mayúsculas pulsada, la cancela (CANCELLED). Gris si no es una tarea o ya terminó |
-| Lápiz          | Editar. Con el tabulador pasas a la descripción, las etiquetas y las fechas                                    |
-| Etiquetas      | Poner o quitar etiquetas                                                                                       |
-| Calendario     | Fechas: la límite (DEADLINE) y, con el tabulador, la programada (SCHEDULED)                                    |
-| Nota           | Añadir una nota con la fecha                                                                                   |
+| Lápiz          | Editar el título. Con el tabulador pasas a la descripción, las etiquetas y las fechas                          |
+| Lápiz en recuadro | Editar la descripción (el texto de debajo)                                                                  |
+| Calendarios    | Fecha límite (DEADLINE) y fecha programada (SCHEDULED)                                                         |
+| Más            | Nuevo encabezado debajo (mantenlo pulsado para duplicar el actual)                                             |
 | Mover          | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                      |
 | Reloj de arena | Solo se ve con el reloj en marcha: tócalo para pararlo                                                         |
-| ⋯              | Descripción, fecha programada, reloj, tiempo registrado, propiedades, adjuntar, nuevo encabezado, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
+| ⋯              | Etiquetas, nota, reloj, tiempo registrado, propiedades, adjuntar, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
 
 ** El editor de título
 Selecciona este encabezado y toca el lápiz.
@@ -134,7 +134,7 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 | Next       | NEXT                                                                                 |
 | Todo       | TODO                                                                                 |
 | Waiting    | WAITING                                                                              |
-| Scheduled  | Programadas para más adelante                                                        |
+| Scheduled  | Programadas para más adelante; los hábitos, aparte y siempre al final                |
 | Deadline   | Todas las que tienen fecha límite, por fecha                                         |
 | Someday    | MAYBE                                                                                |
 | Proyectos  | Cada PROJECT, con sus acciones                                                       |
@@ -147,9 +147,10 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 - Cuando llega la fecha programada o la fecha límite, la tarea recibe ★ [#A] automáticamente (una sola vez; si se la quitas, no vuelve a ponerse). Los hábitos no.
 
 ** Añadir, editar y organizar
-- Escribe en «Añadir» y pulsa Intro. Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org.
-- Toca una tarea para editarla (como en Nirvana): a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza), lista o estado (también Done y Cancelled), proyecto («Suelta» = sin proyecto) y área. Abajo: Abrir, Archivar, Borrar, Deshacer y Rehacer.
-- No hay que guardar: lo cambiado se guarda solo al salir del editor (tocando fuera, en otra tarea, con Esc o con Intro en el título). Si te equivocas, *Deshacer*.
+- Escribe en «Añadir» y pulsa Intro: se crea y se abre su editor. Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org.
+- Toca una tarea para editarla (como en Nirvana): a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza), lista o estado (también Done y Cancelled), proyecto («Suelta» = sin proyecto) y área. Abajo: Abrir, Archivar, Borrar, Deshacer, Rehacer, *Cancelar* (descarta los cambios) y *Guardar*.
+- Al tocar fuera del editor, en otra tarea, con Esc o con Intro en el título, lo cambiado también se guarda. Si te equivocas, *Deshacer*.
+- Al añadir una tarea, se abre su editor para completar los datos.
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
 - *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
@@ -268,7 +269,7 @@ Todos se pueden cambiar en Ajustes → Atajos de teclado.
 * Ajustes que conviene conocer
 - *Estados de las tareas* y *Etiquetas por defecto*: para los ficheros que no los definen.
 - Los ajustes están en tres secciones plegables: *Apariencia*, *Tareas y etiquetas* y *Opciones avanzadas*.
-- *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada) y «Solarized» (el clásico). Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
+- *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).
   - «Añadir todos los ficheros .org» busca en tu carpeta y subcarpetas (sin la de copias de seguridad) y los pone todos en la agenda, la búsqueda, la lista de tareas y el refile.

@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.1 (septiembre de 2026)
+** Hoja
+- Barra del encabezado: a la vista editar título, editar descripción, fecha límite, fecha programada y nuevo encabezado; etiquetas y nota pasan a *⋯*.
+** Vista GTD
+- Al añadir una tarea se abre su editor para completar los datos.
+- El editor vuelve a tener *Guardar* y *Cancelar* (Cancelar descarta los cambios). Tocar fuera sigue guardando.
+- En Scheduled, los hábitos van siempre abajo, en su propia sección.
+- Más rápida: las tareas de cada fichero se calculan una sola vez mientras el fichero no cambia (volver a la vista GTD es unas 2,5 veces más rápido con muchos ficheros, y el arranque, el doble).
+** Temas
+- Vuelven todos los temas: Unicornio, Cuki, Solarized, One, Gruvbox, Smyck y Code.
+
 * 2.0 (septiembre de 2026)
 ** Interfaz más sencilla
 - Barra superior: solo GTD, Deshacer y *⋯* (con rehacer, narrow, mover, texto plano, PDF, sincronizar, ficheros principales, dos columnas, Luna, novedades y ajustes). En narrow aparece «Ver todo».

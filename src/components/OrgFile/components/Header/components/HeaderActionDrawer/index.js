@@ -150,26 +150,34 @@ export default class HeaderActionDrawer extends PureComponent {
       {
         className: 'fas fa-pencil-alt fa-lg',
         onClick: onTitleClick,
-        title: 'Editar (título; con el tabulador, descripción, etiquetas y fechas)',
+        title:
+          'Editar el título (con el tabulador pasas a la descripción, las etiquetas y las fechas)',
         testId: 'drawer-action-edit-title',
       },
       {
-        className: 'fas fa-tags fa-lg',
-        onClick: onTagsClick,
-        title: 'Etiquetas',
-        testId: 'drawer-action-tags',
+        className: 'fas fa-edit fa-lg',
+        onClick: onDescriptionClick,
+        title: 'Editar la descripción',
+        testId: 'edit-header-title',
       },
       {
-        className: 'far fa-calendar-alt fa-lg',
+        className: 'fas fa-calendar-check fa-lg',
         onClick: onDeadlineClick,
         testId: 'drawer-action-deadline',
-        title: 'Fechas: límite (con el tabulador, la programada)',
+        title: 'Fecha límite (DEADLINE)',
       },
       {
-        className: 'far fa-sticky-note fa-lg',
-        onClick: onAddNote,
-        title: 'Añadir una nota',
-        testId: 'eli-add-note',
+        className: 'far fa-calendar-check fa-lg',
+        onClick: onScheduledClick,
+        testId: 'drawer-action-scheduled',
+        title: 'Fecha programada (SCHEDULED)',
+      },
+      {
+        className: 'fas fa-plus fa-lg',
+        onClick: onAddNewHeader,
+        onLongPress: handleDuplicateHeader,
+        testId: 'header-action-plus',
+        title: 'Nuevo encabezado debajo (mantén pulsado para duplicar el actual)',
       },
       {
         className: 'fas fa-file-export fa-lg',
@@ -189,16 +197,16 @@ export default class HeaderActionDrawer extends PureComponent {
 
     const more = [
       {
-        icon: 'fas fa-edit',
-        label: 'Editar descripción',
-        onClick: onDescriptionClick,
-        testId: 'edit-header-title',
+        icon: 'fas fa-tags',
+        label: 'Etiquetas',
+        onClick: onTagsClick,
+        testId: 'drawer-action-tags',
       },
       {
-        icon: 'far fa-calendar-check',
-        label: 'Fecha programada',
-        onClick: onScheduledClick,
-        testId: 'drawer-action-scheduled',
+        icon: 'far fa-sticky-note',
+        label: 'Añadir una nota',
+        onClick: onAddNote,
+        testId: 'eli-add-note',
       },
       !hasActiveClock && {
         icon: 'fas fa-hourglass-start',
@@ -223,12 +231,6 @@ export default class HeaderActionDrawer extends PureComponent {
         label: 'Adjuntar archivo',
         onClick: onAttachFiles,
         testId: 'eli-attach',
-      },
-      {
-        icon: 'fas fa-plus',
-        label: 'Nuevo encabezado debajo',
-        onClick: onAddNewHeader,
-        testId: 'header-action-plus',
       },
       {
         icon: 'far fa-clone',

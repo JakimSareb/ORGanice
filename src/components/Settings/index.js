@@ -189,7 +189,7 @@ const Settings = ({
         <div className="setting-container setting-container--vertical eli-theme-setting">
           <div className="setting-label">Tema</div>
           <TabButtons
-            buttons={['Unicornio', 'Cuki', 'Solarized']}
+            buttons={['Unicornio', 'Cuki', 'Solarized', 'One', 'Gruvbox', 'Smyck', 'Code']}
             selectedButton={theme}
             onSelect={handleThemeClick}
           />

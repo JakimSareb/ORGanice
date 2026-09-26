@@ -332,6 +332,16 @@ export default function GtdView() {
     filters,
     today,
   ]);
+  // ORG Mode para Eli: en Scheduled, los hábitos van siempre abajo, en su propia sección
+  const splitHabits = view.id === 'scheduled';
+  const rendered = useMemo(
+    () =>
+      splitHabits
+        ? [...visible.filter((t) => !t.isHabit), ...visible.filter((t) => t.isHabit)]
+        : visible,
+    [visible, splitHabits]
+  );
+  const firstHabitKey = splitHabits ? (rendered.find((t) => t.isHabit) || {}).key : null;
   const projectTask = view.type === 'project' ? tasks.find((t) => t.key === view.key) : null;
 
   const declaredTags = useMemo(
@@ -449,7 +459,7 @@ export default function GtdView() {
         list = 'later';
     }
     const scheduled = view.id === 'scheduled' ? new Date(today.getTime() + 86400000) : null;
-    dispatch(
+    const newId = dispatch(
       gtdAddTask(target, {
         title,
         list: list === 'focus' ? 'next' : list,
@@ -465,6 +475,8 @@ export default function GtdView() {
       })
     );
     setNewTitle('');
+    // ORG Mode para Eli: la tarea nueva se abre en el editor para completar sus datos
+    if (newId) setOpenKey(`${target.path}::${newId}`);
   };
 
   const addProject = () => {
@@ -878,8 +890,13 @@ export default function GtdView() {
               {view.id === 'inbox' ? 'Inbox vacío. ¡Bien hecho!' : 'No hay nada aquí.'}
             </div>
           )}
-          {visible.map((task) => (
+          {rendered.map((task) => (
             <React.Fragment key={task.key}>
+              {task.key === firstHabitKey && (
+                <div className="gtd-section" data-testid="gtd-habits-section">
+                  <i className="fas fa-redo-alt" /> Hábitos
+                </div>
+              )}
               <TaskRow
                 task={task}
                 open={openKey === task.key}

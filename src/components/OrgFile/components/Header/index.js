@@ -108,11 +108,9 @@ class Header extends PureComponent {
     window.removeEventListener('touchend', this.globalTouchEndHandler);
   }
 
-  componentDidMount() {
-    if (this.containerDiv) {
-      this.setState({ containerWidth: this.containerDiv.offsetWidth });
-    }
-  }
+  // ORG Mode para Eli: el ancho solo hace falta para la animación de borrar; se mide entonces.
+  // Medirlo al montar obligaba a pintar dos veces cada encabezado al abrir un fichero.
+  componentDidMount() {}
 
   componentWillUnmount() {
     this.removeGlobalDragHandlers();
@@ -169,7 +167,11 @@ class Header extends PureComponent {
         const removedId = this.props.header.get('id');
         confirmRemoveHeader(headersBefore, removedId).then((ok) => {
           if (ok && this.containerDiv) {
-            this.setState({ isPlayingRemoveAnimation: true, heightBeforeRemove: height });
+            this.setState({
+              isPlayingRemoveAnimation: true,
+              heightBeforeRemove: height,
+              containerWidth: this.containerDiv ? this.containerDiv.offsetWidth : 0,
+            });
             this.props.org.eliOfferDeleteAttachments(headersBefore, removedId);
           }
         });
