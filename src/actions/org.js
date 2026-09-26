@@ -606,6 +606,24 @@ export const updateTableCellValue = (cellId, newValue) => ({
   dirtying: true,
 });
 
+// ORG Mode para Eli: si la ruta de encabezado de la plantilla no existe en el fichero, la captura
+// se guarda igualmente (al principio o al final) y se avisa
+const warnIfCaptureParentMissing = (getState, template, shouldPrepend) => {
+  const paths = (template.get('headerPaths') || List()).filter((p) => String(p || '').trim());
+  if (!paths.size) return;
+  const targetPath = template.get('file') || getState().org.present.get('path');
+  const headers = getState().org.present.getIn(['files', targetPath, 'headers']);
+  if (headers && headerWithPath(headers, paths)) return;
+  showMessage(
+    'Captura guardada en otro sitio',
+    `No existe el encabezado «${paths.join(' > ')}» en ${targetPath}, así que se ha guardado al ${
+      shouldPrepend ? 'principio' : 'final'
+    } del fichero.\n\nRevisa la ruta de encabezado de la plantilla «${template.get(
+      'description'
+    )}» en Ajustes → Plantillas de captura.`
+  );
+};
+
 export const insertCapture = (templateId, content, shouldPrepend) => (dispatch, getState) => {
   dispatch(closePopup());
 
@@ -613,6 +631,7 @@ export const insertCapture = (templateId, content, shouldPrepend) => (dispatch, 
     .capture.get('captureTemplates')
     .concat(sampleCaptureTemplates)
     .find((template) => template.get('id') === templateId);
+  warnIfCaptureParentMissing(getState, template, shouldPrepend);
   dispatch({ type: 'INSERT_CAPTURE', template, content, shouldPrepend, dirtying: true });
 };
 
@@ -627,6 +646,7 @@ export const insertCaptureFromHeader = (templateId, header, shouldPrepend) => (
     .concat(sampleCaptureTemplates)
     .find((template) => template.get('id') === templateId);
   const targetPath = template.get('file') || getState().org.present.get('path');
+  warnIfCaptureParentMissing(getState, template, shouldPrepend);
   dispatch({ type: 'INSERT_CAPTURE_FROM_HEADER', template, header, shouldPrepend, dirtying: true });
   dispatch(sync({ successMessage: 'Elemento capturado', path: targetPath }));
 };
@@ -665,7 +685,7 @@ export const insertPendingCapture = () => (dispatch, getState) => {
 
   const targetPath = template.get('file') || path;
 
-  const headerPaths = template.get('headerPaths');
+  const headerPaths = template.get('headerPaths').filter((p) => String(p || '').trim());
   const targetHeaders = getState().org.present.getIn(['files', targetPath, 'headers']);
   const targetHeader = targetHeaders && headerWithPath(targetHeaders, headerPaths);
   if (headerPaths.size > 0 && !targetHeader) {

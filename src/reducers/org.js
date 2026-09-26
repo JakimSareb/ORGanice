@@ -1046,8 +1046,11 @@ const insertCaptureFromHeader = (state, action) => {
 };
 
 const insertCapturePosition = (template, headers, shouldPrepend) => {
-  const headerPaths = template.get('headerPaths');
-  if (headerPaths.size === 0) {
+  // ORG Mode para Eli: las líneas vacías de la ruta no cuentan; y si el encabezado no existe, se
+  // captura al principio o al final del fichero (nunca se pierde lo capturado)
+  const headerPaths = (template.get('headerPaths') || List()).filter((p) => String(p || '').trim());
+  const parentFound = headerPaths.size > 0 && headerWithPath(headers, headerPaths);
+  if (headerPaths.size === 0 || !parentFound) {
     if (shouldPrepend) {
       // Insert at beginning of file
       return { newIndex: 0, nestingLevel: 1 };

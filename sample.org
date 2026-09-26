@@ -217,7 +217,7 @@ Toca una celda para editar la tabla.
 * Capturar ideas rápido
 - Tecla *c* y después la letra de la plantilla (por ejemplo, i para Inbox).
 - En la ventana de captura: *Aceptar* (o tocar fuera, o Esc) la guarda; *Cancelar* (en rojo) la descarta y se pierde lo escrito.
-- Las plantillas se configuran en Ajustes → Plantillas de captura.
+- Las plantillas se configuran en Ajustes → Plantillas de captura. La «ruta de encabezado» es opcional: sin ella, lo capturado va al principio o al final del fichero; si pones una que no existe, se guarda igualmente al principio o al final y la app te avisa.
 - Captura rápida desde el iPhone o un marcador del navegador: ver el README del proyecto.
 
 * El reloj (tiempo dedicado)

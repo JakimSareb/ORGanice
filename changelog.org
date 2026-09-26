@@ -19,6 +19,7 @@ Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay noved
 - En la edición del encabezado, el tabulador salta entre título, descripción, etiquetas, fecha límite y fecha programada.
 - El icono de propiedades está ahora justo antes del de adjuntar.
 - Captura: botones Aceptar (guarda) y, a su derecha, Cancelar (en rojo suave: descarta lo escrito).
+- Las plantillas nuevas no llevan ruta de encabezado. Si la ruta está vacía o no existe, la captura se guarda igualmente (al principio o al final del fichero) y se avisa; antes se perdía sin aviso.
 - Enlaces a encabezados como en Emacs: icono para copiar el enlace (C-c l) y, al tocar un enlace [[file:x.org::*Título]], [[*Título]], [[#id]] o [[id:…]], la app va a ese encabezado (también con rutas de Emacs como ~/Dropbox/…).
 - Al terminar una tarea pierde su prioridad.
 - Al borrar un encabezado con adjuntos, pregunta uno a uno si se borran también.

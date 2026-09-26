@@ -21,7 +21,8 @@ const addNewEmptyCaptureTemplate = (state) => {
         isAvailableInAllOrgFiles: true,
         file: '',
         orgFilesWhereAvailable: [''],
-        headerPaths: [''],
+        // ORG Mode para Eli: sin ruta de encabezado (se captura al principio o al final)
+        headerPaths: [],
         shouldPrepend: false,
         template: '',
       })
