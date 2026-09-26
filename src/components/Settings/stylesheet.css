@@ -118,3 +118,15 @@
   margin-top: 4px;
   font-size: 13px;
 }
+
+/* ORG Mode para Eli: con Unicornio y Cuki los temas no caben en una línea en el móvil */
+.eli-theme-setting .tab-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  height: auto;
+  margin-top: 6px;
+}
+.eli-theme-setting .tab-buttons__btn {
+  height: 34px;
+  border-right: 1px solid var(--base2);
+}

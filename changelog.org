@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 1.5 (septiembre de 2026)
+** Temas
+- Dos temas nuevos en Ajustes → Tema, con modo claro y oscuro: *Unicornio* (los colores del logo y de la pantalla de inicio) y *Cuki* (mar aguamarina, espuma blanca y arena rosada).
+
 * 1.4 (septiembre de 2026)
 ** Formato del texto
 - Botones de negrita, cursiva, subrayado, tachado, código y literal en los editores de título, descripción, notas, elementos de lista y en el editor de la vista GTD. Ponen o quitan los marcadores de Org Mode en el texto seleccionado.

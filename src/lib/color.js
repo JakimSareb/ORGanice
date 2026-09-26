@@ -351,6 +351,104 @@ const themes = {
       '--green-soft': 'rgba(133, 153, 0, 0.28)',
     },
   },
+  // ORG Mode para Eli: tema «Unicornio», con los colores del logo y de la pantalla de inicio
+  // (rosa #f59fc4, lavanda #b9a0f0, ciruela #5a4870 / #6d52b8, oro #f2b24a, menta #a9e6d0)
+  Unicornio: {
+    Light: {
+      // fondos
+      '--base3': '#fcf8fd',
+      '--base2': '#f2e9f8',
+      '--base1': '#c9b8dc',
+      '--base0': '#9d8bb3',
+      // textos
+      '--base00': '#6b5d80',
+      '--base01': '#5a4870',
+      '--base02': '#4a3a5e',
+      '--base03': '#3f3252',
+      // sombras
+      '--base0-soft': 'rgba(109, 82, 184, 0.3)',
+      // fondos resaltados (encabezado seleccionado…)
+      '--base1-soft': 'rgba(245, 159, 196, 0.22)',
+      // encabezados
+      '--blue': '#6d52b8',
+      '--green': '#2f8c6c',
+      '--cyan': '#b84a8a',
+      '--yellow': '#b77a16',
+      // otros
+      '--orange': '#d2447f',
+      '--red': '#c8374f',
+      '--magenta': '#7c5cd6',
+      '--violet': '#b06fc4',
+      '--green-soft': 'rgba(169, 230, 208, 0.5)',
+    },
+    Dark: {
+      '--base3': '#1e1929',
+      '--base2': '#2a2239',
+      '--base1': '#3b3152',
+      '--base0': '#4b4066',
+      '--base00': '#cdc2e2',
+      '--base01': '#dcd2ee',
+      '--base02': '#eae3f6',
+      '--base03': '#f6f1fd',
+      '--base0-soft': 'rgba(8, 4, 16, 0.75)',
+      '--base1-soft': 'rgba(185, 160, 240, 0.16)',
+      '--blue': '#9a80ec',
+      '--green': '#7fd4b4',
+      '--cyan': '#f59fc4',
+      '--yellow': '#f2c46a',
+      '--orange': '#f47fb1',
+      '--red': '#ff7a90',
+      '--magenta': '#8a6be6',
+      '--violet': '#e3a6f0',
+      '--green-soft': 'rgba(127, 212, 180, 0.22)',
+    },
+  },
+  // ORG Mode para Eli: tema «Cuki», inspirado en una playa: mar aguamarina, espuma blanca y
+  // arena rosada
+  Cuki: {
+    Light: {
+      '--base3': '#f7fbfb',
+      '--base2': '#e2efef',
+      '--base1': '#b5cece',
+      '--base0': '#8ca7a8',
+      '--base00': '#5c7273',
+      '--base01': '#485e5f',
+      '--base02': '#344748',
+      '--base03': '#253536',
+      '--base0-soft': 'rgba(70, 120, 122, 0.3)',
+      '--base1-soft': 'rgba(240, 190, 198, 0.3)',
+      '--blue': '#2f878d',
+      '--green': '#4f9478',
+      '--cyan': '#c0677a',
+      '--yellow': '#a07f4c',
+      '--orange': '#d8677a',
+      '--red': '#c24d60',
+      '--magenta': '#d77889',
+      '--violet': '#7e78ad',
+      '--green-soft': 'rgba(150, 212, 206, 0.4)',
+    },
+    Dark: {
+      '--base3': '#15232a',
+      '--base2': '#1e3139',
+      '--base1': '#2c454d',
+      '--base0': '#3a565e',
+      '--base00': '#c2d5d6',
+      '--base01': '#d2e2e3',
+      '--base02': '#e2eded',
+      '--base03': '#f2f8f8',
+      '--base0-soft': 'rgba(3, 10, 13, 0.75)',
+      '--base1-soft': 'rgba(242, 184, 192, 0.14)',
+      '--blue': '#4fb0b6',
+      '--green': '#8fd0b0',
+      '--cyan': '#f2b3bd',
+      '--yellow': '#e6cf9c',
+      '--orange': '#f5949f',
+      '--red': '#ff8795',
+      '--magenta': '#d9788a',
+      '--violet': '#b7ace0',
+      '--green-soft': 'rgba(143, 208, 176, 0.2)',
+    },
+  },
 };
 
 export const loadTheme = (theme = 'Solarized', colorScheme = 'Light') => {
@@ -362,7 +460,8 @@ export const loadTheme = (theme = 'Solarized', colorScheme = 'Light') => {
       colorScheme = 'Light';
     }
   }
-  const themeColors = themes[theme][colorScheme];
+  // Tema desconocido (p. ej. guardado por otra versión): el de siempre
+  const themeColors = (themes[theme] || themes.Solarized)[colorScheme] || themes.Solarized.Light;
   const style = document.documentElement.style;
   Object.entries(themeColors).forEach(([k, v]) => style.setProperty(k, v));
 
@@ -377,5 +476,5 @@ export const loadTheme = (theme = 'Solarized', colorScheme = 'Light') => {
   // set theme color on android
   document
     .querySelector('meta[name="theme-color"]')
-    .setAttribute('content', themes[theme]['--base3']);
+    .setAttribute('content', themeColors['--base3']);
 };

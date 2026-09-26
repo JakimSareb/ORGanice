@@ -275,6 +275,7 @@ Todos se pueden cambiar en Ajustes → Atajos de teclado.
 
 * Ajustes que conviene conocer
 - *Estados de las tareas* y *Etiquetas por defecto*: para los ficheros que no los definen.
+- *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio) y «Cuki» (aguamarina, espuma y arena rosada), además de los clásicos. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).
   - «Añadir todos los ficheros .org» busca en tu carpeta y subcarpetas (sin la de copias de seguridad) y los pone todos en la agenda, la búsqueda, la lista de tareas y el refile.
