@@ -94,3 +94,13 @@
   color: #dc322f;
   opacity: 0.8;
 }
+
+/* ORG Mode para Eli: casilla de tarea */
+.eli-drawer-task.is-inactive {
+  color: var(--base1);
+  opacity: 0.45;
+  cursor: default;
+}
+.eli-drawer-task.is-active {
+  color: var(--green);
+}

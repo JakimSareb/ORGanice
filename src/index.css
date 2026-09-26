@@ -174,3 +174,23 @@ body {
   display: flex;
   align-items: center;
 }
+
+/* ORG Mode para Eli: flechas para subir/bajar de nivel en el editor de título */
+.eli-title-indent {
+  display: flex;
+  gap: 6px;
+  margin-left: 18px;
+  align-self: center;
+}
+.eli-title-indent__btn {
+  border: 1px solid rgba(38, 139, 210, 0.35);
+  background: rgba(38, 139, 210, 0.08);
+  color: #5a9fd4;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.eli-title-indent__btn:hover {
+  background: rgba(38, 139, 210, 0.18);
+}

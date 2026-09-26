@@ -37,12 +37,18 @@
   (`Energy_ALL`: Low Medium High QuickWin) y tiempo (`Effort_ALL`: 0:10 … 4:00), leídos de
   `#+PROPERTY` si el fichero los define.
 - Ajustes: «Estados de las tareas» (por defecto `#+TODO: NEXT(n) TODO(t) MAYBE(m) WAITING(w)
-  PROJECT(p) | DONE(d) CANCELLED(c) <(<) >(>)`) para ficheros sin #+TODO, y «Etiquetas por
+  PROJECT(p) | DONE(d) CANCELLED(c)`) para ficheros sin #+TODO, y «Etiquetas por
   defecto» (`#+TAGS: @ordenador @casa @llamadas @inbox @videos @leer @recados @anywhere`).
 - Los ficheros nuevos llevan en la cabecera #+FILETAGS, #+TAGS, #+PROPERTY (Energy_ALL,
   Effort_ALL) y #+COLUMNS.
 - Agenda: en los hábitos solo la cabecera y el gráfico; en el resto, bajo la cabecera y en una
   línea: cuántos días faltan (en azul), el tipo y la fecha.
+- Barra de iconos del encabezado: casilla después de la estrella (gris si no es tarea o ya está
+  terminada; clic → DONE, mayúsculas + clic → CANCELLED). Mantener pulsado el reloj muestra el
+  tiempo registrado del encabezado y sus subencabezados.
+- Editor de título: flechas (azul suave) para subir/bajar el encabezado y para subirlo/bajarlo de
+  nivel con sus subencabezados.
+- Interfaz en español: menús, ajustes, agenda (días y meses en español) y mensajes.
 - Al abrir una tarea o proyecto en narrow (desde GTD o la agenda) se ve con todo desplegado.
 - Al arrancar, una descarga que termina tarde ya no pisa cambios hechos mientras tanto.
 - Atajo **g**: abre la vista GTD (desde la hoja y el explorador; configurable).

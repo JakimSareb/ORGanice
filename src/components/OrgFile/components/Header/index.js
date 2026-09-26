@@ -1,6 +1,8 @@
 import { getPriority } from '../../../../lib/eli_priority';
 import { openPrintPreview, openUploadDialog } from '../../../EliTools';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
+import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task_state';
+import { showMessage } from '../../../../lib/eli_prompt';
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -694,6 +696,31 @@ class Header extends PureComponent {
                   onInsertInactiveDate={() => this.props.org.insertInactiveDate(header.get('id'))}
                   onTogglePriority={() => this.props.org.togglePriorityA(header.get('id'))}
                   isPriorityA={getPriority(header) === 'A'}
+                  taskState={taskStateOf(header, this.props.todoKeywordSets).kind}
+                  onCompleteTask={(cancel) => {
+                    const st = taskStateOf(header, this.props.todoKeywordSets);
+                    if (st.kind !== 'active') return;
+                    this.props.org.setTodoState(
+                      header.get('id'),
+                      cancel ? st.cancelKeyword : st.doneKeyword,
+                      this.props.shouldLogIntoDrawer
+                    );
+                  }}
+                  onClockTotals={() => {
+                    const t = clockTotals(this.props.headers, header.get('id'));
+                    if (!t) return;
+                    const title = (header.getIn(['titleLine', 'rawTitle']) || '').trim();
+                    showMessage(
+                      'Tiempo registrado',
+                      `«${title}»\n\nTotal: ${formatMillis(t.total)}` +
+                        (t.subheaders
+                          ? `\n(este encabezado: ${formatMillis(
+                              t.own
+                            )}; subencabezados: ${formatMillis(t.total - t.own)})`
+                          : '') +
+                        (t.running ? '\n\nIncluye un reloj en marcha.' : '')
+                    );
+                  }}
                   onArchive={() => this.props.org.archiveSubtree(header.get('id'))}
                   onDuplicateHeader={this.handleDuplicateHeader}
                 />
@@ -728,6 +755,7 @@ const mapStateToProps = (state, ownProps) => {
     showClockDisplay: state.org.present.get('showClockDisplay'),
     showDeadlineDisplay: state.base.get('showDeadlineDisplay'),
     headers: file.get('headers'),
+    todoKeywordSets: file.get('todoKeywordSets'),
   };
 };
 

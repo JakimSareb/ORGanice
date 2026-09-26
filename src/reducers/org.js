@@ -263,7 +263,7 @@ const eliDropPriorityWhenDone = (state, headerIndex, newTodoState) => {
   const newRaw = raw.replace(ELI_PRIORITY_RE, '');
   return state
     .setIn(rawPath, newRaw)
-    .setIn(['headers', headerIndex, 'titleLine', 'title'], parseMarkupAndCookies(newRaw));
+    .setIn(['headers', headerIndex, 'titleLine', 'title'], fromJS(parseMarkupAndCookies(newRaw)));
 };
 
 const setTodoState = (state, action) => {

@@ -400,6 +400,46 @@ class UnifiedHeaderEditor extends PureComponent {
                 Siguiente conjunto
               </button>
             ) : null}
+            {/* ORG Mode para Eli: subir/bajar de nivel el encabezado (con sus subencabezados) */}
+            {this.props.onMoveSubtree && (
+              <div className="eli-title-indent">
+                {[
+                  ['up', 'fa-arrow-up', 'Subir (antes del encabezado anterior)', 'eli-title-up'],
+                  [
+                    'down',
+                    'fa-arrow-down',
+                    'Bajar (después del encabezado siguiente)',
+                    'eli-title-down',
+                  ],
+                  [
+                    'left',
+                    'fa-arrow-left',
+                    'Subir de nivel (hacia fuera), con sus subencabezados',
+                    'eli-title-outdent',
+                  ],
+                  [
+                    'right',
+                    'fa-arrow-right',
+                    'Bajar de nivel (hacia dentro), con sus subencabezados',
+                    'eli-title-indent',
+                  ],
+                ].map(([direction, icon, title, testId]) => (
+                  <button
+                    key={direction}
+                    type="button"
+                    className="eli-title-indent__btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      this.props.onMoveSubtree(direction);
+                    }}
+                    title={title}
+                    data-testid={testId}
+                  >
+                    <i className={`fas ${icon}`} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         }
 

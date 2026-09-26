@@ -4,7 +4,7 @@
 import { fromJS } from 'immutable';
 
 export const DEFAULT_TODO_LINE =
-  '#+TODO: NEXT(n) TODO(t) MAYBE(m) WAITING(w) PROJECT(p) | DONE(d) CANCELLED(c) <(<) >(>)';
+  '#+TODO: NEXT(n) TODO(t) MAYBE(m) WAITING(w) PROJECT(p) | DONE(d) CANCELLED(c)';
 export const DEFAULT_TAGS_LINE =
   '#+TAGS: @ordenador @casa @llamadas @inbox @videos @leer @recados @anywhere';
 export const DEFAULT_ENERGY = ['Low', 'Medium', 'High', 'QuickWin'];

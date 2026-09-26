@@ -14,6 +14,9 @@ export default class HeaderActionDrawer extends PureComponent {
   iconWithFFClickCatcher({ className, onClick, onLongPress, title, testId = '' }) {
     const handleMouseDown = onLongPress
       ? (e) => {
+          // ORG Mode para Eli: que el encabezado no reciba esta pulsación (su propia pulsación
+          // larga cancelaba la del icono)
+          e.stopPropagation();
           this.isLongPressing = false;
           // Store reference to the target element to avoid React event pooling issues
           const targetElement = e.currentTarget;
@@ -55,10 +58,11 @@ export default class HeaderActionDrawer extends PureComponent {
     const handleClick = onClick
       ? (e) => {
           // Only trigger regular click if it wasn't a long press
-          if (!this.isLongPressing) {
+          // (la marca de pulsación larga solo cuenta para iconos que la tienen)
+          if (!onLongPress || !this.isLongPressing) {
             onClick(e);
           }
-          this.isLongPressing = false;
+          if (onLongPress) this.isLongPressing = false;
         }
       : undefined;
 
@@ -102,6 +106,9 @@ export default class HeaderActionDrawer extends PureComponent {
       onTogglePriority,
       isPriorityA,
       onArchive,
+      taskState,
+      onCompleteTask,
+      onClockTotals,
     } = this.props;
 
     // Create a fallback function for onDuplicateHeader if not provided
@@ -125,6 +132,21 @@ export default class HeaderActionDrawer extends PureComponent {
         onClick: onTogglePriority,
         testId: 'eli-priority',
         title: isPriorityA ? 'Quitar la prioridad [#A]' : 'Marcar con prioridad [#A]',
+      },
+      // Casilla de tarea: gris si no es tarea o ya está terminada; si está activa, clic → DONE
+      // y mayúsculas + clic → CANCELLED
+      onCompleteTask && {
+        className: `far ${
+          taskState === 'done' ? 'fa-check-square' : 'fa-square'
+        } fa-lg eli-drawer-task${taskState === 'active' ? ' is-active' : ' is-inactive'}`,
+        onClick: (e) => taskState === 'active' && onCompleteTask(!!(e && e.shiftKey)),
+        testId: 'eli-complete-task',
+        title:
+          taskState === 'active'
+            ? 'Terminar la tarea (DONE); con mayúsculas pulsada, cancelarla (CANCELLED)'
+            : taskState === 'done'
+            ? 'Tarea terminada'
+            : 'No es una tarea',
       },
       // Editar
       {
@@ -175,14 +197,16 @@ export default class HeaderActionDrawer extends PureComponent {
         ? {
             className: 'fas fa-hourglass-end fa-lg',
             onClick: onClockInOutClick,
+            onLongPress: onClockTotals,
             testId: 'org-clock-out',
-            title: 'Parar reloj',
+            title: 'Parar reloj (mantén pulsado: tiempo total registrado)',
           }
         : {
             className: 'fas fa-hourglass-start fa-lg',
             onClick: onClockInOutClick,
+            onLongPress: onClockTotals,
             testId: 'org-clock-in',
-            title: 'Iniciar reloj',
+            title: 'Iniciar reloj (mantén pulsado: tiempo total registrado)',
           },
       onAttachFiles && {
         className: 'fas fa-paperclip fa-lg',

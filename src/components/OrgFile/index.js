@@ -1090,6 +1090,18 @@ class OrgFile extends PureComponent {
                   setPopupCloseActionValuesAccessor={setPopupCloseActionValuesAccessor}
                   saveTitle={this.state.captureMode ? this.saveCaptureTitle : this.saveTitle}
                   handleTodoChange={this.handleTodoChange}
+                  onMoveSubtree={
+                    this.state.captureMode || !this.props.selectedHeader
+                      ? null
+                      : (direction) => {
+                          const id = this.props.selectedHeader.get('id');
+                          const org = this.props.org;
+                          if (direction === 'left') org.moveSubtreeLeft(id);
+                          else if (direction === 'right') org.moveSubtreeRight(id);
+                          else if (direction === 'up') org.moveHeaderUp(id);
+                          else if (direction === 'down') org.moveHeaderDown(id);
+                        }
+                  }
                   handleTagsChange={
                     this.state.captureMode ? this.handleCaptureTagsChange : this.handleTagsChange
                   }
