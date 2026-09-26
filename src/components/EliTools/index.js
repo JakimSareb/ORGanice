@@ -666,7 +666,7 @@ function FavoritesPopup({ currentPath, onClose }) {
           </button>
         )}
         <div className="eli-fav__hint">
-          También en Ajustes → File settings («Fichero principal»).
+          También en Ajustes → Ajustes de ficheros («Fichero principal»).
         </div>
         <div className="eli-prompt__buttons">
           <button className="btn eli-prompt__ok" onClick={onClose}>

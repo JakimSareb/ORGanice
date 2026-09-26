@@ -191,12 +191,12 @@ export default function EncryptionSettings() {
         Desactivado (recomendado): no queda nada de tus notas en el navegador; la app las descarga
         de Dropbox al abrirlas y necesita conexión. Si cierras la app con cambios sin subir, se
         pierden (la app te avisa antes de cerrar). Activado: puedes abrir y editar sin conexión, a
-        cambio de dejar una copia legible en este dispositivo. Los ficheros cifrados y las cabeceras
-        :crypt: descifradas nunca se guardan, esté como esté esta opción.
+        cambio de dejar una copia legible en este dispositivo. Los ficheros cifrados y los
+        encabezados :crypt: descifrados nunca se guardan, esté como esté esta opción.
       </p>
       <h2>Cifrado (GPG)</h2>
       <p className="eli-encryption__help">
-        Ficheros <code>.org.gpg</code> / <code>.org.asc</code> y cabeceras con la etiqueta{' '}
+        Ficheros <code>.org.gpg</code> / <code>.org.asc</code> y encabezados con la etiqueta{' '}
         <code>:crypt:</code> (org-crypt). Compatible con GnuPG y Emacs. Las frases de paso solo se
         guardan en memoria mientras la app está abierta.
       </p>
@@ -219,7 +219,7 @@ export default function EncryptionSettings() {
       </label>
       <p className="eli-encryption__help">
         Los ficheros existentes se vuelven a cifrar siempre igual que estaban (misma frase o mismos
-        destinatarios). En una cabecera, la propiedad <code>:CRYPTKEY:</code> manda sobre este
+        destinatarios). En un encabezado, la propiedad <code>:CRYPTKEY:</code> manda sobre este
         ajuste.
       </p>
       <h3>Claves en este navegador</h3>

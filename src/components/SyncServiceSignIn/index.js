@@ -70,7 +70,7 @@ function WebDAVForm() {
               />
             </p>
             <p>
-              <label htmlFor="input-webdav-user">Username:</label>
+              <label htmlFor="input-webdav-user">Usuario:</label>
               <input
                 id="input-webdav-user"
                 type="text"
@@ -82,7 +82,7 @@ function WebDAVForm() {
               />
             </p>
             <p>
-              <label htmlFor="input-webdav-password">Password:</label>
+              <label htmlFor="input-webdav-password">Contraseña:</label>
               <input
                 id="input-webdav-password"
                 type="password"
@@ -93,18 +93,18 @@ function WebDAVForm() {
                 }}
               />
             </p>
-            <input type="submit" value="Sign-in" />
+            <input type="submit" value="Iniciar sesión" />
           </form>
           <p>
-            Please make sure your WebDAV backend meets the requirements as documented{' '}
+            Comprueba que tu servidor WebDAV cumple los requisitos descritos{' '}
             <a
               href="https://organice.200ok.ch/documentation.html#faq_webdav"
               target="_blank"
               rel="noopener noreferrer"
             >
-              here
+              aquí
             </a>
-            , especially{' '}
+            , sobre todo los de{' '}
             <a
               href="https://organice.200ok.ch/documentation.html#webdav_cors"
               target="_blank"
@@ -135,19 +135,19 @@ function GitLab() {
       persistField('gitLabProject', projectId);
       createGitlabOAuth().fetchAuthorizationCode();
     } else {
-      alert('Project does not appear to be a valid gitlab.com URL');
+      alert('El proyecto no parece una URL válida de gitlab.com');
     }
   };
 
   return (
     <>
       <a href="#gitlab" onClick={toggleVisible}>
-        <img src={GitLabLogo} alt="GitLab logo" />
+        <img src={GitLabLogo} alt="Logo de GitLab" />
       </a>
       {isVisible && (
         <form onSubmit={handleSubmit}>
           <p>
-            <label htmlFor="input-gitlab-project">Project:</label>
+            <label htmlFor="input-gitlab-project">Proyecto:</label>
             <input
               id="input-gitlab-project"
               type="url"
@@ -157,7 +157,7 @@ function GitLab() {
               onChange={(e) => setProject(e.target.value)}
             />
           </p>
-          <input type="submit" value="Sign-in" />
+          <input type="submit" value="Iniciar sesión" />
         </form>
       )}
     </>

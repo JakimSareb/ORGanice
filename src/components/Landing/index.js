@@ -82,7 +82,7 @@ export default () => {
                   data-bs-target="#navbarSupportedContent"
                   aria-controls="navbarSupportedContent"
                   aria-expanded="false"
-                  aria-label="Toggle navigation"
+                  aria-label="Mostrar u ocultar la navegación"
                 >
                   <Menu />
                 </button>
@@ -95,7 +95,7 @@ export default () => {
                         href="https://github.com/sponsors/200ok-ch"
                         rel="noreferrer noopener"
                       >
-                        Pricing
+                        Precios
                       </a>
                     </li>
 
@@ -107,7 +107,7 @@ export default () => {
                         rel="noreferrer noopener"
                         data-testid="landing-github-link"
                       >
-                        Code
+                        Código
                       </a>
                     </li>
 
@@ -119,7 +119,7 @@ export default () => {
                         rel="noreferrer noopener"
                         data-testid="landing-docs-link"
                       >
-                        Documentation
+                        Documentación
                       </a>
                     </li>
                   </ul>
@@ -128,7 +128,7 @@ export default () => {
                     href={`${BASE_PATH}/sign_in`}
                     data-testid="landing-sign-in-navbar"
                   >
-                    Sign in
+                    Iniciar sesión
                     {/* <i className="ms-2" data-feather="arrow-right"></i> */}
                     <ArrowRight className="ms-2" />
                   </a>
@@ -142,16 +142,16 @@ export default () => {
                   <div className="row gx-5 align-items-center">
                     <div className="col-lg-6" data-aos="fade-up">
                       <h1 className="page-header-ui-title">
-                        organice is the best way to get stuff done
+                        organice es la mejor forma de sacar las cosas adelante
                       </h1>
                       <p>
-                        Whether you're planning multiple work projects, sharing a shopping list with
-                        your partner or you're planing a holiday, organice is here to help you
-                        complete all your personal and professional tasks.
+                        Tanto si planificas varios proyectos de trabajo, compartes la lista de la
+                        compra con tu pareja o preparas unas vacaciones, organice te ayuda a
+                        completar todas tus tareas personales y profesionales.
                       </p>
                       <p>
-                        organice is Free and Open Source software that works on top of Org mode
-                        files.
+                        organice es software libre y de código abierto que trabaja sobre ficheros de
+                        Org mode.
                       </p>
 
                       <a
@@ -159,7 +159,7 @@ export default () => {
                         href={`${BASE_PATH}/sample`}
                         data-testid="landing-live-demo-hero"
                       >
-                        Live demo
+                        Demo en vivo
                         {/* <i className="ms-2" data-feather="arrow-right"></i> */}
                         <ArrowRight className="ms-2" />
                       </a>
@@ -169,7 +169,7 @@ export default () => {
                         href={`${BASE_PATH}/sign_in`}
                         data-testid="landing-sign-in-hero"
                       >
-                        Sign in
+                        Iniciar sesión
                         {/* <i className="ms-2" data-feather="arrow-right"></i> */}
                         <ArrowRight className="ms-2" />
                       </a>
@@ -216,11 +216,11 @@ export default () => {
                         {/* <i data-feather="check-square"></i> */}
                         <CheckSquare />
                       </div>
-                      <h3>Plan for anything</h3>
+                      <h3>Planifica cualquier cosa</h3>
                       <p className="mb-0">
-                        Organize and share your to-do, work, grocery, movies and household lists. No
-                        matter what you’re planning, how big or small the task may be, organice
-                        makes it super easy to get stuff done.
+                        Organiza y comparte tus listas de tareas, trabajo, compra, películas y casa.
+                        Planifiques lo que planifiques, sea la tarea grande o pequeña, organice te
+                        lo pone muy fácil para sacarlo adelante.
                       </p>
                     </div>
 
@@ -229,11 +229,10 @@ export default () => {
                         {/* <i data-feather="calendar"></i> */}
                         <Calendar />
                       </div>
-                      <h3>See your agenda anytime</h3>
+                      <h3>Consulta tu agenda cuando quieras</h3>
                       <p className="mb-0">
-                        Set schedules and deadlines on to-dos. No matter whether your tasks are work
-                        related or just for fun, you will never miss a deadline again with organice
-                        in charge.
+                        Programa tareas y ponles fechas límite. Tanto si son de trabajo como de
+                        ocio, con organice no volverás a saltarte una fecha límite.
                       </p>
                     </div>
 
@@ -242,25 +241,26 @@ export default () => {
                         {/* <i data-feather="eye-off"></i> */}
                         <EyeOff />
                       </div>
-                      <h3>Privacy and freedom first</h3>
+                      <h3>Privacidad y libertad ante todo</h3>
                       <p className="mb-0">
-                        organice is Free and Open Source software protecting your freedom to run,
-                        copy, distribute, study, change and improve the software. Your most
-                        important data should never be in a closed silo.
+                        organice es software libre y de código abierto que protege tu libertad de
+                        ejecutar, copiar, distribuir, estudiar, modificar y mejorar el software. Tus
+                        datos más importantes nunca deberían estar encerrados en un sistema cerrado.
                         <br />
                         <br />
-                        We also never see your data - only you and your personal storage provider
-                        does. organice saves your files in the free format Org mode, so you can
-                        always access it with any tool at any time!
+                        Además, nunca vemos tus datos: solo los ves tú y tu proveedor de
+                        almacenamiento. organice guarda tus ficheros en el formato libre de Org
+                        mode, así que siempre podrás abrirlos con cualquier herramienta, en
+                        cualquier momento.
                       </p>
                     </div>
                   </div>
 
                   <div id="icons" className="row pt-10 d-flex flex-wrap align-items-center">
-                    <h1 className="text-center mb-5">Access from anywhere</h1>
+                    <h1 className="text-center mb-5">Accede desde cualquier lugar</h1>
                     <strong className="text-center mb-5">
-                      Available on iPhone, Android, and the Web, organice works seamlessly across
-                      all major devices.
+                      Disponible en iPhone, Android y la web, organice funciona sin problemas en
+                      todos los dispositivos habituales.
                     </strong>
 
                     <div className="col-md-4">
@@ -297,30 +297,30 @@ export default () => {
                         <img
                           className="content-skewed-item img-fluid shadow-lg rounded-3"
                           src={screenshotWide}
-                          alt="Sample organice document"
+                          alt="Documento de ejemplo en organice"
                         />
                       </div>
                     </div>
                     <div className="col-lg-6 order-0 order-lg-1 mb-5 mb-lg-0" data-aos="fade-left">
                       <div className="mb-5">
-                        <h2>Remember all the things</h2>
-                        <p className="lead">Succeed with every project</p>
+                        <h2>Acuérdate de todo</h2>
+                        <p className="lead">Saca adelante cada proyecto</p>
                       </div>
 
                       <div className="row gx-5">
                         <div className="col-md-6 mb-4">
-                          <h6>Work anywhere</h6>
+                          <h6>Trabaja desde cualquier sitio</h6>
                           <p className="mb-2 small mb-0">
-                            organice works on all major platforms, so you can access your
-                            information wherever you are.
+                            organice funciona en las principales plataformas, así que puedes acceder
+                            a tu información estés donde estés.
                           </p>
                         </div>
 
                         <div className="col-md-6 mb-4">
-                          <h6>Find your content quickly</h6>
+                          <h6>Encuentra tu contenido rápidamente</h6>
                           <p className="mb-2 small mb-0">
-                            Thanks to a flexible query language and a bookmarking system, you can
-                            find your important content quickly and reliably.
+                            Gracias a un lenguaje de consulta flexible y a un sistema de marcadores,
+                            encuentras tu contenido importante de forma rápida y fiable.
                           </p>
                         </div>
                       </div>
@@ -332,18 +332,18 @@ export default () => {
               <section className="bg-white pt-10">
                 <div className="container px-5">
                   <div className="row gx-5 mb-10">
-                    <h1 className="text-center mb-5">What our users say</h1>
+                    <h1 className="text-center mb-5">Qué dicen nuestros usuarios</h1>
                     <div
                       className="col-lg-6 mb-5 mb-lg-0 divider-right aos-init aos-animate"
                       data-aos="fade"
                     >
                       <div className="testimonial p-lg-5">
                         <p className="testimonial-quote text-primary">
-                          "This is a SPECTACULAR project and I am glad that I found it. organice
-                          takes the extreme power of org mode and makes it simple to use. When
-                          combined with the option to self-host your own data rganice has created an
-                          extremely flexible and secure option to help fulfill everyone's
-                          organizational needs."
+                          «Es un proyecto ESPECTACULAR y me alegro de haberlo encontrado. organice
+                          toma la enorme potencia de Org mode y la hace fácil de usar. Unido a la
+                          posibilidad de alojar tus propios datos, organice ofrece una opción
+                          extremadamente flexible y segura para cubrir las necesidades de
+                          organización de cualquiera.»
                         </p>
                         <div className="row">
                           <div className="col-3">
@@ -364,7 +364,7 @@ export default () => {
                                 @dmorlitz
                               </a>
                             </div>
-                            <div className="testimonial-position">Contributor</div>
+                            <div className="testimonial-position">Colaborador</div>
                           </div>
                         </div>
                       </div>
@@ -376,8 +376,8 @@ export default () => {
                     >
                       <div className="testimonial p-lg-5">
                         <p className="testimonial-quote text-primary">
-                          "Been using organice for years. To me, it’s by far the most usable
-                          solution for interacting with org files on a mobile device."
+                          «Llevo años usando organice. Para mí es, con diferencia, la solución más
+                          cómoda para trabajar con ficheros org en el móvil.»
                         </p>
                         <div className="row">
                           <div className="col-3">
@@ -398,7 +398,7 @@ export default () => {
                                 @jcpst
                               </a>
                             </div>
-                            <div className="testimonial-position">User</div>
+                            <div className="testimonial-position">Usuario</div>
                           </div>
                         </div>
                       </div>
@@ -419,10 +419,10 @@ export default () => {
                         </div>
 
                         <div className="ms-4">
-                          <h5 className="text-white">Intro video</h5>
+                          <h5 className="text-white">Vídeo de introducción</h5>
                           <p className="text-white-50">
-                            If you are interested into the 'why did we get started with organice',
-                            we have got you covered. For{' '}
+                            Si te interesa saber por qué empezamos con organice, aquí lo tienes.
+                            Para{' '}
                             <a
                               target="_blank"
                               href="https://emacsconf.org/2019/"
@@ -431,8 +431,8 @@ export default () => {
                               {' '}
                               EmacsConf 2019
                             </a>
-                            , we have created a 10 minute introductory video into the rationale and
-                            usability of organice.
+                            , preparamos un vídeo de introducción de 10 minutos sobre las ideas y el
+                            uso de organice.
                           </p>
                         </div>
                       </div>
@@ -443,7 +443,7 @@ export default () => {
                         <div className="tutorial container text-center my-5 ratio ratio-16x9">
                           <iframe
                             src="https://www.youtube.com/embed/aQKc0hcFXCk"
-                            title="YouTube video player"
+                            title="Reproductor de vídeo de YouTube"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                           ></iframe>
@@ -455,20 +455,20 @@ export default () => {
                   <div className="row gx-5 justify-content-center text-center">
                     <div className="col-lg-8">
                       <div className="badge bg-transparent-light rounded-pill badge-marketing mb-4"></div>
-                      <h2 className="text-white">Get started</h2>
+                      <h2 className="text-white">Empieza ya</h2>
                       <div className="lead text-white-50 mb-5">
                         <p>
-                          organice is{' '}
+                          organice es{' '}
                           <a
                             target="_blank"
                             href="https://www.gnu.org/philosophy/free-sw.en.html"
                             rel="noreferrer noopener"
                           >
-                            free software
+                            software libre
                           </a>{' '}
-                          and will stay this way. Leave the closed silos behind and let your
-                          knowledge roam free. Start with the live demo - you don't even need to
-                          sign up. Check it out first and sign up later.
+                          y lo seguirá siendo. Deja atrás los sistemas cerrados y da libertad a tu
+                          conocimiento. Empieza con la demo en vivo: ni siquiera necesitas
+                          registrarte. Pruébala primero y regístrate después.
                         </p>
                       </div>
 
@@ -477,7 +477,7 @@ export default () => {
                         href={`${BASE_PATH}/sample`}
                         data-testid="landing-live-demo-bottom"
                       >
-                        Live demo
+                        Demo en vivo
                       </a>
                     </div>
                   </div>
@@ -498,9 +498,9 @@ export default () => {
                 <div className="container px-5 mt-5">
                   <div className="row gx-5 align-items-center">
                     <div className="col-lg-6">
-                      <h4>Do you have further questions?</h4>
+                      <h4>¿Tienes más preguntas?</h4>
                       <p className="lead mb-5 mb-lg-0 text-gray-500">
-                        Join the inclusive and friendly community chat, and let's have a talk.
+                        Únete al chat de la comunidad, abierto y amigable, y hablemos.
                       </p>
                     </div>
                     <div className="col-lg-6 text-lg-end">
@@ -532,7 +532,7 @@ export default () => {
               <div className="row gx-5">
                 <div className="col-lg-3">
                   <div className="footer-brand">200ok GmbH</div>
-                  <div className="mb-3">Glarus, Switzerland</div>
+                  <div className="mb-3">Glarus, Suiza</div>
                   <div>
                     <a href="tel:+41764050567">
                       <i className="fas fa-phone-square"></i>&nbsp;+41 76 405 05 67
@@ -548,7 +548,7 @@ export default () => {
                   <div className="row gx-5">
                     <div className="col-lg-6">
                       <div className="footer-brand">&nbsp;</div>
-                      <div className="mb-3">Follow us on Social Media</div>
+                      <div className="mb-3">Síguenos en redes sociales</div>
                       <div className="icon-list-social mb-5">
                         <a
                           className="icon-list-social-link"
@@ -576,7 +576,7 @@ export default () => {
                 <div className="col-md-6 small">Copyright &copy; 200ok GmbH 2022</div>
                 <div className="col-md-6 text-md-end small">
                   {/* TODO: Privacy Policy could have the same design as LP */}
-                  <Link to="/privacy-policy">Privacy Policy</Link>
+                  <Link to="/privacy-policy">Política de privacidad</Link>
                   &middot;
                   {/* TODO: Create a TOS */}
                   {/* <a href="/terms-of-service.html">Terms &amp; Conditions</a> */}

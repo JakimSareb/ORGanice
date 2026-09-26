@@ -90,7 +90,7 @@ export default class PropertyListEditorModal extends PureComponent {
     return (
       <>
         <h2 className="drawer-modal__title" data-testid="property-list-editor-title">
-          Edit property list
+          Editar lista de propiedades
         </h2>
 
         <datalist id="drawer-modal__datalist-property-names">
@@ -101,10 +101,10 @@ export default class PropertyListEditorModal extends PureComponent {
 
         {propertyListItems.size === 0 ? (
           <div className="no-items-message" data-testid="property-list-editor-no-items">
-            There are no items in this property list.
+            No hay elementos en esta lista de propiedades.
             <br />
             <br />
-            Click the <i className="fas fa-plus" /> button to add a new one.
+            Pulsa el botón <i className="fas fa-plus" /> para añadir uno nuevo.
           </div>
         ) : (
           <Droppable droppableId="property-list-editor-droppable" type="PROPERTY-LIST">

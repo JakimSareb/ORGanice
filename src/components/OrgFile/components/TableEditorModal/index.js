@@ -40,7 +40,7 @@ const TableEditorModal = () => {
 
   return (
     <>
-      <h2 className="drawer-modal__title">Edit table</h2>
+      <h2 className="drawer-modal__title">Editar tabla</h2>
       <div style={{ overflowX: 'auto', overflowY: 'auto' }}>
         <Table props={tableProps} />
       </div>

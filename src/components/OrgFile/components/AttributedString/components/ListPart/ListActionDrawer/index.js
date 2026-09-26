@@ -14,7 +14,7 @@ export default ({
     <div className="list-action-drawer-container">
       <div className="list-action-drawer__row">
         <div className="list-action-drawer__edit-icon-container" onClick={onEnterListTitleEditMode}>
-          <i className="fas fa-pencil-alt fa-lg" title="Edit list item title" />
+          <i className="fas fa-pencil-alt fa-lg" title="Editar título del elemento de lista" />
         </div>
 
         <span className="list-action-drawer__separator" />
@@ -22,7 +22,7 @@ export default ({
         <div
           className="list-action-drawer__edit-icon-container"
           onClick={onEnterListContentsEditMode}
-          title="Edit list item contents"
+          title="Editar contenido del elemento de lista"
         >
           <i className="fas fa-edit fa-lg" />
         </div>
@@ -33,14 +33,14 @@ export default ({
           <i
             className="fas fa-plus fa-lg"
             data-testid="list-item-action-plus"
-            title="Create list item below"
+            title="Crear elemento de lista debajo"
           />
         </div>
 
         <span className="list-action-drawer__separator" />
 
         <div className="list-action-drawer__edit-icon-container" onClick={onRemoveListItem}>
-          <i className="fas fa-times fa-lg" title="Delete list item" />
+          <i className="fas fa-times fa-lg" title="Borrar elemento de lista" />
         </div>
       </div>
     </div>

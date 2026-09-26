@@ -342,9 +342,11 @@ class UnifiedHeaderEditor extends PureComponent {
 
     return (
       <>
-        <h2 className="drawer-modal__title">{editRawValues ? 'Edit full title' : 'Edit title'}</h2>
+        <h2 className="drawer-modal__title">
+          {editRawValues ? 'Editar título completo' : 'Editar título'}
+        </h2>
 
-        {/* ORG Mode para Eli: los estados también en «Edit full title» */}
+        {/* ORG Mode para Eli: los estados también en «Editar título completo» */}
         {
           <div className="todo-container">
             <div className="eli-title-star-group">
@@ -393,9 +395,9 @@ class UnifiedHeaderEditor extends PureComponent {
               <button
                 className="btn-passive"
                 onClick={this.handleNextTodoKeywordSet}
-                title="Next keyword set"
+                title="Siguiente conjunto de palabras clave"
               >
-                Next set
+                Siguiente conjunto
               </button>
             ) : null}
           </div>
@@ -418,7 +420,7 @@ class UnifiedHeaderEditor extends PureComponent {
             onClick={this.handleTitleInsertTimestamp}
           >
             <i className="fas fa-plus insert-timestamp-icon" />
-            Insert timestamp
+            Insertar fecha
           </div>
         </div>
       </>
@@ -432,7 +434,7 @@ class UnifiedHeaderEditor extends PureComponent {
     return (
       <>
         <h2 className="drawer-modal__title">
-          {editRawValues ? 'Edit full description' : 'Edit description'}
+          {editRawValues ? 'Editar descripción completa' : 'Editar descripción'}
         </h2>
 
         <div className="header-content__edit-container">
@@ -451,7 +453,7 @@ class UnifiedHeaderEditor extends PureComponent {
             onClick={this.handleDescriptionInsertTimestamp}
           >
             <i className="fas fa-plus insert-timestamp-icon" />
-            Insert timestamp
+            Insertar fecha
           </div>
         </div>
       </>
@@ -596,7 +598,7 @@ class UnifiedHeaderEditor extends PureComponent {
                   onChange={onTogglePrepend}
                   data-testid="capture-prepend-checkbox"
                 />
-                <span>Prepend</span>
+                <span>Añadir al principio</span>
               </label>
               {/* ORG Mode para Eli: cerrar la ventana guarda la captura; este botón la descarta */}
               <button
@@ -605,7 +607,7 @@ class UnifiedHeaderEditor extends PureComponent {
                 data-testid="capture-cancel-button"
                 title="Descartar esta captura (tocar fuera o Esc la guarda)"
               >
-                {onCaptureCancel ? 'Cancel' : 'Capture'}
+                {onCaptureCancel ? 'Cancelar' : 'Capturar'}
               </button>
             </div>
           </div>

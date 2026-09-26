@@ -49,7 +49,7 @@ const FileBrowser = ({
   return (
     <div className="file-browser-container">
       {(syncBackendType === 'Dropbox' || syncBackendType === 'LocalFolder') && (
-        <h3 className="file-browser__header">Directory: {isTopLevelDirectory ? '/' : path}</h3>
+        <h3 className="file-browser__header">Carpeta: {isTopLevelDirectory ? '/' : path}</h3>
       )}
 
       <ActionDrawer />
@@ -125,7 +125,7 @@ const FileBrowser = ({
               className="file-browser__file-list__element file-browser__file-list__element--load-more-row"
               onClick={handleLoadMoreClick}
             >
-              Load more...
+              Cargar más…
             </li>
           ))}
       </ul>

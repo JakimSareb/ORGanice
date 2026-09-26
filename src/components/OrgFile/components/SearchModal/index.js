@@ -18,6 +18,8 @@ import * as orgActions from '../../../../actions/org';
 // INFO: SearchModal, AgendaModal and TaskListModal are very similar
 // in structure and partially in logic. When changing one, consider
 // changing all.
+const CONTEXT_TITLES = { refile: 'Mover (refile)', search: 'Buscar' };
+
 function SearchModal(props) {
   const [dateDisplayType, setdateDisplayType] = useState('absolute');
   const searchInputRef = useRef(null);
@@ -114,14 +116,14 @@ function SearchModal(props) {
       {context === 'search' ? (
         <div className="task-list__modal-title_search">
           {showClockedTimes ? (
-            <span title="Sum of time logged on all search results directly (not including time logged on their children)">
+            <span title="Suma del tiempo registrado directamente en todos los resultados (sin incluir el de sus subencabezados)">
               {millisDuration(clockedTime)}
             </span>
           ) : null}
         </div>
       ) : (
         <div className="task-list__modal-title">
-          <h2 className="agenda__title">{capitalize(context)}</h2>
+          <h2 className="agenda__title">{CONTEXT_TITLES[context] || capitalize(context)}</h2>
         </div>
       )}
 
@@ -148,7 +150,7 @@ function SearchModal(props) {
                 className={classNames('textfield', 'task-list__filter-input', {
                   'task-list__filter-input--invalid': !!searchFilter && !searchFilterValid,
                 })}
-                placeholder="e.g. -DONE doc|man :simple|easy :assignee:nobody|none"
+                placeholder="p. ej. -DONE doc|man :simple|easy :assignee:nobody|none"
                 list="task-list__datalist-filter"
                 onChange={handleFilterChange}
               />

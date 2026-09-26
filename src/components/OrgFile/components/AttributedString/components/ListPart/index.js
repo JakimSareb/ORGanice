@@ -255,7 +255,7 @@ export default class ListPart extends PureComponent {
                   onClick={this.handleInsertTimestampListTitle}
                 >
                   <i className="fas fa-plus insert-timestamp-icon" />
-                  Insert timestamp
+                  Insertar fecha
                 </div>
               </div>
             ) : listTitleValues.get(item.get('id')) ? (
@@ -286,7 +286,7 @@ export default class ListPart extends PureComponent {
                 onClick={this.handleInsertTimestampListContents}
               >
                 <i className="fas fa-plus insert-timestamp-icon" />
-                Insert timestamp
+                Insertar fecha
               </div>
             </div>
           ) : (

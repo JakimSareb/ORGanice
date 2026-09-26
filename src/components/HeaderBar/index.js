@@ -76,7 +76,7 @@ class HeaderBar extends PureComponent {
   }
 
   renderFileBrowserBackButton() {
-    let backPath = 'Back';
+    let backPath = 'Atrás';
     const fileParts = window.location.href.split('/').map((e) => decodeURIComponent(e));
     if (_.includes(fileParts, 'files')) {
       backPath = _.last(fileParts);
@@ -115,7 +115,7 @@ class HeaderBar extends PureComponent {
         className="header-bar__back-button"
       >
         <i className="fas fa-chevron-left" />
-        <span className="header-bar__back-button__directory-path">File browser</span>
+        <span className="header-bar__back-button__directory-path">Ficheros</span>
       </Link>
     );
   }
@@ -133,7 +133,7 @@ class HeaderBar extends PureComponent {
     return (
       <Link to={`/`} className="header-bar__back-button">
         <i className="fas fa-chevron-left" />
-        <span className="header-bar__back-button__directory-path">Home</span>
+        <span className="header-bar__back-button__directory-path">Inicio</span>
       </Link>
     );
   }
@@ -142,7 +142,7 @@ class HeaderBar extends PureComponent {
     return (
       <Link to={`/`} className="header-bar__back-button">
         <i className="fas fa-chevron-left" />
-        <span className="header-bar__back-button__directory-path">Home</span>
+        <span className="header-bar__back-button__directory-path">Inicio</span>
       </Link>
     );
   }
@@ -155,7 +155,7 @@ class HeaderBar extends PureComponent {
     return (
       <div className="header-bar__back-button" onClick={this.handleBackClick}>
         <i className="fas fa-chevron-left" />
-        <span className="header-bar__back-button__directory-path">Settings</span>
+        <span className="header-bar__back-button__directory-path">Ajustes</span>
       </div>
     );
   }
@@ -210,7 +210,7 @@ class HeaderBar extends PureComponent {
             onClick={() => backToSettings(this.props.history)}
           >
             <i className="fas fa-chevron-left" />
-            <span className="header-bar__back-button__directory-path">Settings</span>
+            <span className="header-bar__back-button__directory-path">Ajustes</span>
           </div>
         );
       default:
@@ -227,31 +227,31 @@ class HeaderBar extends PureComponent {
 
     switch (this.props.activeModalPage) {
       case 'changelog':
-        return titleContainerWithText('Changelog');
+        return titleContainerWithText('Novedades');
       case 'settings':
-        return titleContainerWithText('Settings');
+        return titleContainerWithText('Ajustes');
       case 'keyboard_shortcuts_editor':
-        return titleContainerWithText('Shortcuts');
+        return titleContainerWithText('Atajos');
       case 'capture_templates_editor':
-        return titleContainerWithText('Capture');
+        return titleContainerWithText('Captura');
       case 'file_settings_editor':
-        return titleContainerWithText('Files');
+        return titleContainerWithText('Ficheros');
       case 'sample':
-        return titleContainerWithText('Sample');
+        return titleContainerWithText('Ejemplo');
       default:
     }
 
     switch (this.getPathRoot()) {
       case 'sample':
-        return titleContainerWithText('Sample');
+        return titleContainerWithText('Ejemplo');
       case 'sign_in':
-        return titleContainerWithText('Sign in');
+        return titleContainerWithText('Iniciar sesión');
       case 'encryption':
         return titleContainerWithText('Seguridad');
       case 'gtd':
         return titleContainerWithText('GTD');
       case 'settings':
-        return titleContainerWithText('Settings');
+        return titleContainerWithText('Ajustes');
       default:
     }
 
@@ -279,7 +279,7 @@ class HeaderBar extends PureComponent {
         <i
           className="fas fa-expand header-bar__actions__item eli-narrow-btn is-active"
           onClick={() => this.props.org.widenHeader()}
-          title="Widen: volver a ver el fichero entero"
+          title="Ampliar (widen): volver a ver el fichero entero"
           data-testid="eli-widen"
         />
       );
@@ -293,8 +293,8 @@ class HeaderBar extends PureComponent {
         onClick={() => enabled && this.props.org.narrowHeader(selectedHeaderId)}
         title={
           enabled
-            ? 'Narrow: mostrar solo el encabezado seleccionado'
-            : 'Narrow: selecciona primero un encabezado'
+            ? 'Reducir (narrow): mostrar solo el encabezado seleccionado'
+            : 'Reducir (narrow): selecciona primero un encabezado'
         }
         data-testid="eli-narrow"
       />
@@ -350,7 +350,7 @@ class HeaderBar extends PureComponent {
     if (!!activeModalPage) {
       return (
         <div className="header-bar__actions" onClick={this.handleModalPageDoneClick}>
-          Done
+          Hecho
         </div>
       );
     } else if (this.getPathRoot() !== 'settings') {
@@ -367,8 +367,8 @@ class HeaderBar extends PureComponent {
         <div className="header-bar__actions">
           {!isAuthenticated && this.getPathRoot() !== 'sign_in' && (
             <Link to="/sign_in">
-              <div className="header-bar__actions__item" title="Sign in">
-                Sign in
+              <div className="header-bar__actions__item" title="Iniciar sesión">
+                Iniciar sesión
               </div>
             </Link>
           )}
@@ -390,8 +390,8 @@ class HeaderBar extends PureComponent {
 
           {isAuthenticated && !activeModalPage && !!path && this.getPathRoot() !== 'gtd' && (
             <Fragment>
-              <i className={undoIconClassName} onClick={this.handleUndoClick} title="Undo" />
-              <i className={redoIconClassName} onClick={this.handleRedoClick} title="Redo" />
+              <i className={undoIconClassName} onClick={this.handleUndoClick} title="Deshacer" />
+              <i className={redoIconClassName} onClick={this.handleRedoClick} title="Rehacer" />
               {!isStaticFile(path) && (
                 <Fragment>
                   {this.renderNarrowButton()}
@@ -450,11 +450,11 @@ class HeaderBar extends PureComponent {
                 <i
                   className="changelog-icon--has-unseen-changelog header-bar__actions__item fas fa-gift"
                   onClick={this.handleChangelogClick}
-                  title="Changelog"
+                  title="Novedades"
                 />
               )}
               <Link to="/settings" onClick={this.handleSettingsClick}>
-                <i className={settingsIconClassName} title="Settings" />
+                <i className={settingsIconClassName} title="Ajustes" />
               </Link>
             </div>
           )}

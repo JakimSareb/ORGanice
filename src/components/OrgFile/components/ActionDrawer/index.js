@@ -114,7 +114,7 @@ const ActionDrawer = ({
   const handleMainCaptureButtonClick = () => {
     if (!isDisplayingCaptureButtons && getAvailableCaptureTemplates().size === 0) {
       alert(
-        `You don't have any capture templates set up for this file! Add some in Settings > Capture Templates`
+        'No tienes plantillas de captura para este fichero. Añade alguna en Ajustes > Plantillas de captura.'
       );
       return;
     }
@@ -130,7 +130,7 @@ const ActionDrawer = ({
     const onMenu = async () => {
       const templates = latest.current.getAvailableCaptureTemplates();
       if (!templates || templates.size === 0) {
-        alert('No hay plantillas de captura para este fichero (Ajustes → Capture templates).');
+        alert('No hay plantillas de captura para este fichero (Ajustes → Plantillas de captura).');
         return;
       }
       const template = await chooseCaptureTemplate(templates);
@@ -196,7 +196,9 @@ const ActionDrawer = ({
               style={mainButtonStyle}
               dataTestId="capture-main-button"
               tooltip={
-                isDisplayingCaptureButtons ? 'Hide capture templates' : 'Show capture templates'
+                isDisplayingCaptureButtons
+                  ? 'Ocultar plantillas de captura'
+                  : 'Mostrar plantillas de captura'
               }
             />
 
@@ -212,7 +214,7 @@ const ActionDrawer = ({
                   .get('description')
                   .toLowerCase()
                   .replace(/\s+/g, '-')}`}
-                tooltip={`Activate "${template.get('description')}" capture template`}
+                tooltip={`Activar la plantilla de captura «${template.get('description')}»`}
               />
             ))}
           </div>
@@ -249,22 +251,22 @@ const ActionDrawer = ({
     };
 
     let subIconNameStr = null;
-    let tooltipUpStr = 'Move header up';
-    let tooltipDownStr = 'Move header down';
-    let tooltipLeftStr = 'Move header left';
-    let tooltipRightStr = 'Move header right';
+    let tooltipUpStr = 'Subir encabezado';
+    let tooltipDownStr = 'Bajar encabezado';
+    let tooltipLeftStr = 'Subir de nivel el encabezado';
+    let tooltipRightStr = 'Bajar de nivel el encabezado';
     if (!!selectedTableCellId) {
       subIconNameStr = 'table';
-      tooltipUpStr = 'Move row up';
-      tooltipDownStr = 'Move row down';
-      tooltipLeftStr = 'Move column left';
-      tooltipRightStr = 'Move column right';
+      tooltipUpStr = 'Subir fila';
+      tooltipDownStr = 'Bajar fila';
+      tooltipLeftStr = 'Mover columna a la izquierda';
+      tooltipRightStr = 'Mover columna a la derecha';
     } else if (!!selectedListItemId) {
       subIconNameStr = 'list';
-      tooltipUpStr = 'Move list up';
-      tooltipDownStr = 'Move list down';
-      tooltipLeftStr = 'Move list left';
-      tooltipRightStr = 'Move list right';
+      tooltipUpStr = 'Subir elemento de lista';
+      tooltipDownStr = 'Bajar elemento de lista';
+      tooltipLeftStr = 'Subir de nivel el elemento de lista';
+      tooltipRightStr = 'Bajar de nivel el elemento de lista';
     }
 
     return (
@@ -334,7 +336,7 @@ const ActionDrawer = ({
                     bottom: style.bottomRowYOffset,
                     right: style.secondColumnXOffset,
                   }}
-                  tooltip="Move entire subtree left"
+                  tooltip="Subir de nivel todo el subárbol"
                 />
                 <ActionButton
                   additionalClassName="action-drawer__arrow-button"
@@ -347,7 +349,7 @@ const ActionDrawer = ({
                     bottom: style.bottomRowYOffset,
                     left: style.secondColumnXOffset,
                   }}
-                  tooltip="Move entire subtree right"
+                  tooltip="Bajar de nivel todo el subárbol"
                 />
               </Fragment>
             )}
@@ -362,7 +364,11 @@ const ActionDrawer = ({
                 opacity: isDisplayingCaptureButtons ? 0 : 1,
                 pointerEvents: isDisplayingCaptureButtons ? 'none' : 'all',
               }}
-              tooltip={isDisplayingArrowButtons ? 'Hide movement buttons' : 'Show movement buttons'}
+              tooltip={
+                isDisplayingArrowButtons
+                  ? 'Ocultar botones de movimiento'
+                  : 'Mostrar botones de movimiento'
+              }
               onRef={mainArrowButton}
             />
           </div>
@@ -388,7 +394,7 @@ const ActionDrawer = ({
               pointerEvents:
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
-            tooltip="Sync changes"
+            tooltip="Sincronizar cambios"
           />
 
           <ActionButton
@@ -418,7 +424,7 @@ const ActionDrawer = ({
               pointerEvents:
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
-            tooltip="Show Search / Task List"
+            tooltip="Mostrar búsqueda / lista de tareas"
           />
 
           <ActionButton
@@ -430,7 +436,7 @@ const ActionDrawer = ({
               pointerEvents:
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
-            tooltip="Show agenda"
+            tooltip="Mostrar agenda"
           />
 
           {renderCaptureButtons()}

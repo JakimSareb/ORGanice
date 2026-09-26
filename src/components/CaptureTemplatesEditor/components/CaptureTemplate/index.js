@@ -63,9 +63,7 @@ export default ({
 
   const handleDeleteClick = () => {
     if (
-      window.confirm(
-        `Are you sure you want to delete the "${template.get('description')}" template?`
-      )
+      window.confirm(`¿Seguro que quieres eliminar la plantilla «${template.get('description')}»?`)
     ) {
       onDeleteTemplate(template.get('id'));
     }
@@ -74,7 +72,7 @@ export default ({
   const renderDescriptionField = (template) => (
     <div className="capture-template__field-container">
       <div className="capture-template__field">
-        <div>Description:</div>
+        <div>Descripción:</div>
         <input
           type="text"
           className="textfield"
@@ -88,7 +86,7 @@ export default ({
   const renderIconField = (template) => (
     <div className="capture-template__field-container">
       <div className="capture-template__field">
-        <div>Letter:</div>
+        <div>Letra:</div>
         <input
           type="text"
           className="textfield capture-template__letter-textfield"
@@ -101,12 +99,12 @@ export default ({
 
       <div className="capture-template__field__or-container">
         <div className="capture-template__field__or-line" />
-        <div className="capture-template__field__or">or</div>
+        <div className="capture-template__field__or">o</div>
         <div className="capture-template__field__or-line" />
       </div>
 
       <div className="capture-template__field">
-        <div>Icon name:</div>
+        <div>Nombre del icono:</div>
         <input
           type="text"
           className="textfield"
@@ -118,10 +116,11 @@ export default ({
       </div>
 
       <div className="capture-template__help-text">
-        Instead of a letter, you can specify the name of any free Font Awesome icon (like lemon or
-        calendar-plus) to use as the capture icon. You can search the available icons{' '}
+        En lugar de una letra, puedes indicar el nombre de cualquier icono gratuito de Font Awesome
+        (como lemon o calendar-plus) para usarlo como icono de captura. Puedes buscar los iconos
+        disponibles{' '}
         <ExternalLink href="https://fontawesome.com/icons?d=gallery&s=solid&m=free">
-          here
+          aquí
         </ExternalLink>
         .
       </div>
@@ -131,7 +130,7 @@ export default ({
   const renderOrgFileAvailability = (template) => (
     <div className="capture-template__field-container">
       <div className="capture-template__field">
-        <div>Available in all org files?</div>
+        <div>¿Disponible en todos los ficheros org?</div>
         <Switch
           isEnabled={template.get('isAvailableInAllOrgFiles')}
           onToggle={toggleAvailabilityInAllOrgFiles}
@@ -139,12 +138,12 @@ export default ({
       </div>
 
       <div className="capture-template__help-text">
-        You can make this capture template available in all org files, or just the ones you specify.
+        Puedes hacer que esta plantilla de captura esté disponible en todos los ficheros org o solo
+        en los que indiques.
         {syncBackendType === 'Dropbox' && (
           <Fragment>
             {' '}
-            Specify full paths starting from the root of your Dropbox, like{' '}
-            <code>/org/todo.org</code>
+            Indica rutas completas desde la raíz de tu Dropbox, como <code>/org/todo.org</code>
           </Fragment>
         )}
       </div>
@@ -158,7 +157,7 @@ export default ({
             <div key={`org-file-availability-${index}`} className="multi-textfield-container">
               <input
                 type="text"
-                placeholder="e.g., /org/todo.org"
+                placeholder="p. ej., /org/todo.org"
                 className="textfield multi-textfield-field"
                 value={orgFilePath}
                 onChange={handleOrgFileAvailabilityChange(index)}
@@ -185,7 +184,7 @@ export default ({
     return (
       <div className="capture-template__field-container">
         <div className="capture-template__field">
-          <div>File: </div>
+          <div>Fichero: </div>
           <select onChange={updateField('file')} style={{ width: '90%' }}>
             {(loadedFilePaths.filter((path) => (path === template.get('file', '')).length) !== 0
               ? loadedFilePaths
@@ -198,10 +197,10 @@ export default ({
           </select>
         </div>
         <div className="capture-template__help-text">
-          By default the file opened when capturing is the capture target. Select a specific file if
-          you want this template to always capture to that file. Make sure the file is loaded for it
-          to be selectable here. You might also consider to set the file to load on startup in the
-          file settings so it's always available.
+          Por defecto, la captura se guarda en el fichero abierto en ese momento. Elige un fichero
+          concreto si quieres que esta plantilla capture siempre en él. El fichero tiene que estar
+          cargado para poder elegirlo aquí. También puedes configurarlo para que se cargue al
+          iniciar en los ajustes de ficheros, así estará siempre disponible.
         </div>
       </div>
     );
@@ -210,12 +209,12 @@ export default ({
   const renderHeaderPaths = (template) => (
     <div className="capture-template__field-container">
       <div className="capture-template__field" style={{ marginTop: 7 }}>
-        <div>Header path</div>
+        <div>Ruta del encabezado</div>
       </div>
 
       <div className="capture-template__help-text">
-        Specify the path to the header under which the new header should be filed. One header per
-        textfield.
+        Indica la ruta del encabezado bajo el que se guardará el nuevo encabezado. Un encabezado por
+        campo de texto.
       </div>
 
       <div className="multi-textfields-container">
@@ -223,7 +222,7 @@ export default ({
           <div key={`header-path-${index}`} className="multi-textfield-container">
             <input
               type="text"
-              placeholder="e.g., Todos"
+              placeholder="p. ej., Tareas"
               className="textfield multi-textfield-field"
               value={headerPath}
               onChange={handleHeaderPathChange(index)}
@@ -248,13 +247,13 @@ export default ({
   const renderPrependField = (template) => (
     <div className="capture-template__field-container">
       <div className="capture-template__field">
-        <div>Prepend?</div>
+        <div>¿Añadir al principio?</div>
         <Switch isEnabled={template.get('shouldPrepend')} onToggle={togglePrepend} />
       </div>
 
       <div className="capture-template__help-text">
-        By default, new captured headers are appended to the specified header path. Enable this
-        setting to prepend them instead.
+        Por defecto, los nuevos encabezados capturados se añaden al final de la ruta indicada.
+        Activa esta opción para añadirlos al principio.
       </div>
     </div>
   );
@@ -262,7 +261,7 @@ export default ({
   const renderTemplateField = (template) => (
     <div className="capture-template__field-container">
       <div className="capture-template__field" style={{ marginTop: 7 }}>
-        <div>Template</div>
+        <div>Plantilla</div>
       </div>
 
       <textarea
@@ -273,48 +272,49 @@ export default ({
       />
 
       <div className="capture-template__help-text">
-        The template for creating the capture item. You can use the following template variables
-        that will be expanded upon capture:
+        La plantilla con la que se crea el elemento capturado. Puedes usar las siguientes variables,
+        que se sustituyen al capturar:
         <ul>
           <li>
-            <code>%?</code> - Place the cursor here.
+            <code>%?</code> - Coloca aquí el cursor.
           </li>
           <li>
-            <code>%t</code> - Timestamp, date only.
+            <code>%t</code> - Marca de tiempo, solo fecha.
           </li>
           <li>
-            <code>%T</code> - Timestamp, with date and time.
+            <code>%T</code> - Marca de tiempo, con fecha y hora.
           </li>
           <li>
-            <code>%u</code> - Inactive timestamp, date only.
+            <code>%u</code> - Marca de tiempo inactiva, solo fecha.
           </li>
           <li>
-            <code>%U</code> - Inactive timestamp, with date and time.
+            <code>%U</code> - Marca de tiempo inactiva, con fecha y hora.
           </li>
           <li>
-            <code>%r</code> - Raw timestamp, date only, no surrounding punctation.
+            <code>%r</code> - Marca de tiempo sin formato, solo fecha, sin signos alrededor.
             <ul>
               <li>
-                Build custom expressions like{' '}
+                Crea expresiones personalizadas como{' '}
                 <code>TODO Monthly - %?\n DEADLINE: &lt;%r .+1m&gt;</code>
               </li>
             </ul>
           </li>
           <li>
-            <code>%R</code> - Raw timestamp, with date and time, no surrounding punctuation.
+            <code>%R</code> - Marca de tiempo sin formato, con fecha y hora, sin signos alrededor.
           </li>
           <li>
-            <code>%y</code> - Raw year
+            <code>%y</code> - Año sin formato
           </li>
           <li>
-            <code>%{'<custom variable>'}</code> - A custom variable from a URL param capture. See{' '}
+            <code>%{'<custom variable>'}</code> - Una variable personalizada de una captura con
+            parámetros en la URL. Consulta{' '}
             <ExternalLink href="https://organice.200ok.ch/documentation.html#capture_templates">
-              the README file
+              la documentación
             </ExternalLink>{' '}
-            for more details.
+            para más detalles.
           </li>
         </ul>
-        You can also use <code>%u</code> and <code>%t</code> as part of the header path.
+        También puedes usar <code>%u</code> y <code>%t</code> en la ruta del encabezado.
       </div>
     </div>
   );
@@ -325,7 +325,7 @@ export default ({
         className="btn settings-btn capture-template__delete-button"
         onClick={handleDeleteClick}
       >
-        Delete template
+        Eliminar plantilla
       </button>
     </div>
   );

@@ -28,6 +28,7 @@ import {
   isWithinInterval,
   differenceInCalendarDays,
 } from 'date-fns';
+import { es } from 'date-fns/locale';
 import classNames from 'classnames';
 import { List } from 'immutable';
 import { closedItemsForDay } from '../../../../../../lib/eli_agenda_log';
@@ -206,8 +207,10 @@ export default class AgendaDay extends PureComponent {
       <div className="agenda-day__container">
         <div className="agenda-day__title">
           {isToday(date) && <div className="agenda-day__today-indicator" />}
-          <div className="agenda-day__title__day-name">{format(date, 'eeee')}</div>
-          <div className="agenda-day__title__date">{format(date, 'MMMM do, yyyy')}</div>
+          <div className="agenda-day__title__day-name">{format(date, 'EEEE', { locale: es })}</div>
+          <div className="agenda-day__title__date">
+            {format(date, "d 'de' MMMM 'de' yyyy", { locale: es })}
+          </div>
         </div>
 
         <div className="agenda-day__headers-container">

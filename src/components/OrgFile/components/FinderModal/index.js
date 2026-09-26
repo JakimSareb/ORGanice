@@ -41,7 +41,8 @@ function FinderModal(props) {
     <>
       <div className="agenda__tab-container">
         <TabButtons
-          buttons={activeClocks ? ['Search', 'Task List', 'Clock List'] : ['Search', 'Task List']}
+          buttons={activeClocks ? ['Buscar', 'Tareas', 'Relojes activos'] : ['Buscar', 'Tareas']}
+          values={activeClocks ? ['Search', 'Task List', 'Clock List'] : ['Search', 'Task List']}
           selectedButton={finderTab}
           onSelect={handleTabChange}
           useEqualWidthTabs

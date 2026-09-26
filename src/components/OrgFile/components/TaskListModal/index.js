@@ -72,7 +72,7 @@ function TaskListModal(props) {
               className={classNames('textfield', 'task-list__filter-input', {
                 'task-list__filter-input--invalid': !!searchFilter && !searchFilterValid,
               })}
-              placeholder="e.g. -DONE doc|man :simple|easy :assignee:nobody|none"
+              placeholder="p. ej. -DONE doc|man :simple|easy :assignee:nobody|none"
               list="task-list__datalist-filter"
               onChange={handleFilterChange}
             />

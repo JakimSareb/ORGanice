@@ -69,7 +69,7 @@ export const setIsLoadingMoreDirectoryListing = (isLoadingMore) => ({
 });
 
 export const getDirectoryListing = (path) => (dispatch, getState) => {
-  dispatch(setLoadingMessage('Getting listing...'));
+  dispatch(setLoadingMessage('Obteniendo la lista de ficheros…'));
 
   const client = getState().syncBackend.get('client');
   client
@@ -86,7 +86,7 @@ export const getDirectoryListing = (path) => (dispatch, getState) => {
       if ([400, 401].includes(error.status) || error_summary.includes('expired_access_token')) {
         dispatch(signOut());
       } else {
-        alert('There was an error retrieving files!');
+        alert('¡Error al obtener los ficheros!');
         console.error(error);
       }
     });
@@ -130,7 +130,7 @@ export const pushBackup = (pathOrFileId, contents) => {
 
 export const downloadFile = (path) => {
   return (dispatch, getState) => {
-    dispatch(setLoadingMessage(`Downloading file ...`));
+    dispatch(setLoadingMessage(`Descargando fichero…`));
     getState()
       .syncBackend.get('client')
       .getFileContents(path)
@@ -153,7 +153,9 @@ export const downloadFile = (path) => {
         dispatch(setIsLoading(false, path));
         dispatch(
           setOrgFileErrorMessage(
-            error && error.message ? `${path}: ${error.message}` : `File ${path} not found`
+            error && error.message
+              ? `${path}: ${error.message}`
+              : `No se encuentra el fichero ${path}`
           )
         );
       });
@@ -169,7 +171,7 @@ function dirName(path) {
 
 export const createFile = (path, content) => {
   return (dispatch, getState) => {
-    dispatch(setLoadingMessage(`Creating file: ${path}`));
+    dispatch(setLoadingMessage(`Creando fichero: ${path}`));
     getState()
       .syncBackend.get('client')
       .createFile(path, content)
@@ -181,7 +183,7 @@ export const createFile = (path, content) => {
       .catch(() => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
-        dispatch(setOrgFileErrorMessage(`File ${path} not found`));
+        dispatch(setOrgFileErrorMessage(`No se encuentra el fichero ${path}`));
       });
   };
 };

@@ -73,7 +73,7 @@ const CellEditContainer = ({ filePath, cellValue, cellId }) => {
       />
       <div className="table-cell__insert-timestamp-button" onClick={handleInsertTimestamp}>
         <i className="fas fa-plus insert-timestamp-icon" />
-        Insert timestamp
+        Insertar fecha
       </div>
     </div>
   );

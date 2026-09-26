@@ -39,12 +39,12 @@ const FileSettingsEditor = ({
           >
             {fileSettings.size === 0 ? (
               <div className="no-file-setting-message">
-                You don't currently have any file settings - add one by pressing the{' '}
-                <i className="fas fa-plus" /> button.
+                Todavía no tienes ajustes de ficheros. Añade uno pulsando el botón{' '}
+                <i className="fas fa-plus" />.
                 <br />
                 <br />
-                File settings allow you to configure how specific files are handeled when multiple
-                files are loaded. Make sure a file is loaded to create a setting entry.
+                Los ajustes de ficheros permiten configurar cómo se tratan ficheros concretos cuando
+                hay varios cargados. El fichero tiene que estar cargado para poder crear un ajuste.
               </div>
             ) : (
               <Fragment>

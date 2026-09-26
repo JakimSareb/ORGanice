@@ -49,8 +49,8 @@ class NoteEditorModal extends PureComponent {
   render() {
     return (
       <>
-        <h2 className="drawer-modal__title">Add note</h2>
-        <div>Enter a note to add to the header:</div>
+        <h2 className="drawer-modal__title">Añadir nota</h2>
+        <div>Escribe una nota para añadir al encabezado:</div>
         <textarea
           autoFocus
           className="textarea drag-handle eli-note-textarea"
@@ -62,7 +62,7 @@ class NoteEditorModal extends PureComponent {
           onChange={this.handleDescriptionChange}
         />
         <button className="btn note-editor__done-btn" onClick={() => this.addNote()}>
-          Add
+          Añadir
         </button>
       </>
     );

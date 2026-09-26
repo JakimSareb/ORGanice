@@ -10,7 +10,7 @@ import ShortcutRow from './components/ShortcutRow';
 
 import * as baseActions from '../../actions/base';
 
-import { calculateNamedKeybindings } from '../../lib/keybindings';
+import { calculateNamedKeybindings, keybindingLabel } from '../../lib/keybindings';
 
 import './stylesheet.css';
 
@@ -21,7 +21,7 @@ const KeyboardShortcutsEditor = ({ customKeybindings, base }) => {
     )[0];
 
     if (!!alreadyInUseBinding) {
-      alert(`That binding is already in use for "${alreadyInUseBinding[0]}"`);
+      alert(`Ese atajo ya se usa para «${keybindingLabel(alreadyInUseBinding[0])}»`);
       return;
     }
 

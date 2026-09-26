@@ -56,7 +56,7 @@ export default class DrawerActionButtons extends PureComponent {
               }
               onTitleClick();
             },
-            title: 'Edit title',
+            title: 'Editar título',
             testId: 'drawer-action-edit-title',
           })}
 
@@ -73,7 +73,7 @@ export default class DrawerActionButtons extends PureComponent {
               }
               onDescriptionClick();
             },
-            title: 'Edit description',
+            title: 'Editar descripción',
             testId: 'edit-header-title',
           })}
 
@@ -82,7 +82,7 @@ export default class DrawerActionButtons extends PureComponent {
               'fas fa-tags fa-lg' +
               ('tags-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
             onClick: onTagsClick,
-            title: 'Modify tags',
+            title: 'Modificar etiquetas',
             disabled: 'tags-editor' === activePopupType,
             testId: 'drawer-action-tags',
           })}
@@ -92,7 +92,7 @@ export default class DrawerActionButtons extends PureComponent {
               'fas fa-list fa-lg' +
               ('property-list-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
             onClick: onPropertiesClick,
-            title: 'Modify properties',
+            title: 'Modificar propiedades',
             disabled: 'property-list-editor' === activePopupType,
             testId: 'drawer-action-properties',
           })}
@@ -102,7 +102,7 @@ export default class DrawerActionButtons extends PureComponent {
               'fas fa-calendar-check fa-lg' +
               ('deadline-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
             onClick: onDeadlineClick,
-            title: 'Set deadline datetime',
+            title: 'Fijar fecha límite',
             disabled: 'deadline-editor' === activePopupType,
             testId: 'drawer-action-deadline',
           })}
@@ -111,7 +111,7 @@ export default class DrawerActionButtons extends PureComponent {
               'far fa-calendar-check fa-lg' +
               ('scheduled-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
             onClick: onScheduledClick,
-            title: 'Set scheduled datetime',
+            title: 'Fijar fecha programada',
             disabled: 'scheduled-editor' === activePopupType,
             testId: 'drawer-action-scheduled',
           })}
@@ -149,7 +149,7 @@ export default class DrawerActionButtons extends PureComponent {
               'far fa-sticky-note fa-lg' +
               ('note-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
             onClick: onAddNote,
-            title: 'Add a note',
+            title: 'Añadir una nota',
             disabled: 'note-editor' === activePopupType,
           })}
 
@@ -158,7 +158,7 @@ export default class DrawerActionButtons extends PureComponent {
               'fas fa-trash fa-lg' +
               ('note-editor' === activePopupType ? ' drawer-action-button--selected' : ''),
             onClick: onRemoveHeader,
-            title: 'Delete this header',
+            title: 'Borrar este encabezado',
             disabled: 'note-editor' === activePopupType,
           })}
         </div>

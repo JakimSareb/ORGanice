@@ -31,6 +31,7 @@ import {
   getDaysInMonth,
 } from 'date-fns';
 import format from 'date-fns/format';
+import { es } from 'date-fns/locale';
 
 // INFO: SearchModal, AgendaModal and TaskListModal are very similar
 // in structure and partially in logic. When changing one, consider
@@ -133,16 +134,15 @@ function AgendaModal(props) {
   function calculateTimeframeHeader() {
     switch (agendaTimeframe) {
       case 'Day':
-        return format(selectedDate, 'MMMM do');
+        return format(selectedDate, "d 'de' MMMM", { locale: es });
       case 'Week':
         const weekStart = startOfWeek(selectedDate, { weekStartsOn });
         const weekEnd = addWeeks(weekStart, 1);
-        return `${format(weekStart, 'MMM do')} - ${format(weekEnd, 'MMM do')} (W${format(
-          weekStart,
-          'w'
-        )})`;
+        return `${format(weekStart, 'd MMM', { locale: es })} - ${format(weekEnd, 'd MMM', {
+          locale: es,
+        })} (S${format(weekStart, 'w', { locale: es })})`;
       case 'Month':
-        return format(selectedDate, 'MMMM');
+        return format(selectedDate, 'MMMM', { locale: es });
       default:
         return '';
     }
@@ -211,7 +211,8 @@ function AgendaModal(props) {
 
       <div className="agenda__tab-container">
         <TabButtons
-          buttons={['Day', 'Week', 'Month']}
+          buttons={['Día', 'Semana', 'Mes']}
+          values={['Day', 'Week', 'Month']}
           selectedButton={agendaTimeframe}
           onSelect={handleTimeframeTypeChange}
           useEqualWidthTabs

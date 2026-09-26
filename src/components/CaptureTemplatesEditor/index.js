@@ -52,12 +52,12 @@ const CaptureTemplatesEditor = ({
           >
             {captureTemplates.size === 0 ? (
               <div className="no-capture-templates-message">
-                You don't currently have any capture templates - add one by pressing the{' '}
-                <i className="fas fa-plus" /> button.
+                Todavía no tienes ninguna plantilla de captura. Añade una pulsando el botón{' '}
+                <i className="fas fa-plus" />.
                 <br />
                 <br />
-                Capture templates show up in the action drawer and give you quick access to creating
-                new headers (like org-capture).
+                Las plantillas de captura aparecen en el panel de acciones y te permiten crear
+                encabezados nuevos rápidamente (como org-capture).
               </div>
             ) : (
               <Fragment>

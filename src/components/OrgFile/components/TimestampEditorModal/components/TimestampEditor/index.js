@@ -238,7 +238,7 @@ class TimestampEditor extends PureComponent {
 
     return (
       <div className="timestamp-editor__field-container">
-        <div className="timestamp-editor__field-title">Repeater</div>
+        <div className="timestamp-editor__field-title">Repetición</div>
         <div className="timestamp-editor__field timestamp-editor__field--delay-repeater">
           {!!repeaterType ? (
             <Fragment>
@@ -246,9 +246,9 @@ class TimestampEditor extends PureComponent {
                 <TabButtons
                   buttons={['+', '++', '.+']}
                   titles={[
-                    'Shift exactly the amount of time in the repeater (i.e. one month for +1m).',
-                    'Shift the date by as many intervals of the amount of time in the repeater (i.e. one or many months for for ++1m) as it takes to get this date into the future.',
-                    'Shift the date exactly the amount of time of the repeater relative to the time of the state change.',
+                    'Desplaza exactamente el intervalo de la repetición (p. ej. un mes para +1m).',
+                    'Desplaza la fecha tantos intervalos de la repetición (p. ej. uno o varios meses para ++1m) como hagan falta para que quede en el futuro.',
+                    'Desplaza la fecha exactamente el intervalo de la repetición a partir del momento del cambio de estado.',
                   ]}
                   selectedButton={repeaterType || '+'}
                   onSelect={this.handleRepeaterTypeChange}
@@ -264,7 +264,7 @@ class TimestampEditor extends PureComponent {
               <div>
                 <TabButtons
                   buttons={['h', 'd', 'w', 'm', 'y']}
-                  titles={['hours', 'days', 'weeks', 'months', 'years']}
+                  titles={['horas', 'días', 'semanas', 'meses', 'años']}
                   selectedButton={repeaterUnit || 'h'}
                   onSelect={this.handleRepeaterUnitChange}
                 />
@@ -278,12 +278,12 @@ class TimestampEditor extends PureComponent {
                     className="textfield delay-repeater-value-input"
                     value={repeaterDeadlineValue || ''}
                     onChange={this.handleRepeaterDeadlineValueChange}
-                    placeholder="Optional deadline"
+                    placeholder="Fecha límite opcional"
                   />
                   <div>
                     <TabButtons
                       buttons={['h', 'd', 'w', 'm', 'y']}
-                      titles={['hours', 'days', 'weeks', 'months', 'years']}
+                      titles={['horas', 'días', 'semanas', 'meses', 'años']}
                       selectedButton={repeaterDeadlineUnit || 'd'}
                       onSelect={this.handleRepeaterDeadlineUnitChange}
                     />
@@ -311,7 +311,7 @@ class TimestampEditor extends PureComponent {
 
     return (
       <div className="timestamp-editor__field-container">
-        <div className="timestamp-editor__field-title">Delay</div>
+        <div className="timestamp-editor__field-title">Aviso previo</div>
         <div className="timestamp-editor__field">
           {!!delayType ? (
             <Fragment>
@@ -319,8 +319,8 @@ class TimestampEditor extends PureComponent {
                 <TabButtons
                   buttons={['-', '--']}
                   titles={[
-                    'Set a different lead time before the entry is put into the agenda.',
-                    "In case the task contains a repeater, the delay is considered to affect all occurrences; if you want the delay to only affect the first scheduled occurrence of the task, use '--' instead.",
+                    'Establece una antelación distinta antes de que la entrada aparezca en la agenda.',
+                    "Si la tarea tiene repetición, el aviso previo afecta a todas las repeticiones; si quieres que solo afecte a la primera aparición programada, usa '--'.",
                   ]}
                   selectedButton={delayType || '-'}
                   onSelect={this.handleDelayTypeChange}
@@ -336,7 +336,7 @@ class TimestampEditor extends PureComponent {
               <div>
                 <TabButtons
                   buttons={['h', 'd', 'w', 'm', 'y']}
-                  titles={['hours', 'days', 'weeks', 'months', 'years']}
+                  titles={['horas', 'días', 'semanas', 'meses', 'años']}
                   selectedButton={delayUnit || 'h'}
                   onSelect={this.handleDelayUnitChange}
                 />
@@ -380,7 +380,7 @@ class TimestampEditor extends PureComponent {
       // for scheduled timestamp and deadline the modal can be opened when no timestamp exists
       return (
         <>
-          <div className="timestamp-editor__field-title">Add Timestamp</div>
+          <div className="timestamp-editor__field-title">Añadir fecha</div>
           <div className="timestamp-editor__field">
             <i
               className="fas fa-plus timestamp-editor__icon timestamp-editor__icon--add"
@@ -406,14 +406,14 @@ class TimestampEditor extends PureComponent {
 
         <div className="timestamp-editor__date-time-fields-container">
           <div className="timestamp-editor__field-container timestamp-editor__field-container--inline">
-            <div className="timestamp-editor__field-title">Active</div>
+            <div className="timestamp-editor__field-title">Activa</div>
             <div className="timestamp-editor__field">
               <Switch isEnabled={isActive} onToggle={this.handleActiveToggle} />
             </div>
           </div>
 
           <div className="timestamp-editor__field-container timestamp-editor__field-container--inline">
-            <div className="timestamp-editor__field-title">Date</div>
+            <div className="timestamp-editor__field-title">Fecha</div>
             <div className="timestamp-editor__field">
               <input
                 data-testid="timestamp-selector"
@@ -428,8 +428,8 @@ class TimestampEditor extends PureComponent {
             </div>
           </div>
 
-          {this.renderTimeField('Start time', 'start', startHour, startMinute, !endHour)}
-          {!!startHour && this.renderTimeField('End time', 'end', endHour, endMinute)}
+          {this.renderTimeField('Hora de inicio', 'start', startHour, startMinute, !endHour)}
+          {!!startHour && this.renderTimeField('Hora de fin', 'end', endHour, endMinute)}
         </div>
 
         {this.renderRepeater()}

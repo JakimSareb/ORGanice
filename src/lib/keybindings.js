@@ -38,3 +38,24 @@ export const calculateActionedKeybindings = (customKeybindings) =>
     bindingAction,
     customKeybindings.get(bindingName, binding),
   ]);
+
+// ORG Mode para Eli: el primer elemento de cada atajo es la clave con la que se guardan los
+// atajos personalizados, así que no se traduce; solo se traduce al mostrarlo.
+export const KEYBINDING_LABELS_ES = {
+  'Select next header': 'Seleccionar el encabezado siguiente',
+  'Select previous header': 'Seleccionar el encabezado anterior',
+  'Toggle header opened': 'Abrir/cerrar el encabezado',
+  'Advance todo state': 'Avanzar el estado TODO',
+  'Edit title': 'Editar el título',
+  'Edit description': 'Editar la descripción',
+  'Exit edit mode': 'Salir del modo de edición',
+  'Add header': 'Añadir encabezado',
+  'Remove header': 'Eliminar encabezado',
+  'Move header up': 'Subir el encabezado',
+  'Move header down': 'Bajar el encabezado',
+  'Move header left': 'Mover el encabezado a la izquierda',
+  'Move header right': 'Mover el encabezado a la derecha',
+  Undo: 'Deshacer',
+};
+
+export const keybindingLabel = (name) => KEYBINDING_LABELS_ES[name] || name;

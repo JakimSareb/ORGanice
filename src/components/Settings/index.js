@@ -102,7 +102,7 @@ const Settings = ({
     : 'https://organice.200ok.ch';
 
   const handleSignOutClick = () => {
-    if (window.confirm('Are you sure you want to sign out?')) {
+    if (window.confirm('¿Seguro que quieres cerrar sesión?')) {
       syncBackend.signOut();
       history.push('/');
     }
@@ -189,25 +189,27 @@ const Settings = ({
         testId="eli-setting-tags"
       />
       <div className="setting-container">
-        <div className="setting-label">Font size</div>
+        <div className="setting-label">Tamaño de letra</div>
         <TabButtons
-          buttons={['Regular', 'Large']}
+          buttons={['Normal', 'Grande']}
+          values={['Regular', 'Large']}
           selectedButton={fontSize}
           onSelect={handleFontSizeChange}
         />
       </div>
 
       <div className="setting-container">
-        <div className="setting-label">Color scheme</div>
+        <div className="setting-label">Esquema de color</div>
         <TabButtons
-          buttons={['OS', 'Light', 'Dark']}
+          buttons={['Sistema', 'Claro', 'Oscuro']}
+          values={['OS', 'Light', 'Dark']}
           selectedButton={colorScheme}
           onSelect={handleColorSchemeClick}
         />
       </div>
 
       <div className="setting-container">
-        <div className="setting-label">Theme</div>
+        <div className="setting-label">Tema</div>
         <TabButtons
           buttons={['Solarized', 'One', 'Gruvbox', 'Smyck', 'Code']}
           selectedButton={theme}
@@ -216,24 +218,26 @@ const Settings = ({
       </div>
 
       <div className="setting-container">
-        <div className="setting-label">Bullet style</div>
+        <div className="setting-label">Estilo de viñetas</div>
         <TabButtons
-          buttons={['Classic', 'Fancy']}
+          buttons={['Clásico', 'Decorado']}
+          values={['Classic', 'Fancy']}
           selectedButton={bulletStyle}
           onSelect={handleBulletStyleChange}
         />
       </div>
 
       <div className="setting-container">
-        <div className="setting-label">Tap TODO to advance state</div>
+        <div className="setting-label">Tocar el estado TODO para avanzarlo</div>
         <Switch isEnabled={shouldTapTodoToAdvance} onToggle={handleShouldTapTodoToAdvanceChange} />
       </div>
 
       <div className="setting-container">
         <div className="setting-label">
-          Live sync
+          Sincronizar en directo
           <div className="setting-label__description">
-            If enabled, changes are automatically pushed to the sync backend as you make them.
+            Si está activado, los cambios se envían automáticamente al servicio de sincronización a
+            medida que los haces.
           </div>
         </div>
         <Switch isEnabled={shouldLiveSync} onToggle={handleShouldLiveSyncChange} />
@@ -241,11 +245,11 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Sync on application becoming visible
+          Sincronizar al volver a la aplicación
           <div className="setting-label__description">
-            If enabled, the current org file is pulled from the sync backend when the browser tab
-            becomes visible. This prevents you from having a stale file before starting to make
-            changes to it.
+            Si está activado, el fichero org actual se descarga del servicio de sincronización
+            cuando la pestaña del navegador vuelve a estar visible. Así evitas trabajar sobre una
+            versión desactualizada del fichero.
           </div>
         </div>
         <Switch
@@ -256,9 +260,9 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Show Org filename as Title
+          Mostrar el nombre del fichero Org como título
           <div className="setting-label__description">
-            When in an Org file view, it shows the filename in the HeaderBar.
+            Al ver un fichero Org, muestra su nombre en la barra superior.
           </div>
         </div>
         <Switch isEnabled={shouldShowTitleInOrgFile} onToggle={handleShouldShowTitleInOrgFile} />
@@ -266,14 +270,15 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Log into LOGBOOK drawer when item repeats
+          Registrar en el cajón LOGBOOK cuando la tarea se repite
           <div className="setting-label__description">
-            Log TODO state changes (currently only for repeating items) into the LOGBOOK drawer
-            instead of into the body of the heading (default). See the Orgmode documentation on{' '}
+            Registra los cambios de estado TODO (por ahora solo en tareas repetitivas) en el cajón
+            LOGBOOK en lugar de en el cuerpo del encabezado (opción por defecto). Consulta la
+            documentación de Org sobre{' '}
             <ExternalLink href="https://www.gnu.org/software/emacs/manual/html_node/org/Tracking-TODO-state-changes.html">
               <code>org-log-into-drawer</code>
             </ExternalLink>{' '}
-            for more information.
+            para más información.
           </div>
         </div>
         <Switch isEnabled={shouldLogIntoDrawer} onToggle={handleShouldLogIntoDrawer} />
@@ -281,12 +286,12 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          When folding a header, fold all subheaders too
+          Al plegar un encabezado, plegar también sus subencabezados
           <div className="setting-label__description">
-            When folding a header, fold recursively all its subheaders, so that when the header is
-            reopened all subheaders are folded, regardless of their state prior to folding. This is
-            the default in Emacs Org mode. If this turned off, the fold-state of the subheaders is
-            preserved when the header is unfolded.
+            Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de modo que
+            al volver a abrirlo aparecen todos plegados, sea cual sea su estado anterior. Es el
+            comportamiento por defecto de Org mode en Emacs. Si está desactivado, se conserva el
+            estado de plegado de los subencabezados al desplegar el encabezado.
           </div>
         </div>
         <Switch
@@ -314,10 +319,10 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Store settings in sync backend
+          Guardar los ajustes en el servicio de sincronización
           <div className="setting-label__description">
-            Store settings and keyboard shortcuts in a .organice-config.json file in your sync
-            backend to sync between multiple devices.
+            Guarda los ajustes y los atajos de teclado en un fichero .organice-config.json en tu
+            servicio de sincronización para compartirlos entre varios dispositivos.
           </div>
         </div>
         <Switch
@@ -327,7 +332,7 @@ const Settings = ({
       </div>
 
       <div className="setting-container setting-container--vertical">
-        <div className="setting-label">Default DEADLINE warning period</div>
+        <div className="setting-label">Antelación de aviso por defecto para DEADLINE</div>
 
         <div className="default-deadline-warning-container">
           <input
@@ -339,7 +344,9 @@ const Settings = ({
           />
 
           <TabButtons
-            buttons={'hdwmy'.split('')}
+            buttons={['h', 'd', 's', 'm', 'a']}
+            values={'hdwmy'.split('')}
+            titles={['Horas', 'Días', 'Semanas', 'Meses', 'Años']}
             selectedButton={agendaDefaultDeadlineDelayUnit}
             onSelect={handleAgendaDefaultDeadlineDelayUnitChange}
           />
@@ -347,11 +354,11 @@ const Settings = ({
       </div>
 
       <div className="setting-container setting-container--vertical">
-        <div className="setting-label">Description editor height</div>
+        <div className="setting-label">Altura del editor de descripción</div>
         <div className="setting-label__description">
-          This setting controls the height of the description editor on computers only. The height
-          will be limited to ensure that all buttons are always visible. On mobile devices this
-          setting is ignored and the editor will always be 8 rows high.
+          Controla la altura del editor de descripción solo en ordenadores. La altura se limita para
+          que todos los botones queden siempre visibles. En móviles este ajuste se ignora y el
+          editor tiene siempre 8 líneas de alto.
         </div>
 
         <div className="default-deadline-warning-container">
@@ -367,18 +374,18 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Start of week for weekly agenda
+          Primer día de la semana en la agenda semanal
           <div className="setting-label__description">
-            Akin to{' '}
+            Equivale a{' '}
             <ExternalLink href="https://orgmode.org/manual/Weekly_002fdaily-agenda.html">
               <code>org-agenda-start-on-weekday</code>
             </ExternalLink>
           </div>
         </div>
         <TabButtons
-          buttons={['S', 'M', 'T', 'W', 'T', 'F', 'S', 'Today']}
+          buttons={['D', 'L', 'M', 'X', 'J', 'V', 'S', 'Hoy']}
           values={[0, 1, 2, 3, 4, 5, 6, -1]}
-          titles={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']}
+          titles={['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Hoy']}
           selectedButton={agendaStartOnWeekday}
           onSelect={handleAgendaStartOnWeekdayChange}
         />
@@ -386,19 +393,20 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Show all habits today
+          Mostrar hoy todos los hábitos
           <div className="setting-label__description">
-            When enabled, all habits are shown in today's agenda view, even if not scheduled or
-            already marked as DONE today. Only applies to today's date in the agenda.
+            Si está activado, se muestran todos los hábitos en la agenda de hoy, aunque no estén
+            programados o ya estén marcados como DONE hoy. Solo se aplica al día de hoy en la
+            agenda.
           </div>
         </div>
         <Switch isEnabled={orgHabitShowAllToday} onToggle={handleOrgHabitShowAllToday} />
       </div>
 
       <div className="setting-container setting-container--vertical">
-        <div className="setting-label">Habit consistency graph preceding days</div>
+        <div className="setting-label">Días anteriores en el gráfico de constancia de hábitos</div>
         <div className="setting-label__description">
-          The number of days before today that will be shown in the habit consistency graph.
+          Número de días antes de hoy que se muestran en el gráfico de constancia de hábitos.
         </div>
 
         <div className="default-deadline-warning-container">
@@ -413,9 +421,9 @@ const Settings = ({
       </div>
 
       <div className="setting-container setting-container--vertical">
-        <div className="setting-label">Habit consistency graph following days</div>
+        <div className="setting-label">Días posteriores en el gráfico de constancia de hábitos</div>
         <div className="setting-label__description">
-          The number of days after today that will be shown in the habit consistency graph.
+          Número de días después de hoy que se muestran en el gráfico de constancia de hábitos.
         </div>
 
         <div className="default-deadline-warning-container">
@@ -431,10 +439,10 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Display time summaries
+          Mostrar resúmenes de tiempo
           <div className="setting-label__description">
-            This puts overlays at the end of each headline, showing the total time recorded under
-            that heading, including the time of any subheadings.
+            Muestra al final de cada encabezado el tiempo total registrado en él, incluido el de sus
+            subencabezados.
           </div>
         </div>
         <Switch isEnabled={showClockDisplay} onToggle={handleShowClockDisplayClick} />
@@ -442,9 +450,9 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Show Deadline Display
+          Mostrar la fecha límite
           <div className="setting-label__description">
-            If enabled, the deadline will displayed on each header line.
+            Si está activado, la fecha límite (DEADLINE) se muestra en la línea de cada encabezado.
           </div>
         </div>
         <Switch isEnabled={showDeadlineDisplay} onToggle={handleShowDeadlineDisplayChange} />
@@ -452,13 +460,13 @@ const Settings = ({
 
       <div className="setting-container">
         <div className="setting-label">
-          Prefer raw values
+          Preferir el texto sin procesar
           <div className="setting-label__description">
-            When editing title or description of a header, you can switch between editing the text
-            part or the full content (including text representation of todo keywords, tags, schedule
-            items, properties etc.) by clicking the "edit title" or "edit description" icon in the
-            popup. This option allows you to view the full content first instead of on a second
-            click.
+            Al editar el título o la descripción de un encabezado, puedes alternar entre editar solo
+            el texto o el contenido completo (con la representación en texto de los estados TODO,
+            etiquetas, fechas, propiedades, etc.) pulsando el icono «editar título» o «editar
+            descripción» de la ventana. Esta opción muestra primero el contenido completo en lugar
+            de hacerlo con un segundo clic.
           </div>
         </div>
         <Switch isEnabled={preferEditRawValues} onToggle={handlePreferEditRawValues} />
@@ -466,13 +474,13 @@ const Settings = ({
 
       <div className="settings-buttons-container">
         <button className="btn settings-btn" onClick={handleCaptureTemplatesClick}>
-          Capture templates
+          Plantillas de captura
         </button>
         <button className="btn settings-btn" onClick={handleKeyboardShortcutsClick}>
-          Keyboard shortcuts
+          Atajos de teclado
         </button>
         <button className="btn settings-btn" onClick={handleFileSettingsClick}>
-          File settings
+          Ajustes de ficheros
         </button>
         <Link
           to="/encryption"
@@ -489,29 +497,29 @@ const Settings = ({
         <hr className="settings-button-separator" />
 
         <Link to="/changelog" className="btn settings-btn">
-          Changelog
+          Novedades
           {hasUnseenChangelog && (
             <div className="changelog-badge-container">
               <i className="fas fa-gift" />
-              &nbsp; What's New?
+              &nbsp; ¿Qué hay de nuevo?
             </div>
           )}
         </Link>
 
         <Link to="/sample" className="btn settings-btn">
-          Help
+          Ayuda
         </Link>
 
         <button className="btn settings-btn">
           <ExternalLink href={`${documentationHost}/documentation.html`}>
-            Documentation
+            Documentación
             <i className="fas fa-external-link-alt fa-sm" />
           </ExternalLink>{' '}
         </button>
 
         <button className="btn settings-btn">
           <ExternalLink href="https://github.com/200ok-ch/organice">
-            Github repo
+            Repositorio en GitHub
             <i className="fas fa-external-link-alt fa-sm" />
           </ExternalLink>{' '}
         </button>
@@ -519,7 +527,7 @@ const Settings = ({
         <hr className="settings-button-separator" />
 
         <button className="btn settings-btn" onClick={handleSignOutClick}>
-          Sign out
+          Cerrar sesión
         </button>
         <div className="eli-version" data-testid="eli-version">
           {APP_NAME} {APP_VERSION}

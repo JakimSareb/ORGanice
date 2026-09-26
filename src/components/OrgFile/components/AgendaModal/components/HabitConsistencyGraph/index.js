@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import classNames from 'classnames';
 import { calculateHabitConsistency, HABIT_DEFAULTS } from '../../../../../../lib/org_utils';
 
@@ -71,7 +72,7 @@ export default class HabitConsistencyGraph extends React.PureComponent {
 
     return (
       <div key={date.getTime()} className={dayClassName} title={this.getDayTooltip(date, status)}>
-        {format(date, 'EEE')[0]}
+        {'DLMXJVS'[date.getDay()]}
       </div>
     );
   }
@@ -85,16 +86,16 @@ export default class HabitConsistencyGraph extends React.PureComponent {
   }
 
   getDayTooltip(date, status) {
-    const dateStr = format(date, 'MMM d, yyyy');
+    const dateStr = format(date, 'd MMM yyyy', { locale: es });
     const statusText =
       {
-        done: 'Completed',
-        future: 'Not due yet',
-        scheduled: 'Scheduled',
-        overdue: 'Overdue',
-        missed: 'Missed',
-        'due-soon': 'Due tomorrow',
-        'not-scheduled': 'Not scheduled',
+        done: 'Hecho',
+        future: 'Aún no toca',
+        scheduled: 'Programado',
+        overdue: 'Vencido',
+        missed: 'Fallado',
+        'due-soon': 'Toca mañana',
+        'not-scheduled': 'No programado',
       }[status] || status;
 
     return `${dateStr}: ${statusText}`;

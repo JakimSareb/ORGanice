@@ -43,7 +43,7 @@ const Turnout = ({ isAuthenticated }) => {
                 shouldDisableActionDrawer={false}
                 shouldDisableSyncButtons={true}
                 parsingErrorMessage={
-                  "The contents of sample.org couldn't be loaded. You probably forgot to set the environment variable - see the Development section of README.org for details!"
+                  'No se ha podido cargar el contenido de sample.org. Probablemente falta definir la variable de entorno: consulta la sección Development de README.org.'
                 }
               />
             </div>
@@ -55,7 +55,7 @@ const Turnout = ({ isAuthenticated }) => {
             </div>
           </Route>
           <Route path="/" exact={true}>
-            <Suspense fallback={<div className="App landing-page">Loading...</div>}>
+            <Suspense fallback={<div className="App landing-page">Cargando…</div>}>
               <div className="App landing-page">
                 <Landing />
               </div>

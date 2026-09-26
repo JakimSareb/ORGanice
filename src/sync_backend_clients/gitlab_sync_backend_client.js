@@ -201,7 +201,9 @@ export default (oauthClient) => {
       // https://docs.gitlab.com/ee/api/projects.html#get-single-project
       const response = await decoratedFetch(getProjectApi());
       if (!response.ok) {
-        throw new Error(`Unexpected response from project API. Status code: ${response.status}`);
+        throw new Error(
+          `Respuesta inesperada de la API de proyectos. Código de estado: ${response.status}`
+        );
       }
       const body = await response.json();
       cachedDefaultBranch = body.default_branch;
@@ -212,7 +214,9 @@ export default (oauthClient) => {
   const fetchDirectory = async (url) => {
     const response = await decoratedFetch(url);
     if (!response.ok) {
-      throw new Error(`Unexpected response from directory API. Status code: ${response.status}`);
+      throw new Error(
+        `Respuesta inesperada de la API de directorios. Código de estado: ${response.status}`
+      );
     }
     const pages = parseLinkHeader(response.headers.get('link'));
     const data = await response.json();
@@ -251,7 +255,9 @@ export default (oauthClient) => {
       `${getProjectApi()}/repository/files/${encodedPath}/raw?${params}`
     );
     if (!response.ok) {
-      throw new Error(`Unexpected response from file API. Status code: ${response.status}`);
+      throw new Error(
+        `Respuesta inesperada de la API de ficheros. Código de estado: ${response.status}`
+      );
     }
     return {
       contents: await response.text(),
@@ -265,7 +271,9 @@ export default (oauthClient) => {
       `${getProjectApi()}/repository/commits/${sha}?stats=false`
     );
     if (!response.ok) {
-      throw new Error(`Unexpected response from commit API. Status code: ${response.status}`);
+      throw new Error(
+        `Respuesta inesperada de la API de commits. Código de estado: ${response.status}`
+      );
     }
     const body = await response.json();
     // Dates are ISO-8601. Note: while commit date *should* generally

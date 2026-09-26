@@ -159,9 +159,7 @@ export const setShouldStoreSettingsInSyncBackend = (newShouldStoreSettingsInSync
             .catch((doesFileNotExist, error) =>
               doesFileNotExist
                 ? null
-                : alert(
-                    `There was an error trying to delete the .organice-config.json file: ${error}`
-                  )
+                : alert(`Error al borrar el fichero .organice-config.json: ${error}`)
             );
           break;
         default:

@@ -38,9 +38,7 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
     onFieldPathUpdate(setting.get('id'), ['includeInRefile'], !setting.get('includeInRefile'));
 
   const handleDeleteClick = () => {
-    if (
-      window.confirm(`Are you sure you want to delete the settings for "${setting.get('path')}"?`)
-    ) {
+    if (window.confirm(`¿Seguro que quieres eliminar los ajustes de «${setting.get('path')}»?`)) {
       onDeleteSetting(setting.get('id'));
     }
   };
@@ -52,7 +50,7 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
     return (
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Path: </div>
+          <div>Ruta: </div>
           <select onChange={updateField('path')} style={{ width: '90%' }}>
             {[setting.get('path'), ...loadedFilepaths].map((path) => (
               <option key={path} value={path}>
@@ -69,7 +67,7 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
     <>
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Fichero principal (acceso directo)?</div>
+          <div>¿Fichero principal (acceso directo)?</div>
           <Switch isEnabled={!!setting.get('eliFavorite')} onToggle={toggleEliFavorite} />
         </div>
 
@@ -79,74 +77,75 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
       </div>
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Is default file to load on startup?</div>
+          <div>¿Abrir este fichero al iniciar?</div>
           <Switch isEnabled={setting.get('defaultOnStartup')} onToggle={toggleDefaultOnStartup} />
         </div>
 
         <div className="file-setting__help-text">
-          By default, when you start organice, it will display your root file directory. If you
-          prefer to display a specific Org file instead, enable this option. Enabling this option
-          disables it for all other file settings.
+          Por defecto, al iniciar la aplicación se muestra la carpeta raíz de tus ficheros. Si
+          prefieres abrir directamente un fichero Org concreto, activa esta opción. Al activarla se
+          desactiva en los demás ficheros.
         </div>
       </div>
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Sync on startup?</div>
+          <div>¿Sincronizar al iniciar?</div>
           <Switch isEnabled={setting.get('loadOnStartup')} onToggle={toggleLoadOnStartup} />
         </div>
 
         <div className="file-setting__help-text">
-          By default, files are loaded from localStorage when available and are only synced when
-          visited or when a sync is manually triggered. Enable this setting to always sync this file
-          when opening organice.
+          Por defecto, los ficheros se cargan desde el almacenamiento local del navegador cuando
+          están disponibles y solo se sincronizan al abrirlos o al sincronizar manualmente. Activa
+          esta opción para sincronizar siempre este fichero al abrir la aplicación.
         </div>
       </div>
 
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Include in Agenda?</div>
+          <div>¿Incluir en la agenda?</div>
           <Switch isEnabled={setting.get('includeInAgenda')} onToggle={toggleIncludeInAgenda} />
         </div>
 
         <div className="file-setting__help-text">
-          By default, only the currently opened file is included in the agenda. Enable this setting
-          to always include this file. The currently viewed file is always included.
+          Por defecto, la agenda solo incluye el fichero abierto. Activa esta opción para incluir
+          siempre este fichero. El fichero que estás viendo se incluye siempre.
         </div>
       </div>
 
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Include in Search?</div>
+          <div>¿Incluir en la búsqueda?</div>
           <Switch isEnabled={setting.get('includeInSearch')} onToggle={toggleIncludeInSearch} />
         </div>
 
         <div className="file-setting__help-text">
-          By default, only the current viewed file is included in search. Enable this setting to
-          always include this file. The currently loaded file is always included.
+          Por defecto, la búsqueda solo incluye el fichero que estás viendo. Activa esta opción para
+          incluir siempre este fichero. El fichero abierto se incluye siempre.
         </div>
       </div>
 
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Include in Tasklist?</div>
+          <div>¿Incluir en la lista de tareas?</div>
           <Switch isEnabled={setting.get('includeInTasklist')} onToggle={toggleIncludeInTasklist} />
         </div>
 
         <div className="file-setting__help-text">
-          By default, only the current viewed file is included in the tasklist. Enable this setting
-          to always include this file. The currently loaded file is always included.
+          Por defecto, la lista de tareas solo incluye el fichero que estás viendo. Activa esta
+          opción para incluir siempre este fichero. El fichero abierto se incluye siempre.
         </div>
       </div>
 
       <div className="file-setting__field-container">
         <div className="file-setting__field">
-          <div>Include in Refile?</div>
+          <div>¿Incluir al archivar (refile)?</div>
           <Switch isEnabled={setting.get('includeInRefile')} onToggle={toggleIncludeInRefile} />
         </div>
 
         <div className="file-setting__help-text">
-          By default, only the currently viewed file is available as a refile targets. Enable this
-          setting to always include this file. The currently loaded file is always included.
+          Por defecto, solo el fichero que estás viendo está disponible como destino al mover
+          encabezados (refile). Activa esta opción para incluir siempre este fichero. El fichero
+          abierto se incluye siempre.
         </div>
       </div>
     </>
@@ -155,7 +154,7 @@ export default ({ setting, index, onFieldPathUpdate, onDeleteSetting, loadedFile
   const renderDeleteButton = () => (
     <div className="file-setting__field-container file-setting__delete-button-container">
       <button className="btn settings-btn file-setting__delete-button" onClick={handleDeleteClick}>
-        Delete setting
+        Eliminar ajuste
       </button>
     </div>
   );

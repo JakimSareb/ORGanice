@@ -112,7 +112,9 @@ const ActionDrawer = ({
     }
     const title = fileName.replace(/\.org(\.gpg|\.asc)?$/i, '');
     // Cabecera de los ficheros nuevos: etiquetas, energía, tiempo y columnas (Ajustes)
-    const content = `#+TITLE: ${title}\n${newFileHeaderLines().join('\n')}\n\n* Primer encabezado\n`;
+    const content = `#+TITLE: ${title}\n${newFileHeaderLines().join(
+      '\n'
+    )}\n\n* Primer encabezado\n`;
     const ok = await org.createNewFile(newPath, content);
     if (ok) {
       syncBackend.getDirectoryListing(path);
@@ -152,7 +154,7 @@ const ActionDrawer = ({
                 onClick={openAgenda}
                 dataTestId="eli-browser-agenda"
                 style={{ ...mainButtonStyle, marginRight: 14 }}
-                tooltip="Show agenda"
+                tooltip="Mostrar agenda"
               />
               <ActionButton
                 iconName="tasks"
@@ -167,7 +169,7 @@ const ActionDrawer = ({
                 isDisabled={false}
                 onClick={handleAddNewOrgFileClick}
                 style={mainButtonStyle}
-                tooltip="Add new Org file"
+                tooltip="Nuevo fichero Org"
               />
             </div>
           </Fragment>

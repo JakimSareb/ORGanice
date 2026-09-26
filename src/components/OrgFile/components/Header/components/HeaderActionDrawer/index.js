@@ -130,40 +130,40 @@ export default class HeaderActionDrawer extends PureComponent {
       {
         className: 'fas fa-pencil-alt fa-lg',
         onClick: onTitleClick,
-        title: 'Edit header title',
+        title: 'Editar título del encabezado',
         testId: 'drawer-action-edit-title',
       },
       {
         className: 'fas fa-edit fa-lg',
         onClick: onDescriptionClick,
-        title: 'Edit header description',
+        title: 'Editar descripción del encabezado',
         testId: 'edit-header-title',
       },
       {
         className: 'fas fa-tags fa-lg',
         onClick: onTagsClick,
-        title: 'Modify tags',
+        title: 'Modificar etiquetas',
         testId: 'drawer-action-tags',
       },
       {
         className: 'fas fa-list fa-lg',
         onClick: onPropertiesClick,
-        title: 'Modify properties',
+        title: 'Modificar propiedades',
         testId: 'drawer-action-properties',
       },
-      { className: 'far fa-sticky-note fa-lg', onClick: onAddNote, title: 'Add a note' },
+      { className: 'far fa-sticky-note fa-lg', onClick: onAddNote, title: 'Añadir una nota' },
       // Fechas y tiempo
       {
         className: 'fas fa-calendar-check fa-lg',
         onClick: onDeadlineClick,
         testId: 'drawer-action-deadline',
-        title: 'Set deadline datetime',
+        title: 'Fijar fecha límite',
       },
       {
         className: 'far fa-calendar-check fa-lg',
         onClick: onScheduledClick,
         testId: 'drawer-action-scheduled',
-        title: 'Set scheduled datetime',
+        title: 'Fijar fecha programada',
       },
       onInsertInactiveDate && {
         className: 'far fa-calendar-plus fa-lg',
@@ -176,13 +176,13 @@ export default class HeaderActionDrawer extends PureComponent {
             className: 'fas fa-hourglass-end fa-lg',
             onClick: onClockInOutClick,
             testId: 'org-clock-out',
-            title: 'Clock out (Stop the clock)',
+            title: 'Parar reloj',
           }
         : {
             className: 'fas fa-hourglass-start fa-lg',
             onClick: onClockInOutClick,
             testId: 'org-clock-in',
-            title: 'Clock in (Start the clock)',
+            title: 'Iniciar reloj',
           },
       onAttachFiles && {
         className: 'fas fa-paperclip fa-lg',
@@ -196,13 +196,13 @@ export default class HeaderActionDrawer extends PureComponent {
         onClick: onAddNewHeader,
         onLongPress: handleDuplicateHeader,
         testId: 'header-action-plus',
-        title: 'Create new header below (long-press to duplicate current header)',
+        title: 'Crear encabezado debajo (mantén pulsado para duplicar el actual)',
       },
       {
         className: 'fas fa-file-export fa-lg',
         onClick: onRefileHeader,
         testId: 'org-refile',
-        title: 'Refile this header to another header',
+        title: 'Mover (refile) este encabezado a otro encabezado',
       },
       onArchive && {
         className: 'fas fa-archive fa-lg',
@@ -214,7 +214,7 @@ export default class HeaderActionDrawer extends PureComponent {
         className: 'fas fa-share fa-lg',
         onClick: onShareHeader,
         testId: 'share',
-        title: 'Share this header via email',
+        title: 'Compartir este encabezado por correo',
       },
       onExportPdf && {
         className: 'fas fa-file-pdf fa-lg',

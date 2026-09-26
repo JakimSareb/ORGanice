@@ -133,7 +133,7 @@ export const sync = (options) => (dispatch, getState) => {
 // once.
 const doSync = ({
   forceAction = null,
-  successMessage = 'Changes pushed',
+  successMessage = 'Cambios subidos',
   shouldSuppressMessages = false,
   path,
 } = {}) => (dispatch, getState) => {
@@ -168,7 +168,7 @@ const doSync = ({
   }
 
   if (!shouldSuppressMessages) {
-    dispatch(setLoadingMessage(`Syncing ...`));
+    dispatch(setLoadingMessage(`Sincronizando…`));
   }
   dispatch(setIsLoading(true, path));
   dispatch(setOrgFileErrorMessage(null));
@@ -204,7 +204,7 @@ const doSync = ({
               dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
             })
             .catch((error) => {
-              const err = `There was an error pushing the file ${path}: ${error.toString()}`;
+              const err = `Error al subir el fichero ${path}: ${error.toString()}`;
               console.error(err);
               dispatch(setDisappearingLoadingMessage(err, 5000));
               dispatch(hideLoadingMessage());
@@ -214,7 +214,7 @@ const doSync = ({
             });
         } else {
           if (!shouldSuppressMessages) {
-            dispatch(setDisappearingLoadingMessage('Nothing to sync', 2000));
+            dispatch(setDisappearingLoadingMessage('Nada que sincronizar', 2000));
           } else {
             setTimeout(() => dispatch(hideLoadingMessage()), 2000);
           }
@@ -252,7 +252,7 @@ const doSync = ({
           dispatch(setDirty(false, path));
           dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
           if (!shouldSuppressMessages) {
-            dispatch(setDisappearingLoadingMessage(`Latest version pulled: ${path}`, 2000));
+            dispatch(setDisappearingLoadingMessage(`Última versión descargada: ${path}`, 2000));
           } else {
             setTimeout(() => dispatch(hideLoadingMessage()), 2000);
           }
@@ -266,7 +266,9 @@ const doSync = ({
       // ORG Mode para Eli: mostrar el motivo real (p. ej. frase de paso incorrecta)
       dispatch(
         setOrgFileErrorMessage(
-          error && error.message ? `${path}: ${error.message}` : `File ${path} not found`
+          error && error.message
+            ? `${path}: ${error.message}`
+            : `No se encuentra el fichero ${path}`
         )
       );
     });
@@ -612,7 +614,7 @@ export const insertCaptureFromHeader = (templateId, header, shouldPrepend) => (
     .find((template) => template.get('id') === templateId);
   const targetPath = template.get('file') || getState().org.present.get('path');
   dispatch({ type: 'INSERT_CAPTURE_FROM_HEADER', template, header, shouldPrepend, dirtying: true });
-  dispatch(sync({ successMessage: 'Item captured', path: targetPath }));
+  dispatch(sync({ successMessage: 'Elemento capturado', path: targetPath }));
 };
 
 export const clearPendingCapture = () => ({
@@ -640,7 +642,7 @@ export const insertPendingCapture = () => (dispatch, getState) => {
   if (!template) {
     dispatch(
       setDisappearingLoadingMessage(
-        `Capture failed: "${templateName}" template not found or not available in this file`,
+        `Error al capturar: la plantilla «${templateName}» no existe o no está disponible en este fichero`,
         8000
       )
     );
@@ -655,7 +657,9 @@ export const insertPendingCapture = () => (dispatch, getState) => {
   if (headerPaths.size > 0 && !targetHeader) {
     dispatch(
       setDisappearingLoadingMessage(
-        `Capture failed: "${template.get('description')}" header path invalid in ${targetPath}`,
+        `Error al capturar: ruta de encabezado de «${template.get(
+          'description'
+        )}» no válida en ${targetPath}`,
         8000
       )
     );
@@ -675,7 +679,7 @@ export const insertPendingCapture = () => (dispatch, getState) => {
     : `${substitutedTemplate}${captureContent}`;
 
   dispatch(insertCapture(template.get('id'), content, template.get('shouldPrepend')));
-  dispatch(sync({ successMessage: 'Item captured', path: targetPath }));
+  dispatch(sync({ successMessage: 'Elemento capturado', path: targetPath }));
 };
 
 export const advanceCheckboxState = (listItemId) => ({

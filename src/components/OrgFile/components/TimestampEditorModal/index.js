@@ -52,9 +52,9 @@ export default class TimestampEditorModal extends PureComponent {
     } = this.props;
 
     const timestampTitles = {
-      'timestamp-editor': 'Edit timestamp',
-      'scheduled-editor': 'Edit scheduled timestamp',
-      'deadline-editor': 'Edit deadline',
+      'timestamp-editor': 'Editar fecha',
+      'scheduled-editor': 'Editar fecha programada',
+      'deadline-editor': 'Editar fecha límite',
     };
 
     return (
@@ -77,7 +77,7 @@ export default class TimestampEditorModal extends PureComponent {
             <Fragment>
               <div className="timestamp-editor__separator">
                 <div className="timestamp-editor__separator__margin-line" />
-                to
+                hasta
                 <div className="timestamp-editor__separator__margin-line" />
               </div>
 
@@ -93,7 +93,7 @@ export default class TimestampEditorModal extends PureComponent {
                   className="btn timestamp-editor__add-new-button"
                   onClick={this.handleRemoveEndTimestamp}
                 >
-                  Remove end timestamp
+                  Quitar fecha de fin
                 </button>
               </div>
             </Fragment>
@@ -103,7 +103,7 @@ export default class TimestampEditorModal extends PureComponent {
                 className="btn timestamp-editor__add-new-button"
                 onClick={this.handleAddEndTimestamp}
               >
-                Add end timestamp
+                Añadir fecha de fin
               </button>
             </div>
           ))}

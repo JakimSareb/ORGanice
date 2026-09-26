@@ -8,36 +8,36 @@ import format from 'date-fns/format';
 export default ({ lastServerModifiedAt, lastSyncAt, path, onPull, onPush, onCancel }) => {
   return (
     <>
-      <h2 className="sync-confirmation-modal__header">Sync conflict</h2>
-      Since you last pulled {path}, a newer version of the file has been pushed to the server. The
-      newer version is from:
+      <h2 className="sync-confirmation-modal__header">Conflicto de sincronización</h2>
+      Desde la última vez que descargaste {path}, se ha subido al servidor una versión más reciente
+      del fichero. La versión más reciente es del:
       <br />
       &nbsp;
       <br />
       <div className="sync-confirmation-modal__last-sync-time">
-        {format(lastServerModifiedAt, 'MMMM do, yyyy [at] h:mm:ss a')}
+        {format(lastServerModifiedAt, 'dd/MM/yyyy HH:mm:ss')}
         <br />({customFormatDistanceToNow(lastServerModifiedAt)})
       </div>
       <br />
       &nbsp;
       <br />
-      While your version is from:
+      Mientras que tu versión es del:
       <br />
       &nbsp;
       <br />
       <div className="sync-confirmation-modal__last-sync-time">
-        {format(lastSyncAt, 'MMMM do, yyyy [at] h:mm:ss a')}
+        {format(lastSyncAt, 'dd/MM/yyyy HH:mm:ss')}
         <br />({customFormatDistanceToNow(lastSyncAt)})
       </div>
       <div className="sync-confirmation-modal__buttons-container">
         <button className="btn sync-confirmation-modal__button" onClick={onPull}>
-          Pull latest version from server
+          Descargar la última versión del servidor
         </button>
         <button className="btn sync-confirmation-modal__button" onClick={onPush}>
-          Overwrite server version
+          Sobrescribir la versión del servidor
         </button>
         <button className="btn sync-confirmation-modal__button" onClick={onCancel}>
-          Cancel sync
+          Cancelar sincronización
         </button>
       </div>
       <br />

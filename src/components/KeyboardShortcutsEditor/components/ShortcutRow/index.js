@@ -5,6 +5,8 @@ import './stylesheet.css';
 import _ from 'lodash';
 import classNames from 'classnames';
 
+import { keybindingLabel } from '../../../../lib/keybindings';
+
 export default class ShortcutRow extends PureComponent {
   constructor(props) {
     super(props);
@@ -121,7 +123,7 @@ export default class ShortcutRow extends PureComponent {
 
     return (
       <div className="keyboard-shortcut-container">
-        <div className="keyboard-shortcut-container__shortcut-name">{name}</div>
+        <div className="keyboard-shortcut-container__shortcut-name">{keybindingLabel(name)}</div>
         <div
           className={rebindAreaClassName}
           onClick={this.handleRebindClick}

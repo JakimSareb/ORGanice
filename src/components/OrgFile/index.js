@@ -1026,7 +1026,7 @@ class OrgFile extends PureComponent {
         <div className="org-file-container" tabIndex="-1" ref={this.handleContainerRef}>
           {headers.size === 0 ? (
             <div className="org-file__parsing-error-message">
-              <h3>This file has no headlines</h3>
+              <h3>Este fichero no tiene encabezados</h3>
 
               {!!parsingErrorMessage ? (
                 <Fragment>{parsingErrorMessage}</Fragment>
@@ -1034,21 +1034,21 @@ class OrgFile extends PureComponent {
                 <Fragment>
                   {noHeadlineButContent() ? (
                     <>
-                      <p>Yes, your file has content. Do not worry, it is still there! </p>
+                      <p>Sí, tu fichero tiene contenido. No te preocupes, ¡sigue ahí!</p>
                       <p>
-                        However, interacting with Org files in organice happens on a per headline
-                        basis. To use organice with this file, please create a new headline with the
-                        button below. The existing content is then put into the description of this
-                        new header.
+                        Sin embargo, en organice se trabaja con los ficheros Org encabezado a
+                        encabezado. Para usar organice con este fichero, crea un encabezado nuevo
+                        con el botón de abajo. El contenido existente pasará a la descripción de ese
+                        nuevo encabezado.
                       </p>
                     </>
                   ) : (
                     <p></p>
                   )}
-                  <p>Interact with your file by creating the first headline.</p>
+                  <p>Empieza a trabajar con tu fichero creando el primer encabezado.</p>
                   <p>
                     <button className="btn" onClick={this.handleCreateFirstHeader}>
-                      Create headline
+                      Crear encabezado
                     </button>
                   </p>
                 </Fragment>
@@ -1059,7 +1059,7 @@ class OrgFile extends PureComponent {
           )}
 
           {isDirty && !shouldDisableDirtyIndicator && (
-            <div className="dirty-indicator">Unpushed changes</div>
+            <div className="dirty-indicator">Cambios sin subir</div>
           )}
 
           {!shouldDisableActions && (
