@@ -1143,6 +1143,7 @@ class OrgFile extends PureComponent {
                   onAddNote={this.state.captureMode ? this.handleCaptureAddNote : null}
                   onCapture={this.handleCaptureFromEditor}
                   onCaptureCancel={this.handleCaptureCancel}
+                  onCaptureAccept={this.handleActivePopupClose}
                   onTogglePrepend={() =>
                     this.setState({ captureShouldPrepend: !this.state.captureShouldPrepend })
                   }

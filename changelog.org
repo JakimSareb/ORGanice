@@ -18,6 +18,7 @@ Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay noved
 - Editor de título: estrella al principio y flechas para mover solo el encabezado (arriba, abajo, fuera y dentro).
 - En la edición del encabezado, el tabulador salta entre título, descripción, etiquetas, fecha límite y fecha programada.
 - El icono de propiedades está ahora justo antes del de adjuntar.
+- Captura: botones Aceptar (guarda) y Cancelar (en rojo suave: descarta lo escrito).
 - Al terminar una tarea pierde su prioridad.
 - Al borrar un encabezado con adjuntos, pregunta uno a uno si se borran también.
 ** Agenda

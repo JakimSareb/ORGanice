@@ -618,6 +618,7 @@ class UnifiedHeaderEditor extends PureComponent {
       captureShouldPrepend,
       onCapture,
       onCaptureCancel,
+      onCaptureAccept,
       onTogglePrepend,
       selectedHeader,
     } = this.props;
@@ -645,14 +646,25 @@ class UnifiedHeaderEditor extends PureComponent {
                 />
                 <span>Añadir al principio</span>
               </label>
-              {/* ORG Mode para Eli: cerrar la ventana guarda la captura; este botón la descarta */}
+              {/* ORG Mode para Eli: Cancelar descarta lo escrito; Aceptar (o tocar fuera, o Esc)
+                  guarda la captura */}
+              {onCaptureCancel && (
+                <button
+                  className="btn capture-header-bar__cancel-btn"
+                  onClick={onCaptureCancel}
+                  data-testid="capture-cancel-button"
+                  title="Descartar esta captura: se pierde lo escrito"
+                >
+                  Cancelar
+                </button>
+              )}
               <button
                 className="btn capture-header-bar__capture-btn"
-                onClick={onCaptureCancel || onCapture}
-                data-testid="capture-cancel-button"
-                title="Descartar esta captura (tocar fuera o Esc la guarda)"
+                onClick={onCaptureAccept || onCapture}
+                data-testid="capture-accept-button"
+                title="Guardar esta captura (también al tocar fuera o con Esc)"
               >
-                {onCaptureCancel ? 'Cancelar' : 'Capturar'}
+                Aceptar
               </button>
             </div>
           </div>
