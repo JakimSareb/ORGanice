@@ -151,3 +151,14 @@
   margin-top: 15px;
   margin-bottom: 0;
 }
+
+/* ORG Mode para Eli: «Eliminar plantilla» en rojo suave, como «Cancelar» de la captura */
+.capture-template__delete-button-container .btn.capture-template__delete-button {
+  background: #fbe4e4 !important;
+  color: #b3261e !important;
+  border: 1px solid #efb7b3 !important;
+  font-weight: 600;
+}
+.capture-template__delete-button-container .btn.capture-template__delete-button:hover {
+  background: #f7d0cf !important;
+}

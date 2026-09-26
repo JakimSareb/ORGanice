@@ -308,7 +308,7 @@ export default ({
           <li>
             <code>%{'<custom variable>'}</code> - Una variable personalizada de una captura con
             parámetros en la URL. Consulta{' '}
-            <ExternalLink href="https://organice.200ok.ch/documentation.html#capture_templates">
+            <ExternalLink href="https://github.com/JakimSareb/ORGanice/blob/main/sample.org">
               la documentación
             </ExternalLink>{' '}
             para más detalles.

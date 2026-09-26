@@ -25,6 +25,20 @@ export default ({ children, shouldIncludeCloseButton, onClose, maxSize = false }
 
   const handleClose = () => setIsVisible(false);
 
+  // ORG Mode para Eli: solo se cierra al tocar fuera si la pulsación EMPEZÓ fuera. Si se
+  // selecciona texto dentro y se suelta el ratón fuera, el navegador envía un «click» al
+  // contenedor exterior y antes se cerraba la ventana.
+  const pressStartedOutside = useRef(false);
+  const handleOuterPressStart = (event) => {
+    pressStartedOutside.current = event.target === event.currentTarget;
+  };
+  const handleOuterClick = (event) => {
+    const startedOutside = pressStartedOutside.current;
+    pressStartedOutside.current = false;
+    if (event.target !== event.currentTarget || !startedOutside) return;
+    handleClose();
+  };
+
   const handleAnimationRest = () => (!isVisible && !!onClose ? onClose() : void 0);
 
   const handleTouchStart = (event) => (initialClientY.current = event.targetTouches[0].clientY);
@@ -110,11 +124,18 @@ export default ({ children, shouldIncludeCloseButton, onClose, maxSize = false }
         return (
           <div
             className={outerClassName}
-            onClick={!!onClose ? handleClose : null}
+            onMouseDown={handleOuterPressStart}
+            onTouchStart={handleOuterPressStart}
+            onClick={!!onClose ? handleOuterClick : null}
             data-testid="drawer-outer-container"
           >
             <div
               onClick={handleInnerContainerClick}
+              onDragStart={(event) => {
+                // ORG Mode para Eli: no arrastrar el texto seleccionado fuera del cuadro (se
+                // movería y desaparecería de donde estaba)
+                if (/^(TEXTAREA|INPUT)$/.test(event.target.tagName)) event.preventDefault();
+              }}
               className="drawer-inner-container nice-scroll"
               data-testid="drawer"
               ref={innerContainer}
