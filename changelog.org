@@ -3,6 +3,18 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.13 (septiembre de 2026)
+** Calendario
+- Nuevo: ⋯ → *Calendario* (o la paleta). Tres meses como Emacs (lunes primero, número de semana, hoy recuadrado) o el año entero; ← → meses, Mayús+← → años, . hoy, g ir a una fecha, y año; deslizar en el móvil.
+- Al tocar un día: fecha completa, semana, día del año, cuánto falta, festivo y fase de la Luna. Tocando otro: días entre ambos y laborables.
+- Festivos de España (nacionales y de tu comunidad; 2026 según el BOE, otros años aproximados), festivos propios y fases de la Luna, en Opciones.
+** Arreglos
+- Al escribir en un campo (el texto de un elemento de una lista, una descripción…), teclas como d o Intro ya no hacen de atajo (editar descripción, título…): se escriben. Solo Escape (y los atajos con Ctrl, Alt o ⌘) siguen actuando.
+- Elemento de una lista: al editarlo el cursor empieza al final, e Intro termina la edición (Mayúsculas+Intro, salto de línea).
+- Sin conexión: una copia guardada en el dispositivo nunca se sube encima de una versión más nueva de Dropbox (si hay cambios en los dos sitios, sale el aviso de conflicto); si el servidor tarda, la sincronización espera en vez de decidir con la copia.
+- Adjuntos: al borrar un adjunto desde el editor de GTD, su enlace se quita del fichero aunque luego se cancele la edición; «Borrar todos» ya no da error si dos tareas enlazan el mismo archivo; también se quitan los enlaces que están en el título.
+- Más protección de lo guardado en el dispositivo (cambios cifrados pendientes, copias con encabezados :crypt:, varias pestañas o pantalla dividida a la vez).
+
 * 2.12 (septiembre de 2026)
 ** Usar sin conexión
 - Nuevo: Ajustes → *Usar sin conexión* → *Preparar para usar sin conexión* (también en la paleta). Guarda en el dispositivo tus ficheros sin cifrar, los cifrados (solo su versión cifrada; sin conexión se pide la frase de paso) y, si quieres, los adjuntos (te dice antes cuánto ocupan).

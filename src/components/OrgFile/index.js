@@ -1,6 +1,6 @@
 import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { defaultTagsLine } from '../../lib/eli_todo_defaults';
-import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
+import { shouldIgnoreOrganiceHotkey, blockedWhileTyping } from '../../lib/eli_hotkeys';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import { openFavorites } from '../EliTools';
@@ -127,7 +127,10 @@ class OrgFile extends PureComponent {
     // Todos los atajos (los de organice y los propios) pasan por aquí: react-hotkeys se quedaba
     // a veces con teclas "pulsadas" y dejaba de responder (p. ej. «d» tras cerrar con Esc)
     const action = Object.keys(this.eliHandlers).find((a) => matchesBinding(event, bindings[a]));
-    if (action && this.eliHandlers[action]) this.eliHandlers[action](event);
+    if (!action || !this.eliHandlers[action]) return;
+    // ORG Mode para Eli (2.13): escribiendo en un campo, las teclas sin Ctrl/Alt/⌘ son texto
+    if (blockedWhileTyping(event, action, bindings[action])) return;
+    this.eliHandlers[action](event);
   }
 
   componentDidMount() {

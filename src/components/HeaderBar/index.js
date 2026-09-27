@@ -1,5 +1,6 @@
 import { openRawEditor, openPrintPreview, openMoonPhases, openFavorites } from '../EliTools';
 import { openPalette } from '../../lib/eli_palette';
+import { openCalendar } from '../EliCalendar';
 import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
@@ -593,6 +594,12 @@ class HeaderBar extends PureComponent {
               label: 'Dos columnas',
               onClick: () => this.openSplitView(),
               testId: 'eli-split-open',
+            },
+            {
+              icon: 'far fa-calendar-alt',
+              label: 'Calendario',
+              onClick: openCalendar,
+              testId: 'eli-calendar-menu',
             },
             {
               icon: 'fas fa-moon',

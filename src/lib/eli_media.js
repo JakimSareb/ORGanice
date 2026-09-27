@@ -101,12 +101,19 @@ const offlineUrl = (path) =>
     return URL.createObjectURL(typedBlob(path, blob));
   });
 
-export const loadTemporaryLink = (client, path) => {
-  if (isOffline()) return offlineUrl(path);
+export const loadTemporaryLink = (client, path) =>
   // Los enlaces temporales de Dropbox duran 4 horas; se guardan 3 como máximo.
-  return cached(`link:${path}:${Math.floor(Date.now() / (3 * 3600 * 1000))}`, () =>
+  cached(`link:${path}:${Math.floor(Date.now() / (3 * 3600 * 1000))}`, () =>
     client.getTemporaryLink(path)
-  ).catch((e) => offlineUrl(path).catch(() => Promise.reject(e)));
+  );
+
+// Para reproducir vídeo o audio dentro de la app: enlace de Dropbox o, sin conexión, el
+// adjunto guardado en el dispositivo
+export const loadPlayableUrl = (client, path) => {
+  if (isOffline()) return offlineUrl(path);
+  return loadTemporaryLink(client, path).catch((e) =>
+    offlineUrl(path).catch(() => Promise.reject(e))
+  );
 };
 
 const MIME = {

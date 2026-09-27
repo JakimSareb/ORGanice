@@ -130,7 +130,7 @@ const progressDialog = () => {
 
 export const eliPrepareOffline = () => async (dispatch, getState) => {
   const client = getState().syncBackend.get('client');
-  if (!client || !client.eliPrefetch) {
+  if (!client || !client.eliPrefetch || !client.listOrgFiles) {
     showMessage(
       'Usar sin conexión',
       client && client.type === 'LocalFolder'
@@ -157,7 +157,7 @@ export const eliPrepareOffline = () => async (dispatch, getState) => {
   });
   if (!opts) return false;
   // Los adjuntos no van cifrados: solo con la copia local
-  if (!opts.plain) opts.attachments = false;
+  if (!opts.plain || !client.getFileBlob) opts.attachments = false;
   if (opts.plain !== getPersistPlainFiles()) setPersistPlainFiles(opts.plain);
   if (opts.encrypted !== getOfflineEncrypted()) setOfflineEncrypted(opts.encrypted);
   if (!opts.plain && !opts.encrypted) {

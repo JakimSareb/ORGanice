@@ -281,6 +281,14 @@ Selecciona «Escribir el informe» y mantén pulsado el reloj de arena: verás 2
 - Los cambios se guardan en Dropbox en unos segundos. Sin conexión puedes seguir trabajando; al volver la red, se sincroniza.
 - Al abrir la app desde su icono vuelve a donde estabas (la vista GTD, el fichero o la carpeta), con los encabezados abiertos como los dejaste. En el iPhone el sistema cierra la app si pasa un rato en segundo plano; ahora no se nota.
 
+* El calendario
+Un calendario para consultar fechas, como =M-x calendar= de Emacs (sin tareas). Se abre con ⋯ → *Calendario* (en Documentos y en GTD) o desde la paleta («calendario»).
+- Tres meses a la vista (el anterior, el actual y el siguiente), con la semana empezando en lunes, el número de semana (ISO) a la izquierda y hoy recuadrado. *Año* muestra los doce meses.
+- Moverse: ‹ › (o ← →) mes a mes, « » (o Mayús+← →) año a año, *Hoy* (o .), la lupa (o g) para ir a una fecha, y (o *Año*) para la vista del año. En el móvil también deslizando a los lados. Esc cierra.
+- Toca un día: abajo sale su fecha completa, el número de semana, el día del año y cuánto falta (o cuánto hace), y si es festivo o hay una fase de la Luna. Toca otro día y te dice los días entre ambos y cuántos son laborables.
+- *Opciones* (la rueda): números de semana, fases de la Luna (🌑 🌓 🌕 🌗 en su día), los festivos de tu comunidad y tus festivos propios (locales, de empresa…), uno por línea: «15/05 San Isidro» todos los años o «24/09/2026 La Mercè» solo ese año.
+- Festivos: los de 2026 son los del BOE; los de otros años son aproximados (el BOE cambia algunos cada año), y la leyenda lo indica.
+
 * Usar sin conexión (viajes)
 Para trabajar sin Internet, por ejemplo en un vuelo largo, prepara la app antes, con conexión:
 - Ajustes → *Usar sin conexión* → *Preparar para usar sin conexión* (o en la paleta: «Preparar para usar sin conexión»). Elige qué guardar en el dispositivo:

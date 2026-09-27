@@ -7,6 +7,7 @@
 ;; - Vistas GTD: C-c g f Focus, i Inbox, n Next, t Todo, w Waiting, s Scheduled, d Deadline,
 ;;   m Someday, p Proyectos, r Reference, l Logbook, a Agenda.
 ;; - Adjuntos: C-c g j adjuntar, o abrir, D borrar, R revisar los de tareas terminadas.
+;; - Calendario: C-c g C.
 ;; - Formato como en la app: ⌘B negrita, ⌘I cursiva, ⌘U subrayado, ⌘⇧X tachado, ⌘E código,
 ;;   ⌘⇧E literal (en Linux/Windows, la tecla Super; y siempre también C-c e b/i/u/s/c/v).
 
@@ -14,6 +15,7 @@
 (require 'organice-core)
 (require 'organice-gtd)
 (require 'organice-attach)
+(require 'organice-calendar)
 
 ;;;; Completado: vertico + orderless (búsqueda tolerante) + marginalia + consult ---------------
 
@@ -101,6 +103,7 @@
     ("Abrir adjunto de la tarea…" . organice-open-attachment)
     ("Borrar adjunto de la tarea…" . organice-delete-attachment)
     ("Revisar adjuntos de tareas terminadas" . organice-review-finished-attachments)
+    ("Calendario" . organice-calendar)
     ("Buscar en todos los ficheros" . ,(lambda () (org-search-view)))
     ("Mover (refile)…" . org-refile)
     ("Ficheros de la carpeta" . ,(lambda () (dired organice-directory)))
@@ -179,6 +182,7 @@
     (define-key m "o" #'organice-open-attachment)
     (define-key m "D" #'organice-delete-attachment)
     (define-key m "R" #'organice-review-finished-attachments)
+    (define-key m "C" #'organice-calendar)
     m)
   "Atajos de la vista GTD (C-c g …).")
 

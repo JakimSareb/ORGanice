@@ -8,7 +8,7 @@ import App from './App';
 import EliSplitView from './components/EliSplitView';
 import { BASE_PATH } from './lib/base_path';
 import { registerServiceWorker } from './lib/eli_offline';
-import { initOfflineStore } from './lib/eli_offline_store';
+import { initOfflineStore, isOfflineStoreReady } from './lib/eli_offline_store';
 import { flushLocalSaves } from './util/file_persister';
 
 const rootElement = document.getElementById('root');
@@ -25,8 +25,49 @@ function render() {
 
 // ORG Mode para Eli (2.12): antes de arrancar, cargar lo guardado en el dispositivo (IndexedDB)
 // para usar la app sin conexión. Si tarda demasiado, se arranca igualmente.
-Promise.race([initOfflineStore(), new Promise((resolve) => setTimeout(resolve, 2500))]).then(
-  render,
+let storeWait = null;
+const storeReady = initOfflineStore();
+Promise.race([storeReady, new Promise((resolve) => (storeWait = setTimeout(resolve, 20000)))]).then(
+  () => {
+    clearTimeout(storeWait);
+    const timedOut = !isOfflineStoreReady();
+    if (!timedOut) {
+      try {
+        window.sessionStorage.removeItem('eliStoreReload');
+      } catch (e) {}
+    }
+    render();
+    // Si el almacén llega tarde (a veces en el iPhone), se recarga una vez para no trabajar sin
+    // la copia local (y no escribir encima de ella)
+    if (timedOut) {
+      storeReady.then((ok) => {
+        let already = false;
+        try {
+          already = window.sessionStorage.getItem('eliStoreReload') === '1';
+          window.sessionStorage.setItem('eliStoreReload', '1');
+        } catch (e) {}
+        if (!ok || already) return;
+        // Antes de recargar se guarda lo pendiente; si se está escribiendo, se espera a que la
+        // app pase a segundo plano
+        const reload = () => {
+          flushLocalSaves();
+          setTimeout(() => window.location.reload(), 300);
+        };
+        const active = document.activeElement;
+        const typing =
+          active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName));
+        if (!typing) reload();
+        else {
+          const onHide = () => {
+            if (document.visibilityState !== 'hidden') return;
+            document.removeEventListener('visibilitychange', onHide);
+            reload();
+          };
+          document.addEventListener('visibilitychange', onHide);
+        }
+      });
+    }
+  },
   render
 );
 

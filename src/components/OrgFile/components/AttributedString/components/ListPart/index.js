@@ -137,6 +137,22 @@ export default class ListPart extends PureComponent {
       event.stopPropagation();
       event.target.blur();
     }
+    // ORG Mode para Eli (2.13): en el texto de un elemento de la lista, Intro termina (como en
+    // el título de un encabezado); Mayúsculas+Intro hace un salto de línea
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !(event.nativeEvent && event.nativeEvent.isComposing) &&
+      event.keyCode !== 229 &&
+      event.target.getAttribute('data-testid') === 'list-item-edit'
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.target.blur();
+    }
   }
 
   handleTextareaBlur() {
@@ -221,6 +237,13 @@ export default class ListPart extends PureComponent {
     this.textarea.focus();
   }
   handleTextareaRef(textarea) {
+    // ORG Mode para Eli (2.13): al empezar a editar, el cursor al final del texto
+    if (textarea && textarea !== this.textarea) {
+      const end = (textarea.value || '').length;
+      try {
+        textarea.setSelectionRange(end, end);
+      } catch (e) {}
+    }
     this.textarea = textarea;
   }
 

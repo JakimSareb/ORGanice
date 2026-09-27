@@ -42,14 +42,28 @@ const withTimeout = (promise, ms) =>
     );
   });
 
-// ¿Fallo de red (no «no existe»)?
+// ¿Fallo de red (no «no existe» ni un error de programación)?
 export const isNetworkError = (e) =>
   !isOnline() ||
   (!!e &&
     (e.eliTimeout ||
       e.eliOffline ||
-      e.name === 'TypeError' ||
-      /failed to fetch|networkerror|network error|load failed|internet/i.test(e.message || '')));
+      /failed to fetch|networkerror|network error|load failed|internet connection|network request failed|connection was lost|timed out|could not be found|could not connect|offline/i.test(
+        (e && e.message) || ''
+      )));
+
+const isBackupPath = (path) => /(^|\/)backups\//i.test(path || '');
+
+// Fecha de la última sincronización que corresponde a lo leído: si viene de la copia del
+// dispositivo, la de esa copia (así, al volver la conexión, un cambio hecho en otro sitio se
+// detecta como conflicto en vez de pisarse)
+export const lastSyncAtFor = (result) => {
+  if (result && result.eliFromCache) {
+    const t = result.lastModifiedAt ? Date.parse(result.lastModifiedAt) : NaN;
+    return isNaN(t) ? new Date(0) : new Date(t + 1000);
+  }
+  return new Date(Date.now() + 5000);
+};
 
 export const offlineError = (path) => {
   const e = new Error(
@@ -68,14 +82,23 @@ const WAIT_WITHOUT_COPY = 60000;
 export const withOfflineCache = (client) => {
   if (!client || client.__eliOffline) return client;
 
-  const fromCopy = (path, copy) => ({
-    contents: copy.contents,
-    lastModifiedAt: copy.lastModifiedAt,
-    eliFromCache: true,
-    eliPending: !!copy.pending,
-  });
+  // Ficheros cuya última lectura fue la copia del dispositivo: no se sobrescriben en el
+  // servidor hasta leerlos de nuevo de él (así nunca se sube encima una versión antigua)
+  const staleReads = new Set();
+
+  const fromCopy = (path, copy) => {
+    staleReads.add(path);
+    return {
+      contents: copy.contents,
+      lastModifiedAt: copy.lastModifiedAt,
+      eliFromCache: true,
+      eliPending: !!copy.pending,
+    };
+  };
 
   const remember = (path, result) => {
+    staleReads.delete(path);
+    if (isBackupPath(path)) return;
     const copy = getServerCopy(path);
     if (copy && copy.pending) return; // hay cambios propios sin subir: no se pisan
     if (canKeepOffline(path)) {
@@ -108,15 +131,33 @@ export const withOfflineCache = (client) => {
     }
   };
 
-  const afterUpload = (path, contents) => {
+  const serverTime = (result) => {
+    const t =
+      result && (result.server_modified || (result.result && result.result.server_modified));
+    return t || new Date().toISOString();
+  };
+  const afterUpload = (path, contents, result, startedAt) => {
+    if (isBackupPath(path)) return;
+    const copy = getServerCopy(path);
+    // Cambios guardados (cifrados) mientras se subía: se conservan como pendientes
+    if (copy && copy.pending && copy.savedAt && Date.parse(copy.savedAt) > startedAt) return;
     if (canKeepOffline(path)) {
       setServerCopy(path, {
         contents,
-        lastModifiedAt: new Date().toISOString(),
+        lastModifiedAt: serverTime(result),
         savedAt: new Date().toISOString(),
       });
-    } else {
+    } else if (copy) {
       removeServerCopy(path); // también una versión pendiente: ya está subida
+    }
+  };
+  const guardStale = (path) => {
+    if (staleReads.has(path)) {
+      const e = new Error(
+        `No se sube ${path}: se leyó la copia guardada en el dispositivo. Se subirá al sincronizar con conexión.`
+      );
+      e.eliOffline = true;
+      throw e;
     }
   };
 
@@ -164,13 +205,18 @@ export const withOfflineCache = (client) => {
     getFileContentsAndMetadata,
     getFileContents: async (path) => (await getFileContentsAndMetadata(path)).contents,
     updateFile: async (path, contents, ...rest) => {
+      guardStale(path);
+      const startedAt = Date.now();
       const result = await client.updateFile(path, contents, ...rest);
-      afterUpload(path, contents);
+      afterUpload(path, contents, result, startedAt);
       return result;
     },
     createFile: async (path, contents, ...rest) => {
+      guardStale(path);
+      const startedAt = Date.now();
       const result = await client.createFile(path, contents, ...rest);
-      afterUpload(path, contents);
+      staleReads.delete(path);
+      afterUpload(path, contents, result, startedAt);
       return result;
     },
     // Para «Preparar para usar sin conexión»: descarga (sin descifrar) y guarda

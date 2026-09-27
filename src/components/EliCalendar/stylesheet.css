@@ -1,0 +1,230 @@
+@import '../../colors.css';
+
+/* ORG Mode para Eli (2.13): calendario */
+.eli-cal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2900;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 12px;
+  overflow-y: auto;
+}
+.eli-cal {
+  background: var(--base3);
+  color: var(--base00);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 900px;
+  padding: 12px 14px 10px;
+  outline: none;
+}
+.eli-cal.is-year {
+  max-width: 1100px;
+}
+.eli-cal__bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.eli-cal__spacer {
+  flex: 1;
+}
+.eli-cal__nav,
+.eli-cal__today,
+.eli-cal__tool {
+  border: 1px solid var(--base2);
+  background: transparent;
+  color: var(--base00);
+  border-radius: 6px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.eli-cal__nav {
+  font-size: 20px;
+  line-height: 1;
+}
+.eli-cal__today {
+  font-weight: bold;
+}
+.eli-cal__tool.is-on {
+  background: var(--base2);
+}
+.eli-cal__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 8px 4px 12px;
+  border-bottom: 1px solid var(--base2);
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+.eli-cal__options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.eli-cal__options select {
+  font-size: 15px;
+}
+.eli-cal__custom {
+  flex-direction: column;
+  align-items: stretch !important;
+  width: 100%;
+}
+.eli-cal__custom textarea {
+  width: 100%;
+  font-size: 16px;
+  font-family: inherit;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+.eli-cal__months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.eli-cal__months.is-year {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 14px;
+}
+.eli-cal__month-title {
+  text-align: center;
+  font-weight: bold;
+  text-transform: capitalize;
+  margin-bottom: 4px;
+  color: var(--base01);
+}
+.eli-cal__grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.eli-cal__grid th {
+  font-size: 0.75em;
+  font-weight: normal;
+  opacity: 0.7;
+  padding: 2px 0;
+}
+.eli-cal__grid th.is-weekend {
+  opacity: 0.5;
+}
+.eli-cal__grid td {
+  text-align: center;
+  padding: 1px;
+}
+.eli-cal__wk {
+  width: 2.2em;
+  font-size: 0.72em;
+  opacity: 0.5;
+}
+.eli-cal__day {
+  position: relative;
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+.eli-cal.is-year .eli-cal__day {
+  min-height: 22px;
+  font-size: 12px;
+  padding: 1px 0;
+}
+.eli-cal__day:hover {
+  background: var(--base2);
+}
+.eli-cal__day.is-weekend {
+  opacity: 0.6;
+}
+.eli-cal__day.is-holiday {
+  color: var(--red);
+  opacity: 1;
+  font-weight: bold;
+}
+.eli-cal__day.is-today {
+  border-color: var(--blue);
+  color: var(--blue);
+  font-weight: bold;
+}
+.eli-cal__day.is-in-range {
+  background: var(--base2);
+  border-radius: 0;
+}
+.eli-cal__day.is-selected,
+.eli-cal__day.is-edge {
+  background: var(--blue);
+  color: var(--base3);
+  opacity: 1;
+}
+.eli-cal__moon {
+  position: absolute;
+  top: -3px;
+  right: 0;
+  font-size: 9px;
+  line-height: 1;
+}
+.eli-cal.is-year .eli-cal__moon {
+  font-size: 7px;
+}
+.eli-cal__info {
+  margin-top: 10px;
+  min-height: 1.4em;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+.eli-cal__info-holiday {
+  color: var(--red);
+}
+.eli-cal__hint {
+  opacity: 0.7;
+}
+.eli-cal__legend {
+  margin-top: 6px;
+  font-size: 0.78em;
+  opacity: 0.75;
+}
+.eli-cal__legend-holiday {
+  color: var(--red);
+}
+.eli-cal__legend-today {
+  color: var(--blue);
+}
+
+@media (max-width: 760px) {
+  .eli-cal__overlay {
+    padding: 8px 6px;
+  }
+  .eli-cal {
+    padding: 10px 8px 8px;
+  }
+  .eli-cal__months {
+    grid-template-columns: 1fr;
+  }
+  .eli-cal__months.is-year {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 10px;
+  }
+  .eli-cal__keys {
+    display: none;
+  }
+  .eli-cal__nav,
+  .eli-cal__today,
+  .eli-cal__tool {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+  }
+}

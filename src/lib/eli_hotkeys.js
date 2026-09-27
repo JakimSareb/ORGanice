@@ -7,7 +7,7 @@
 
 const ELI_OVERLAYS = '.eli-raw, .eli-print, .eli-prompt__overlay, [role="dialog"]';
 
-const isEditable = (el) =>
+export const isEditable = (el) =>
   !!el &&
   (el.isContentEditable ||
     el.tagName === 'TEXTAREA' ||
@@ -130,4 +130,22 @@ export const notOnButton = (handler) => (event) => {
   const el = document.activeElement;
   if (el && el.closest && el.closest('button, a, [role="button"], select')) return;
   return handler(event);
+};
+
+// ORG Mode para Eli (2.13): mientras se escribe en un campo de texto (título, descripción,
+// elemento de una lista…), los atajos SIN Ctrl/Alt/⌘ no actúan: «d», Intro, Tab o Retroceso
+// son texto. Solo Escape (cerrar) sigue funcionando.
+const ALWAYS_WHILE_TYPING = ['closeEditor'];
+export const blockedWhileTyping = (event, action, binding) => {
+  const target =
+    (event && event.target) || (typeof document !== 'undefined' && document.activeElement);
+  if (!isEditable(target)) return false;
+  if (ALWAYS_WHILE_TYPING.includes(action)) return false;
+  const mods = String(binding || '')
+    .toLowerCase()
+    .split('+')
+    .slice(0, -1);
+  return !mods.some((m) =>
+    ['ctrl', 'control', 'alt', 'option', 'meta', 'cmd', 'command'].includes(m)
+  );
 };

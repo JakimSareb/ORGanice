@@ -129,11 +129,15 @@ describe('adjuntos de tareas terminadas', () => {
     expect(referencedOutside(files, '/p/assets/2026/b.jpg', keys)).toBe(false);
   });
 
-  test('quitar enlaces sin tocar los títulos', () => {
-    expect(
-      removeLinksToTarget('* Ver [[file:a.pdf]]\n[[file:a.pdf]]\ntexto', 'a.pdf', {
-        skipHeadings: true,
-      })
-    ).toBe('* Ver [[file:a.pdf]]\ntexto');
+  test('quitar enlaces: en un título queda su texto', () => {
+    expect(removeLinksToTarget('* Ver [[file:a.pdf]] ya\n[[file:a.pdf]]\ntexto', 'a.pdf')).toBe(
+      '* Ver a.pdf ya\ntexto'
+    );
+    expect(removeLinksToTarget('** [[file:a.pdf][Factura]]\nnotas', 'a.pdf')).toBe(
+      '** Factura\nnotas'
+    );
+    expect(removeLinksToTarget('TODO [[file:x/a.pdf]]', 'x/a.pdf', { keepLines: true })).toBe(
+      'TODO a.pdf'
+    );
   });
 });

@@ -20,6 +20,10 @@ const BLOBS = 'blobs';
 
 let db = null;
 let ready = false;
+// 'idle' | 'pending' | 'ready' | 'failed'. Mientras se abre (pending), no se escribe nada de la
+// copia local: si la app arrancó sin esperarlo, no debe pisar lo que hay guardado.
+let initState = 'idle';
+export const isStoreSettling = () => initState === 'pending';
 const mem = new Map();
 
 const lsGet = (k) => {
@@ -102,6 +106,7 @@ const migrateFromLocalStorage = () => {
 /** Abre el almacén y lo carga en memoria. Nunca falla (sin IndexedDB, se sigue sin él). */
 export const initOfflineStore = async () => {
   if (ready) return true;
+  initState = 'pending';
   try {
     db = await openDb();
     await new Promise((resolve, reject) => {
@@ -118,6 +123,7 @@ export const initOfflineStore = async () => {
       t.onerror = () => reject(t.error);
     });
     ready = true;
+    initState = 'ready';
     migrateFromLocalStorage();
     // Pedir al navegador que no borre estos datos por falta de espacio
     if (navigator.storage && navigator.storage.persist) {
@@ -126,6 +132,7 @@ export const initOfflineStore = async () => {
   } catch (e) {
     db = null;
     ready = false;
+    initState = 'failed';
   }
   return ready;
 };
@@ -134,23 +141,51 @@ export const isOfflineStoreReady = () => ready;
 
 export const kvGet = (key) => mem.get(key);
 export const kvKeys = (prefix = '') => Array.from(mem.keys()).filter((k) => k.startsWith(prefix));
+// Otras copias de la app abiertas (pantalla dividida, otra pestaña): se avisan de los cambios
+// para que su copia en memoria no se quede atrás
+let channel = null;
+try {
+  if (typeof BroadcastChannel !== 'undefined') {
+    channel = new BroadcastChannel('organice-eli-kv');
+    // En Node (pruebas) no debe mantener vivo el proceso
+    if (typeof channel.unref === 'function') channel.unref();
+    channel.onmessage = (e) => {
+      const m = e.data || {};
+      if (!m.key) return;
+      if (m.deleted) mem.delete(m.key);
+      else mem.set(m.key, m.value);
+    };
+  }
+} catch (e) {
+  channel = null;
+}
+const announce = (msg) => {
+  try {
+    if (channel) channel.postMessage(msg);
+  } catch (e) {}
+};
+
 export const kvSet = (key, value) => {
   mem.set(key, value);
   if (db) run(KV, 'readwrite', (s) => s.put(value, key)).catch(warn);
+  announce({ key, value });
 };
 export const kvDelete = (key) => {
   mem.delete(key);
   if (db) run(KV, 'readwrite', (s) => s.delete(key)).catch(warn);
+  announce({ key, deleted: true });
 };
 
 // --- Copia local de ficheros sin cifrar (antes, localStorage «files__<ruta>») ----------------
 
 export const getPlainCopy = (path) => (ready ? mem.get(`plain:${path}`) : lsGet(`files__${path}`));
 export const setPlainCopy = (path, contents) => {
+  if (initState === 'pending') return;
   if (ready) kvSet(`plain:${path}`, contents);
   else lsSet(`files__${path}`, contents);
 };
 export const removePlainCopy = (path) => {
+  if (initState === 'pending') return;
   if (ready) kvDelete(`plain:${path}`);
   lsRemove(`files__${path}`);
 };
@@ -202,6 +237,7 @@ export const clearOfflineBlobs = () =>
 
 // Borra todo lo guardado (al cerrar sesión)
 export const clearOfflineStore = () => {
+  Array.from(mem.keys()).forEach((key) => announce({ key, deleted: true }));
   mem.clear();
   if (db) {
     run(KV, 'readwrite', (s) => s.clear()).catch(warn);
@@ -214,4 +250,5 @@ export const _resetForTests = () => {
   mem.clear();
   db = null;
   ready = false;
+  initState = 'idle';
 };

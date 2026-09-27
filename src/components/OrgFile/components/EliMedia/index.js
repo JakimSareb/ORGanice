@@ -7,7 +7,7 @@ import {
   mediaKind,
   resolveDropboxPath,
   loadPreviewUrl,
-  loadTemporaryLink,
+  loadPlayableUrl,
   openInNewTab,
 } from '../../../../lib/eli_media';
 import { STATIC_FILE_PREFIX } from '../../../../lib/org_utils';
@@ -37,8 +37,7 @@ export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) 
     setSrc(null);
     setError(null);
     if (!supported || (kind !== 'image' && kind !== 'video' && kind !== 'audio')) return;
-    const loader =
-      kind === 'image' ? loadPreviewUrl(client, path) : loadTemporaryLink(client, path);
+    const loader = kind === 'image' ? loadPreviewUrl(client, path) : loadPlayableUrl(client, path);
     loader
       .then((url) => alive && setSrc(url))
       .catch(

@@ -25,6 +25,7 @@ import FileSettingsEditor from '../FileSettingsEditor';
 import GtdView from '../Gtd';
 import EliConflicts from '../EliConflicts';
 import EliCommandPalette from '../EliCommandPalette';
+import EliCalendar from '../EliCalendar';
 import { installFormatHotkeys } from '../EliFormatBar';
 import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
 import { notWhileTyping, matchesBinding, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
@@ -264,6 +265,7 @@ class Entry extends PureComponent {
         <EliTools />
         {isAuthenticated && <EliConflicts />}
         {isAuthenticated && <EliCommandPalette />}
+        {isAuthenticated && <EliCalendar />}
 
         {isAuthenticated &&
           ([

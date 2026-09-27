@@ -1,4 +1,5 @@
 import { clearOfflineStore } from '../lib/eli_offline_store';
+import { lastSyncAtFor } from '../lib/eli_offline_client';
 import { backupPathFor } from '../lib/eli_media';
 import { forgetRootHandle } from '../sync_backend_clients/local_folder_sync_backend_client';
 import { ActionCreators } from 'redux-undo';
@@ -128,7 +129,7 @@ export const pushBackup = (pathOrFileId, contents) => {
       case 'WebDAV':
       case 'LocalFolder':
         // ORG Mode para Eli: las copias se guardan en la subcarpeta "backups"
-        client.createFile(backupPathFor(pathOrFileId), contents);
+        Promise.resolve(client.createFile(backupPathFor(pathOrFileId), contents)).catch(() => {});
         break;
       case 'GitLab':
         // No-op for GitLab, because the beauty of version control makes backup files redundant.
@@ -143,10 +144,12 @@ export const downloadFile = (path) => {
     dispatch(setLoadingMessage(`Descargando fichero…`));
     getState()
       .syncBackend.get('client')
-      .getFileContents(path)
-      .then((fileContents) => {
+      .getFileContentsAndMetadata(path)
+      .then((result) => {
+        const fileContents = result.contents;
         dispatch(hideLoadingMessage());
-        dispatch(pushBackup(path, fileContents));
+        // ORG Mode para Eli (2.13): sin copia de seguridad de una copia del dispositivo
+        if (!result.eliFromCache) dispatch(pushBackup(path, fileContents));
         // ORG Mode para Eli: si mientras se descargaba el fichero ya se había cargado y cambiado
         // (p. ej. desde la vista GTD), no se pisa ese cambio: se sincroniza como siempre
         if (getState().org.present.getIn(['files', path, 'isDirty'])) {
@@ -154,7 +157,7 @@ export const downloadFile = (path) => {
           return;
         }
         dispatch(parseFile(path, fileContents));
-        dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+        dispatch(setLastSyncAt(lastSyncAtFor(result), path));
         dispatch(setDirty(false, path));
         dispatch(ActionCreators.clearHistory());
         // ORG Mode para Eli (2.12): cambios cifrados hechos sin conexión y aún sin subir

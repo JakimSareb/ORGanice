@@ -49,6 +49,7 @@ import {
   eliFollowOrgLink,
   eliArchiveMany,
   eliReviewFinishedAttachments,
+  eliRemoveAttachmentLink,
 } from '../../actions/org';
 import { parseOrgLink } from '../../lib/eli_org_links';
 import { declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
@@ -857,6 +858,8 @@ export default function GtdView() {
       path,
       excludedIds: new Set([task.id]),
     });
+    // El enlace se quita ya del fichero (el editor lo quita también de sus notas)
+    if (result && task.id) dispatch(eliRemoveAttachmentLink(task.path, task.id, target));
     return !!result;
   };
 

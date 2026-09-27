@@ -17,6 +17,7 @@ import {
   removePlainCopy,
   getServerCopy,
   setServerCopy,
+  isStoreSettling,
 } from '../lib/eli_offline_store';
 
 const forgetPersisted = (path) => {
@@ -32,10 +33,13 @@ const forgetPersisted = (path) => {
 // de ficheros .gpg/.asc ni de cabeceras :crypt: descifradas. Los ficheros sin cifrar solo se
 // guardan si el usuario lo activa en Ajustes → Seguridad y cifrado.
 const mustNotPersist = (path, contents) => {
-  if (!getPersistPlainFiles() || isEncryptedPath(path) || hasUnencryptedCryptEntries(contents)) {
+  if (!getPersistPlainFiles() || isEncryptedPath(path)) {
     forgetPersisted(path);
     return true;
   }
+  // Encabezados :crypt: abiertos: no se guarda este texto; la copia anterior se conserva hasta
+  // que esté lista la versión cifrada (persistEncrypted)
+  if (hasUnencryptedCryptEntries(contents)) return true;
   return false;
 };
 
@@ -44,6 +48,10 @@ const mustNotPersist = (path, contents) => {
 // - un fichero .gpg/.asc con cambios, si está activado «ficheros cifrados sin conexión»;
 // - un fichero sin cifrar con encabezados :crypt: abiertos, si está activada la copia local.
 const encryptSeq = {};
+// Anula un cifrado en curso (p. ej. al quedar el fichero al día: ya no hay nada pendiente)
+export const cancelPendingEncryption = (path) => {
+  encryptSeq[path] = (encryptSeq[path] || 0) + 1;
+};
 const persistEncrypted = (state, path, contents) => {
   const seq = (encryptSeq[path] = (encryptSeq[path] || 0) + 1);
   const latest = () => encryptSeq[path] === seq;
@@ -79,10 +87,14 @@ const persistEncrypted = (state, path, contents) => {
       persisted[path] = state.org.present.getIn(['files', path, 'lastSyncAt']);
       localStorage.setItem('persistedFiles', JSON.stringify(persisted));
     })
-    .catch(() => forgetPersisted(path));
+    .catch(() => {
+      // Sin frase en memoria: se conserva la copia anterior (cifrada)
+    });
 };
 
 export const persistIsDirty = (isDirty, path) => {
+  // Mientras se abre el almacén del dispositivo no se toca (ver eli_offline_store)
+  if (isStoreSettling()) return;
   if (localStorageAvailable) {
     const filesDirty = JSON.parse(localStorage.getItem('isDirty')) || {};
     filesDirty[path] = isDirty;

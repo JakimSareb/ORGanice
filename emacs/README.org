@@ -17,6 +17,7 @@ ficheros.
 | =lisp/organice-gtd.el=      | Vistas GTD con las mismas reglas que la app, ★ automática, proyectos, Logbook. |
 | =lisp/organice-capture.el=  | Plantillas de captura.                                                   |
 | =lisp/organice-attach.el=   | Adjuntos: adjuntar, abrir, borrar, clip 📎 y revisar los de terminadas.   |
+| =lisp/organice-calendar.el= | Calendario en español: lunes primero, semanas, festivos de España, Luna.  |
 | =lisp/organice-themes.el=   | Temas =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=.              |
 | =lisp/organice-ui.el=       | Paleta de comandos, atajos, formato, sincronizar, Documentos ⇄ GTD.       |
 
@@ -67,6 +68,7 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Abrir un adjunto de la tarea            | =C-c g o= (o =C-c C-o= sobre el enlace)             |
 | Borrar un adjunto (papelera)            | =C-c g D=                                           |
 | Revisar adjuntos de terminadas (Logbook) | =C-c g R=                                          |
+| Calendario (⋯ → Calendario)             | =C-c g C= (o =M-x calendar=)                        |
 | Ver todo (widen)                        | =C-x n w=                                           |
 | Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
 En Linux o Windows, =⌘= es la tecla Super (la de Windows). Dentro de la agenda funcionan todas las
@@ -147,6 +149,22 @@ fichero =.org= (no se usa =org-attach=).
   borra todos (conserva los que siguen enlazados en tareas abiertas o notas), =g= actualiza y
   =q= sale. Al borrar un archivo se quita también su enlace (en el texto de la tarea, no en el
   título).
+
+** Calendario
+=C-c g C= (o la paleta, «Calendario») abre =M-x calendar= como el calendario de la app: tres
+meses, lunes primero, en español, con el número de semana ISO a la izquierda y los festivos
+marcados.
+- Festivos: los nacionales y, si la eliges, los de tu comunidad (los mismos que la app: 2026
+  según el BOE; otros años, aproximados):
+  #+begin_src emacs-lisp
+  (setq organice-calendar-region "CT")   ; AN AR AS IB CN CB CM CL CT VC EX GA MD MC NC PV RI CE ML
+  ;; Festivos propios: (MES DÍA NOMBRE) todos los años, o (MES DÍA AÑO NOMBRE)
+  (setq organice-calendar-custom-holidays '((9 24 "La Mercè") (5 15 2027 "Puente")))
+  #+end_src
+- Teclas: =<= =>= meses, =C-x [= =C-x ]= años, =.= hoy, =g d= ir a una fecha, =h= el festivo
+  del día, =a= lista de festivos, =M= fases de la Luna, =q= salir.
+- Contar días entre dos fechas: marca una con =C-SPC=, ve a la otra y pulsa =M-==.
+- La vista del año entero de la app no está en Emacs (=M-x calendar= siempre enseña tres meses).
 
 ** Temas
 =M-x organice-theme= → =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=. El de arranque:

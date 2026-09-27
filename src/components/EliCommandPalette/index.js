@@ -24,6 +24,7 @@ import {
   eliReviewFinishedAttachments,
 } from '../../actions/org';
 import { eliPrepareOffline } from '../../actions/eli_offline';
+import { openCalendar } from '../EliCalendar';
 import {
   activatePopup,
   setTheme,
@@ -283,6 +284,14 @@ export default function EliCommandPalette() {
       () => dispatch(eliReviewFinishedAttachments()),
       '',
       'archivos borrar archivadas canceladas done limpiar'
+    );
+    act(
+      'calendar',
+      'Calendario',
+      'far fa-calendar-alt',
+      () => openCalendar(),
+      '',
+      'meses fechas festivos semana luna año contar días'
     );
     act(
       'prepare-offline',

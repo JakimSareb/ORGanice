@@ -162,15 +162,26 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Quita del texto los enlaces a `target` ([[file:x][desc]], [[file:x]], [[x]] o file:x suelto).
 // Las líneas que se quedan vacías por ello desaparecen.
-export const removeLinksToTarget = (text, target, { skipHeadings = false } = {}) => {
+// Opciones: keepLines → no borra las líneas que se quedan vacías (p. ej. un título);
+// en un fichero completo, las líneas de encabezado nunca se borran.
+// En el cuerpo, el enlace desaparece (y la línea, si se queda vacía). En un título (keepLines o
+// líneas de encabezado de un fichero) se deja su texto en lugar del enlace: «[[file:a.pdf][Factura]]»
+// → «Factura», así el encabezado nunca se queda sin título.
+export const removeLinksToTarget = (text, target, { keepLines = false } = {}) => {
   if (!text || !target) return text || '';
   const t = escapeRe(target);
-  const bracket = new RegExp(`\\[\\[(?:file:)?${t}(?:::[^\\]]*)?\\](?:\\[[^\\]]*\\])?\\]`, 'g');
+  const bracket = new RegExp(`\\[\\[(?:file:)?${t}(?:::[^\\]]*)?\\](?:\\[([^\\]]*)\\])?\\]`, 'g');
   const bare = new RegExp(`(^|[\\s(])file:${t}(?=$|[\\s)\\]])`, 'g');
+  const name = baseName(target);
   return text
     .split('\n')
     .map((line) => {
-      if (skipHeadings && HEADING_RE.test(line)) return line;
+      if (keepLines || HEADING_RE.test(line)) {
+        const next = line
+          .replace(bracket, (m, desc) => (desc && desc.trim()) || name)
+          .replace(bare, `$1${name}`);
+        return next === line ? line : next.replace(/\s+$/, '');
+      }
       const next = line.replace(bracket, '').replace(bare, '$1');
       if (next === line) return line;
       return next.trim() === '' ? null : next.replace(/\s+$/, '');

@@ -27,7 +27,7 @@ import {
   activatePopup,
   closePopup,
 } from './base';
-import { exportOrg, createRawDescriptionText } from '../lib/export_org';
+import { exportOrg, createRawDescriptionText, generateTitleLine } from '../lib/export_org';
 import { uploadAssets, openInNewTab } from '../lib/eli_media';
 import { getCurrentTimestampAsText } from '../lib/timestamps';
 import { toggledPriorityATitle } from '../lib/eli_priority';
@@ -64,7 +64,12 @@ import sampleCaptureTemplates from '../lib/sample_capture_templates';
 
 import { isAfter, addSeconds } from 'date-fns';
 import { parseISO } from 'date-fns';
-import { persistIsDirty, saveFileContentsToLocalStorage } from '../util/file_persister';
+import {
+  persistIsDirty,
+  saveFileContentsToLocalStorage,
+  cancelPendingEncryption,
+} from '../util/file_persister';
+import { lastSyncAtFor } from '../lib/eli_offline_client';
 import { localStorageAvailable, readOpennessState } from '../util/settings_persister';
 
 export const parseFile = (path, contents) => (dispatch) => {
@@ -202,7 +207,31 @@ const doSync = ({
 
   client
     .getFileContentsAndMetadata(path)
-    .then(({ contents, lastModifiedAt }) => {
+    .then(({ contents, lastModifiedAt, eliFromCache }) => {
+      // ORG Mode para Eli (2.13): si el servidor no ha respondido y llega la copia del
+      // dispositivo, no se decide nada: se sincroniza al volver la conexión
+      if (eliFromCache) {
+        dispatch(setIsLoading(false, path));
+        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        if (!shouldSuppressMessages) {
+          dispatch(
+            setDisappearingLoadingMessage(
+              offline
+                ? 'Sin conexión: se sincronizará al volver'
+                : 'El servidor no responde: se volverá a intentar',
+              3000
+            )
+          );
+        } else {
+          dispatch(hideLoadingMessage());
+        }
+        // Con conexión pero sin respuesta del servidor: otro intento dentro de un rato (sin
+        // conexión se sincroniza solo al volver)
+        if (!offline) {
+          setTimeout(() => dispatch(sync({ path, shouldSuppressMessages: true })), 30000);
+        }
+        return;
+      }
       const isDirty = getState().org.present.getIn(['files', path, 'isDirty']);
       const lastServerModifiedAt = parseISO(lastModifiedAt);
       const lastSyncAt = getState().org.present.getIn(['files', path, 'lastSyncAt']);
@@ -227,8 +256,24 @@ const doSync = ({
                 setTimeout(() => dispatch(hideLoadingMessage()), 2000);
               }
               dispatch(setIsLoading(false, path));
-              dispatch(setDirty(false, path));
+              // ORG Mode para Eli (2.13): si se ha seguido escribiendo mientras se subía, el
+              // fichero sigue pendiente (y se vuelve a subir); si no, queda al día
+              const nowContents = exportOrg({
+                headers: getState().org.present.getIn(['files', path, 'headers']),
+                linesBeforeHeadings: getState().org.present.getIn([
+                  'files',
+                  path,
+                  'linesBeforeHeadings',
+                ]),
+                dontIndent: getState().base.get('eliIndentOnExport') !== true,
+              });
               dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+              if (nowContents !== contents) {
+                dispatch(sync({ path, shouldSuppressMessages: true }));
+                announceSaved(path);
+                return;
+              }
+              dispatch(setDirty(false, path));
               // ORG Mode para Eli: avisar a las otras copias abiertas (pantalla dividida)
               announceSaved(path);
             })
@@ -565,6 +610,7 @@ export const setDirty = (isDirty, path) => (dispatch, getState) => {
   // ORG Mode para Eli (2.12): al quedar al día (subido, o se eligió la versión del servidor),
   // la versión cifrada guardada con cambios pendientes ya no hace falta
   if (!isDirty && path && getState && getState().org.present.getIn(['files', path, 'isDirty'])) {
+    cancelPendingEncryption(path);
     clearPendingLocalVersion(path);
   }
   persistIsDirty(isDirty, path);
@@ -1511,9 +1557,23 @@ const removeAttachmentLinkInState = (dispatch, getState, path, headerId, target)
     (x) => x.get('id') === headerId
   );
   if (!h) return false;
+  // ORG Mode para Eli (2.13): también en el título
+  const oldTitle = generateTitleLine(h.toJS(), false);
+  const newTitle = removeLinksToTarget(oldTitle, target, { keepLines: true });
+  if (newTitle !== oldTitle) {
+    dispatch({
+      type: 'ELI_IN_FILE',
+      path,
+      dirtying: true,
+      inner: { type: 'UPDATE_HEADER_TITLE', headerId, newRawTitle: newTitle, dirtying: true },
+    });
+  }
   const oldRaw = h.get('rawDescription') || '';
   const newRaw = removeLinksToTarget(oldRaw, target);
-  if (newRaw === oldRaw) return false;
+  if (newRaw === oldRaw) {
+    if (newTitle !== oldTitle) dispatch(setDirty(true, path));
+    return newTitle !== oldTitle;
+  }
   dispatch({
     type: 'ELI_IN_FILE',
     path,
@@ -1531,6 +1591,14 @@ const removeAttachmentLinkInState = (dispatch, getState, path, headerId, target)
   });
   dispatch(setDirty(true, path));
   return true;
+};
+
+// ORG Mode para Eli (2.13): quitar ya del fichero el enlace a un adjunto borrado (p. ej. desde
+// el editor de la vista GTD: así no queda un enlace roto aunque luego se cancele la edición)
+export const eliRemoveAttachmentLink = (path, headerId, target) => (dispatch, getState) => {
+  if (removeAttachmentLinkInState(dispatch, getState, path, headerId, target)) {
+    dispatch(sync({ path, shouldSuppressMessages: true }));
+  }
 };
 
 // ORG Mode para Eli (2.11): revisar los adjuntos de tareas terminadas, canceladas o archivadas.
@@ -1582,8 +1650,10 @@ export const eliReviewFinishedAttachments = () => async (dispatch, getState) => 
         touched.add(group.orgPath);
       return;
     }
-    const text = await client.getFileContents(group.orgPath);
-    const next = removeLinksToTarget(text, target, { skipHeadings: true });
+    const result = await client.getFileContentsAndMetadata(group.orgPath);
+    if (result.eliFromCache) throw new Error('Sin conexión');
+    const text = result.contents;
+    const next = removeLinksToTarget(text, target);
     if (next !== text) await client.updateFile(group.orgPath, next);
   };
   const flush = () => {
@@ -1635,15 +1705,18 @@ export const eliReviewFinishedAttachments = () => async (dispatch, getState) => 
     const candidateKeys = new Set(groups.map((g) => g.key));
     const kept = [];
     const failed = [];
+    const deletedPaths = new Set();
     for (const g of groups) {
       for (const a of g.attachments) {
         // Enlazado también desde una tarea que sigue abierta (o una nota): se conserva
         if (referencedOutside(getState().org.present.get('files'), a.path, candidateKeys)) {
-          kept.push(a.path);
+          if (!kept.includes(a.path)) kept.push(a.path);
           continue;
         }
         try {
-          if (!a.missing) await client.deleteFile(a.path);
+          // Dos tareas pueden enlazar el mismo archivo: se borra una vez
+          if (!a.missing && !deletedPaths.has(a.path)) await client.deleteFile(a.path);
+          deletedPaths.add(a.path);
         } catch (e) {
           failed.push(a.path);
           continue;
@@ -1750,10 +1823,10 @@ export const loadFileQuietly = (path) => async (dispatch, getState) => {
   const client = getState().syncBackend.get('client');
   if (!client || !path || getState().org.present.getIn(['files', path, 'headers'])) return;
   try {
-    const contents = await withTimeout(client.getFileContents(path), 20000, 'timeout');
+    const result = await withTimeout(client.getFileContentsAndMetadata(path), 20000, 'timeout');
     if (getState().org.present.getIn(['files', path, 'headers'])) return;
-    dispatch(parseFile(path, contents));
-    dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+    dispatch(parseFile(path, result.contents));
+    dispatch(setLastSyncAt(lastSyncAtFor(result), path));
     dispatch(setDirty(false, path));
     await dispatch(eliApplyPendingLocalVersion(path));
   } catch (e) {

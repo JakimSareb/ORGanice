@@ -72,7 +72,8 @@ export const setOfflineEncrypted = (enabled) => {
 
 export const setPersistPlainFiles = (enabled) => {
   write(LS_PERSIST_PLAIN, enabled ? 'true' : 'false');
-  if (!enabled) purgePersistedFiles();
+  // Se conservan las copias con cambios aún sin subir (se borran solas al sincronizar)
+  if (!enabled) purgePersistedFiles({ keepDirty: true });
 };
 
 // ---------------------------------------------------------------------------
