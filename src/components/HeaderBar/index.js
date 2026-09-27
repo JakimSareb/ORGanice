@@ -3,6 +3,7 @@ import EliMoreMenu from '../EliMoreMenu';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
+import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
 const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
 import React, { PureComponent } from 'react';
@@ -52,7 +53,100 @@ class HeaderBar extends PureComponent {
     return pathname.split('/')[1];
   }
 
+  // ORG Mode para Eli: modo de la app (Documentos / GTD) según la ruta
+  getMode() {
+    const { isAuthenticated, activeModalPage } = this.props;
+    if (!isAuthenticated || activeModalPage) return null;
+    const root = this.getPathRoot();
+    if (root === 'gtd') return 'gtd';
+    if (root === 'files') return 'docs';
+    if (root === 'file' && !isStaticFile(this.props.path)) return 'docs';
+    return null;
+  }
+
+  // Se recuerda dónde se está en Documentos para volver ahí desde GTD
+  rememberDocument() {
+    const { location, path, selectedHeaderId, narrowedHeaderId, isAuthenticated } = this.props;
+    if (!isAuthenticated) return;
+    const root = this.getPathRoot();
+    if (root === 'files') {
+      rememberDoc({ route: location.pathname });
+    } else if (
+      root === 'file' &&
+      path &&
+      !isStaticFile(path) &&
+      decodeURIComponent(location.pathname) === `/file${path}`
+    ) {
+      rememberDoc({ route: `/file${path}`, path, selectedHeaderId, narrowedHeaderId });
+    }
+  }
+
+  renderModeSwitch(mode) {
+    const docs = mode === 'docs';
+    const root = this.getPathRoot();
+    const { pathname } = this.props.location;
+    let up = null;
+    if (root === 'file') {
+      const filePath = pathname.substr('/file'.length).replace(/\/$/, '');
+      const dir = filePath.split('/').slice(0, -1).join('/');
+      up = { to: `/files${dir}`, label: 'Ficheros' };
+    } else if (root === 'files') {
+      const folder = pathname.substr('/files'.length).replace(/\/$/, '');
+      if (folder) {
+        const parts = folder.split('/');
+        const parent = parts.slice(0, -1).join('/');
+        up = {
+          to: `/files${parent}`,
+          label: parts.length > 2 ? parts[parts.length - 2] : 'Ficheros',
+        };
+      }
+    }
+    return (
+      <div className="eli-mode-bar">
+        <div className="eli-mode" role="tablist" aria-label="Modo">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={docs}
+            className={'eli-mode__btn eli-mode__btn--docs' + (docs ? ' is-on' : '')}
+            onClick={() => !docs && openDocuments()}
+            title="Documentos (tecla g)"
+            data-testid="eli-mode-docs"
+          >
+            <i className="far fa-file-alt" />
+            <span className="eli-mode__label eli-mode__label--long">Documentos</span>
+            <span className="eli-mode__label eli-mode__label--short">Docs</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!docs}
+            className={'eli-mode__btn eli-mode__btn--gtd' + (!docs ? ' is-on' : '')}
+            onClick={() => docs && openGtdMode()}
+            title="Vista GTD (tecla g)"
+            data-testid="eli-open-gtd"
+          >
+            <i className="fas fa-tasks" />
+            <span className="eli-mode__label">GTD</span>
+          </button>
+        </div>
+        {up && (
+          <Link
+            to={decodeURIComponent(up.to)}
+            className="eli-mode__up"
+            title={`Subir a ${up.label}`}
+            data-testid="eli-mode-up"
+          >
+            <i className="fas fa-chevron-left" />
+            <span className="eli-mode__up-label">{up.label}</span>
+          </Link>
+        )}
+      </div>
+    );
+  }
+
   componentDidMount() {
+    this.rememberDocument();
     this.updateWindowTitle();
     window.addEventListener('eli:split-open', this.eliOpenSplit);
   }
@@ -67,6 +161,7 @@ class HeaderBar extends PureComponent {
   };
 
   componentDidUpdate() {
+    this.rememberDocument();
     this.updateWindowTitle();
   }
 
@@ -189,6 +284,9 @@ class HeaderBar extends PureComponent {
         return this.renderOrgFileBackButton();
       default:
     }
+
+    const mode = this.getMode();
+    if (mode) return this.renderModeSwitch(mode);
 
     switch (this.getPathRoot()) {
       case '':
@@ -416,15 +514,9 @@ class HeaderBar extends PureComponent {
       // ORG Mode para Eli: a la vista solo lo de cada día; el resto en «⋯»
       const moreItems = isAuthenticated
         ? [
-            {
-              icon: 'fas fa-terminal',
-              label: 'Paleta de comandos (Ctrl+K)',
-              onClick: () => window.dispatchEvent(new CustomEvent('eli:palette')),
-              testId: 'eli-palette-open',
-            },
             inRealFile && {
               icon: 'fas fa-search',
-              label: 'Buscar',
+              label: 'Buscar en el fichero',
               onClick: () => this.props.base.activatePopup('search'),
               testId: 'eli-search',
             },
@@ -533,18 +625,20 @@ class HeaderBar extends PureComponent {
               title="Ampliar (widen): volver a ver el fichero entero"
               data-testid="eli-widen"
             >
-              <i className="fas fa-expand" /> Ver todo
+              <i className="fas fa-expand" />
+              <span className="eli-widen-pill__text"> Ver todo</span>
             </button>
           )}
 
-          {/* En la vista de documento, la vista GTD está en el botón redondo de abajo */}
-          {isAuthenticated && !inGtd && !inRealFile && (
-            <Link to="/gtd" data-testid="eli-open-gtd">
-              <i
-                className="fas fa-tasks header-bar__actions__item"
-                title="Vista GTD (tipo Nirvana)"
-              />
-            </Link>
+          {/* ORG Mode para Eli: paleta de comandos, siempre a mano */}
+          {isAuthenticated && (
+            <i
+              className="fas fa-search header-bar__actions__item"
+              onClick={() => window.dispatchEvent(new CustomEvent('eli:palette'))}
+              title="Paleta de comandos: buscar o hacer cualquier cosa (Ctrl+K)"
+              data-testid="eli-palette-btn"
+              role="button"
+            />
           )}
 
           {inFile && !activeModalPage && (
@@ -600,7 +694,11 @@ class HeaderBar extends PureComponent {
   }
 
   render() {
+    const mode = this.getMode();
     const className = classNames('header-bar', {
+      'header-bar--mode': !!mode,
+      'header-bar--mode-docs': mode === 'docs',
+      'header-bar--mode-gtd': mode === 'gtd',
       'header-bar--with-logo': this.getPathRoot() === '',
       'header-bar--file': !!this.getFilename() && !this.props.activeModalPage,
     });

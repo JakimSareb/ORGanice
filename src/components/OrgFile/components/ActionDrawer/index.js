@@ -380,13 +380,13 @@ const ActionDrawer = ({
               principales y Mover (flechas) están en el menú «⋯» de arriba (y con s, f y m). */}
           {renderMovementButtons()}
 
-          {/* ORG Mode para Eli: el botón de la vista GTD ocupa el sitio de la búsqueda (que está en
-              el menú «⋯» de arriba y con la tecla b) */}
+          {/* ORG Mode para Eli: la paleta de comandos (Ctrl+K). La vista GTD está en el
+              conmutador Documentos/GTD de arriba. Naranja mientras corre un reloj. */}
           <ActionButton
-            iconName="tasks"
+            iconName="search"
             isDisabled={false}
-            onClick={() => window.dispatchEvent(new CustomEvent('eli:open-gtd'))}
-            dataTestId="eli-fab-gtd"
+            onClick={() => window.dispatchEvent(new CustomEvent('eli:palette'))}
+            dataTestId="eli-fab-palette"
             additionalClassName={activeClocks !== 0 ? 'active-clock-indicator' : undefined}
             style={{
               opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
@@ -395,7 +395,11 @@ const ActionDrawer = ({
               pointerEvents:
                 isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
             }}
-            tooltip="Vista GTD (tecla g)"
+            tooltip={
+              activeClocks !== 0
+                ? 'Paleta de comandos (Ctrl+K) · hay un reloj en marcha'
+                : 'Paleta de comandos (Ctrl+K)'
+            }
           />
 
           <ActionButton

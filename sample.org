@@ -48,6 +48,7 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 - Selecciona el texto y toca el botón: se le ponen los marcadores de Org Mode. Si ya los tenía, se quitan.
 - Sin seleccionar nada, pone los dos marcadores y deja el cursor en medio para escribir.
 - Si seleccionas varias líneas, se marca cada una por separado (así lo entiende Emacs).
+- Con el teclado, en cualquier campo de texto (Ctrl en Windows y Linux, ⌘ en el Mac): *Ctrl+B* negrita, *Ctrl+I* cursiva, *Ctrl+U* subrayado, *Ctrl+Mayús+X* tachado, *Ctrl+E* código y *Ctrl+Mayús+E* literal. Al pasar el ratón por cada botón se ve su atajo.
 *** Muéveme con las flechas
 *** Y a mí también
 
@@ -59,11 +60,13 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 *** Deslízame hacia la izquierda para borrarme
 
 ** La barra superior y los botones de abajo
-- Arriba, a la vista: *deshacer* y *⋯* (en el explorador de ficheros, también la *lista con marcas* de la vista GTD).
-- En *⋯*: buscar (tecla b), rehacer, reducir al encabezado seleccionado (narrow), mover con flechas (tecla m), editar como texto plano, PDF, sincronizar ahora (tecla s; normalmente es automático), ficheros principales (tecla f), dos columnas, fases de la Luna, novedades y ajustes.
+- *Documentos | GTD*: arriba a la izquierda, el conmutador entre los dos modos de la app. *Documentos* son tus ficheros y el explorador; *GTD*, la vista de tareas. Un toque (o la tecla g) cambia de modo, y cada modo recuerda dónde lo dejaste: al volver a Documentos se abre el último fichero, con el mismo encabezado seleccionado (y en narrow si lo estaba). La línea de color bajo la barra dice en qué modo estás. En el móvil, el modo activo lleva su nombre y el otro solo el icono.
+- Junto al conmutador, *‹* sube a la carpeta del fichero (o a la carpeta de arriba en el explorador).
+- A la derecha, a la vista: la *lupa* (paleta de comandos, Ctrl+K), *deshacer* y *⋯*.
+- En *⋯*: buscar en el fichero (tecla b), rehacer, reducir al encabezado seleccionado (narrow), mover con flechas (tecla m), editar como texto plano, PDF, sincronizar ahora (tecla s; normalmente es automático), ficheros principales (tecla f), dos columnas, fases de la Luna, novedades y ajustes.
 - En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero.
 - *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa.
-- Abajo quedan tres botones: *vista GTD* (tecla g; se pone naranja si hay un reloj en marcha), *agenda* y *+ capturar*.
+- Abajo quedan tres botones: *paleta de comandos* (la lupa; se pone naranja si hay un reloj en marcha), *agenda* y *+ capturar*.
 - Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de la barra superior, sin tapar el texto. Tócala para ocultarla.
 
 * Tareas y estados
@@ -122,10 +125,10 @@ Tecla *a* o el botón del calendario (abajo, en el centro).
 - Al tocar una tarea, se abre su fichero reducido (narrow) a esa tarea, con todo desplegado, aunque esté en otro fichero.
 
 * La vista GTD (estilo Nirvana)
-Botón de la lista con marcas en la barra superior, o tecla *g*. Necesitas haber iniciado sesión: trabaja con tus ficheros de la agenda, no con este manual.
+*GTD* en el conmutador de arriba a la izquierda, o tecla *g* (la misma tecla vuelve a Documentos). Necesitas haber iniciado sesión: trabaja con tus ficheros de la agenda, no con este manual.
 
 ** Las listas del menú lateral
-En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña pequeña del borde izquierdo, a media altura, o el botón ☰ de arriba (se queda fijo aunque bajes por la lista).
+En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de arriba (se queda fijo aunque bajes por la lista).
 | Lista      | Qué muestra                                                                          |
 |------------+--------------------------------------------------------------------------------------|
 | Agenda     | Abre la agenda                                                                       |
@@ -161,6 +164,9 @@ En el móvil el menú se esconde; para volver a sacarlo, toca la pestaña peque�
 ** Proyectos dormidos y programados
 - *Dormido*: un proyecto con la etiqueta :sleep: está en pausa. Sus tareas desaparecen de Next, Todo, Focus, Scheduled y Deadline, y el proyecto sale del menú (va al grupo plegable «Dormidos»).
 - *Programado*: un PROJECT con fecha programada (SCHEDULED) futura aún no ha empezado. Sus tareas tampoco se ven y el proyecto va al grupo «Programados». Cuando llega el día, vuelve solo a la lista de proyectos activos.
+- *Proyecto nuevo*: el *+* junto a «Proyectos» (en el menú lateral) abre el editor con un proyecto en blanco: nombre, fechas, área, notas… Se crea al pulsar *Guardar*; con *Cancelar* no se crea nada. También desde la paleta: «Nuevo proyecto».
+- *Convertir*: en el editor de una tarea, el desplegable del proyecto tiene al final «Convertir tarea en proyecto» (pasa a PROJECT). En el de un proyecto, «Convertir proyecto en tarea» (pasa a TODO y deja de estar dormido; sus tareas se quedan debajo, como tareas sueltas). Se aplica al guardar y se puede deshacer.
+- *Cerrar un proyecto*: al final del editor del proyecto, en pequeño, «Cerrar proyecto…». Pregunta si está *Terminado* (DONE) o *Cancelado* (CANCELLED) y, si le quedan tareas sin hacer, si quieres cancelarlas también. Queda en el Logbook con su fecha de cierre (CLOSED), como en Emacs, y *Deshacer* lo devuelve.
 - Para cambiarlo: abre el proyecto → «Editar el proyecto». En lugar de la lista hay un selector *Activo / Dormido*, y el campo «empieza» es la fecha de inicio. Guardar escribe :sleep: y SCHEDULED en el fichero, así que en Emacs se ve igual.
 - *Todos los proyectos* (en el menú, encima de la lista de proyectos): agrupados en Activos, Programados y Dormidos; en cada fila el área, cuándo empieza, cuándo vence, cuántas tareas quedan y la siguiente acción. Ordenados por fecha. Toca uno para abrirlo.
 
@@ -261,7 +267,7 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador). Lo
 - Bloqueo por inactividad y ajustes de seguridad en Ajustes → Seguridad y cifrado.
 
 * La paleta de comandos
-*Ctrl+K* (⌘K en el Mac) abre un cuadro de búsqueda en el centro de la pantalla desde cualquier sitio de la app. En el móvil: menú *⋯* de arriba → «Paleta de comandos».
+*Ctrl+K* (⌘K en el Mac) abre un cuadro de búsqueda en el centro de la pantalla desde cualquier sitio de la app. También con la *lupa* de la barra de arriba o, en un fichero, con el botón redondo de la lupa de abajo.
 - Mientras escribes salen, mezclados: ficheros .org, encabezados y tareas de todos los ficheros cargados (con su estado y su fichero), listas y proyectos de la vista GTD, etiquetas (@llam → @llamadas) y acciones de la app: nueva tarea en Inbox, capturar con una plantilla, agenda, sincronizar, archivar las terminadas, tema y esquema de color, dos columnas, ajustes, ajustes de ficheros, manual…
 - No hace falta escribirlo entero ni en orden exacto: basta con algunas letras de cada palabra (cmppnt encuentra «Comprar pintura»). No distingue mayúsculas ni tildes.
 - ↑ ↓ para moverte e Intro para abrir (o tócalo). Un fichero se abre; un encabezado se abre con la vista reducida a él (narrow); una acción se ejecuta. Esc cierra.
@@ -277,7 +283,10 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador). Lo
 | Intro        | Abrir o cerrar el encabezado (en un elemento de lista, editarlo) |
 | Esc          | Cerrar la ventana de edición                        |
 | a            | Agenda                                              |
-| g            | Vista GTD                                           |
+| g            | Cambiar entre Documentos y GTD                      |
+| Ctrl/⌘+B, I, U | Negrita, cursiva, subrayado (al escribir)         |
+| Ctrl/⌘+Mayús+X | Tachado (al escribir)                              |
+| Ctrl/⌘+E / +Mayús+E | Código / literal (al escribir)                |
 | f            | Ficheros principales                                |
 | c + letra    | Capturar con una plantilla                          |
 | s            | Sincronizar                                         |

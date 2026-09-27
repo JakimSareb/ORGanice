@@ -213,7 +213,33 @@ export default function EliCommandPalette() {
           : gtdCommand(history, pathname, { agenda: true }),
       key('openAgenda')
     );
-    if (!inGtd) act('gtd', 'Vista GTD', 'fas fa-tasks', () => history.push('/gtd'), key('openGtd'));
+    if (inGtd) {
+      act(
+        'docs',
+        'Ir a Documentos',
+        'far fa-file-alt',
+        () => window.dispatchEvent(new CustomEvent('eli:open-docs')),
+        key('openGtd'),
+        'hoja fichero modo'
+      );
+    } else {
+      act(
+        'gtd',
+        'Ir a GTD',
+        'fas fa-tasks',
+        () => window.dispatchEvent(new CustomEvent('eli:open-gtd')),
+        key('openGtd'),
+        'vista gtd modo'
+      );
+    }
+    act(
+      'new-project',
+      'Nuevo proyecto',
+      'fas fa-project-diagram',
+      () => gtdCommand(history, pathname, { newProject: true }),
+      '',
+      'crear gtd'
+    );
     act(
       'sync',
       'Sincronizar',

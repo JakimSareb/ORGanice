@@ -189,9 +189,11 @@ class OrgFile extends PureComponent {
     const { headers, loadedPath } = this.props;
     if (!pending || !headers || loadedPath !== pending.path) return;
     window.__eliPendingNarrow = null;
-    if (!headers.some((h) => h.get('id') === pending.headerId)) return;
-    this.props.org.eliNarrowAndExpand(pending.headerId);
-    this.props.org.selectHeader(pending.headerId);
+    const exists = (id) => !!id && headers.some((h) => h.get('id') === id);
+    // (al volver al modo Documentos: narrow y encabezado seleccionado que había)
+    if (exists(pending.headerId)) this.props.org.eliNarrowAndExpand(pending.headerId);
+    const select = exists(pending.selectId) ? pending.selectId : pending.headerId;
+    if (exists(select)) this.props.org.selectHeader(select);
   }
 
   componentDidUpdate(prevProps) {

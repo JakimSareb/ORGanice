@@ -49,6 +49,19 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
+}
+/* ORG Mode para Eli: casilla dentro de un diálogo (cerrar proyecto) */
+.eli-prompt__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 12px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+.eli-prompt__check input {
+  margin-top: 3px;
 }
 
 /* ORG Mode para Eli: aviso de versión nueva */

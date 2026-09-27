@@ -154,3 +154,120 @@
 .header-bar__actions .eli-more__btn {
   font-size: 1.25em;
 }
+
+/* ORG Mode para Eli: dos modos, Documentos y GTD: conmutador arriba a la izquierda y una línea de
+   color bajo la barra (azul en Documentos, frambuesa en GTD) */
+.header-bar--mode {
+  grid-template-columns: max-content minmax(0, 1fr) auto;
+  column-gap: 8px;
+  transition: box-shadow 0.25s ease;
+}
+.header-bar--mode-docs {
+  box-shadow: inset 0 -3px 0 var(--blue);
+}
+.header-bar--mode-gtd {
+  box-shadow: inset 0 -3px 0 var(--magenta);
+}
+.eli-mode-bar {
+  grid-area: back;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.eli-mode {
+  display: inline-flex;
+  background: var(--base3);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.eli-mode__btn {
+  border: none;
+  background: transparent;
+  color: var(--base01);
+  opacity: 0.7;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.eli-mode__btn:hover {
+  opacity: 1;
+}
+.eli-mode__btn.is-on {
+  opacity: 1;
+  background: var(--base2);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  cursor: default;
+}
+.eli-mode__btn--docs.is-on {
+  color: var(--blue);
+}
+.eli-mode__btn--gtd.is-on {
+  color: var(--magenta);
+}
+.eli-mode__up {
+  color: var(--base01);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  font-size: 14px;
+  padding: 2px 4px;
+}
+.eli-mode__up-label {
+  margin-left: 4px;
+}
+.eli-mode__label--short {
+  display: none;
+}
+@media (max-width: 720px) {
+  .eli-mode__label--long {
+    display: none;
+  }
+  .eli-mode__btn.is-on .eli-mode__label--short {
+    display: inline;
+  }
+  .eli-widen-pill__text {
+    display: none;
+  }
+  /* en el móvil: el modo activo con su nombre, el otro solo con el icono */
+  .eli-mode__btn:not(.is-on) .eli-mode__label {
+    display: none;
+  }
+  .eli-mode__btn {
+    padding: 3px 8px;
+  }
+  .eli-mode__up-label {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .eli-mode__label {
+    display: none;
+  }
+}
+
+/* fundido corto al cambiar de modo */
+@keyframes eli-mode-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.eli-mode-fade .entry-container > :not(.header-bar) {
+  animation: eli-mode-fade-in 0.18s ease-out;
+}

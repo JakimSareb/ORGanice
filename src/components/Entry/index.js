@@ -6,7 +6,7 @@ import { Route, Switch, Redirect, withRouter } from 'react-router-dom';
 
 import './stylesheet.css';
 
-import { List, Set } from 'immutable';
+import { List, Set, Map as IMap } from 'immutable';
 import _ from 'lodash';
 import classNames from 'classnames';
 
@@ -25,6 +25,10 @@ import FileSettingsEditor from '../FileSettingsEditor';
 import GtdView from '../Gtd';
 import EliConflicts from '../EliConflicts';
 import EliCommandPalette from '../EliCommandPalette';
+import { installFormatHotkeys } from '../EliFormatBar';
+import { lastDocument, modeFade } from '../../lib/eli_mode';
+import { notWhileTyping, matchesBinding, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
+import { calculateActionedKeybindings } from '../../lib/keybindings';
 
 import * as syncBackendActions from '../../actions/sync_backend';
 import * as orgActions from '../../actions/org';
@@ -42,16 +46,57 @@ class Entry extends PureComponent {
       'renderFile',
       'setChangelogUnseenChanges',
       'openGtd',
+      'openDocs',
       'eliNavigate',
     ]);
   }
 
   // ORG Mode para Eli: atajo «g» (desde la hoja o el explorador) → vista GTD
+  // En la vista GTD, la misma tecla (o el conmutador) vuelve a Documentos.
   openGtd() {
-    if (this.props.isAuthenticated && this.props.location.pathname !== '/gtd') {
-      this.props.history.push('/gtd');
+    if (!this.props.isAuthenticated) return;
+    if (this.props.location.pathname === '/gtd') {
+      this.openDocs();
+      return;
     }
+    modeFade();
+    this.props.history.push('/gtd');
   }
+
+  // ORG Mode para Eli: modo Documentos: el último fichero (con su encabezado y narrow) o carpeta
+  openDocs() {
+    if (!this.props.isAuthenticated) return;
+    const doc = lastDocument();
+    const route = doc && doc.route ? doc.route : '/files';
+    if (this.props.location.pathname === route) return;
+    modeFade();
+    if (route.startsWith('/file/')) {
+      const path = doc.path || route.slice('/file'.length);
+      if (doc.narrowedHeaderId || doc.selectedHeaderId) {
+        window.__eliPendingNarrow = {
+          path,
+          headerId: doc.narrowedHeaderId || null,
+          selectId: doc.selectedHeaderId || null,
+        };
+      }
+      this.props.org.setPath(path);
+    }
+    this.props.history.push(route);
+  }
+
+  // Tecla de la vista GTD (g) dentro de la vista GTD: volver a Documentos
+  eliGtdKey = notWhileTyping((event) => {
+    // (si la misma tecla ya ha abierto GTD desde la hoja, no se vuelve atrás)
+    if (event.defaultPrevented || this.props.location.pathname !== '/gtd') return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (shouldIgnoreOrganiceHotkey(event, null)) return;
+    const bindings = Object.fromEntries(
+      calculateActionedKeybindings(this.props.customKeybindings || IMap())
+    );
+    if (!matchesBinding(event, bindings.openGtd)) return;
+    event.preventDefault();
+    this.openDocs();
+  });
 
   // ORG Mode para Eli: navegar a una ruta pedida desde fuera de React Router (p. ej. un enlace)
   eliNavigate(event) {
@@ -60,7 +105,10 @@ class Entry extends PureComponent {
   }
 
   componentDidMount() {
+    installFormatHotkeys();
     window.addEventListener('eli:open-gtd', this.openGtd);
+    window.addEventListener('eli:open-docs', this.openDocs);
+    window.addEventListener('keydown', this.eliGtdKey);
     window.addEventListener('eli:navigate', this.eliNavigate);
     this.setChangelogUnseenChanges();
     this.props.filesToLoad.forEach((path) => this.props.syncBackend.downloadFile(path));
@@ -95,6 +143,8 @@ class Entry extends PureComponent {
 
   componentWillUnmount() {
     window.removeEventListener('eli:open-gtd', this.openGtd);
+    window.removeEventListener('eli:open-docs', this.openDocs);
+    window.removeEventListener('keydown', this.eliGtdKey);
     window.removeEventListener('eli:navigate', this.eliNavigate);
     document.removeEventListener('visibilitychange', this.eliOnVisible);
     window.onbeforeunload = undefined;
@@ -265,6 +315,7 @@ const mapStateToProps = (state) => {
     filesToSync,
     defaultFilePath,
     loadingMessage: state.base.get('loadingMessage'),
+    customKeybindings: state.base.get('customKeybindings'),
     isAuthenticated: state.syncBackend.get('isAuthenticated'),
     fontSize: state.base.get('fontSize'),
     lastSeenChangelogHash: state.base.get('lastSeenChangelogHash'),

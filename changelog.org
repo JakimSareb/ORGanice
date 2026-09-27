@@ -3,6 +3,19 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.6 (septiembre de 2026)
+** Documentos y GTD, dos modos
+- Arriba a la izquierda, un conmutador *Documentos | GTD* sustituye al «‹ ORGanice» de la vista GTD y a los botones para ir a ella. Cada modo recuerda dónde lo dejaste (en Documentos, el último fichero con su encabezado y narrow). Una línea de color bajo la barra indica el modo. La tecla g cambia de modo en los dos sentidos.
+** Paleta de comandos a mano
+- Lupa en la barra de arriba (en todas las vistas) y, en los ficheros, en el botón redondo de abajo que antes llevaba a GTD (sigue poniéndose naranja con un reloj en marcha).
+** Vista GTD
+- El *+* de Proyectos abre el editor con un proyecto nuevo; se crea al guardar (Cancelar no crea nada).
+- Convertir una tarea en proyecto, o un proyecto en tarea, desde el desplegable del proyecto del editor.
+- «Cerrar proyecto…» (discreto, al final del editor del proyecto): terminado o cancelado, con la opción de cancelar sus tareas pendientes. Se deshace de una vez.
+- Quitada la pestaña del borde izquierdo en el móvil (el menú se abre con ☰).
+** Formato con el teclado
+- Ctrl/⌘+B negrita, +I cursiva, +U subrayado, +Mayús+X tachado, +E código y +Mayús+E literal, en cualquier campo de texto.
+
 * 2.5 (septiembre de 2026)
 ** Paleta de comandos
 - Nueva: *Ctrl+K* (⌘K en el Mac; en el móvil, menú *⋯* → «Paleta de comandos»). Un solo cuadro para buscar ficheros, encabezados y tareas de todos los ficheros, listas y proyectos GTD, etiquetas y acciones de la app (nueva tarea en Inbox, capturar, agenda, sincronizar, archivar terminadas, tema, dos columnas, ajustes…). Búsqueda tolerante (cmppnt → «Comprar pintura»), recientes con la búsqueda vacía y prefijos > acciones, # etiquetas, / ficheros. Cada acción muestra su atajo.

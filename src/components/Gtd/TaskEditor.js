@@ -102,6 +102,8 @@ export default function TaskEditor({
   onRedo,
   canUndo = false,
   canRedo = false,
+  isNew = false,
+  onCloseProject,
 }) {
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
@@ -123,6 +125,8 @@ export default function TaskEditor({
   const [project, setProject] = useState(
     task.project ? `${task.project.path}::${task.project.id}` : ''
   );
+  // ORG Mode para Eli: convertir la tarea en proyecto ('project') o el proyecto en tarea ('task')
+  const [convert, setConvert] = useState('');
   const titleRef = useRef(null);
   const notesRef = useRef(null);
   const encrypted = /-----BEGIN PGP MESSAGE-----/.test(task.description || '');
@@ -164,6 +168,7 @@ export default function TaskEditor({
   // (clic fuera, Esc, Intro, otra tarea, otra vista…). Solo se escriben los campos que han
   // cambiado respecto a como estaban al abrirlo, para no pisar lo que llegue de otro sitio.
   const current = {
+    convert,
     sleep,
     star,
     title,
@@ -181,7 +186,9 @@ export default function TaskEditor({
   const latest = useRef(current);
   latest.current = current;
   const baseline = useRef(null);
-  if (baseline.current === null) baseline.current = { ...current };
+  // En un proyecto nuevo cuenta todo lo rellenado (también lo que ya venía puesto)
+  if (baseline.current === null)
+    baseline.current = isNew ? { ...current, title: '', area: '' } : { ...current };
   const propsRef = useRef({ onSave, task, encrypted });
   propsRef.current = { onSave, task, encrypted };
 
@@ -195,12 +202,18 @@ export default function TaskEditor({
     let finalTags = c.tagInput.trim()
       ? Array.from(new Set([...c.tags, c.tagInput.trim()]))
       : c.tags;
-    if (isProject && c.sleep) finalTags = [...finalTags, SLEEP_TAG];
+    if (isProject && c.sleep && c.convert !== 'task') finalTags = [...finalTags, SLEEP_TAG];
     const baseTags = isProject && b.sleep ? [...b.tags, SLEEP_TAG] : b.tags;
-    if (c.list !== b.list || finalTags.join(' ') !== baseTags.join(' ')) {
+    const targetList =
+      c.convert === 'project' ? 'project' : c.convert === 'task' ? 'later' : c.list;
+    if (
+      c.list !== b.list ||
+      c.convert !== b.convert ||
+      finalTags.join(' ') !== baseTags.join(' ')
+    ) {
       // Inbox = etiqueta @inbox: al sacarla de Inbox se quita; al llevarla a Inbox (fuera del
       // fichero de entrada) se pone
-      changes.tags = tagsForList(t, c.list, finalTags);
+      changes.tags = tagsForList(t, targetList, finalTags);
     }
     if (c.area !== b.area) changes.area = c.area.trim() || null;
     if (c.energy !== b.energy) changes.energy = c.energy || null;
@@ -209,6 +222,7 @@ export default function TaskEditor({
     if (c.deadline !== b.deadline) changes.deadline = fromDateInput(c.deadline);
     if (!enc && c.notes !== b.notes) changes.notes = c.notes;
     if (c.list !== b.list) changes.list = c.list;
+    if (c.convert && c.convert !== b.convert) changes.list = targetList;
     const projectChanged = c.project !== b.project;
     if (!Object.keys(changes).length && !projectChanged) return;
     baseline.current = { ...c, tagInput: '' };
@@ -340,7 +354,7 @@ export default function TaskEditor({
                 onClose();
               }
             }}
-            placeholder="Tarea"
+            placeholder={isNew ? 'Nombre del proyecto nuevo' : isProject ? 'Proyecto' : 'Tarea'}
             data-testid="gtd-editor-title"
           />
         </div>
@@ -545,8 +559,16 @@ export default function TaskEditor({
         <label className="gtd-ed__field has-value" title="Proyecto">
           <i className="fas fa-long-arrow-alt-right" aria-hidden="true" />
           <select
-            value={project}
-            onChange={(e) => setProject(e.target.value)}
+            value={convert ? `__to_${convert}__` : project}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '__to_project__' || v === '__to_task__') {
+                setConvert(v === '__to_project__' ? 'project' : 'task');
+              } else {
+                setConvert('');
+                setProject(v);
+              }
+            }}
             data-testid="gtd-editor-project"
           >
             <option value="">Suelta (sin proyecto)</option>
@@ -555,6 +577,12 @@ export default function TaskEditor({
                 {p.title}
               </option>
             ))}
+            {!isNew && !task.isDone && <option disabled>──────────</option>}
+            {!isNew && !task.isDone && (
+              <option value={isProject ? '__to_task__' : '__to_project__'}>
+                {isProject ? '⇩ Convertir proyecto en tarea' : '⇧ Convertir tarea en proyecto'}
+              </option>
+            )}
           </select>
         </label>
         <label className={'gtd-ed__field' + (area ? ' has-value' : '')} title="Área">
@@ -582,15 +610,17 @@ export default function TaskEditor({
         >
           <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
         </span>
-        <button
-          type="button"
-          className="gtd-btn gtd-btn--link"
-          onClick={withCommit(onOpen)}
-          title="Abrir en su fichero"
-        >
-          <i className="fas fa-external-link-alt" /> Abrir
-        </button>
-        {onArchive && (
+        {!isNew && (
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--link"
+            onClick={withCommit(onOpen)}
+            title="Abrir en su fichero"
+          >
+            <i className="fas fa-external-link-alt" /> Abrir
+          </button>
+        )}
+        {!isNew && onArchive && (
           <button
             type="button"
             className="gtd-btn gtd-btn--link"
@@ -601,37 +631,43 @@ export default function TaskEditor({
             <i className="fas fa-archive" /> Archivar
           </button>
         )}
-        <button
-          type="button"
-          className="gtd-btn gtd-btn--link gtd-btn--danger"
-          onClick={onDelete}
-          title="Borrar la tarea"
-        >
-          <i className="fas fa-trash" /> Borrar
-        </button>
+        {!isNew && (
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--link gtd-btn--danger"
+            onClick={onDelete}
+            title="Borrar la tarea"
+          >
+            <i className="fas fa-trash" /> Borrar
+          </button>
+        )}
         <span className="gtd-spacer" />
-        <button
-          type="button"
-          className="gtd-btn gtd-btn--icon"
-          onClick={withCommit(onUndo)}
-          disabled={!canUndo && !dirty}
-          title="Deshacer"
-          aria-label="Deshacer"
-          data-testid="gtd-editor-undo"
-        >
-          <i className="fas fa-undo" />
-        </button>
-        <button
-          type="button"
-          className="gtd-btn gtd-btn--icon"
-          onClick={withCommit(onRedo)}
-          disabled={!canRedo}
-          title="Rehacer"
-          aria-label="Rehacer"
-          data-testid="gtd-editor-redo"
-        >
-          <i className="fas fa-redo" />
-        </button>
+        {!isNew && (
+          <>
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--icon"
+              onClick={withCommit(onUndo)}
+              disabled={!canUndo && !dirty}
+              title="Deshacer"
+              aria-label="Deshacer"
+              data-testid="gtd-editor-undo"
+            >
+              <i className="fas fa-undo" />
+            </button>
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--icon"
+              onClick={withCommit(onRedo)}
+              disabled={!canRedo}
+              title="Rehacer"
+              aria-label="Rehacer"
+              data-testid="gtd-editor-redo"
+            >
+              <i className="fas fa-redo" />
+            </button>
+          </>
+        )}
         <button
           type="button"
           className="gtd-btn gtd-btn--cancel"
@@ -653,6 +689,19 @@ export default function TaskEditor({
         >
           Guardar
         </button>
+        {isProject && !isNew && !task.isDone && onCloseProject && (
+          <div className="gtd-ed__close-row">
+            <button
+              type="button"
+              className="gtd-ed__close-project"
+              onClick={withCommit(onCloseProject)}
+              title="Marcar el proyecto como terminado o cancelado"
+              data-testid="gtd-editor-close-project"
+            >
+              Cerrar proyecto…
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

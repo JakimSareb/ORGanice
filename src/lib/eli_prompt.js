@@ -107,6 +107,59 @@ export const askConfirm = ({
     );
   });
 
+// ORG Mode para Eli: cerrar un proyecto. Devuelve Promise<{ state: 'done'|'cancelled',
+// cancelOpen: boolean } | null>.
+export const askCloseProject = ({ title, openCount = 0 }) =>
+  new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'eli-prompt__overlay';
+    overlay.innerHTML = `
+      <div class="eli-prompt__box" role="dialog" data-testid="eli-close-project">
+        <div class="eli-prompt__title">Cerrar el proyecto</div>
+        <div class="eli-prompt__message"></div>
+        <label class="eli-prompt__check" style="display:none">
+          <input type="checkbox" data-testid="eli-close-project-cancel-open" />
+          <span></span>
+        </label>
+        <div class="eli-prompt__buttons">
+          <button type="button" class="btn eli-prompt__cancel">Cancelar</button>
+          <button type="button" class="btn eli-prompt__cancelled" data-testid="eli-close-project-cancelled">Cancelado</button>
+          <button type="button" class="btn eli-prompt__ok" data-testid="eli-close-project-done">Terminado</button>
+        </div>
+      </div>`;
+    overlay.querySelector('.eli-prompt__message').textContent = `¿Cómo quieres cerrar «${title}»?`;
+    const check = overlay.querySelector('.eli-prompt__check');
+    const box = check.querySelector('input');
+    if (openCount > 0) {
+      check.style.display = 'flex';
+      check.querySelector('span').textContent =
+        `Quedan ${openCount} ${openCount === 1 ? 'tarea' : 'tareas'} sin hacer: cancelarlas ` +
+        `también (si no, se quedan como tareas sueltas)`;
+    }
+    const done = (v) => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        done(null);
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(null));
+    overlay
+      .querySelector('.eli-prompt__cancelled')
+      .addEventListener('click', () => done({ state: 'cancelled', cancelOpen: box.checked }));
+    overlay
+      .querySelector('.eli-prompt__ok')
+      .addEventListener('click', () => done({ state: 'done', cancelOpen: box.checked }));
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.querySelector('.eli-prompt__cancel').focus(), 30);
+  });
+
 // Pide un texto (sustituye a window.prompt, que no es fiable en las apps de la pantalla de
 // inicio). Devuelve Promise<string|null>.
 export const askText = ({

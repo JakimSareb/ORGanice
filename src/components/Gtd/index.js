@@ -35,6 +35,7 @@ import {
   gtdDeleteTask,
   gtdMoveToProject,
   gtdArchiveTask,
+  gtdCloseProject,
   gtdUndo,
   gtdRedo,
 } from '../../lib/gtd/gtd_actions';
@@ -56,7 +57,7 @@ import Drawer from '../UI/Drawer';
 import AgendaModal from '../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../EliErrorBoundary';
 import { fileLinkTarget, resolveDropboxPath, openInNewTab } from '../../lib/eli_media';
-import { showMessage, askDate, askConfirm } from '../../lib/eli_prompt';
+import { showMessage, askDate, askConfirm, askCloseProject } from '../../lib/eli_prompt';
 import {
   defaultTags,
   allowedValuesFromConfigLines,
@@ -273,6 +274,8 @@ export default function GtdView() {
   const [freshKeys, setFreshKeys] = useState([]);
   const [projGroupsOpen, setProjGroupsOpen] = useState({});
   const [openKey, setOpenKey] = useState(null);
+  // ORG Mode para Eli: proyecto nuevo en el editor (aún no existe en el fichero)
+  const [newProject, setNewProject] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
   const [showAgenda, setShowAgenda] = useState(false);
@@ -436,7 +439,8 @@ export default function GtdView() {
     setOpenKey(null);
     await dispatch(eliArchiveMany(list.map((t) => ({ path: t.path, id: t.id }))));
   };
-  const projectTask = view.type === 'project' ? tasks.find((t) => t.key === view.key) : null;
+  const projectTask =
+    view.type === 'project' ? tasks.find((t) => t.key === view.key && t.isProject) : null;
 
   const declaredTags = useMemo(
     () =>
@@ -578,20 +582,60 @@ export default function GtdView() {
     }
   };
 
+  // ORG Mode para Eli: «+» de Proyectos abre el editor con un proyecto nuevo; se crea al guardar
   const addProject = () => {
-    const title = newTitle.trim();
-    if (!title) return;
-    dispatch(
-      gtdAddTask(
-        { path: tasksFile },
-        { title, list: 'project', area: area !== '*' && area !== '-' ? area : null }
-      )
-    );
+    setNewProject({ title: newTitle.trim(), stay: view.id === 'projects', rev: Date.now() });
     setNewTitle('');
+    setOpenKey(null);
+    setSideOpen(false);
+  };
+  const createProject = (changes, projectKey) => {
+    const info = newProject || {};
+    const title = (changes.rawTitle || '').trim();
+    if (!title || !tasksFile) return;
+    const parent = projectKey ? allProjects.find((p) => p.key === projectKey) : null;
+    const target = parent ? { path: parent.path, parentId: parent.id } : { path: tasksFile };
+    const newId = dispatch(
+      gtdAddTask(target, {
+        title,
+        list: 'project',
+        area: changes.area || null,
+        priority: changes.priority || null,
+        tags: changes.tags || [],
+        scheduled: changes.scheduled || null,
+        deadline: changes.deadline || null,
+        notes: changes.notes || '',
+        energy: changes.energy || null,
+        effort: changes.effort || null,
+      })
+    );
+    if (newId && !info.stay) selectView({ type: 'project', key: `${target.path}::${newId}` });
+  };
+
+  // ORG Mode para Eli: cerrar un proyecto (terminado o cancelado), con confirmación
+  const closeProject = async (project) => {
+    const open = tasks.filter(
+      (t) =>
+        !t.isDone &&
+        !t.isProject &&
+        !!t.keyword &&
+        t.project &&
+        t.project.path === project.path &&
+        t.project.id === project.id
+    );
+    const answer = await askCloseProject({ title: project.title, openCount: open.length });
+    if (!answer) return;
+    setOpenKey(null);
+    dispatch(gtdCloseProject(project, answer.state, answer.cancelOpen ? open : []));
+    if (view.type === 'project' && view.key === project.key) selectView({ id: 'projects' });
   };
 
   const saveTask = (task, changes, projectKey) => {
     dispatch(gtdSaveTask(task, changes));
+    // Proyecto convertido en tarea desde su propia vista: se va a Todo, donde queda la tarea
+    if (task.isProject && changes.list === 'later' && view.key === task.key) {
+      selectView({ id: 'later' });
+    }
     if (projectKey !== undefined) {
       const project = projectKey ? allProjects.find((p) => p.key === projectKey) : null;
       dispatch(gtdMoveToProject(task, project ? { path: project.path, id: project.id } : null));
@@ -667,6 +711,7 @@ export default function GtdView() {
     if (!cmd) return;
     if (cmd.view) selectView(cmd.view);
     if (cmd.agenda) setShowAgenda(true);
+    if (cmd.newProject) addProject();
     if (cmd.sync) syncAll();
     if (cmd.focusAdd) {
       setTimeout(() => {
@@ -713,9 +758,37 @@ export default function GtdView() {
         setOpenKey(null);
         dispatch(gtdArchiveTask(task));
       }}
+      onCloseProject={task.isProject ? () => closeProject(task) : undefined}
       energyOptions={energyOptions}
       effortOptions={effortOptions}
     />
+  );
+
+  const renderNewProjectEditor = () => (
+    <div className="gtd-new-project" data-testid="gtd-new-project">
+      <TaskEditor
+        key={'new-project:' + newProject.rev}
+        isNew
+        task={{
+          key: '__new_project__',
+          path: tasksFile,
+          isProject: true,
+          rawTitle: newProject.title,
+          ownTags: [],
+          tags: [],
+          ownArea: area !== '*' && area !== '-' ? area : '',
+          description: '',
+        }}
+        projects={allProjects}
+        areas={areas}
+        allTags={allTags}
+        contextTags={contextTags}
+        onSave={createProject}
+        onClose={() => setNewProject(null)}
+        energyOptions={energyOptions}
+        effortOptions={effortOptions}
+      />
+    </div>
   );
 
   const renderProjectButton = (p) => {
@@ -818,8 +891,9 @@ export default function GtdView() {
           <span>Proyectos</span>
           <button
             className="gtd-side__add"
-            title="Nuevo proyecto (escribe el nombre en «Añadir» y pulsa aquí)"
+            title="Nuevo proyecto"
             onClick={addProject}
+            data-testid="gtd-add-project"
           >
             +
           </button>
@@ -867,18 +941,6 @@ export default function GtdView() {
       </aside>
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
-      {/* ORG Mode para Eli: en el móvil, con el menú escondido, una pestaña pequeña a media
-          altura del borde izquierdo lo vuelve a sacar */}
-      <button
-        type="button"
-        className="gtd-side-tab"
-        onClick={() => setSideOpen(true)}
-        aria-label="Mostrar el menú"
-        title="Mostrar el menú"
-        data-testid="gtd-side-tab"
-      >
-        <i className="fas fa-chevron-right" />
-      </button>
 
       <main className="gtd-main">
         <header className="gtd-main__head">
@@ -914,6 +976,8 @@ export default function GtdView() {
             <i className="fas fa-sync-alt" />
           </button>
         </header>
+
+        {newProject && renderNewProjectEditor()}
 
         {projectTask && (
           <div className="gtd-project-info">

@@ -601,10 +601,6 @@
   display: none;
 }
 
-/* Pestaña para sacar el menú (solo en el móvil) */
-.gtd-side-tab {
-  display: none;
-}
 
 /* ---------- Móvil: el menú lateral se despliega ---------- */
 @media (max-width: 720px) {
@@ -622,31 +618,6 @@
   }
   .gtd.is-side-open .gtd-side {
     transform: translateX(0);
-  }
-  .gtd-side-tab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 15;
-    width: 14px;
-    height: 52px;
-    padding: 0;
-    border: 1px solid var(--base1);
-    border-left: 0;
-    border-radius: 0 10px 10px 0;
-    background: var(--base2);
-    color: var(--base00);
-    font-size: 11px;
-    opacity: 0.85;
-    box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
-    cursor: pointer;
-  }
-  .gtd.is-side-open .gtd-side-tab {
-    display: none;
   }
   .gtd.is-side-open .gtd-scrim {
     display: block;
@@ -1185,4 +1156,36 @@
   .gtd-overview__meta {
     justify-content: flex-start;
   }
+}
+
+/* ORG Mode para Eli: cerrar un proyecto (discreto, al final del editor) */
+.gtd-ed__close-row {
+  flex-basis: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.gtd-ed__close-project {
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  font-size: 12px;
+  color: var(--base00);
+  opacity: 0.55;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.gtd-ed__close-project:hover {
+  opacity: 0.9;
+}
+
+/* ORG Mode para Eli: editor de un proyecto nuevo */
+.gtd-new-project {
+  margin-bottom: 12px;
+}
+.gtd-new-project .gtd-editor {
+  border-left: 3px solid var(--magenta);
+}
+.gtd-new-project .gtd-editor {
+  border-radius: 8px;
 }

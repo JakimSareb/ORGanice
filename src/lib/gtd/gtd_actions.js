@@ -165,6 +165,8 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
         ? 'DONE'
         : changes.list === 'cancelled'
         ? 'CANCELLED'
+        : changes.list === 'project'
+        ? 'PROJECT'
         : Object.prototype.hasOwnProperty.call(KEYWORD_FOR_LIST, changes.list)
         ? KEYWORD_FOR_LIST[changes.list]
         : task.keyword;
@@ -221,6 +223,8 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   // Cuerpo mínimo con las propiedades/planificación
   let props = List();
   if (fields.area) props = setProperty(props, 'AREA', fields.area);
+  if (fields.energy) props = setProperty(props, ENERGY_PROPERTY, fields.energy);
+  if (fields.effort) props = setProperty(props, EFFORT_PROPERTY, fields.effort);
   let planning = List();
   if (fields.scheduled) planning = setPlanning(planning, 'SCHEDULED', fields.scheduled);
   if (fields.deadline) planning = setPlanning(planning, 'DEADLINE', fields.deadline);
@@ -235,9 +239,12 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
     description: [],
   })
     .set('propertyListItems', props)
-    .set('planningItems', planning);
+    .set('planningItems', planning)
+    .set('rawDescription', fields.notes || '');
   const description =
-    props.size || planning.size ? createRawDescriptionText(fake, false, dontIndent) : '';
+    props.size || planning.size || fields.notes
+      ? createRawDescriptionText(fake, false, dontIndent)
+      : '';
   dispatch(
     inFile(target.path, {
       type: 'ELI_ADD_HEADER_AT',
@@ -250,6 +257,53 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   );
   syncFile(dispatch, target.path);
   return headerId;
+};
+
+// ORG Mode para Eli: cerrar un proyecto (DONE o CANCELLED), y si se pide, cancelar también sus
+// tareas abiertas. Todo en un solo paso (un solo Deshacer).
+export const gtdCloseProject = (project, state, openTasks = []) => (dispatch, getState) => {
+  const keyword = state === 'cancelled' ? 'CANCELLED' : 'DONE';
+  const logIntoDrawer = getState().base.get('shouldLogIntoDrawer');
+  const byPath = {};
+  const add = (path, action) => (byPath[path] = byPath[path] || []).push(action);
+  const needed = { [project.path]: [keyword] };
+  openTasks.forEach((t) => {
+    add(t.path, {
+      type: 'SET_TODO_STATE',
+      headerId: t.id,
+      newTodoState: 'CANCELLED',
+      logIntoDrawer,
+      timestamp: new Date(),
+      dirtying: true,
+    });
+    needed[t.path] = [...(needed[t.path] || []), 'CANCELLED'];
+  });
+  // Un proyecto cerrado ya no está dormido
+  if ((project.ownTags || []).some((t) => t.toLowerCase() === 'sleep')) {
+    add(project.path, {
+      type: 'UPDATE_HEADER_TITLE',
+      headerId: project.id,
+      newRawTitle: titleLineFrom({
+        keyword: project.keyword,
+        priority: project.priority,
+        rawTitle: project.rawTitle,
+        tags: project.ownTags.filter((t) => t.toLowerCase() !== 'sleep'),
+      }),
+      dirtying: true,
+    });
+  }
+  add(project.path, {
+    type: 'SET_TODO_STATE',
+    headerId: project.id,
+    newTodoState: keyword,
+    logIntoDrawer,
+    timestamp: new Date(),
+    dirtying: true,
+  });
+  if (Object.keys(needed).some((p) => missingKeyword(getState, p, needed[p]))) return;
+  const paths = Object.keys(byPath);
+  paths.forEach((p) => dispatch(inFile(p, byPath[p])));
+  paths.forEach((p) => syncFile(dispatch, p));
 };
 
 export const gtdDeleteTask = (task) => (dispatch) => {

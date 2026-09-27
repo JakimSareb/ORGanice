@@ -2,13 +2,50 @@
 // (*negrita*, /cursiva/, _subrayado_, +tachado+, ~código~, =literal=)
 
 export const ORG_EMPHASIS = [
-  { marker: '*', icon: 'fas fa-bold', title: 'Negrita (*texto*)', id: 'bold' },
-  { marker: '/', icon: 'fas fa-italic', title: 'Cursiva (/texto/)', id: 'italic' },
-  { marker: '_', icon: 'fas fa-underline', title: 'Subrayado (_texto_)', id: 'underline' },
-  { marker: '+', icon: 'fas fa-strikethrough', title: 'Tachado (+texto+)', id: 'strike' },
-  { marker: '~', icon: 'fas fa-code', title: 'Código (~texto~)', id: 'code' },
-  { marker: '=', icon: 'fas fa-equals', title: 'Literal (=texto=)', id: 'verbatim' },
+  { marker: '*', icon: 'fas fa-bold', title: 'Negrita (*texto*)', id: 'bold', key: 'b' },
+  { marker: '/', icon: 'fas fa-italic', title: 'Cursiva (/texto/)', id: 'italic', key: 'i' },
+  {
+    marker: '_',
+    icon: 'fas fa-underline',
+    title: 'Subrayado (_texto_)',
+    id: 'underline',
+    key: 'u',
+  },
+  {
+    marker: '+',
+    icon: 'fas fa-strikethrough',
+    title: 'Tachado (+texto+)',
+    id: 'strike',
+    key: 'x',
+    shift: true,
+  },
+  { marker: '~', icon: 'fas fa-code', title: 'Código (~texto~)', id: 'code', key: 'e' },
+  {
+    marker: '=',
+    icon: 'fas fa-equals',
+    title: 'Literal (=texto=)',
+    id: 'verbatim',
+    key: 'e',
+    shift: true,
+  },
 ];
+
+// ORG Mode para Eli: atajos de teclado del formato (Ctrl en Windows/Linux, ⌘ en el Mac)
+export const isMac = () =>
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || '');
+
+export const emphasisShortcutLabel = (item, mac = isMac()) =>
+  `${mac ? '⌘' : 'Ctrl+'}${item.shift ? (mac ? '⇧' : 'Mayús+') : ''}${item.key.toUpperCase()}`;
+
+// ¿Qué formato pide esta tecla? (null si ninguno)
+export const emphasisForKeyEvent = (event) => {
+  if (!event || event.altKey || !(event.ctrlKey || event.metaKey)) return null;
+  const code = event.code || '';
+  const key = /^Key[A-Z]$/.test(code)
+    ? code.slice(3).toLowerCase()
+    : (event.key || '').toLowerCase();
+  return ORG_EMPHASIS.find((e) => e.key === key && !!e.shift === !!event.shiftKey) || null;
+};
 
 /**
  * Pone o quita un marcador de énfasis alrededor de la selección [start, end) de `value`.

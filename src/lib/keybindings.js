@@ -56,6 +56,7 @@ export const KEYBINDING_LABELS_ES = {
   'Move header left': 'Mover el encabezado a la izquierda',
   'Move header right': 'Mover el encabezado a la derecha',
   Undo: 'Deshacer',
+  'Abrir la vista GTD': 'Cambiar entre Documentos y GTD',
 };
 
 export const keybindingLabel = (name) => KEYBINDING_LABELS_ES[name] || name;
