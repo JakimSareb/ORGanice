@@ -9,6 +9,7 @@ import * as baseActions from '../../actions/base';
 import * as orgActions from '../../actions/org';
 
 import GtdSectionsSettings from './GtdSectionsSettings';
+import OfflineSettings from './OfflineSettings';
 import './stylesheet.css';
 
 import TabButtons from '../UI/TabButtons';
@@ -259,6 +260,16 @@ const Settings = ({
           </span>
         </summary>
         <GtdSectionsSettings />
+      </details>
+
+      <details className="eli-settings-section" data-testid="eli-settings-offline">
+        <summary>
+          <span className="eli-settings-section__title">Usar sin conexión</span>
+          <span className="eli-settings-section__hint">
+            Guardar tus ficheros en este dispositivo para trabajar sin Internet
+          </span>
+        </summary>
+        <OfflineSettings />
       </details>
 
       <details className="eli-settings-section" data-testid="eli-settings-advanced">

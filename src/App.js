@@ -26,6 +26,7 @@ import { setDisappearingLoadingMessage, restoreStaticFile } from './actions/base
 import createDropboxSyncBackendClient from './sync_backend_clients/dropbox_sync_backend_client';
 import createWebDAVSyncBackendClient from './sync_backend_clients/webdav_sync_backend_client';
 import { withEncryption } from './lib/eli_crypto';
+import { withOfflineCache } from './lib/eli_offline_client';
 import { BASE_PATH } from './lib/base_path';
 import { installIdleLock, getPersistPlainFiles, purgePersistedFiles } from './lib/eli_security';
 import { sync as eliSyncAction } from './actions/org';
@@ -92,7 +93,7 @@ export default class App extends PureComponent {
     if (!!authenticatedSyncService) {
       switch (authenticatedSyncService) {
         case 'Dropbox':
-          client = withEncryption(createDropboxSyncBackendClient());
+          client = withEncryption(withOfflineCache(createDropboxSyncBackendClient()));
           initialState.syncBackend = Map({
             isAuthenticated: true,
             client: client,
@@ -109,7 +110,7 @@ export default class App extends PureComponent {
         case 'GitLab':
           const gitlabOAuth = createGitlabOAuth();
           if (gitlabOAuth.isAuthorized()) {
-            client = withEncryption(createGitLabSyncBackendClient(gitlabOAuth));
+            client = withEncryption(withOfflineCache(createGitLabSyncBackendClient(gitlabOAuth)));
             initialState.syncBackend = Map({
               isAuthenticated: true,
               client,
@@ -120,10 +121,12 @@ export default class App extends PureComponent {
           break;
         case 'WebDAV':
           client = withEncryption(
-            createWebDAVSyncBackendClient(
-              getPersistedField('webdavEndpoint'),
-              getPersistedField('webdavUsername'),
-              getPersistedField('webdavPassword')
+            withOfflineCache(
+              createWebDAVSyncBackendClient(
+                getPersistedField('webdavEndpoint'),
+                getPersistedField('webdavUsername'),
+                getPersistedField('webdavPassword')
+              )
             )
           );
           initialState.syncBackend = Map({

@@ -312,3 +312,58 @@ body {
   color: var(--red, #dc322f);
   white-space: nowrap;
 }
+
+/* ORG Mode para Eli (2.12): visor de adjuntos guardados (sin conexión) */
+.eli-viewer {
+  padding: 12px;
+}
+.eli-viewer__box {
+  background: var(--base3, #fdf6e3);
+  color: var(--base00, #657b83);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 960px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+.eli-viewer__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--base2, #eee8d5);
+}
+.eli-viewer__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: bold;
+}
+.eli-viewer__content {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  object-fit: contain;
+  background: var(--base2, #eee8d5);
+}
+
+/* ORG Mode para Eli (2.12): saltos de línea en los mensajes; barra de progreso */
+.eli-prompt__message {
+  white-space: pre-line;
+}
+.eli-offline__bar {
+  width: 100%;
+}
+div.eli-viewer__none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}

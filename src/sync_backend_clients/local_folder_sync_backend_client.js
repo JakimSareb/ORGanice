@@ -198,7 +198,7 @@ export default () => {
   };
 
   // Todos los .org de la carpeta (sin backups/ ni carpetas ocultas)
-  const walkFiles = async (accept, max) => {
+  const walkFiles = async (accept, max, withSize = false) => {
     const out = [];
     const walk = async (dir, prefix, depth) => {
       if (depth > 8 || out.length > max) return;
@@ -208,16 +208,25 @@ export default () => {
         if (handle.kind === 'directory') {
           if (name.toLowerCase() !== 'backups') await walk(handle, full, depth + 1);
         } else if (accept(name)) {
-          out.push(full);
+          if (withSize) {
+            let size = 0;
+            try {
+              size = (await handle.getFile()).size;
+            } catch (e) {}
+            out.push({ path: full, size });
+          } else out.push(full);
         }
       }
     };
     await walk(await root(), '', 0);
-    return out.sort((a, b) => a.localeCompare(b));
+    return withSize
+      ? out.sort((a, b) => a.path.localeCompare(b.path))
+      : out.sort((a, b) => a.localeCompare(b));
   };
   const listOrgFiles = () => walkFiles((name) => /\.org(\.gpg|\.asc)?$/i.test(name), 5000);
   // ORG Mode para Eli: todos los ficheros (sin backups/ ni carpetas ocultas)
   const listAllFiles = () => walkFiles(() => true, 20000);
+  const listAllFileEntries = () => walkFiles(() => true, 20000, true);
 
   return {
     type: 'LocalFolder',
@@ -236,5 +245,6 @@ export default () => {
     uploadBinaryFile,
     listOrgFiles,
     listAllFiles,
+    listAllFileEntries,
   };
 };

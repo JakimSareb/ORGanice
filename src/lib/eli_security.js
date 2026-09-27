@@ -2,6 +2,14 @@
 
 import { forgetSecrets, hasSecretsInMemory, isEncryptedPath } from './eli_crypto';
 import { BASE_PATH } from './base_path';
+import {
+  plainCopyPaths,
+  removePlainCopy,
+  serverCopyPaths,
+  removeServerCopy,
+  clearOfflineBlobs,
+  pendingLocalVersion,
+} from './eli_offline_store';
 
 const LS_PERSIST_PLAIN = 'eliPersistPlainFiles'; // 'true' | 'false' (por defecto: false)
 const LS_IDLE_MINUTES = 'eliIdleLockMinutes'; // número; 0 = desactivado (por defecto: 10)
@@ -26,22 +34,40 @@ const write = (k, v) => {
 export const getPersistPlainFiles = () => read(LS_PERSIST_PLAIN) === 'true';
 
 // Borra las copias locales. Con keepDirty, conserva las que tienen cambios aún no subidos
-// (se borrarán solas al sincronizar).
+// (se borrarán solas al sincronizar). También borra lo guardado para usar sin conexión que no
+// esté cifrado (versiones del servidor de ficheros sin cifrar y adjuntos).
 export const purgePersistedFiles = ({ keepDirty = false } = {}) => {
   try {
     const dirty = keepDirty ? JSON.parse(window.localStorage.getItem('isDirty')) || {} : {};
     const persisted = JSON.parse(window.localStorage.getItem('persistedFiles')) || {};
-    Object.keys(window.localStorage)
-      .filter((k) => k.startsWith('files__'))
-      .forEach((k) => {
-        const path = k.substring('files__'.length);
-        if (!dirty[path]) {
-          window.localStorage.removeItem(k);
-          delete persisted[path];
-        }
-      });
+    plainCopyPaths().forEach((path) => {
+      if (!dirty[path]) {
+        removePlainCopy(path);
+        delete persisted[path];
+      }
+    });
     window.localStorage.setItem('persistedFiles', JSON.stringify(persisted));
+    serverCopyPaths()
+      .filter((path) => !isEncryptedPath(path))
+      .forEach(removeServerCopy);
+    clearOfflineBlobs();
   } catch (e) {}
+};
+
+// ---------------------------------------------------------------------------
+// Ficheros cifrados sin conexión (2.12): se guarda solo su versión CIFRADA; para abrirlos sin
+// conexión hace falta la frase de paso (o la clave), como siempre.
+
+const LS_OFFLINE_ENCRYPTED = 'eliOfflineEncrypted'; // 'true' | 'false' (por defecto: false)
+export const getOfflineEncrypted = () => read(LS_OFFLINE_ENCRYPTED) === 'true';
+export const setOfflineEncrypted = (enabled) => {
+  write(LS_OFFLINE_ENCRYPTED, enabled ? 'true' : 'false');
+  if (!enabled) {
+    // Se borran las copias cifradas, salvo las que tienen cambios aún sin subir
+    serverCopyPaths()
+      .filter((path) => isEncryptedPath(path) && !pendingLocalVersion(path))
+      .forEach(removeServerCopy);
+  }
 };
 
 export const setPersistPlainFiles = (enabled) => {
@@ -57,7 +83,8 @@ export const getIdleLockMinutes = () => {
   if (v === null || v === '' || isNaN(+v)) return DEFAULT_IDLE_MINUTES;
   return Math.max(0, +v);
 };
-export const setIdleLockMinutes = (minutes) => write(LS_IDLE_MINUTES, String(Math.max(0, +minutes || 0)));
+export const setIdleLockMinutes = (minutes) =>
+  write(LS_IDLE_MINUTES, String(Math.max(0, +minutes || 0)));
 
 // ¿Hay algo sensible en memoria? (frases/claves desbloqueadas, ficheros cifrados abiertos o
 // cabeceras :crypt: descifradas)

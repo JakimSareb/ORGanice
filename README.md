@@ -1,4 +1,4 @@
-# ORGanice 2.11
+# ORGanice 2.12
 
 <img src="src/images/logo-unicornio.svg" alt="" width="96" align="right">
 
@@ -109,8 +109,9 @@ navegador; no hay servidor intermedio.
   Los enlaces de tus notas con esquemas peligrosos (`javascript:`…) se muestran como texto.
 - **Bloqueo por inactividad** (por defecto 10 min, configurable o desactivable): guarda lo
   pendiente, olvida frases y claves y recarga la app. Solo actúa si hay algo cifrado abierto.
-- **Sin copia local de ficheros sin cifrar** (por defecto; se puede activar para trabajar sin
-  conexión). El texto descifrado nunca se guarda en el navegador ni se sube en claro.
+- **Sin copia local de ficheros sin cifrar** (por defecto; se activa en Ajustes → Usar sin
+  conexión, que la guarda en IndexedDB). Los ficheros cifrados, si se eligen, se guardan solo
+  cifrados. El texto descifrado nunca se guarda en el navegador ni se sube en claro.
 - **Compilación verificable**: la web la compila GitHub Actions a partir de este código
   (`.github/workflows/pages.yml`) con las versiones exactas de `yarn.lock`; el registro queda en la
   pestaña *Actions* y la web publica `SHA256SUMS` con el hash de cada fichero.

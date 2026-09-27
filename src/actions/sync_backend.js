@@ -1,9 +1,17 @@
+import { clearOfflineStore } from '../lib/eli_offline_store';
 import { backupPathFor } from '../lib/eli_media';
 import { forgetRootHandle } from '../sync_backend_clients/local_folder_sync_backend_client';
 import { ActionCreators } from 'redux-undo';
 
 import { setLoadingMessage, hideLoadingMessage, clearModalStack, setIsLoading } from './base';
-import { parseFile, setDirty, setLastSyncAt, setOrgFileErrorMessage, sync } from './org';
+import {
+  parseFile,
+  setDirty,
+  setLastSyncAt,
+  setOrgFileErrorMessage,
+  sync,
+  eliApplyPendingLocalVersion,
+} from './org';
 import { localStorageAvailable, persistField } from '../util/settings_persister';
 import { createGitlabOAuth } from '../sync_backend_clients/gitlab_sync_backend_client';
 
@@ -48,6 +56,8 @@ export const signOut = () => (dispatch, getState) => {
   if (localStorageAvailable) {
     localStorage.clear();
   }
+  // ORG Mode para Eli (2.12): y lo guardado para usar sin conexión
+  clearOfflineStore();
 };
 
 export const setCurrentFileBrowserDirectoryListing = (
@@ -147,6 +157,8 @@ export const downloadFile = (path) => {
         dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
         dispatch(setDirty(false, path));
         dispatch(ActionCreators.clearHistory());
+        // ORG Mode para Eli (2.12): cambios cifrados hechos sin conexión y aún sin subir
+        dispatch(eliApplyPendingLocalVersion(path));
       })
       .catch((error) => {
         dispatch(hideLoadingMessage());

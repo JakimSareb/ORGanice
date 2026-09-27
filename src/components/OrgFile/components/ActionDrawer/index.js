@@ -1,4 +1,5 @@
 import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
+import { openPalette } from '../../../../lib/eli_palette';
 import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -385,7 +386,7 @@ const ActionDrawer = ({
           <ActionButton
             iconName="search"
             isDisabled={false}
-            onClick={() => window.dispatchEvent(new CustomEvent('eli:palette'))}
+            onClick={openPalette}
             dataTestId="eli-fab-palette"
             additionalClassName={activeClocks !== 0 ? 'active-clock-indicator' : undefined}
             style={{

@@ -4,23 +4,82 @@ import { localStorageAvailable } from '../util/settings_persister';
 import { exportOrg } from '../lib/export_org';
 import { parseFile } from '../reducers/org';
 import { STATIC_FILE_PREFIX } from '../lib/org_utils';
-import { isEncryptedPath, hasUnencryptedCryptEntries } from '../lib/eli_crypto';
-import { getPersistPlainFiles } from '../lib/eli_security';
+import {
+  isEncryptedPath,
+  hasUnencryptedCryptEntries,
+  encryptFile,
+  encryptCryptEntries,
+} from '../lib/eli_crypto';
+import { getPersistPlainFiles, getOfflineEncrypted } from '../lib/eli_security';
+import {
+  getPlainCopy,
+  setPlainCopy,
+  removePlainCopy,
+  getServerCopy,
+  setServerCopy,
+} from '../lib/eli_offline_store';
+
+const forgetPersisted = (path) => {
+  try {
+    removePlainCopy(path);
+    const persisted = JSON.parse(localStorage.getItem('persistedFiles')) || {};
+    delete persisted[path];
+    localStorage.setItem('persistedFiles', JSON.stringify(persisted));
+  } catch (e) {}
+};
 
 // ORG Mode para Eli: nunca guardar en el navegador el texto descifrado
 // de ficheros .gpg/.asc ni de cabeceras :crypt: descifradas. Los ficheros sin cifrar solo se
 // guardan si el usuario lo activa en Ajustes → Seguridad y cifrado.
 const mustNotPersist = (path, contents) => {
   if (!getPersistPlainFiles() || isEncryptedPath(path) || hasUnencryptedCryptEntries(contents)) {
-    try {
-      localStorage.removeItem('files__' + path);
-      const persisted = JSON.parse(localStorage.getItem('persistedFiles')) || {};
-      delete persisted[path];
-      localStorage.setItem('persistedFiles', JSON.stringify(persisted));
-    } catch (e) {}
+    forgetPersisted(path);
     return true;
   }
   return false;
+};
+
+// ORG Mode para Eli (2.12): para no perder cambios hechos sin conexión si el sistema cierra la
+// app, lo cifrado se guarda CIFRADO (con la frase o clave que ya está en memoria):
+// - un fichero .gpg/.asc con cambios, si está activado «ficheros cifrados sin conexión»;
+// - un fichero sin cifrar con encabezados :crypt: abiertos, si está activada la copia local.
+const encryptSeq = {};
+const persistEncrypted = (state, path, contents) => {
+  const seq = (encryptSeq[path] = (encryptSeq[path] || 0) + 1);
+  const latest = () => encryptSeq[path] === seq;
+  if (isEncryptedPath(path)) {
+    const isDirty = state.org.present.getIn(['files', path, 'isDirty']);
+    if (!getOfflineEncrypted() || !isDirty) return;
+    const lastSyncAt = state.org.present.getIn(['files', path, 'lastSyncAt']);
+    encryptFile(path, contents, { silent: true })
+      .then((cipher) => {
+        if (!latest()) return;
+        const prev = getServerCopy(path) || {};
+        setServerCopy(path, {
+          contents: cipher,
+          lastModifiedAt: prev.lastModifiedAt || null,
+          savedAt: new Date().toISOString(),
+          pending: true,
+          baseSyncAt: prev.pending
+            ? prev.baseSyncAt
+            : lastSyncAt
+            ? new Date(lastSyncAt).toISOString()
+            : null,
+        });
+      })
+      .catch(() => {});
+    return;
+  }
+  if (!getPersistPlainFiles()) return;
+  encryptCryptEntries(contents, { silent: true })
+    .then((text) => {
+      if (!latest() || hasUnencryptedCryptEntries(text)) return;
+      setPlainCopy(path, text);
+      const persisted = JSON.parse(localStorage.getItem('persistedFiles')) || {};
+      persisted[path] = state.org.present.getIn(['files', path, 'lastSyncAt']);
+      localStorage.setItem('persistedFiles', JSON.stringify(persisted));
+    })
+    .catch(() => forgetPersisted(path));
 };
 
 export const persistIsDirty = (isDirty, path) => {
@@ -37,7 +96,7 @@ export const saveFileContentsToLocalStorage = (path, contents) => {
     let persistedFiles = JSON.parse(localStorage.getItem('persistedFiles'));
     persistedFiles = persistedFiles || {};
 
-    localStorage.setItem('files__' + path, contents);
+    setPlainCopy(path, contents);
     persistedFiles[path] = addSeconds(new Date(), 5);
 
     localStorage.setItem('persistedFiles', JSON.stringify(persistedFiles));
@@ -53,15 +112,20 @@ const saveFunctionToDebounce = (state, path) => {
       linesBeforeHeadings: state.org.present.getIn(['files', path, 'linesBeforeHeadings']),
       dontIndent: state.base.get('eliIndentOnExport') !== true,
     });
-    if (mustNotPersist(path, contents)) return;
-    localStorage.setItem('files__' + path, contents);
+    if (mustNotPersist(path, contents)) {
+      if (isEncryptedPath(path) || hasUnencryptedCryptEntries(contents))
+        persistEncrypted(state, path, contents);
+      return;
+    }
+    encryptSeq[path] = (encryptSeq[path] || 0) + 1; // anula un cifrado en curso más antiguo
+    setPlainCopy(path, contents);
 
     persistedFiles[path] = state.org.present.getIn(['files', path, 'lastSyncAt']);
     localStorage.setItem('persistedFiles', JSON.stringify(persistedFiles));
   }
 };
 const getDebouncedSaveFunction = () =>
-  debounce(saveFunctionToDebounce, 3000, {
+  debounce(saveFunctionToDebounce, 1500, {
     leading: true,
     trailing: true,
   });
@@ -82,7 +146,7 @@ export const loadFilesFromLocalStorage = (state) => {
     const persistedFiles = JSON.parse(localStorage.getItem('persistedFiles')) || {};
     const isDirty = JSON.parse(localStorage.getItem('isDirty')) || {};
     Object.entries(persistedFiles).forEach(([path, lastSyncAt]) => {
-      const contents = localStorage.getItem('files__' + path);
+      const contents = getPlainCopy(path);
       if (contents) {
         state.org.present = state.org.present.update((org) => parseFile(org, { path, contents }));
         state.org.present = state.org.present.setIn(
@@ -94,4 +158,10 @@ export const loadFilesFromLocalStorage = (state) => {
     });
   }
   return state;
+};
+
+// ORG Mode para Eli (2.12): guardar ya lo pendiente (al pasar la app a segundo plano: en el
+// iPhone el sistema puede cerrarla después sin avisar)
+export const flushLocalSaves = () => {
+  Object.values(debouncedSaveFunctions).forEach((f) => f.flush());
 };

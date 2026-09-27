@@ -41,7 +41,13 @@ export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) 
       kind === 'image' ? loadPreviewUrl(client, path) : loadTemporaryLink(client, path);
     loader
       .then((url) => alive && setSrc(url))
-      .catch(() => alive && setError('No se encontró en Dropbox'));
+      .catch(
+        () =>
+          alive &&
+          setError(
+            navigator.onLine === false ? 'No disponible sin conexión' : 'No se encontró en Dropbox'
+          )
+      );
     return () => {
       alive = false;
     };
@@ -51,7 +57,11 @@ export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) 
     e.preventDefault();
     e.stopPropagation();
     if (!supported) return;
-    openInNewTab(client, path).catch(() => setError('No se pudo abrir desde Dropbox'));
+    openInNewTab(client, path).catch(() =>
+      setError(
+        navigator.onLine === false ? 'No disponible sin conexión' : 'No se pudo abrir desde Dropbox'
+      )
+    );
   };
 
   const icon = { image: 'fa-image', video: 'fa-film', audio: 'fa-music', file: 'fa-paperclip' }[

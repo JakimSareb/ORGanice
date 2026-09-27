@@ -26,7 +26,7 @@ import GtdView from '../Gtd';
 import EliConflicts from '../EliConflicts';
 import EliCommandPalette from '../EliCommandPalette';
 import { installFormatHotkeys } from '../EliFormatBar';
-import { lastDocument, modeFade } from '../../lib/eli_mode';
+import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
 import { notWhileTyping, matchesBinding, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateActionedKeybindings } from '../../lib/keybindings';
 
@@ -104,8 +104,18 @@ class Entry extends PureComponent {
     if (to && this.props.location.pathname !== to) this.props.history.push(to);
   }
 
+  // ORG Mode para Eli (2.12): al arrancar en la página inicial, volver a la última vista
+  eliResume() {
+    if (this.eliResumeRoute === undefined) this.eliResumeRoute = takeResumeRoute();
+    return this.eliResumeRoute;
+  }
+
   componentDidMount() {
     installFormatHotkeys();
+    this.eliResume();
+    this.eliResumeRoute = null; // solo al arrancar
+    if (this.props.location)
+      rememberRoute(this.props.location.pathname, this.props.location.search);
     window.addEventListener('eli:open-gtd', this.openGtd);
     window.addEventListener('eli:open-docs', this.openDocs);
     window.addEventListener('keydown', this.eliGtdKey);
@@ -135,7 +145,11 @@ class Entry extends PureComponent {
     });
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
+    const { location } = this.props;
+    if (location && (!prevProps.location || prevProps.location.pathname !== location.pathname)) {
+      rememberRoute(location.pathname, location.search);
+    }
     this.shouldPromptWhenLeaving()
       ? (window.onbeforeunload = () => true)
       : (window.onbeforeunload = undefined);
@@ -284,7 +298,13 @@ class Entry extends PureComponent {
               <Route path="/settings" exact={true}>
                 <Settings />
               </Route>
-              {defaultFilePath ? <Redirect to={defaultFilePath} /> : <Redirect to="/files" />}
+              {this.eliResume() ? (
+                <Redirect to={this.eliResume()} />
+              ) : defaultFilePath ? (
+                <Redirect to={defaultFilePath} />
+              ) : (
+                <Redirect to="/files" />
+              )}
             </Switch>
           ))}
       </div>

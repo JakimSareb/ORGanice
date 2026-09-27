@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.12 (septiembre de 2026)
+** Usar sin conexión
+- Nuevo: Ajustes → *Usar sin conexión* → *Preparar para usar sin conexión* (también en la paleta). Guarda en el dispositivo tus ficheros sin cifrar, los cifrados (solo su versión cifrada; sin conexión se pide la frase de paso) y, si quieres, los adjuntos (te dice antes cuánto ocupan).
+- Sin conexión, la app arranca con lo guardado, sin errores, y los adjuntos guardados se ven dentro de la app. Lo que cambies se guarda en el dispositivo aunque el sistema cierre la app (lo cifrado, cifrado) y se sube solo al volver la conexión.
+- Más espacio: la copia local pasa del almacén de ~5 MB del navegador a IndexedDB.
+- Al abrir la app desde su icono, vuelve a la última vista (GTD, fichero o carpeta). En el iPhone, al volver después de un rato, ya no «empieza de cero».
+** Paleta de comandos
+- Al abrirla (lupa, botón redondo o Ctrl+K) el cursor va directo al cuadro de texto; en el iPhone y el iPad, con el teclado abierto.
+** Otros
+- Los mensajes de la app respetan los saltos de línea.
+
 * 2.11 (septiembre de 2026)
 ** Adjuntos
 - Clip junto al título de los encabezados y de las tareas de la vista GTD que tienen archivos adjuntos (con el número si hay más de uno).

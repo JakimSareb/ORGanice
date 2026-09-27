@@ -3,7 +3,7 @@
 // encabezados y tareas de todos los ficheros cargados, listas y proyectos GTD, etiquetas y
 // acciones de la app. Búsqueda tolerante (cmppnt → «Comprar pintura»); vacía = recientes.
 // Prefijos opcionales: «>» acciones, «#» etiquetas, «/» ficheros.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { List, Map as IMap } from 'immutable';
@@ -23,6 +23,7 @@ import {
   sync,
   eliReviewFinishedAttachments,
 } from '../../actions/org';
+import { eliPrepareOffline } from '../../actions/eli_offline';
 import {
   activatePopup,
   setTheme,
@@ -131,6 +132,17 @@ export default function EliCommandPalette() {
       window.removeEventListener('eli:palette', onOpen);
     };
   }, [isAuthenticated]);
+
+  // ORG Mode para Eli (2.12): el foco va al cuadro de texto en cuanto se abre (sin esperar):
+  // en el iPhone así se queda el teclado abierto (ver lib/eli_palette.js)
+  useLayoutEffect(() => {
+    if (!open || !inputRef.current) return;
+    try {
+      inputRef.current.focus({ preventScroll: true });
+    } catch (e) {
+      inputRef.current.focus();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -271,6 +283,14 @@ export default function EliCommandPalette() {
       () => dispatch(eliReviewFinishedAttachments()),
       '',
       'archivos borrar archivadas canceladas done limpiar'
+    );
+    act(
+      'prepare-offline',
+      'Preparar para usar sin conexión',
+      'fas fa-plane',
+      () => dispatch(eliPrepareOffline()),
+      '',
+      'offline viaje avión descargar internet'
     );
     act(
       'all-projects',

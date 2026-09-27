@@ -360,8 +360,10 @@ const findKeysBySpec = async (spec) => {
 
 const ownPublicKeys = async () => (await loadPrivateKeys()).map((k) => k.toPublic());
 
-const askNewPassphrase = async (label, cacheKey) => {
+const askNewPassphrase = async (label, cacheKey, silent = false) => {
   if (cacheKey && passphrases.has(cacheKey)) return passphrases.get(cacheKey);
+  // ORG Mode para Eli (2.12): guardados en segundo plano: nunca preguntar
+  if (silent) throw new Error('Sin frase de paso en memoria');
   const passphrase = await promptFn({
     title: 'Cifrado simétrico',
     message: `Nueva frase de paso para ${label}`,
@@ -372,7 +374,7 @@ const askNewPassphrase = async (label, cacheKey) => {
 };
 
 // Metadatos para cifrar algo nuevo según el modo por defecto
-export const newEncryptionMeta = async ({ label, cacheKey, armored }) => {
+export const newEncryptionMeta = async ({ label, cacheKey, armored, silent = false }) => {
   if (getDefaultMode() === 'publickey') {
     const own = await ownPublicKeys();
     if (own.length === 0) {
@@ -384,7 +386,11 @@ export const newEncryptionMeta = async ({ label, cacheKey, armored }) => {
       recipientKeyIDs: own.map((k) => k.getKeyID().toHex()),
     };
   }
-  return { mode: 'symmetric', armored, passphrase: await askNewPassphrase(label, cacheKey) };
+  return {
+    mode: 'symmetric',
+    armored,
+    passphrase: await askNewPassphrase(label, cacheKey, silent),
+  };
 };
 
 /**
@@ -429,9 +435,10 @@ export const inheritEncryptionMeta = (targetPath, sourcePath) => {
   }
 };
 
-export const encryptFile = async (path, text) => {
+export const encryptFile = async (path, text, { silent = false } = {}) => {
   let meta = fileMeta.get(path);
   if (!meta) {
+    if (silent) throw new Error('Sin datos de cifrado en memoria');
     meta = await newEncryptionMeta({
       label: path,
       cacheKey: path,
@@ -441,7 +448,7 @@ export const encryptFile = async (path, text) => {
   }
   if (meta.mode === 'symmetric' && !meta.passphrase) {
     // Frases olvidadas (bloqueo/olvidar): se pide de nuevo antes de volver a cifrar
-    meta.passphrase = await askNewPassphrase(path, path);
+    meta.passphrase = await askNewPassphrase(path, path, silent);
   }
   return encryptText(text, meta, { label: path });
 };
@@ -507,7 +514,7 @@ export const hasUnencryptedCryptEntries = (text) => {
  * org-crypt al guardar en Emacs). La línea de planificación y el cajón
  * :PROPERTIES: se quedan en claro; el resto del subárbol se cifra.
  */
-export const encryptCryptEntries = async (text, { label = 'org-crypt' } = {}) => {
+export const encryptCryptEntries = async (text, { label = 'org-crypt', silent = false } = {}) => {
   if (!hasUnencryptedCryptEntries(text)) return text;
   const lines = text.split('\n');
   const jobs = [];
@@ -525,7 +532,12 @@ export const encryptCryptEntries = async (text, { label = 'org-crypt' } = {}) =>
       }
       meta = { mode: 'publickey', armored: true, encryptionKeys: keys };
     } else {
-      meta = await newEncryptionMeta({ label: 'las cabeceras :crypt:', cacheKey: 'org-crypt', armored: true });
+      meta = await newEncryptionMeta({
+        label: 'las cabeceras :crypt:',
+        cacheKey: 'org-crypt',
+        armored: true,
+        silent,
+      });
     }
     const armored = await encryptText(job.body + '\n', meta, { label });
     replacements.push({ ...job, armored: armored.replace(/\n$/, '') });

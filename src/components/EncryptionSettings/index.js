@@ -191,8 +191,9 @@ export default function EncryptionSettings() {
         Desactivado (recomendado): no queda nada de tus notas en el navegador; la app las descarga
         de Dropbox al abrirlas y necesita conexión. Si cierras la app con cambios sin subir, se
         pierden (la app te avisa antes de cerrar). Activado: puedes abrir y editar sin conexión, a
-        cambio de dejar una copia legible en este dispositivo. Los ficheros cifrados y los
-        encabezados :crypt: descifrados nunca se guardan, esté como esté esta opción.
+        cambio de dejar una copia legible en este dispositivo. El texto descifrado de los ficheros
+        cifrados y de los encabezados :crypt: nunca se guarda en claro: para usarlos sin conexión,
+        Ajustes → Usar sin conexión guarda solo su versión cifrada.
       </p>
       <h2>Cifrado (GPG)</h2>
       <p className="eli-encryption__help">

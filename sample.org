@@ -279,6 +279,19 @@ Selecciona «Escribir el informe» y mantén pulsado el reloj de arena: verás 2
 
 * Sincronización y conflictos
 - Los cambios se guardan en Dropbox en unos segundos. Sin conexión puedes seguir trabajando; al volver la red, se sincroniza.
+- Al abrir la app desde su icono vuelve a donde estabas (la vista GTD, el fichero o la carpeta), con los encabezados abiertos como los dejaste. En el iPhone el sistema cierra la app si pasa un rato en segundo plano; ahora no se nota.
+
+* Usar sin conexión (viajes)
+Para trabajar sin Internet, por ejemplo en un vuelo largo, prepara la app antes, con conexión:
+- Ajustes → *Usar sin conexión* → *Preparar para usar sin conexión* (o en la paleta: «Preparar para usar sin conexión»). Elige qué guardar en el dispositivo:
+  - *Ficheros sin cifrar* (la «copia local»): quedan legibles en el dispositivo.
+  - *Ficheros cifrados*: se guarda solo su versión cifrada. Sin conexión te pide la frase de paso (o la clave), como siempre; el texto descifrado nunca se guarda.
+  - *Adjuntos* (imágenes, PDF…) enlazados en tus notas: antes de descargarlos te dice cuántos son y cuánto ocupan.
+- Al terminar te dice qué se ha guardado; Ajustes → Usar sin conexión muestra cuándo se preparó.
+- Sin conexión aparece arriba la pastilla *Sin conexión* (con el número de ficheros con cambios pendientes). Puedes abrir la app, leer, editar, capturar y usar la vista GTD. Los adjuntos guardados se ven dentro de la app.
+- Lo que cambies se guarda en el dispositivo (también si el iPhone cierra la app; los cifrados, cifrados) y se sube solo en cuanto vuelve la conexión. Si mientras tanto el fichero cambió en Dropbox, sale el aviso de conflicto de siempre.
+- En el iPhone, usa la app desde su icono de la pantalla de inicio (Safari → Compartir → «Añadir a pantalla de inicio»): así el sistema no borra lo guardado.
+- *Borrar lo guardado* quita del dispositivo las copias y los adjuntos (conserva los cambios que aún no se han subido).
 - Si un fichero ha cambiado en Dropbox y también aquí, ORGanice te lo dice y te deja elegir: quedarte con tu versión, con la de Dropbox, o ver las diferencias y elegir cambio a cambio.
 - En Dropbox se guarda una copia de seguridad de cada fichero en la carpeta backups.
 
@@ -290,7 +303,7 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador). Lo
 - Bloqueo por inactividad y ajustes de seguridad en Ajustes → Seguridad y cifrado.
 
 * La paleta de comandos
-*Ctrl+K* (⌘K en el Mac) abre un cuadro de búsqueda en el centro de la pantalla desde cualquier sitio de la app. También con la *lupa* de la barra de arriba o, en un fichero, con el botón redondo de la lupa de abajo.
+*Ctrl+K* (⌘K en el Mac) abre un cuadro de búsqueda en el centro de la pantalla desde cualquier sitio de la app. También con la *lupa* de la barra de arriba o, en un fichero, con el botón redondo de la lupa de abajo. Se abre con el cursor ya en el cuadro (y, en el móvil, con el teclado a punto): basta con empezar a escribir.
 - Mientras escribes salen, mezclados: ficheros .org, encabezados y tareas de todos los ficheros cargados (con su estado y su fichero), listas y proyectos de la vista GTD, etiquetas (@llam → @llamadas) y acciones de la app: nueva tarea en Inbox, capturar con una plantilla, agenda, sincronizar, archivar las terminadas, tema y esquema de color, dos columnas, ajustes, ajustes de ficheros, manual…
 - No hace falta escribirlo entero ni en orden exacto: basta con algunas letras de cada palabra (cmppnt encuentra «Comprar pintura»). No distingue mayúsculas ni tildes.
 - ↑ ↓ para moverte e Intro para abrir (o tócalo). Un fichero se abre; un encabezado se abre con la vista reducida a él (narrow); una acción se ejecuta. Esc cierra.

@@ -1,4 +1,6 @@
 import { openRawEditor, openPrintPreview, openMoonPhases, openFavorites } from '../EliTools';
+import { openPalette } from '../../lib/eli_palette';
+import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { backToSettings } from '../EncryptionSettings';
@@ -665,7 +667,7 @@ class HeaderBar extends PureComponent {
           {isAuthenticated && (
             <i
               className="fas fa-search header-bar__actions__item"
-              onClick={() => window.dispatchEvent(new CustomEvent('eli:palette'))}
+              onClick={openPalette}
               title="Paleta de comandos: buscar o hacer cualquier cosa (Ctrl+K)"
               data-testid="eli-palette-btn"
               role="button"
@@ -692,9 +694,9 @@ class HeaderBar extends PureComponent {
                     'sincronizará con Dropbox los cambios pendientes.' +
                     (dirtyCount ? `\n\nFicheros con cambios pendientes: ${dirtyCount}.` : '') +
                     (getPersistPlainFiles()
-                      ? ''
-                      : '\n\nAtención: la copia local está desactivada (Ajustes → Seguridad y cifrado). ' +
-                        'Si cierras la app antes de recuperar la conexión, los cambios se pierden.')
+                      ? `\n\n${offlineStatusText()}`
+                      : '\n\nAtención: la copia local está desactivada (Ajustes → Usar sin conexión). ' +
+                        'Si la app se cierra antes de recuperar la conexión, los cambios se pierden.')
                 )
               }
             >

@@ -256,8 +256,8 @@ export default () => {
 
   // ORG Mode para Eli: todos los ficheros .org (también .org.gpg/.org.asc) del Dropbox de la app,
   // sin copias de seguridad ni ficheros de archivo
-  // ORG Mode para Eli: todos los ficheros de la carpeta (recursivo)
-  const listAllFiles = () =>
+  // ORG Mode para Eli: todos los ficheros de la carpeta (recursivo), con su tamaño
+  const listAllFileEntries = () =>
     withDbx(async (dbx) => {
       let response = await dbx.filesListFolder({ path: '', recursive: true, limit: 2000 });
       let entries = response.result.entries;
@@ -267,9 +267,10 @@ export default () => {
       }
       return entries
         .filter((e) => e['.tag'] === 'file')
-        .map((e) => e.path_display)
-        .sort((a, b) => a.localeCompare(b));
+        .map((e) => ({ path: e.path_display, size: e.size || 0 }))
+        .sort((a, b) => a.path.localeCompare(b.path));
     });
+  const listAllFiles = () => listAllFileEntries().then((list) => list.map((e) => e.path));
 
   const listOrgFiles = () =>
     listAllFiles().then((paths) =>
@@ -296,6 +297,7 @@ export default () => {
     uploadBinaryFile,
     listOrgFiles,
     listAllFiles,
+    listAllFileEntries,
     isSignedIn,
     getDirectoryListing,
     getMoreDirectoryListing,

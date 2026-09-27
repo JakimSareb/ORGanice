@@ -1,6 +1,8 @@
 // ORG Mode para Eli: imágenes y contenido multimedia enlazado desde ficheros Org y
 // almacenado en Dropbox (por convención en assets/AAAA, junto al fichero .org).
 
+import { getOfflineBlob } from './eli_offline_store';
+
 const IMAGE = /\.(jpe?g|png|gif|webp|bmp|tiff?|heic|heif|svg|avif)$/i;
 const VIDEO = /\.(mp4|m4v|mov|webm|ogv)$/i;
 const AUDIO = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac)$/i;
@@ -27,7 +29,8 @@ export const fileLinkTarget = (uri) => {
   if (!uri) return null;
   let target = uri.trim();
   if (/^file:/i.test(target)) target = target.slice(5);
-  else if (/^[a-z][a-z0-9+.-]*:/i.test(target)) return null; // http:, mailto:, id:, etc.
+  else if (/^[a-z][a-z0-9+.-]*:/i.test(target)) return null;
+  // http:, mailto:, id:, etc.
   else if (!/^(\.{1,2}\/|\/)/.test(target) && !/^assets\//i.test(target)) return null;
   target = target.replace(/::.*$/, '');
   if (target.startsWith('~')) return null;
@@ -85,17 +88,119 @@ export const loadPreviewUrl = (client, path) =>
     return URL.createObjectURL(type && type !== blob.type ? new Blob([blob], { type }) : blob);
   });
 
-export const loadTemporaryLink = (client, path) =>
+// ORG Mode para Eli (2.12): adjuntos guardados para usar sin conexión
+const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+const typedBlob = (path, blob) => {
+  const type = mimeFor(path);
+  return type && blob.type !== type ? new Blob([blob], { type }) : blob;
+};
+const offlineUrl = (path) =>
+  cached(`offline:${path}`, async () => {
+    const blob = await getOfflineBlob(path);
+    if (!blob) throw new Error('Sin conexión: este adjunto no está guardado en el dispositivo');
+    return URL.createObjectURL(typedBlob(path, blob));
+  });
+
+export const loadTemporaryLink = (client, path) => {
+  if (isOffline()) return offlineUrl(path);
   // Los enlaces temporales de Dropbox duran 4 horas; se guardan 3 como máximo.
-  cached(`link:${path}:${Math.floor(Date.now() / (3 * 3600 * 1000))}`, () =>
+  return cached(`link:${path}:${Math.floor(Date.now() / (3 * 3600 * 1000))}`, () =>
     client.getTemporaryLink(path)
-  );
+  ).catch((e) => offlineUrl(path).catch(() => Promise.reject(e)));
+};
+
+const MIME = {
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  heic: 'image/heic',
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  txt: 'text/plain',
+  md: 'text/plain',
+  csv: 'text/plain',
+};
+const mimeFor = (path) => MIME[((path || '').split('.').pop() || '').toLowerCase()] || null;
+
+// Visor dentro de la app para los adjuntos guardados (sin conexión no se puede abrir Dropbox)
+export const showOfflineViewer = (path, url) => {
+  const kind = mediaKind(path);
+  const overlay = document.createElement('div');
+  overlay.className = 'eli-prompt__overlay eli-viewer';
+  overlay.setAttribute('data-testid', 'eli-offline-viewer');
+  const box = document.createElement('div');
+  box.className = 'eli-viewer__box';
+  const bar = document.createElement('div');
+  bar.className = 'eli-viewer__bar';
+  const name = document.createElement('span');
+  name.className = 'eli-viewer__name';
+  name.textContent = path.split('/').pop();
+  const save = document.createElement('a');
+  save.className = 'btn eli-viewer__save';
+  save.href = url;
+  save.download = path.split('/').pop();
+  save.innerHTML = '<i class="fas fa-download"></i> Guardar';
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'btn eli-viewer__close';
+  close.textContent = 'Cerrar';
+  bar.append(name, save, close);
+  let content;
+  if (kind === 'image') {
+    content = document.createElement('img');
+    content.alt = name.textContent;
+  } else if (kind === 'video' || kind === 'audio') {
+    content = document.createElement(kind);
+    content.controls = true;
+    content.playsInline = true;
+  } else if (/^(application\/pdf|text\/plain)$/.test(mimeFor(path) || '')) {
+    // Solo PDF y texto (nunca HTML: no debe ejecutarse nada dentro de la app)
+    content = document.createElement('iframe');
+    content.title = name.textContent;
+  } else {
+    content = document.createElement('div');
+    content.className = 'eli-viewer__none';
+    content.textContent =
+      'Este tipo de archivo no se puede ver dentro de la app. Con «Guardar» lo abres en otra app.';
+  }
+  content.classList.add('eli-viewer__content');
+  if (content.tagName !== 'DIV') content.src = url;
+  box.append(bar, content);
+  overlay.appendChild(box);
+  const done = () => {
+    document.removeEventListener('keydown', onKey, true);
+    overlay.remove();
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      done();
+    }
+  };
+  close.addEventListener('click', done);
+  overlay.addEventListener('click', (e) => e.target === overlay && done());
+  document.addEventListener('keydown', onKey, true);
+  document.body.appendChild(overlay);
+};
 
 /**
  * Abre el fichero en una pestaña nueva. La pestaña se abre de forma síncrona (dentro del clic)
  * para que Safari no la bloquee, y después se le asigna el enlace temporal de Dropbox.
  */
 export const openInNewTab = (client, path) => {
+  // ORG Mode para Eli (2.12): sin conexión, el adjunto guardado se ve dentro de la app
+  if (isOffline()) return offlineUrl(path).then((url) => showOfflineViewer(path, url));
   const w = window.open('', '_blank');
   if (w) {
     try {
@@ -114,7 +219,10 @@ export const openInNewTab = (client, path) => {
     })
     .catch((e) => {
       if (w) w.close();
-      throw e;
+      return offlineUrl(path).then(
+        (url) => showOfflineViewer(path, url),
+        () => Promise.reject(e)
+      );
     });
 };
 
@@ -154,7 +262,10 @@ export const uploadAssets = async (client, orgFilePath, files) => {
   const dir = assetsDirFor(orgFilePath);
   const links = [];
   for (const file of files) {
-    const uploadedPath = await client.uploadBinaryFile(`${dir}/${sanitizeFileName(file.name)}`, file);
+    const uploadedPath = await client.uploadBinaryFile(
+      `${dir}/${sanitizeFileName(file.name)}`,
+      file
+    );
     links.push(orgLinkFor(relativeLinkFor(orgFilePath, uploadedPath)));
   }
   return links;

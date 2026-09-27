@@ -289,3 +289,17 @@
     padding-left: 12px;
   }
 }
+
+/* ORG Mode para Eli (2.12): usar sin conexión */
+.eli-offline-settings {
+  padding: 4px 12px 12px;
+}
+.eli-offline-settings__status {
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+.eli-offline-settings__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

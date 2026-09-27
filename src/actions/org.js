@@ -44,7 +44,8 @@ import {
 // ORG Mode para Eli: destino por defecto del archivo (junto al fichero o en su subcarpeta archive)
 const eliDefaultArchiveLocation = (getState) =>
   getState().base.get('eliArchiveInSubfolder') ? SUBFOLDER_LOCATION : undefined;
-import { isEncryptedPath } from '../lib/eli_crypto';
+import { isEncryptedPath, decryptFile } from '../lib/eli_crypto';
+import { pendingLocalVersion, clearPendingLocalVersion } from '../lib/eli_offline_store';
 import { List } from 'immutable';
 import {
   decryptCryptEntryInText,
@@ -560,9 +561,34 @@ export const dirtyAction = (isDirty, path) => ({
   path,
 });
 
-export const setDirty = (isDirty, path) => (dispatch) => {
+export const setDirty = (isDirty, path) => (dispatch, getState) => {
+  // ORG Mode para Eli (2.12): al quedar al día (subido, o se eligió la versión del servidor),
+  // la versión cifrada guardada con cambios pendientes ya no hace falta
+  if (!isDirty && path && getState && getState().org.present.getIn(['files', path, 'isDirty'])) {
+    clearPendingLocalVersion(path);
+  }
   persistIsDirty(isDirty, path);
   dispatch(dirtyAction(isDirty, path));
+};
+
+// ORG Mode para Eli (2.12): un fichero cifrado con cambios hechos sin conexión que no llegaron a
+// subirse (la app se cerró): al abrirlo se recuperan esos cambios (guardados cifrados) y se
+// marca como pendiente de subir. Al sincronizar se sube o, si en el servidor cambió mientras
+// tanto, aparece el aviso de conflicto de siempre.
+export const eliApplyPendingLocalVersion = (path) => async (dispatch) => {
+  const pending = pendingLocalVersion(path);
+  if (!pending) return false;
+  let text;
+  try {
+    text = await decryptFile(path, pending.contents);
+  } catch (e) {
+    return false;
+  }
+  dispatch(parseFile(path, text));
+  dispatch(setDirty(true, path));
+  dispatch(setLastSyncAt(pending.baseSyncAt ? parseISO(pending.baseSyncAt) : new Date(0), path));
+  dispatch(sync({ path, shouldSuppressMessages: true }));
+  return true;
 };
 
 export const setSelectedDescriptionItemIndex = (itemIndex) => (dispatch) => {
@@ -1729,6 +1755,7 @@ export const loadFileQuietly = (path) => async (dispatch, getState) => {
     dispatch(parseFile(path, contents));
     dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
     dispatch(setDirty(false, path));
+    await dispatch(eliApplyPendingLocalVersion(path));
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('ORGanice: no se pudo cargar', path, e);
