@@ -1,5 +1,11 @@
 import { ActionCreators, ActionTypes } from 'redux-undo';
-import { offerToDeleteAttachments } from '../lib/eli_attachments';
+import {
+  offerToDeleteAttachments,
+  attachmentsOfHeader,
+  removeLinksToTarget,
+  confirmAndDeleteAttachment,
+  chooseAttachmentToDelete,
+} from '../lib/eli_attachments';
 import { addConflict, sameContents } from '../lib/eli_conflicts';
 import { announceSaved } from '../lib/eli_multi';
 import {
@@ -1121,10 +1127,10 @@ export const insertInactiveDate = (headerId) => (dispatch) => {
 };
 
 // Sube ficheros ya preparados (p. ej. imágenes redimensionadas) y devuelve los enlaces Org
-export const uploadFilesAndGetLinks = (files) => async (dispatch, getState) => {
+export const uploadFilesAndGetLinks = (files, orgPath = null) => async (dispatch, getState) => {
   const state = getState();
   const client = state.syncBackend.get('client');
-  const path = state.org.present.get('path');
+  const path = orgPath || state.org.present.get('path');
   dispatch(
     setLoadingMessage(`Subiendo ${files.length} archivo(s) a assets/${new Date().getFullYear()}…`)
   );
@@ -1427,6 +1433,59 @@ export const eliOfferDeleteAttachments = (headers, headerId, path) => (dispatch,
     client: state.syncBackend.get('client'),
     files: state.org.present.get('files'),
   });
+};
+
+// ORG Mode para Eli: borrar adjuntos desde un encabezado (menú ⋯ → «Borrar adjuntos…»): se elige
+// el adjunto, se borra el archivo (con confirmación) y se quita su enlace del encabezado.
+export const eliDeleteHeaderAttachments = (headerId, orgPath = null) => async (
+  dispatch,
+  getState
+) => {
+  const path = orgPath || getState().org.present.get('path');
+  if (!path || path.startsWith(STATIC_FILE_PREFIX)) return;
+  const headerOf = () =>
+    (getState().org.present.getIn(['files', path, 'headers']) || List()).find(
+      (h) => h.get('id') === headerId
+    );
+  for (;;) {
+    const header = headerOf();
+    const list = attachmentsOfHeader(header, path);
+    if (!list.length) {
+      showMessage('Adjuntos', 'Este encabezado no tiene archivos adjuntos.');
+      return;
+    }
+    const chosen = await chooseAttachmentToDelete(list);
+    if (!chosen) return;
+    const result = await confirmAndDeleteAttachment({
+      client: getState().syncBackend.get('client'),
+      files: getState().org.present.get('files'),
+      orgFilePath: path,
+      path: chosen.path,
+      excludedIds: new Set([headerId]),
+    });
+    if (!result) continue;
+    const h = headerOf();
+    if (!h) return;
+    const newRaw = removeLinksToTarget(h.get('rawDescription') || '', chosen.target);
+    dispatch({
+      type: 'ELI_IN_FILE',
+      path,
+      dirtying: true,
+      inner: {
+        type: 'UPDATE_HEADER_DESCRIPTION',
+        headerId,
+        newRawDescription: createRawDescriptionText(
+          h.set('rawDescription', newRaw),
+          false,
+          getState().base.get('eliIndentOnExport') !== true
+        ),
+        dirtying: true,
+      },
+    });
+    dispatch(setDirty(true, path));
+    dispatch(sync({ path, shouldSuppressMessages: true }));
+    if (attachmentsOfHeader(headerOf(), path).length === 0) return;
+  }
 };
 
 // ORG Mode para Eli: seguir un enlace Org a un fichero o encabezado (file:x.org::*Título,

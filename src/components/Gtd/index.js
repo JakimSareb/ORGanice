@@ -64,6 +64,8 @@ import {
   DEFAULT_ENERGY,
   DEFAULT_EFFORT,
 } from '../../lib/eli_todo_defaults';
+import { openUploadDialog } from '../EliTools';
+import { confirmAndDeleteAttachment } from '../../lib/eli_attachments';
 import useTaskDrag from './useTaskDrag';
 import { setGtdConfig, isSectionShown } from '../../lib/gtd/gtd_sections';
 
@@ -815,10 +817,28 @@ export default function GtdView() {
         dispatch(gtdArchiveTask(task));
       }}
       onCloseProject={task.isProject ? () => closeProject(task) : undefined}
+      onAttachFiles={(list, target) =>
+        openUploadDialog({ files: list, source: 'attach', path: task.path, target })
+      }
+      onDeleteFile={(target) => deleteAttachmentFile(task, target)}
       energyOptions={energyOptions}
       effortOptions={effortOptions}
     />
   );
+
+  // ORG Mode para Eli: borrar un archivo adjunto desde el editor (el enlace lo quita el editor)
+  const deleteAttachmentFile = async (task, target) => {
+    const path = resolveDropboxPath(task.path, target);
+    if (!path) return false;
+    const result = await confirmAndDeleteAttachment({
+      client,
+      files,
+      orgFilePath: task.path,
+      path,
+      excludedIds: new Set([task.id]),
+    });
+    return !!result;
+  };
 
   const renderNewProjectEditor = () => (
     <div className="gtd-new-project" data-testid="gtd-new-project">
@@ -840,6 +860,9 @@ export default function GtdView() {
         allTags={allTags}
         contextTags={contextTags}
         onSave={createProject}
+        onAttachFiles={(list, target) =>
+          openUploadDialog({ files: list, source: 'attach', path: tasksFile, target })
+        }
         onClose={() => setNewProject(null)}
         energyOptions={energyOptions}
         effortOptions={effortOptions}

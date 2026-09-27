@@ -774,7 +774,10 @@ function UploadDialog({ request, path, headers, onClose }) {
     if (!prepared || busy) return;
     setBusy(true);
     const links = await dispatch(
-      uploadFilesAndGetLinks(prepared.map((p, i) => renamedFile(pick(p), names[i])))
+      uploadFilesAndGetLinks(
+        prepared.map((p, i) => renamedFile(pick(p), names[i])),
+        path
+      )
     );
     if (links.length) {
       if (target && target.el && document.body.contains(target.el)) {
@@ -1030,6 +1033,8 @@ export default function EliTools() {
   const [favorites, setFavorites] = useState(false);
   const [upload, setUpload] = useState(null); // { files, headerId?, target?, source }
   const [moon, setMoon] = useState(false);
+  const uploadPath = (upload && upload.path) || (usable ? path : null);
+  const uploadFile = uploadPath && files ? files.get(uploadPath) : null;
 
   useEffect(() => {
     const onFav = () => setFavorites(true);
@@ -1048,10 +1053,14 @@ export default function EliTools() {
   // Pegar archivos o imágenes desde el portapapeles
   useEffect(() => {
     const onPaste = (e) => {
-      if (!usable || !e.clipboardData) return;
+      if (!e.clipboardData) return;
+      const active = document.activeElement;
+      // Campos de la vista GTD que dicen a qué fichero pertenecen (notas del editor)
+      const owner = active && active.closest && active.closest('[data-eli-orgpath]');
+      const ownerPath = owner ? owner.getAttribute('data-eli-orgpath') : null;
+      if (!usable && !ownerPath) return;
       const pasted = Array.from(e.clipboardData.files || []);
       if (!pasted.length) return;
-      const active = document.activeElement;
       const isField =
         !!active &&
         (active.tagName === 'TEXTAREA' ||
@@ -1064,7 +1073,10 @@ export default function EliTools() {
       setUpload({
         files: pasted,
         source: 'paste',
-        headerId: file.get('selectedHeaderId') || file.get('narrowedHeaderId') || null,
+        path: ownerPath || undefined,
+        headerId: ownerPath
+          ? null
+          : file.get('selectedHeaderId') || file.get('narrowedHeaderId') || null,
         target: isField
           ? { el: active, start: active.selectionStart, end: active.selectionEnd }
           : null,
@@ -1127,11 +1139,12 @@ export default function EliTools() {
       )}
       {favorites && <FavoritesPopup currentPath={path} onClose={() => setFavorites(false)} />}
       {moon && <MoonPhases onClose={() => setMoon(false)} />}
-      {upload && usable && (
+      {/* ORG Mode para Eli: también desde la vista GTD (upload.path = fichero de la tarea) */}
+      {upload && uploadFile && uploadFile.get('headers') && (
         <UploadDialog
           request={upload}
-          path={path}
-          headers={file.get('headers')}
+          path={uploadPath}
+          headers={uploadFile.get('headers')}
           onClose={() => setUpload(null)}
         />
       )}

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import EliFormatBar from '../EliFormatBar';
 import ScheduleField from './ScheduleField';
+import { fileLinkTarget } from '../../lib/eli_media';
+import { removeLinksToTarget } from '../../lib/eli_attachments';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -108,6 +110,8 @@ export default function TaskEditor({
   mustDecide = false,
   onCancelNew,
   replacesRow = false,
+  onAttachFiles,
+  onDeleteFile,
 }) {
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
@@ -513,6 +517,7 @@ export default function TaskEditor({
           onClick={onNotesClick}
           placeholder="Notas"
           rows={10}
+          data-eli-orgpath={task.path}
           data-testid="gtd-editor-notes"
         />
         {checkboxes.length > 0 && (
@@ -550,15 +555,34 @@ export default function TaskEditor({
                   <i className="fas fa-external-link-alt" /> {l.label}
                 </a>
               ) : (
-                <button
-                  key={l.target}
-                  type="button"
-                  className="gtd-link"
-                  title={l.target}
-                  onClick={() => onOpenLink && onOpenLink(l.target)}
-                >
-                  <i className="fas fa-paperclip" /> {l.label}
-                </button>
+                <span key={l.target} className="gtd-link-wrap">
+                  <button
+                    type="button"
+                    className="gtd-link"
+                    title={l.target}
+                    onClick={() => onOpenLink && onOpenLink(l.target)}
+                  >
+                    <i className="fas fa-paperclip" /> {l.label}
+                  </button>
+                  {/* ORG Mode para Eli: borrar el archivo adjunto (y su enlace de las notas) */}
+                  {onDeleteFile && fileLinkTarget(l.target) && (
+                    <button
+                      type="button"
+                      className="gtd-link-delete"
+                      title="Borrar este archivo adjunto"
+                      aria-label={`Borrar ${l.label}`}
+                      onClick={async () => {
+                        const target = fileLinkTarget(l.target);
+                        if (await onDeleteFile(target)) {
+                          setNotes((n) => removeLinksToTarget(n, target));
+                        }
+                      }}
+                      data-testid="gtd-link-delete"
+                    >
+                      <i className="fas fa-trash-alt" />
+                    </button>
+                  )}
+                </span>
               )
             )}
           </div>
@@ -693,6 +717,25 @@ export default function TaskEditor({
         >
           <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
         </span>
+        {onAttachFiles && !encrypted && (
+          <label className="gtd-btn gtd-btn--link gtd-ed__attach" title="Adjuntar archivos">
+            <i className="fas fa-paperclip" /> Adjuntar
+            <input
+              type="file"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                e.target.value = '';
+                if (!files.length) return;
+                const el = notesRef.current;
+                const end = el ? el.value.length : 0;
+                onAttachFiles(files, el ? { el, start: end, end } : null);
+              }}
+              data-testid="gtd-editor-attach"
+            />
+          </label>
+        )}
         {!isNew && (
           <button
             type="button"

@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.10 (septiembre de 2026)
+** Adjuntos
+- Vista GTD: botón *Adjuntar* en el editor de una tarea (y pegar imágenes en las notas). El archivo se sube a assets/año junto al fichero de la tarea y su enlace se añade a las notas.
+- Vista GTD: en «Enlaces» del editor, una papelera junto a cada archivo adjunto para borrarlo (con confirmación) y quitar su enlace.
+- Hoja: ⋯ del encabezado → «Borrar adjuntos…»: lista los archivos adjuntos del encabezado y permite borrarlos uno a uno (el archivo y su enlace).
+
 * 2.9.1 (septiembre de 2026)
 ** Vista GTD
 - Con una tarea abierta, desplazar la lista (empezando fuera de la tarea) ya no la cierra: el editor solo se cierra con un toque fuera, sin mover el dedo o el ratón.

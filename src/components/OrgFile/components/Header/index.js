@@ -1,3 +1,4 @@
+import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
 import { getPriority } from '../../../../lib/eli_priority';
 import { openPrintPreview, openUploadDialog } from '../../../EliTools';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
@@ -696,6 +697,11 @@ class Header extends PureComponent {
                   onRefileHeader={this.handleRefileHeaderRequest}
                   onAddNote={this.handleAddNoteClick}
                   onAttachFiles={this.handleAttachFiles}
+                  onDeleteAttachments={
+                    attachmentsOfHeader(header, this.props.path).length
+                      ? () => this.props.org.eliDeleteHeaderAttachments(header.get('id'))
+                      : null
+                  }
                   onExportPdf={() => openPrintPreview(header.get('id'))}
                   onRemoveHeader={() => {
                     const id = header.get('id');

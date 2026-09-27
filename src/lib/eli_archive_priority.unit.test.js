@@ -113,3 +113,21 @@ test('estrella en el texto del editor de título', () => {
   expect(titleTextHasPriorityA('[#A] x', kw)).toBe(true);
   expect(titleTextHasPriorityA('x [#A]', kw)).toBe(false);
 });
+
+test('quitar enlaces a un adjunto', () => {
+  const { removeLinksToTarget, attachmentsOfHeader } = require('./eli_attachments');
+  const text = [
+    'Notas',
+    '[[file:assets/2026/foto.jpg]]',
+    'Mira [[file:assets/2026/foto.jpg][la foto]] y más',
+    'file:assets/2026/foto.jpg',
+    '[[file:assets/2026/otra.pdf]]',
+  ].join('\n');
+  expect(removeLinksToTarget(text, 'assets/2026/foto.jpg')).toBe(
+    ['Notas', 'Mira  y más', '[[file:assets/2026/otra.pdf]]'].join('\n')
+  );
+  const f = parseOrg('* Tarea\n[[file:assets/a.pdf]]\n[[file:x.org]]\n[[https://ejemplo.com]]\n');
+  expect(attachmentsOfHeader(f.get('headers').get(0), '/Notas/gtd.org')).toEqual([
+    { target: 'assets/a.pdf', path: '/Notas/assets/a.pdf', name: 'a.pdf' },
+  ]);
+});

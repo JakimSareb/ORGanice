@@ -1458,3 +1458,26 @@
 .gtd-task.is-swiping.is-armed::before {
   opacity: 1;
 }
+
+/* ORG Mode para Eli: adjuntar y borrar adjuntos desde el editor */
+.gtd-ed__attach {
+  cursor: pointer;
+}
+.gtd-link-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.gtd-link-delete {
+  border: none;
+  background: transparent;
+  color: var(--base00);
+  opacity: 0.55;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 12px;
+}
+.gtd-link-delete:hover {
+  color: var(--red);
+  opacity: 1;
+}

@@ -101,6 +101,7 @@ export default class HeaderActionDrawer extends PureComponent {
       onAddNote,
       onDuplicateHeader,
       onAttachFiles,
+      onDeleteAttachments,
       onExportPdf,
       onRemoveHeader,
       onTogglePriority,
@@ -231,6 +232,12 @@ export default class HeaderActionDrawer extends PureComponent {
         label: 'Adjuntar archivo',
         onClick: onAttachFiles,
         testId: 'eli-attach',
+      },
+      onDeleteAttachments && {
+        icon: 'fas fa-trash-alt',
+        label: 'Borrar adjuntos…',
+        onClick: onDeleteAttachments,
+        testId: 'eli-delete-attachments',
       },
       {
         icon: 'far fa-clone',
