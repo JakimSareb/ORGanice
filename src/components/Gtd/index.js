@@ -972,9 +972,6 @@ export default function GtdView() {
           >
             <i className="fas fa-redo" />
           </button>
-          <button className="gtd-main__sync" onClick={syncAll} title="Sincronizar">
-            <i className="fas fa-sync-alt" />
-          </button>
         </header>
 
         {newProject && renderNewProjectEditor()}

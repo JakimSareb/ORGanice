@@ -87,6 +87,20 @@ const planningDate = (header, type) => {
   }
 };
 
+// ORG Mode para Eli: repetición de una fecha como texto de Org («+1w», «.+2d», «++1m») o ''
+const planningRepeat = (header, type) => {
+  const item = (header.get('planningItems') || List()).find((p) => p.get('type') === type);
+  const ts = item && item.get('timestamp');
+  if (!ts || !ts.get('repeaterType')) return '';
+  return `${ts.get('repeaterType')}${ts.get('repeaterValue') || 1}${ts.get('repeaterUnit') || 'd'}`;
+};
+
+export const REPEAT_RE = /^(\.\+|\+\+|\+)(\d+)([hdwmy])$/;
+export const parseRepeat = (text) => {
+  const m = REPEAT_RE.exec(text || '');
+  return m ? { type: m[1], value: Number(m[2]), unit: m[3] } : null;
+};
+
 const laterDate = (a, b) => (!a ? b || null : !b ? a : a > b ? a : b);
 
 // ORG Mode para Eli: proyectos dormidos (etiqueta :sleep:, se hereda como en Org) y programados
@@ -198,6 +212,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         effort: propertyValue(header, 'EFFORT'),
         scheduled: planningDate(header, 'SCHEDULED'),
         deadline: planningDate(header, 'DEADLINE'),
+        scheduledRepeat: planningRepeat(header, 'SCHEDULED'),
+        deadlineRepeat: planningRepeat(header, 'DEADLINE'),
         closed: planningDate(header, 'CLOSED'),
         project: parent ? parent.project : null,
         // Fecha de inicio del proyecto que la contiene (SCHEDULED del PROJECT o de uno de fuera)
@@ -243,23 +259,25 @@ export const tagsForList = (task, list, tags = task.ownTags || []) => {
 export const isFutureScheduled = (task, today = new Date()) =>
   !!task.scheduled && startOfDay(task.scheduled) > startOfDay(today);
 
-// Oculta hasta su fecha (solo se ve en Scheduled): programada a futuro y SIN fecha límite. Las
-// que tienen DEADLINE se ven siempre en su lista (y en Deadline)
+// ORG Mode para Eli: oculta hasta su fecha (solo se ve en Scheduled): programada a futuro, tenga o
+// no fecha límite. Si tiene prioridad ([#A], [#B]…), se ve también en su lista y en el resto.
 export const isHiddenUntilScheduled = (task, today = new Date()) =>
-  isFutureScheduled(task, today) && !task.deadline;
+  isFutureScheduled(task, today) && !task.priority;
 
+// Los hábitos (:STYLE: habit) solo se ven en Scheduled (sección «Hábitos»), nunca en las listas
 const isScheduledView = (t, today) =>
   !t.isDone &&
   !t.isProject &&
   !isParked(t, today) &&
   (!!t.keyword || hasInboxTag(t)) &&
-  isFutureScheduled(t, today);
+  (isFutureScheduled(t, today) || t.isHabit);
 
 // Lista a la que pertenece una tarea (una sola; Focus es aparte)
 export const listOf = (task, today = new Date()) => {
   if (task.isDone) return 'logbook';
   if (task.isProject) return 'project';
   if (isParked(task, today)) return 'parked';
+  if (task.isHabit && (task.keyword || hasInboxTag(task))) return 'habit';
   const inbox = hasInboxTag(task);
   if ((task.keyword || inbox) && isHiddenUntilScheduled(task, today)) return 'scheduled';
   // Inbox: etiqueta @inbox, o encabezados sin estado del fichero de entrada
@@ -358,13 +376,21 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
         t.keyword &&
         !t.isDone &&
         !t.isProject &&
+        !t.isHabit &&
         !isHiddenUntilScheduled(t, today)
     );
   } else if (view.id === 'focus') {
     out = tasks.filter((t) => isFocus(t, today));
   } else if (view.id === 'deadline') {
     out = tasks.filter(
-      (t) => t.deadline && t.keyword && !t.isDone && !t.isProject && !isParked(t, today)
+      (t) =>
+        t.deadline &&
+        t.keyword &&
+        !t.isDone &&
+        !t.isProject &&
+        !t.isHabit &&
+        !isParked(t, today) &&
+        !isHiddenUntilScheduled(t, today)
     );
   } else if (view.id === 'scheduled') {
     // Todas las programadas a futuro (también las que tienen DEADLINE y se ven en su lista)

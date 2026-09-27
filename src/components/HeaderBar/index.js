@@ -6,6 +6,18 @@ import { getPersistPlainFiles } from '../../lib/eli_security';
 import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
 const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
+// (memorizado: la lista solo cambia si cambian los ficheros)
+let lastFiles = null;
+let lastLoaded = [];
+const loadedPathsOf = (files) => {
+  if (files !== lastFiles) {
+    lastFiles = files;
+    lastLoaded = files
+      ? Array.from(files.keys()).filter((p) => !isStaticFile(p) && files.getIn([p, 'headers']))
+      : [];
+  }
+  return lastLoaded;
+};
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -81,6 +93,20 @@ class HeaderBar extends PureComponent {
     }
   }
 
+  // Sincronizar: el fichero abierto, los de la vista GTD o todos los cargados (explorador)
+  eliSyncNow() {
+    const root = this.getPathRoot();
+    if (root === 'gtd') {
+      window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { sync: true } }));
+    } else if (root === 'file' && this.props.path && !isStaticFile(this.props.path)) {
+      this.props.org.sync({ forceAction: 'manual' });
+    } else {
+      (this.props.loadedPaths || []).forEach((p) =>
+        this.props.org.sync({ path: p, shouldSuppressMessages: true })
+      );
+    }
+  }
+
   renderModeSwitch(mode) {
     const docs = mode === 'docs';
     const root = this.getPathRoot();
@@ -103,33 +129,31 @@ class HeaderBar extends PureComponent {
     }
     return (
       <div className="eli-mode-bar">
-        <div className="eli-mode" role="tablist" aria-label="Modo">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={docs}
+        {/* Un solo botón: se pulse donde se pulse, cambia de modo */}
+        <button
+          type="button"
+          className="eli-mode"
+          onClick={() => (docs ? openGtdMode() : openDocuments())}
+          title={docs ? 'Cambiar a la vista GTD (tecla g)' : 'Cambiar a Documentos (tecla g)'}
+          aria-label={docs ? 'Cambiar a la vista GTD' : 'Cambiar a Documentos'}
+          data-testid="eli-mode-toggle"
+        >
+          <span
             className={'eli-mode__btn eli-mode__btn--docs' + (docs ? ' is-on' : '')}
-            onClick={() => !docs && openDocuments()}
-            title="Documentos (tecla g)"
             data-testid="eli-mode-docs"
           >
             <i className="far fa-file-alt" />
             <span className="eli-mode__label eli-mode__label--long">Documentos</span>
             <span className="eli-mode__label eli-mode__label--short">Docs</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!docs}
+          </span>
+          <span
             className={'eli-mode__btn eli-mode__btn--gtd' + (!docs ? ' is-on' : '')}
-            onClick={() => docs && openGtdMode()}
-            title="Vista GTD (tecla g)"
             data-testid="eli-open-gtd"
           >
             <i className="fas fa-tasks" />
             <span className="eli-mode__label">GTD</span>
-          </button>
-        </div>
+          </span>
+        </button>
         {up && (
           <Link
             to={decodeURIComponent(up.to)}
@@ -556,13 +580,6 @@ class HeaderBar extends PureComponent {
               onClick: () => openPrintPreview(null),
               testId: 'eli-print-file',
             },
-            inRealFile && {
-              icon: 'fas fa-sync-alt',
-              label: 'Sincronizar ahora',
-              onClick: () => this.props.org.sync({ forceAction: 'manual' }),
-              disabled: !online,
-              testId: 'eli-sync-now',
-            },
             {
               icon: 'far fa-copy',
               label: 'Ficheros principales',
@@ -628,6 +645,20 @@ class HeaderBar extends PureComponent {
               <i className="fas fa-expand" />
               <span className="eli-widen-pill__text"> Ver todo</span>
             </button>
+          )}
+
+          {/* ORG Mode para Eli: sincronizar, en los dos modos */}
+          {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
+            <i
+              className={
+                'fas fa-sync-alt header-bar__actions__item' +
+                (online ? '' : ' header-bar__actions__item--disabled')
+              }
+              onClick={() => online && this.eliSyncNow()}
+              title="Sincronizar ahora (s)"
+              data-testid="eli-sync-btn"
+              role="button"
+            />
           )}
 
           {/* ORG Mode para Eli: paleta de comandos, siempre a mano */}
@@ -737,6 +768,7 @@ const mapStateToProps = (state) => {
     syncBackendType: state.syncBackend.get('client') && state.syncBackend.get('client').type,
     online: state.base.get('online') !== false,
     dirtyCount: (state.org.present.get('files') || List()).filter((f) => f.get('isDirty')).size,
+    loadedPaths: loadedPathsOf(state.org.present.get('files')),
   };
 };
 

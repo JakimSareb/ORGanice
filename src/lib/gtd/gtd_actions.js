@@ -6,7 +6,7 @@ import { createRawDescriptionText, generateTitleLine } from '../export_org';
 import { timestampForDate } from '../timestamps';
 import generateId from '../id_generator';
 import { sync, setDirty, archiveSubtree } from '../../actions/org';
-import { KEYWORD_FOR_LIST, PRIORITY_RE } from './gtd_model';
+import { KEYWORD_FOR_LIST, PRIORITY_RE, parseRepeat } from './gtd_model';
 import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
 import { fileDisplayName } from '../eli_app_name';
@@ -77,12 +77,46 @@ const setProperty = (items, name, value) => {
   return all.push(fromJS({ id: generateId(), property: name, value: [] }).set('value', contents));
 };
 
-const setPlanning = (items, type, date) => {
-  const list = (items || List()).filter((p) => p.get('type') !== type);
+// ORG Mode para Eli: pone la fecha conservando la hora y la repetición que tuviera. `repeat`:
+// undefined = dejar la que haya; '' o null = quitarla; «+1w», «.+2d»… = ponerla.
+const KEEP_FIELDS = [
+  'startHour',
+  'startMinute',
+  'endHour',
+  'endMinute',
+  'delayType',
+  'delayValue',
+  'delayUnit',
+];
+const REPEAT_FIELDS = ['repeaterType', 'repeaterValue', 'repeaterUnit'];
+const setPlanning = (items, type, date, repeat) => {
+  const all = items || List();
+  const old = all.find((p) => p.get('type') === type);
+  const list = all.filter((p) => p.get('type') !== type);
   if (!date) return list;
-  return list.push(
-    fromJS({ id: generateId(), type, timestamp: timestampForDate(date, { isActive: true }) })
-  );
+  let ts = fromJS(timestampForDate(date, { isActive: true }));
+  const oldTs = old && old.get('timestamp');
+  if (oldTs) {
+    KEEP_FIELDS.forEach((f) => (ts = ts.set(f, oldTs.get(f) === undefined ? null : oldTs.get(f))));
+    if (repeat === undefined) {
+      REPEAT_FIELDS.forEach(
+        (f) => (ts = ts.set(f, oldTs.get(f) === undefined ? null : oldTs.get(f)))
+      );
+    }
+  }
+  if (repeat !== undefined) {
+    const r = parseRepeat(repeat);
+    ts = ts
+      .set('repeaterType', r ? r.type : null)
+      .set('repeaterValue', r ? r.value : null)
+      .set('repeaterUnit', r ? r.unit : null);
+  }
+  const item = fromJS({ id: old ? old.get('id') : generateId(), type }).set('timestamp', ts);
+  // en su sitio (SCHEDULED antes que DEADLINE, como estuviera)
+  const index = all.findIndex((p) => p.get('type') === type);
+  return index >= 0
+    ? all.filter((p, i) => i === index || p.get('type') !== type).set(index, item)
+    : list.push(item);
 };
 
 const sameDay = (a, b) =>
@@ -103,11 +137,26 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   // 1) Cuerpo: notas, planificación y propiedades
   let h = header;
   if (changes.notes !== undefined) h = h.set('rawDescription', changes.notes);
-  if (changes.scheduled !== undefined && !sameDay(changes.scheduled, task.scheduled)) {
-    h = h.set('planningItems', setPlanning(h.get('planningItems'), 'SCHEDULED', changes.scheduled));
+  const repeatChanged = (next, now) => next !== undefined && (next || '') !== (now || '');
+  if (
+    (changes.scheduled !== undefined && !sameDay(changes.scheduled, task.scheduled)) ||
+    repeatChanged(changes.scheduledRepeat, task.scheduledRepeat)
+  ) {
+    const date = changes.scheduled !== undefined ? changes.scheduled : task.scheduled;
+    h = h.set(
+      'planningItems',
+      setPlanning(h.get('planningItems'), 'SCHEDULED', date, changes.scheduledRepeat)
+    );
   }
-  if (changes.deadline !== undefined && !sameDay(changes.deadline, task.deadline)) {
-    h = h.set('planningItems', setPlanning(h.get('planningItems'), 'DEADLINE', changes.deadline));
+  if (
+    (changes.deadline !== undefined && !sameDay(changes.deadline, task.deadline)) ||
+    repeatChanged(changes.deadlineRepeat, task.deadlineRepeat)
+  ) {
+    const date = changes.deadline !== undefined ? changes.deadline : task.deadline;
+    h = h.set(
+      'planningItems',
+      setPlanning(h.get('planningItems'), 'DEADLINE', date, changes.deadlineRepeat)
+    );
   }
   if (changes.area !== undefined && (changes.area || null) !== (task.ownArea || null)) {
     h = h.set('propertyListItems', setProperty(h.get('propertyListItems'), 'AREA', changes.area));
@@ -226,8 +275,10 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (fields.energy) props = setProperty(props, ENERGY_PROPERTY, fields.energy);
   if (fields.effort) props = setProperty(props, EFFORT_PROPERTY, fields.effort);
   let planning = List();
-  if (fields.scheduled) planning = setPlanning(planning, 'SCHEDULED', fields.scheduled);
-  if (fields.deadline) planning = setPlanning(planning, 'DEADLINE', fields.deadline);
+  if (fields.scheduled)
+    planning = setPlanning(planning, 'SCHEDULED', fields.scheduled, fields.scheduledRepeat);
+  if (fields.deadline)
+    planning = setPlanning(planning, 'DEADLINE', fields.deadline, fields.deadlineRepeat);
   const fake = fromJS({
     nestingLevel: 1,
     titleLine: { rawTitle: '', tags: [] },

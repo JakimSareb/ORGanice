@@ -176,6 +176,9 @@
   min-width: 0;
 }
 .eli-mode {
+  border: none;
+  font: inherit;
+  cursor: pointer;
   display: inline-flex;
   background: var(--base3);
   border-radius: 999px;
@@ -203,12 +206,14 @@
 .eli-mode__btn:hover {
   opacity: 1;
 }
+.eli-mode:hover .eli-mode__btn:not(.is-on) {
+  opacity: 1;
+}
 .eli-mode__btn.is-on {
   opacity: 1;
   background: var(--base2);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  cursor: default;
 }
 .eli-mode__btn--docs.is-on {
   color: var(--blue);

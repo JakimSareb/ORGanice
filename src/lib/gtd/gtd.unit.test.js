@@ -136,21 +136,29 @@ describe('modelo GTD', () => {
     );
     const t = (title) => byTitle(extra, title);
     expect(listOf(t('Leer artículo'), TODAY)).toBe('inbox');
-    expect(listOf(t('Futura con estrella'), TODAY)).toBe('scheduled');
-    expect(isFocus(t('Futura con estrella'), TODAY)).toBe(false);
-    // Con DEADLINE: se ve en su lista, en Deadline y en Scheduled aunque esté programada a futuro
-    expect(tasksForView(extra, { id: 'deadline' }, {}, TODAY).map((x) => x.title)).toEqual([
-      'Dentro futura',
-    ]);
-    expect(listOf(t('Dentro futura'), TODAY)).toBe('next');
+    // 2.7: con prioridad se ve en su lista y en Focus aunque esté programada a futuro
+    expect(listOf(t('Futura con estrella'), TODAY)).toBe('later');
+    expect(isFocus(t('Futura con estrella'), TODAY)).toBe(true);
+    // Sin prioridad y programada a futuro: solo en Scheduled, aunque tenga DEADLINE
+    expect(tasksForView(extra, { id: 'deadline' }, {}, TODAY).map((x) => x.title)).toEqual([]);
+    expect(listOf(t('Dentro futura'), TODAY)).toBe('scheduled');
+    // Los hábitos, solo en Scheduled (también cuando ya ha llegado su fecha)
+    expect(listOf(t('Hábito'), TODAY)).toBe('habit');
+    expect(tasksForView(extra, { id: 'later' }, {}, TODAY).map((x) => x.title)).not.toContain(
+      'Hábito'
+    );
     expect(tasksForView(extra, { id: 'scheduled' }, {}, TODAY).map((x) => x.title)).toEqual([
+      'Hábito',
       'Futura con estrella',
       'Dentro futura',
     ]);
     const p = t('P');
     expect(
       tasksForView(extra, { type: 'project', key: p.key }, {}, TODAY).map((x) => x.title)
-    ).toEqual(['Dentro futura', 'Dentro ya']);
+    ).toEqual(['Dentro ya']);
+    expect(
+      tasksForView(extra, { id: 'deadline' }, {}, new Date(2026, 9, 1)).map((x) => x.title)
+    ).toEqual(['Dentro futura']);
     expect(needsAutoPriority(t('Llega hoy'), TODAY)).toBe(true);
     expect(needsAutoPriority(t('Hábito'), TODAY)).toBe(false);
     expect(needsAutoPriority(t('Futura con estrella'), new Date(2026, 9, 2))).toBe(false);

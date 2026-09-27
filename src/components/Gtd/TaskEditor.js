@@ -1,6 +1,7 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useRef } from 'react';
 import EliFormatBar from '../EliFormatBar';
+import ScheduleField from './ScheduleField';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -17,7 +18,7 @@ const LIST_OPTIONS = [
   { id: 'later', label: 'Todo' },
   { id: 'waiting', label: 'Waiting' },
   { id: 'someday', label: 'Someday' },
-  { id: 'reference', label: 'Reference' },
+  { id: 'reference', label: 'No task' },
   // Estados terminados
   { id: 'done', label: 'Done', done: true },
   { id: 'cancelled', label: 'Cancelled', done: true },
@@ -120,6 +121,9 @@ export default function TaskEditor({
   const [effort, setEffort] = useState(task.effort || '');
   const [scheduled, setScheduled] = useState(toDateInput(task.scheduled));
   const [deadline, setDeadline] = useState(toDateInput(task.deadline));
+  // ORG Mode para Eli: repeticiones («+1w», «.+2d»…) de la fecha programada y de la límite
+  const [sRepeat, setSRepeat] = useState(task.scheduledRepeat || '');
+  const [dRepeat, setDRepeat] = useState(task.deadlineRepeat || '');
   const [star, setStar] = useState(task.priority === 'A');
   const [showContexts, setShowContexts] = useState(false);
   const [project, setProject] = useState(
@@ -181,6 +185,8 @@ export default function TaskEditor({
     effort,
     scheduled,
     deadline,
+    sRepeat,
+    dRepeat,
     project,
   };
   const latest = useRef(current);
@@ -220,6 +226,8 @@ export default function TaskEditor({
     if (c.effort !== b.effort) changes.effort = c.effort || null;
     if (c.scheduled !== b.scheduled) changes.scheduled = fromDateInput(c.scheduled);
     if (c.deadline !== b.deadline) changes.deadline = fromDateInput(c.deadline);
+    if (c.sRepeat !== b.sRepeat) changes.scheduledRepeat = c.sRepeat;
+    if (c.dRepeat !== b.dRepeat) changes.deadlineRepeat = c.dRepeat;
     if (!enc && c.notes !== b.notes) changes.notes = c.notes;
     if (c.list !== b.list) changes.list = c.list;
     if (c.convert && c.convert !== b.convert) changes.list = targetList;
@@ -513,18 +521,28 @@ export default function TaskEditor({
         })}
         {dateField({
           icon: 'fas fa-flag',
-          label: 'vence',
+          label: dRepeat ? 'vence ↻' : 'vence',
           value: deadline,
-          onChange: setDeadline,
+          onChange: (v) => {
+            setDeadline(v);
+            if (!v) setDRepeat('');
+          },
           testId: 'gtd-editor-deadline',
         })}
-        {dateField({
-          icon: 'far fa-calendar-alt',
-          label: 'empieza',
-          value: scheduled,
-          onChange: setScheduled,
-          testId: 'gtd-editor-scheduled',
-        })}
+        <ScheduleField
+          value={scheduled}
+          repeat={sRepeat}
+          onChange={(v, r) => {
+            setScheduled(v);
+            setSRepeat(v ? r || '' : '');
+          }}
+          deadline={deadline}
+          deadlineRepeat={dRepeat}
+          onDeadline={(v, r) => {
+            setDeadline(v);
+            setDRepeat(v ? r || '' : '');
+          }}
+        />
 
         <div className="gtd-ed__gap" />
 
