@@ -161,6 +161,7 @@ marcados.
   ;; Festivos propios: (MES DÍA NOMBRE) todos los años, o (MES DÍA AÑO NOMBRE)
   (setq organice-calendar-custom-holidays '((9 24 "La Mercè") (5 15 2027 "Puente")))
   #+end_src
+- =RET= (o =c=) sobre un día abre la agenda de ese día, como tocar un día en la app.
 - Teclas: =<= =>= meses, =C-x [= =C-x ]= años, =.= hoy, =g d= ir a una fecha, =h= el festivo
   del día, =a= lista de festivos, =M= fases de la Luna, =q= salir.
 - Contar días entre dos fechas: marca una con =C-SPC=, ve a la otra y pulsa =M-==.

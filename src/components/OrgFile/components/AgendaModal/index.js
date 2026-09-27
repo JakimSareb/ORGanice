@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { takeAgendaDate } from '../../../../lib/eli_agenda_request';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -49,7 +50,40 @@ function AgendaModal(props) {
     orgHabitFollowingDays,
   } = props;
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // ORG Mode para Eli (2.14): abierta desde el calendario, en ese día y en la vista «Día»
+  const [requested] = useState(() => takeAgendaDate());
+  const [selectedDate, setSelectedDate] = useState(() => requested || new Date());
+  const [previousTimeframe, setPreviousTimeframe] = useState(null);
+  const { base: baseActions } = props;
+  useEffect(() => {
+    if (requested && agendaTimeframe !== 'Day') {
+      setPreviousTimeframe(agendaTimeframe);
+      baseActions.setAgendaTimeframe('Day');
+    }
+  }, []);
+  useEffect(() => {
+    const onDate = (e) => {
+      const d = e && e.detail;
+      if (!d) return;
+      takeAgendaDate();
+      setSelectedDate(d);
+      if (agendaTimeframe !== 'Day') {
+        setPreviousTimeframe((p) => p || agendaTimeframe);
+        baseActions.setAgendaTimeframe('Day');
+      }
+    };
+    window.addEventListener('eli:agenda-date', onDate);
+    return () => window.removeEventListener('eli:agenda-date', onDate);
+  }, [agendaTimeframe, baseActions]);
+  // Al cerrar, se recupera la vista que tenía la agenda
+  const previousRef = React.useRef(null);
+  previousRef.current = previousTimeframe;
+  useEffect(
+    () => () => {
+      if (previousRef.current) baseActions.setAgendaTimeframe(previousRef.current);
+    },
+    []
+  );
 
   // ORG Mode para Eli: Escape cierra la agenda y vuelve a donde se estaba
   const { onClose } = props;
@@ -83,6 +117,8 @@ function AgendaModal(props) {
   const weekStartsOn = agendaStartOnWeekday < 0 ? getDay(selectedDate) : agendaStartOnWeekday;
 
   function handleTimeframeTypeChange(agendaTimeframe) {
+    // Si se elige otra vista a mano, se queda esa al cerrar
+    setPreviousTimeframe(null);
     props.base.setAgendaTimeframe(agendaTimeframe);
   }
 

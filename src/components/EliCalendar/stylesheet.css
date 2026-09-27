@@ -228,3 +228,15 @@
     padding: 0 6px;
   }
 }
+
+.eli-cal__agenda-link {
+  border: 1px solid var(--base2);
+  background: transparent;
+  color: var(--blue);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 0.95em;
+  cursor: pointer;
+  white-space: nowrap;
+}

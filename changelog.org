@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.14 (septiembre de 2026)
+** Calendario
+- Tocar un día abre la agenda de ese día (vista «Día»; al cerrarla vuelve la vista que tenía). En Opciones se puede cambiar por «ver sus datos y contar días» (y entonces «Ver su agenda», doble toque o Intro).
+- Botón de la luna arriba para mostrar u ocultar las fases de la Luna (también la tecla l).
+
 * 2.13 (septiembre de 2026)
 ** Calendario
 - Nuevo: ⋯ → *Calendario* (o la paleta). Tres meses como Emacs (lunes primero, número de semana, hoy recuadrado) o el año entero; ← → meses, Mayús+← → años, . hoy, g ir a una fecha, y año; deslizar en el móvil.

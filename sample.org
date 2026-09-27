@@ -285,8 +285,10 @@ Selecciona «Escribir el informe» y mantén pulsado el reloj de arena: verás 2
 Un calendario para consultar fechas, como =M-x calendar= de Emacs (sin tareas). Se abre con ⋯ → *Calendario* (en Documentos y en GTD) o desde la paleta («calendario»).
 - Tres meses a la vista (el anterior, el actual y el siguiente), con la semana empezando en lunes, el número de semana (ISO) a la izquierda y hoy recuadrado. *Año* muestra los doce meses.
 - Moverse: ‹ › (o ← →) mes a mes, « » (o Mayús+← →) año a año, *Hoy* (o .), la lupa (o g) para ir a una fecha, y (o *Año*) para la vista del año. En el móvil también deslizando a los lados. Esc cierra.
-- Toca un día: abajo sale su fecha completa, el número de semana, el día del año y cuánto falta (o cuánto hace), y si es festivo o hay una fase de la Luna. Toca otro día y te dice los días entre ambos y cuántos son laborables.
-- *Opciones* (la rueda): números de semana, fases de la Luna (🌑 🌓 🌕 🌗 en su día), los festivos de tu comunidad y tus festivos propios (locales, de empresa…), uno por línea: «15/05 San Isidro» todos los años o «24/09/2026 La Mercè» solo ese año.
+- Toca un día y se abre *la agenda de ese día* (en la hoja abierta o en la vista GTD), en su vista «Día»; al cerrarla, la agenda vuelve a la vista que tenías.
+- Si prefieres consultar datos: Opciones → «Al tocar un día: ver sus datos y contar días». Entonces, al tocar un día sale su fecha completa, el número de semana, el día del año, cuánto falta (o cuánto hace), si es festivo o hay una fase de la Luna, y el botón «Ver su agenda» (o doble toque, o Intro). Toca otro día y te dice los días entre ambos y cuántos son laborables.
+- El botón de la *luna* de arriba (o la tecla l) muestra u oculta las fases de la Luna.
+- *Opciones* (la rueda): qué hace tocar un día, números de semana, fases de la Luna (🌑 🌓 🌕 🌗 en su día), los festivos de tu comunidad y tus festivos propios (locales, de empresa…), uno por línea: «15/05 San Isidro» todos los años o «24/09/2026 La Mercè» solo ese año.
 - Festivos: los de 2026 son los del BOE; los de otros años son aproximados (el BOE cambia algunos cada año), y la leyenda lo indica.
 
 * Usar sin conexión (viajes)

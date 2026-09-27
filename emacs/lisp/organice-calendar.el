@@ -5,7 +5,8 @@
 ;; de tu comunidad; los de 2026 según el BOE, el resto aproximados), tus festivos propios y
 ;; las fases de la Luna.
 ;;
-;; En el calendario: < > meses, C-x [ ] años, . hoy, g d ir a una fecha, h festivo del día,
+;; En el calendario: RET (o c) la agenda de ese día, < > meses, C-x [ ] años, . hoy,
+;; g d ir a una fecha, h festivo del día,
 ;; x marcar festivos, M fases de la Luna, M-= contar los días de la región (marca con C-SPC).
 
 (require 'calendar)
@@ -152,6 +153,17 @@
 
 ;; Solo nuestros festivos (sin los de EE. UU. que trae Emacs), y las fases de la Luna
 (setq calendar-holidays '((organice-calendar--visible-holidays)))
+
+;; Como en la app: RET (o c) en un día abre la agenda de ese día
+(defun organice-calendar-agenda-for-date ()
+  "Abre la agenda del día que está bajo el cursor en el calendario."
+  (interactive)
+  (let* ((date (calendar-cursor-to-date t)))
+    (require 'org-agenda)
+    (org-agenda-list nil (calendar-absolute-from-gregorian date) 'day)))
+(with-eval-after-load 'calendar
+  (define-key calendar-mode-map (kbd "RET") #'organice-calendar-agenda-for-date)
+  (define-key calendar-mode-map (kbd "c") #'organice-calendar-agenda-for-date))
 
 (defun organice-calendar ()
   "Abre el calendario (como el de la app)."

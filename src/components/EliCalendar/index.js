@@ -10,6 +10,10 @@ import { REGIONS, holidaysForYear, keyOfDate, workingDaysBetween } from '../../l
 import { phasesBetween } from '../../lib/lunar';
 import { askDate } from '../../lib/eli_prompt';
 import { isEditable } from '../../lib/eli_hotkeys';
+import { requestAgendaDate } from '../../lib/eli_agenda_request';
+import { activatePopup } from '../../actions/base';
+import { useDispatch } from 'react-redux';
+import { useHistory, useLocation } from 'react-router-dom';
 
 export const openCalendar = () => window.dispatchEvent(new CustomEvent('eli:calendar'));
 
@@ -31,6 +35,7 @@ const WEEKDAYS = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do'];
 const WEEKDAY_NAMES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
 const LS = {
+  tap: 'eliCalTap', // 'agenda' (abre la agenda de ese día) | 'info' (datos y contar días)
   view: 'eliCalView', // 'three' | 'year'
   weeks: 'eliCalWeeks', // 'false' para ocultar
   moon: 'eliCalMoon', // 'false' para ocultar
@@ -73,7 +78,19 @@ const relative = (d, today) => {
   return n > 0 ? `dentro de ${n} días` : `hace ${-n} días`;
 };
 
-function Month({ year, month, today, weeks, holidayOf, moonOf, selected, range, onPick, compact }) {
+function Month({
+  year,
+  month,
+  today,
+  weeks,
+  holidayOf,
+  moonOf,
+  selected,
+  range,
+  onPick,
+  onOpenDay,
+  compact,
+}) {
   const first = new Date(year, month, 1);
   const offset = (first.getDay() + 6) % 7; // lunes primero
   const days = new Date(year, month + 1, 0).getDate();
@@ -132,6 +149,7 @@ function Month({ year, month, today, weeks, holidayOf, moonOf, selected, range, 
                         type="button"
                         className={cls}
                         onClick={() => onPick(date)}
+                        onDoubleClick={() => onOpenDay && onOpenDay(date)}
                         title={[hol && hol.join(', '), moon && moon.name]
                           .filter(Boolean)
                           .join(' · ')}
@@ -162,6 +180,10 @@ export default function EliCalendar() {
   const [view, setView] = useState(() => readLS(LS.view, 'three'));
   const [weeks, setWeeks] = useState(() => readLS(LS.weeks, 'true') !== 'false');
   const [moonOn, setMoonOn] = useState(() => readLS(LS.moon, 'true') !== 'false');
+  const [tapMode, setTapMode] = useState(() => readLS(LS.tap, 'agenda'));
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const location = useLocation();
   const [region, setRegion] = useState(() => readLS(LS.region, ''));
   const [custom, setCustom] = useState(() => readLS(LS.custom, ''));
   const [showOptions, setShowOptions] = useState(false);
@@ -247,8 +269,28 @@ export default function EliCalendar() {
   };
   const toggleView = () => toggle(LS.view, view === 'year' ? 'three' : 'year', setView);
 
-  // Tocar un día: lo selecciona; tocar otro después: cuenta los días entre ambos
+  // ORG Mode para Eli (2.14): la agenda de un día (en la hoja abierta o en la vista GTD)
+  const openAgendaFor = (date) => {
+    requestAgendaDate(date);
+    setOpen(false);
+    const path = (location && location.pathname) || '';
+    if (path.startsWith('/file/')) {
+      dispatch(activatePopup('agenda'));
+    } else if (path === '/gtd') {
+      window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { agenda: true } }));
+    } else {
+      window.__eliGtdPending = { agenda: true };
+      history.push('/gtd');
+    }
+  };
+
+  // Tocar un día: según la opción, abre su agenda, o lo selecciona (y tocar otro después
+  // cuenta los días entre ambos)
   const pick = (date) => {
+    if (tapMode === 'agenda') {
+      openAgendaFor(date);
+      return;
+    }
     if (selected && !rangeEnd && !sameDay(date, selected)) {
       setRangeEnd(date);
       return;
@@ -288,6 +330,7 @@ export default function EliCalendar() {
       else if (k === 'y' || k === 'a') toggleView();
       else if (k === 'w') toggle(LS.weeks, !weeks, setWeeks);
       else if (k === 'l' || k === 'm') toggle(LS.moon, !moonOn, setMoonOn);
+      else if (k === 'Enter' && selected) openAgendaFor(selected);
       else handled = false;
       if (handled) {
         e.preventDefault();
@@ -335,13 +378,23 @@ export default function EliCalendar() {
             · {moon.emoji} {moon.name}
           </span>
         )}
-        <span className="eli-cal__hint"> · toca otro día para contar los días</span>
+        <span className="eli-cal__hint"> · toca otro día para contar los días</span>{' '}
+        <button
+          type="button"
+          className="eli-cal__agenda-link"
+          onClick={() => openAgendaFor(selected)}
+          data-testid="eli-cal-open-agenda"
+        >
+          <i className="fas fa-calendar-day" /> Ver su agenda
+        </button>
       </>
     );
   } else {
     info = (
       <span className="eli-cal__hint">
-        Toca un día para ver sus datos; toca otro para contar los días entre ambos.
+        {tapMode === 'agenda'
+          ? 'Toca un día para abrir su agenda. (En Opciones puedes cambiarlo para ver sus datos y contar días.)'
+          : 'Toca un día para ver sus datos; toca otro para contar los días entre ambos. Doble toque: su agenda.'}
       </span>
     );
   }
@@ -442,6 +495,16 @@ export default function EliCalendar() {
           </button>
           <button
             type="button"
+            className={'eli-cal__tool' + (moonOn ? ' is-on' : '')}
+            onClick={() => toggle(LS.moon, !moonOn, setMoonOn)}
+            title={moonOn ? 'Ocultar las fases de la Luna (l)' : 'Mostrar las fases de la Luna (l)'}
+            aria-pressed={moonOn}
+            data-testid="eli-cal-moon"
+          >
+            <i className="fas fa-moon" />
+          </button>
+          <button
+            type="button"
             className="eli-cal__tool"
             onClick={goTo}
             title="Ir a una fecha (g)"
@@ -488,6 +551,21 @@ export default function EliCalendar() {
               Fases de la Luna (l)
             </label>
             <label>
+              Al tocar un día:{' '}
+              <select
+                value={tapMode}
+                onChange={(e) => {
+                  toggle(LS.tap, e.target.value, setTapMode);
+                  setSelected(null);
+                  setRangeEnd(null);
+                }}
+                data-testid="eli-cal-tap"
+              >
+                <option value="agenda">abrir su agenda</option>
+                <option value="info">ver sus datos y contar días</option>
+              </select>
+            </label>
+            <label>
               Festivos:{' '}
               <select
                 value={region}
@@ -527,6 +605,7 @@ export default function EliCalendar() {
               selected={selected}
               range={range}
               onPick={pick}
+              onOpenDay={tapMode === 'info' ? openAgendaFor : null}
               compact={view === 'year'}
             />
           ))}
