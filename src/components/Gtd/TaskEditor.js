@@ -105,6 +105,9 @@ export default function TaskEditor({
   canRedo = false,
   isNew = false,
   onCloseProject,
+  mustDecide = false,
+  onCancelNew,
+  replacesRow = false,
 }) {
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
@@ -251,16 +254,41 @@ export default function TaskEditor({
   const editorRef = useRef(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const modeRef = useRef({ mustDecide, replacesRow });
+  modeRef.current = { mustDecide, replacesRow };
+  // ORG Mode para Eli: una tarea recién creada no se cierra al tocar fuera: el editor se «agita»
+  // para recordar que hay que Guardar o Cancelar
+  const attention = () => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.classList.remove('is-attention');
+    void el.offsetWidth; // eslint-disable-line no-void
+    el.classList.add('is-attention');
+  };
   useEffect(() => {
     const onDown = (e) => {
       const el = editorRef.current;
       if (!el || el.contains(e.target)) return;
-      const row = el.previousElementSibling;
-      if (row && row.contains(e.target)) return;
+      // ventanas propias (fecha, repetir, confirmaciones) abiertas desde el editor
+      if (e.target.closest && e.target.closest('.eli-prompt__overlay, .eli-palette__overlay'))
+        return;
+      if (modeRef.current.mustDecide) {
+        attention();
+        return;
+      }
+      if (!modeRef.current.replacesRow) {
+        const row = el.previousElementSibling;
+        if (row && row.contains(e.target)) return;
+      }
       closeRef.current();
     };
+    const onAttention = () => modeRef.current.mustDecide && attention();
     document.addEventListener('pointerdown', onDown, true);
-    return () => document.removeEventListener('pointerdown', onDown, true);
+    window.addEventListener('eli:gtd-attention', onAttention);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      window.removeEventListener('eli:gtd-attention', onAttention);
+    };
   }, []);
 
   const b0 = baseline.current;
@@ -334,7 +362,11 @@ export default function TaskEditor({
   // a la derecha, tiempo, energía, fechas, lista, proyecto y área.
   return (
     <div
-      className="gtd-editor gtd-editor--nirvana"
+      className={
+        'gtd-editor gtd-editor--nirvana' +
+        (replacesRow ? ' gtd-editor--inline' : '') +
+        (mustDecide ? ' gtd-editor--new' : '')
+      }
       ref={editorRef}
       onKeyDown={onKeyDown}
       data-testid="gtd-editor"
@@ -691,9 +723,12 @@ export default function TaskEditor({
           className="gtd-btn gtd-btn--cancel"
           onClick={() => {
             cancelledRef.current = true;
-            onClose();
+            if (onCancelNew) onCancelNew();
+            else onClose();
           }}
-          title="Descartar los cambios y cerrar"
+          title={
+            onCancelNew ? 'Descartar la tarea nueva (se borra)' : 'Descartar los cambios y cerrar'
+          }
           data-testid="gtd-editor-cancel"
         >
           Cancelar

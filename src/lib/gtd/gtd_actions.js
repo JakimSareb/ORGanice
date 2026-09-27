@@ -6,7 +6,7 @@ import { createRawDescriptionText, generateTitleLine } from '../export_org';
 import { timestampForDate } from '../timestamps';
 import generateId from '../id_generator';
 import { sync, setDirty, archiveSubtree } from '../../actions/org';
-import { KEYWORD_FOR_LIST, PRIORITY_RE, parseRepeat } from './gtd_model';
+import { keywordForList, PRIORITY_RE, parseRepeat } from './gtd_model';
 import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
 import { fileDisplayName } from '../eli_app_name';
@@ -216,8 +216,8 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
         ? 'CANCELLED'
         : changes.list === 'project'
         ? 'PROJECT'
-        : Object.prototype.hasOwnProperty.call(KEYWORD_FOR_LIST, changes.list)
-        ? KEYWORD_FOR_LIST[changes.list]
+        : keywordForList(changes.list).has
+        ? keywordForList(changes.list).keyword
         : task.keyword;
     if ((keyword || null) !== (task.keyword || null)) {
       inner.push({
@@ -258,8 +258,8 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   const keyword =
     fields.list === 'project'
       ? 'PROJECT'
-      : fields.list && Object.prototype.hasOwnProperty.call(KEYWORD_FOR_LIST, fields.list)
-      ? KEYWORD_FOR_LIST[fields.list]
+      : fields.list && keywordForList(fields.list).has
+      ? keywordForList(fields.list).keyword
       : null;
   if (missingKeyword(getState, target.path, [keyword])) return null;
   const headerId = generateId();

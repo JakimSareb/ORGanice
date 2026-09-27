@@ -56,6 +56,7 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 - Desliza un encabezado *hacia la derecha* para avanzar su estado (NEXT → TODO → … → DONE).
 - Desliza *hacia la izquierda* para borrarlo (pide confirmación).
 - Con el ratón, el gesto empieza en la línea del título; así, seleccionar texto dentro de un encabezado o de un editor no lo mueve.
+- Si no lo quieres, desactívalo en Ajustes → Vista GTD y gestos → «Deslizar en los documentos».
 *** TODO Desliza esta tarea hacia la derecha
 *** Deslízame hacia la izquierda para borrarme
 
@@ -129,6 +130,7 @@ Tecla *a* o el botón del calendario (abajo, en el centro).
 
 ** Las listas del menú lateral
 En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de arriba (se queda fijo aunque bajes por la lista).
+Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en qué orden se cambia en Ajustes (ver «Secciones configurables»).
 | Lista      | Qué muestra                                                                          |
 |------------+--------------------------------------------------------------------------------------|
 | Agenda     | Abre la agenda                                                                       |
@@ -154,10 +156,12 @@ En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de a
 
 ** Añadir, editar y organizar
 - Escribe en «Añadir» y pulsa Intro: se crea y se abre su editor. Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org. La tarea recién creada se queda arriba del todo en la lista que estás viendo (hasta que cambies de lista).
+- El editor de una tarea recién creada no se cierra al tocar fuera (se agita para recordártelo): *Guardar* (o Intro en el título, o Esc) la guarda y *Cancelar* la borra, como si no la hubieras creado.
+- Al editar una tarea, el editor ocupa su sitio en la lista.
 - Toca una tarea para editarla (como en Nirvana): a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza; ver «Programar y repetir»), lista o estado (también Done, Cancelled y «No task», que quita el estado), proyecto («Suelta» = sin proyecto) y área. Abajo: el fichero donde está la tarea (en pequeño), Abrir, Archivar, Borrar, Deshacer, Rehacer, *Cancelar* (descarta los cambios) y *Guardar*.
 - *Programar y repetir* (como en Nirvana): el campo de la fecha programada muestra «Programada › fecha · repetición». Al tocarlo se abre un menú con la fecha de inicio (y atajos: hoy, mañana, el lunes, en una semana, en un mes), *Repetir…*, *Quitar la repetición* y *Quitar la fecha*. En *Repetir…* eliges diaria, semanal, mensual o anual, cada cuántos días/semanas/meses/años, la próxima fecha (con las siguientes de muestra) y desde cuándo se cuenta: la fecha prevista (+1w), la fecha prevista saltando las ya pasadas (++1w) o el día en que la terminas (.+1w). «Añadir también la fecha límite» pone DEADLINE el mismo día con la misma repetición. Se guarda como en Emacs: SCHEDULED: <2026-10-05 Mon +1w>. Al cambiar la fecha, la repetición se conserva.
-- Al tocar fuera del editor, en otra tarea, con Esc o con Intro en el título, lo cambiado también se guarda. Si te equivocas, *Deshacer*.
-- Al añadir una tarea, se abre su editor para completar los datos.
+- En las tareas que ya existían, al tocar fuera del editor, en otra tarea, con Esc o con Intro en el título, lo cambiado también se guarda (y *Cancelar* descarta los cambios). Si te equivocas, *Deshacer*.
+- *Desliza* una tarea hacia la derecha para marcarla como hecha, o hacia la izquierda para borrarla (pide confirmación). Con el ratón, el gesto es en horizontal dentro de la fila; si sales de la fila, pasa a arrastrar. Se desactiva en Ajustes → «Deslizar en la vista GTD».
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
 - *Logbook*: tiene su propio buscador («Buscar en las terminadas…»), que busca solo entre las terminadas (título, notas, etiquetas y área). En sus filas no hay casilla ni ★: para cambiar algo, toca la tarea y se abre su editor.
@@ -172,6 +176,16 @@ En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de a
 - *Cerrar un proyecto*: al final del editor del proyecto, en pequeño, «Cerrar proyecto…». Pregunta si está *Terminado* (DONE) o *Cancelado* (CANCELLED) y, si le quedan tareas sin hacer, si quieres cancelarlas también. Queda en el Logbook con su fecha de cierre (CLOSED), como en Emacs, y *Deshacer* lo devuelve.
 - Para cambiarlo: abre el proyecto → «Editar el proyecto». En lugar de la lista hay un selector *Activo / Dormido*, y el campo «empieza» es la fecha de inicio. Guardar escribe :sleep: y SCHEDULED en el fichero, así que en Emacs se ve igual.
 - *Todos los proyectos* (en el menú, encima de la lista de proyectos): agrupados en Activos, Programados y Dormidos; en cada fila el área, cuándo empieza, cuándo vence, cuántas tareas quedan y la siguiente acción. Ordenados por fecha. Toca uno para abrirlo.
+
+** Secciones configurables
+En Ajustes → *Vista GTD y gestos* → «Secciones de la vista GTD» está la lista de secciones (Agenda, Focus, Inbox, Next, Todo, Waiting, Scheduled, Deadline, Someday, Proyectos, Reference y Logbook). Sin tocar nada, todo funciona como se describe en este manual.
+- *Orden*: con las flechas ↑↓. Es el orden del menú lateral y, además, si una tarea cumple las reglas de varias listas, va a la primera.
+- *Mostrar*: la casilla de cada sección la muestra u oculta (en el menú, los recuentos y la paleta).
+- *Qué tareas entran*: toca el nombre de la sección. En las listas (Inbox, Next, Todo, Waiting, Someday y Reference): estados (p. ej. NEXT), etiquetas (p. ej. @inbox) y propiedades (NOMBRE, o NOMBRE=valor); basta con cumplir una. En Focus, Scheduled y Deadline sirven para añadir tareas a su criterio propio (★, fechas).
+- *Casillas* de cada sección: incluir hábitos; incluir tareas programadas para más adelante; incluirlas si tienen prioridad; incluir tareas de proyectos dormidos o que aún no empiezan. Por defecto, los hábitos y las programadas a futuro solo en Scheduled.
+- Casos especiales: Inbox («encabezados sin estado del fichero de entrada»), Reference («sin estado ni tareas debajo»), Focus (con ★, con fecha de hoy o pasada, ★ automática al llegar la fecha) y Proyectos («Todos los proyectos»).
+- Al llevar una tarea a una lista (editor o arrastrar) se le pone el primer estado configurado de esa lista (o su primera etiqueta, si la lista no tiene estados, como Inbox con @inbox).
+- *Restablecer* vuelve a la configuración de siempre (hay uno general y otro en cada sección).
 
 ** Áreas
 Un área agrupa tareas de una parte de tu vida (Hogar, Trabajo, Salud…). Se indica con la propiedad AREA, y los subencabezados la heredan:
@@ -299,7 +313,8 @@ Todos se pueden cambiar en Ajustes → Atajos de teclado.
 
 * Ajustes que conviene conocer
 - *Estados de las tareas* y *Etiquetas por defecto*: para los ficheros que no los definen.
-- Los ajustes están en tres secciones plegables: *Apariencia*, *Tareas y etiquetas* y *Opciones avanzadas*.
+- Los ajustes están en secciones plegables: *Apariencia*, *Tareas y etiquetas*, *Vista GTD y gestos* y *Opciones avanzadas*.
+- *Vista GTD y gestos*: deslizar sí/no, por separado en los documentos y en la vista GTD, y las secciones de la vista GTD (ver «Secciones configurables»).
 - *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).

@@ -188,6 +188,21 @@ export const persistableFields = [
     type: 'string',
   },
   {
+    category: 'base',
+    name: 'eliNoSwipeDocs',
+    type: 'boolean',
+  },
+  {
+    category: 'base',
+    name: 'eliNoSwipeGtd',
+    type: 'boolean',
+  },
+  {
+    category: 'base',
+    name: 'eliGtdSections',
+    type: 'json',
+  },
+  {
     category: 'org',
     name: 'showClockDisplay',
     type: 'boolean',

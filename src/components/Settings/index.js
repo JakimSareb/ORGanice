@@ -8,6 +8,7 @@ import * as syncBackendActions from '../../actions/sync_backend';
 import * as baseActions from '../../actions/base';
 import * as orgActions from '../../actions/org';
 
+import GtdSectionsSettings from './GtdSectionsSettings';
 import './stylesheet.css';
 
 import TabButtons from '../UI/TabButtons';
@@ -229,6 +230,16 @@ const Settings = ({
           onSave={(l) => base.setEliSetting('eliDefaultTagsLine', l)}
           testId="eli-setting-tags"
         />
+      </details>
+
+      <details className="eli-settings-section" data-testid="eli-settings-gtd">
+        <summary>
+          <span className="eli-settings-section__title">Vista GTD y gestos</span>
+          <span className="eli-settings-section__hint">
+            Deslizar, y qué se ve en cada sección de la vista GTD
+          </span>
+        </summary>
+        <GtdSectionsSettings />
       </details>
 
       <details className="eli-settings-section" data-testid="eli-settings-advanced">

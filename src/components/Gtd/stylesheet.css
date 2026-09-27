@@ -1381,3 +1381,80 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ORG Mode para Eli: el editor ocupa el sitio de la tarea en la lista */
+.gtd-editor.gtd-editor--inline {
+  border-radius: 8px;
+  margin: 6px 0 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+/* tarea nueva: hay que Guardar o Cancelar (al tocar fuera, el editor se agita) */
+@keyframes gtd-attention {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+.gtd-editor--new {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+.gtd-editor.is-attention {
+  animation: gtd-attention 0.35s ease;
+}
+
+/* deslizar una tarea: derecha = hecha, izquierda = borrar */
+.gtd-task {
+  position: relative;
+}
+.gtd-task__row {
+  touch-action: pan-y;
+  position: relative;
+  z-index: 1;
+  background: var(--base3);
+}
+.gtd-task.is-swiping {
+  overflow: hidden;
+}
+.gtd-task.is-swiping::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  font-size: 18px;
+  color: #fff;
+  opacity: 0.55;
+}
+.gtd-task.is-swipe-right::before {
+  content: '\f00c';
+  left: 0;
+  right: 0;
+  justify-content: flex-start;
+  background: var(--green);
+}
+.gtd-task.is-swipe-left::before {
+  content: '\f1f8';
+  left: 0;
+  right: 0;
+  justify-content: flex-end;
+  background: var(--red);
+}
+.gtd-task.is-swiping.is-armed::before {
+  opacity: 1;
+}

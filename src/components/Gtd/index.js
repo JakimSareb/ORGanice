@@ -17,7 +17,7 @@ import {
   countsFor,
   facetsFor,
   TIME_BUCKETS,
-  INBOX_TAG,
+  inboxTag,
   tagsForList,
   needsAutoPriority,
   autoPriorityKey,
@@ -65,6 +65,7 @@ import {
   DEFAULT_EFFORT,
 } from '../../lib/eli_todo_defaults';
 import useTaskDrag from './useTaskDrag';
+import { setGtdConfig, isSectionShown } from '../../lib/gtd/gtd_sections';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -73,6 +74,8 @@ const LS_AUTO_A = 'eliGtdAutoA';
 
 const selectFiles = (s) => s.org.present.get('files');
 const selectFileSettings = (s) => s.org.present.get('fileSettings');
+const selectGtdSections = (s) => s.base.get('eliGtdSections');
+const selectNoSwipeGtd = (s) => s.base.get('eliNoSwipeGtd') === true;
 const selectTemplates = (s) => s.capture.get('captureTemplates') || List();
 const selectCanUndo = (s) => s.org.past.length > 0;
 const selectCanRedo = (s) => s.org.future.length > 0;
@@ -274,6 +277,10 @@ export default function GtdView() {
   const [freshKeys, setFreshKeys] = useState([]);
   const [projGroupsOpen, setProjGroupsOpen] = useState({});
   const [openKey, setOpenKey] = useState(null);
+  // ORG Mode para Eli: tarea recién creada con su editor abierto: no se cierra al tocar fuera
+  // (hay que Guardar o Cancelar; Cancelar la borra)
+  const [newKey, setNewKey] = useState(null);
+  const noSwipeGtd = useSelector(selectNoSwipeGtd);
   // ORG Mode para Eli: proyecto nuevo en el editor (aún no existe en el fichero)
   const [newProject, setNewProject] = useState(null);
   const [newTitle, setNewTitle] = useState('');
@@ -333,7 +340,14 @@ export default function GtdView() {
   const inboxFile =
     pickByName(scopePaths, 'inbox.org') || inboxPaths.find((p) => scopePaths.includes(p)) || null;
 
-  const tasks = useMemo(() => buildTasks(scopedFiles, inboxPaths), [scopedFiles, inboxPaths]);
+  // ORG Mode para Eli: secciones configurables (Ajustes → Vista GTD: secciones). Al cambiar la
+  // configuración se vuelve a calcular todo.
+  const gtdCfg = setGtdConfig(useSelector(selectGtdSections));
+  const tasks = useMemo(
+    () => buildTasks(scopedFiles, inboxPaths),
+    // eslint-disable-next-line
+    [scopedFiles, inboxPaths, gtdCfg]
+  );
   const counts = useMemo(() => countsFor(tasks, { area }, today), [tasks, area, today]);
   const projects = useMemo(() => projectsOf(tasks, { area }), [tasks, area]);
   const allProjects = useMemo(() => projectsOf(tasks, {}), [tasks]);
@@ -454,8 +468,10 @@ export default function GtdView() {
   const contextTags = useMemo(() => {
     const at = declaredTags.filter((t) => t.startsWith('@') && t.length > 1);
     const all = Array.from(new Set([...defaultTags(), ...at]));
-    return all.some((t) => t.toLowerCase() === INBOX_TAG) ? all : [...all, INBOX_TAG];
-  }, [declaredTags]);
+    const it = inboxTag();
+    return all.some((t) => t.toLowerCase() === it.toLowerCase()) ? all : [...all, it];
+    // eslint-disable-next-line
+  }, [declaredTags, gtdCfg]);
 
   // Energía y tiempo: «#+PROPERTY: Energy_ALL …» / «Effort_ALL …» de los ficheros, o los de
   // por defecto
@@ -524,6 +540,22 @@ export default function GtdView() {
     writeLS(LS_AREA, a);
   };
 
+  // ORG Mode para Eli: si la sección que se está viendo se ha ocultado en Ajustes, a la primera
+  // que se vea
+  useEffect(() => {
+    const hidden =
+      view.type === 'project'
+        ? !isSectionShown('projects', gtdCfg)
+        : view.id === 'projects'
+        ? !isSectionShown('projects', gtdCfg) || gtdCfg.sections.projects.allProjects === false
+        : !isSectionShown(view.id, gtdCfg);
+    if (!hidden) return;
+    const first = gtdCfg.order.find(
+      (id) => !['agenda', 'projects'].includes(id) && isSectionShown(id, gtdCfg)
+    );
+    if (first && first !== view.id) selectView({ id: first });
+  }, [view, gtdCfg, selectView]);
+
   // Si la vista guardada es un proyecto que ya no existe, volver a Focus
   useEffect(() => {
     if (view.type === 'project' && tasks.length && !projectTask) selectView({ id: 'focus' });
@@ -569,7 +601,7 @@ export default function GtdView() {
         // Si Inbox no va a su fichero de entrada, se marca con @inbox para que se vea en Inbox
         tags:
           isInbox && !inboxPaths.includes(target.path)
-            ? Array.from(new Set([...filters.tags, INBOX_TAG]))
+            ? Array.from(new Set([...filters.tags, inboxTag()]))
             : filters.tags,
       })
     );
@@ -579,6 +611,7 @@ export default function GtdView() {
       const key = `${target.path}::${newId}`;
       setFreshKeys((k) => [key, ...k.filter((x) => x !== key)]);
       setOpenKey(key);
+      setNewKey(key);
     }
   };
 
@@ -690,6 +723,11 @@ export default function GtdView() {
   };
   const { onPointerDown, dragging, dropTarget, clickSuppressed } = useTaskDrag({
     onDrop: applyDrop,
+    canSwipe: (task) => !noSwipeGtd && !task.isDone && view.id !== 'logbook',
+    onSwipe: (task, dir) => {
+      if (dir === 'right') dispatch(gtdToggleDone(task));
+      else deleteTask(task);
+    },
     onStart: () => {
       setOpenKey(null);
       if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
@@ -741,7 +779,22 @@ export default function GtdView() {
       contextTags={contextTags}
       onOpenLink={(target) => openLink(task, target)}
       onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
-      onClose={() => setOpenKey(null)}
+      onClose={() => {
+        setOpenKey(null);
+        if (newKey === task.key) setNewKey(null);
+      }}
+      mustDecide={newKey === task.key}
+      onCancelNew={
+        newKey === task.key
+          ? () => {
+              setOpenKey(null);
+              setNewKey(null);
+              setFreshKeys((k) => k.filter((x) => x !== task.key));
+              dispatch(gtdDeleteTask(task));
+            }
+          : undefined
+      }
+      replacesRow
       onUndo={() => {
         dispatch(gtdUndo());
         setEditorRev((r) => r + 1);
@@ -841,6 +894,108 @@ export default function GtdView() {
     </button>
   );
 
+  // ORG Mode para Eli: menú lateral en el orden de Ajustes, sin las secciones ocultas
+  const renderAgendaButton = () => (
+    <button
+      className="gtd-side__item gtd-side__item--agenda"
+      onClick={() => {
+        setSideOpen(false);
+        setShowAgenda(true);
+      }}
+      data-testid="gtd-agenda"
+    >
+      <i className="fas fa-calendar-alt gtd-side__icon" />
+      <span className="gtd-side__label">Agenda</span>
+    </button>
+  );
+  const renderProjectsBlock = () => (
+    <React.Fragment>
+      <div className="gtd-side__section">
+        <span>Proyectos</span>
+        <button
+          className="gtd-side__add"
+          title="Nuevo proyecto"
+          onClick={addProject}
+          data-testid="gtd-add-project"
+        >
+          +
+        </button>
+      </div>
+      <nav className="gtd-side__projects">
+        {gtdCfg.sections.projects.allProjects !== false && (
+          <button
+            className={
+              'gtd-side__item gtd-side__item--all-projects' +
+              (view.id === 'projects' ? ' is-on' : '')
+            }
+            onClick={() => selectView({ id: 'projects' })}
+            data-testid="gtd-all-projects"
+          >
+            <i className="fas fa-th-list gtd-side__icon" />
+            <span className="gtd-side__label">Todos los proyectos</span>
+          </button>
+        )}
+        {projectGroups.active.length === 0 && (
+          <div className="gtd-side__empty">Sin proyectos activos (estado PROJECT)</div>
+        )}
+        {projectGroups.active.map(renderProjectButton)}
+        {[
+          ['scheduled', 'Programados', 'far fa-calendar-alt'],
+          ['sleep', 'Dormidos', 'fas fa-bed'],
+        ].map(([id, label, icon]) =>
+          projectGroups[id].length ? (
+            <div key={id} className="gtd-side__group" data-testid={`gtd-projects-${id}`}>
+              <button
+                className="gtd-side__group-toggle"
+                onClick={() => setProjGroupsOpen((g) => ({ ...g, [id]: !g[id] }))}
+                aria-expanded={!!projGroupsOpen[id]}
+                data-testid={`gtd-projects-${id}-toggle`}
+              >
+                <i className={projGroupsOpen[id] ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
+                <i className={icon} /> {label}
+                <span className="gtd-side__count">{projectGroups[id].length}</span>
+              </button>
+              {projGroupsOpen[id] && projectGroups[id].map(renderProjectButton)}
+            </div>
+          ) : null
+        )}
+      </nav>
+    </React.Fragment>
+  );
+  const sidebarBlocks = () => {
+    const out = [];
+    let group = [];
+    let afterProjects = false;
+    const flush = () => {
+      if (!group.length) return;
+      out.push(
+        <nav
+          key={'lists' + out.length}
+          className={'gtd-side__lists' + (afterProjects ? ' gtd-side__lists--extra' : '')}
+        >
+          {group}
+        </nav>
+      );
+      group = [];
+    };
+    gtdCfg.order.forEach((id) => {
+      if (!isSectionShown(id, gtdCfg)) return;
+      if (id === 'agenda') {
+        flush();
+        out.push(<React.Fragment key="agenda">{renderAgendaButton()}</React.Fragment>);
+      } else if (id === 'projects') {
+        flush();
+        out.push(<React.Fragment key="projects">{renderProjectsBlock()}</React.Fragment>);
+        afterProjects = true;
+      } else {
+        const def = [...LISTS, ...EXTRA_LISTS].find((l) => l.id === id);
+        if (def) group.push(renderListItem(def));
+      }
+    });
+    flush();
+    return out;
+  };
+
   const loading = pendingLoads;
 
   return (
@@ -875,69 +1030,7 @@ export default function GtdView() {
             data-testid="gtd-search"
           />
         </div>
-        <button
-          className="gtd-side__item gtd-side__item--agenda"
-          onClick={() => {
-            setSideOpen(false);
-            setShowAgenda(true);
-          }}
-          data-testid="gtd-agenda"
-        >
-          <i className="fas fa-calendar-alt gtd-side__icon" />
-          <span className="gtd-side__label">Agenda</span>
-        </button>
-        <nav className="gtd-side__lists">{LISTS.map(renderListItem)}</nav>
-        <div className="gtd-side__section">
-          <span>Proyectos</span>
-          <button
-            className="gtd-side__add"
-            title="Nuevo proyecto"
-            onClick={addProject}
-            data-testid="gtd-add-project"
-          >
-            +
-          </button>
-        </div>
-        <nav className="gtd-side__projects">
-          <button
-            className={
-              'gtd-side__item gtd-side__item--all-projects' +
-              (view.id === 'projects' ? ' is-on' : '')
-            }
-            onClick={() => selectView({ id: 'projects' })}
-            data-testid="gtd-all-projects"
-          >
-            <i className="fas fa-th-list gtd-side__icon" />
-            <span className="gtd-side__label">Todos los proyectos</span>
-          </button>
-          {projectGroups.active.length === 0 && (
-            <div className="gtd-side__empty">Sin proyectos activos (estado PROJECT)</div>
-          )}
-          {projectGroups.active.map(renderProjectButton)}
-          {[
-            ['scheduled', 'Programados', 'far fa-calendar-alt'],
-            ['sleep', 'Dormidos', 'fas fa-bed'],
-          ].map(([id, label, icon]) =>
-            projectGroups[id].length ? (
-              <div key={id} className="gtd-side__group" data-testid={`gtd-projects-${id}`}>
-                <button
-                  className="gtd-side__group-toggle"
-                  onClick={() => setProjGroupsOpen((g) => ({ ...g, [id]: !g[id] }))}
-                  aria-expanded={!!projGroupsOpen[id]}
-                  data-testid={`gtd-projects-${id}-toggle`}
-                >
-                  <i className={projGroupsOpen[id] ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
-                  <i className={icon} /> {label}
-                  <span className="gtd-side__count">{projectGroups[id].length}</span>
-                </button>
-                {projGroupsOpen[id] && projectGroups[id].map(renderProjectButton)}
-              </div>
-            ) : null
-          )}
-        </nav>
-        <nav className="gtd-side__lists gtd-side__lists--extra">
-          {EXTRA_LISTS.map(renderListItem)}
-        </nav>
+        {sidebarBlocks()}
       </aside>
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
@@ -1300,20 +1393,29 @@ export default function GtdView() {
                   )}
                 </div>
               )}
-              <TaskRow
-                task={task}
-                open={openKey === task.key}
-                onToggleOpen={() =>
-                  !clickSuppressed() && setOpenKey(openKey === task.key ? null : task.key)
-                }
-                onPointerDown={onPointerDown(task)}
-                isDragging={dragging === task.key}
-                dispatch={dispatch}
-                today={today}
-                showProject={view.type !== 'project'}
-                hideActions={isLogbook}
-              />
-              {openKey === task.key && renderEditor(task)}
+              {openKey === task.key ? (
+                renderEditor(task)
+              ) : (
+                <TaskRow
+                  task={task}
+                  open={false}
+                  onToggleOpen={() => {
+                    if (clickSuppressed()) return;
+                    // con una tarea nueva a medio crear, primero hay que guardarla o cancelarla
+                    if (newKey && openKey === newKey) {
+                      window.dispatchEvent(new CustomEvent('eli:gtd-attention'));
+                      return;
+                    }
+                    setOpenKey(task.key);
+                  }}
+                  onPointerDown={onPointerDown(task)}
+                  isDragging={dragging === task.key}
+                  dispatch={dispatch}
+                  today={today}
+                  showProject={view.type !== 'project'}
+                  hideActions={isLogbook}
+                />
+              )}
             </React.Fragment>
           ))}
         </div>

@@ -175,3 +175,117 @@
 .eli-settings-section .setting-container:first-of-type {
   border-top: 1px solid var(--base2);
 }
+
+/* ORG Mode para Eli: secciones de la vista GTD */
+.eli-gtdsec {
+  margin: 14px 0 6px;
+}
+.eli-gtdsec__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.eli-gtdsec__hint,
+.eli-gtdsec__note {
+  font-size: 0.85em;
+  color: var(--base00);
+  opacity: 0.85;
+  margin: 4px 0 8px;
+}
+.eli-gtdsec__row {
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: var(--base3);
+}
+.eli-gtdsec__row.is-hidden .eli-gtdsec__name {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.eli-gtdsec__line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+.eli-gtdsec__move {
+  border: 1px solid var(--base1);
+  background: var(--base2);
+  color: var(--base01);
+  border-radius: 6px;
+  width: 30px;
+  height: 28px;
+  cursor: pointer;
+}
+.eli-gtdsec__move:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.eli-gtdsec__line input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0 4px;
+}
+.eli-gtdsec__name {
+  flex: 1;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--base01);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+}
+.eli-gtdsec__name .fa-caret-right,
+.eli-gtdsec__name .fa-caret-down {
+  margin-left: auto;
+  opacity: 0.6;
+}
+.eli-gtdsec__options {
+  padding: 4px 12px 12px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eli-gtdsec__rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.eli-gtdsec__rule > span {
+  min-width: 90px;
+  color: var(--base00);
+}
+.eli-gtdsec__rule input {
+  flex: 1;
+  min-width: 160px;
+  padding: 4px 6px;
+  border: 1px solid var(--base1);
+  border-radius: 6px;
+  background: var(--base3);
+  color: var(--base01);
+  font: inherit;
+}
+.eli-gtdsec__tick {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.eli-gtdsec__tick input {
+  margin-top: 3px;
+}
+.eli-gtdsec__reset-one {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+@media (max-width: 720px) {
+  .eli-gtdsec__options {
+    padding-left: 12px;
+  }
+}

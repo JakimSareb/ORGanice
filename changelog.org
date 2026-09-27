@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.8 (septiembre de 2026)
+** Vista GTD
+- Al editar una tarea, el editor ocupa su sitio en la lista (ya no se ve la tarea encima).
+- Tarea nueva: su editor no se cierra al tocar fuera; hay que *Guardar* (también Intro o Esc) o *Cancelar*, que la borra.
+- Deslizar una tarea: a la derecha, hecha; a la izquierda, borrar (con confirmación). Con el ratón, en horizontal dentro de la fila (si sales, pasa a arrastrar).
+** Ajustes → Vista GTD y gestos
+- Deslizar sí/no, por separado en los documentos y en la vista GTD.
+- Secciones de la vista GTD configurables: orden (el del menú y el que decide a qué lista va una tarea que cumple varias), mostrar u ocultar cada una, qué tareas entran (estados, etiquetas, propiedades) y casillas para hábitos, programadas a futuro (con o sin prioridad) y proyectos dormidos. Por defecto, todo como antes; con «Restablecer» se vuelve a lo de siempre.
+
 * 2.7 (septiembre de 2026)
 ** Vista GTD
 - Las tareas programadas para más adelante solo se ven en Scheduled hasta que llega su fecha (también si tienen fecha límite), salvo que tengan prioridad: entonces se ven también en su lista y en el resto.

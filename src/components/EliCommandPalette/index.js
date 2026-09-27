@@ -13,6 +13,7 @@ import './stylesheet.css';
 import { fuzzyScore, normalize } from '../../lib/eli_fuzzy';
 import { calculateActionedKeybindings } from '../../lib/keybindings';
 import { displayTitle, LISTS, EXTRA_LISTS } from '../../lib/gtd/gtd_model';
+import { normalizeGtdSections, isSectionShown } from '../../lib/gtd/gtd_sections';
 import { STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import {
   loadFileQuietly,
@@ -372,15 +373,18 @@ export default function EliCommandPalette() {
     act('moon', 'Fases de la Luna', 'fas fa-moon', openMoonPhases);
 
     // Listas GTD
-    [...LISTS, ...EXTRA_LISTS].forEach((l) =>
-      add({
-        rid: `g:${l.id}`,
-        kind: 'gtd',
-        label: `GTD: ${l.label}`,
-        icon: l.icon,
-        run: () => gtdCommand(history, pathname, { view: { id: l.id } }),
-      })
-    );
+    const gtdCfg = normalizeGtdSections(state.base.get('eliGtdSections'));
+    [...LISTS, ...EXTRA_LISTS]
+      .filter((l) => isSectionShown(l.id, gtdCfg))
+      .forEach((l) =>
+        add({
+          rid: `g:${l.id}`,
+          kind: 'gtd',
+          label: `GTD: ${l.label}`,
+          icon: l.icon,
+          run: () => gtdCommand(history, pathname, { view: { id: l.id } }),
+        })
+      );
 
     // Ficheros
     const loaded = Array.from(files.keys()).filter(isRealPath);

@@ -14,6 +14,14 @@ import { List } from 'immutable';
 import { attributedStringToRawText } from '../export_org';
 import { dateForTimestamp } from '../timestamps';
 import { DEFAULT_ENERGY, DEFAULT_EFFORT } from '../eli_todo_defaults';
+import {
+  getGtdConfig,
+  exclusiveOrder,
+  inboxTags,
+  matchesSectionRules,
+  keywordForSection,
+  sectionDef,
+} from './gtd_sections';
 
 export const LISTS = [
   { id: 'focus', label: 'Focus', icon: 'fas fa-star' },
@@ -39,7 +47,6 @@ export const KEYWORD_FOR_LIST = {
   inbox: null,
   reference: null,
 };
-const LIST_FOR_KEYWORD = { NEXT: 'next', TODO: 'later', WAITING: 'waiting', MAYBE: 'someday' };
 
 // Energía y tiempo: como en Emacs, «#+PROPERTY: Energy_ALL …» y «#+PROPERTY: Effort_ALL …»
 // (valores por defecto en lib/eli_todo_defaults)
@@ -243,16 +250,41 @@ const buildFileTasks = (file, path, isInboxFile) => {
 };
 
 export const INBOX_TAG = '@inbox';
-export const hasInboxTag = (task) =>
-  (task.ownTags || []).some((t) => t.toLowerCase() === INBOX_TAG);
+const lower = (x) => (x || '').toLowerCase();
+// ORG Mode para Eli: etiqueta(s) de Inbox según Ajustes (por defecto @inbox)
+export const inboxTag = () => inboxTags()[0] || INBOX_TAG;
+export const hasInboxTag = (task) => {
+  const tags = inboxTags().map(lower);
+  return !!tags.length && (task.ownTags || []).some((t) => tags.includes(lower(t)));
+};
 
-// Etiquetas al cambiar de lista: Inbox = @inbox (se quita al sacarla; se pone al llevarla a
-// Inbox fuera del fichero de entrada)
+// Estado al llevar una tarea a una lista: { has, keyword } (según Ajustes; si no, lo de siempre)
+export const keywordForList = (list) => {
+  const k = keywordForSection(list);
+  if (k !== undefined) return { has: true, keyword: k };
+  if (Object.prototype.hasOwnProperty.call(KEYWORD_FOR_LIST, list)) {
+    return { has: true, keyword: KEYWORD_FOR_LIST[list] };
+  }
+  return { has: false };
+};
+
+// Etiquetas al cambiar de lista: se quitan las etiquetas que marcan OTRAS listas (p. ej. @inbox al
+// sacarla de Inbox) y, si la lista de destino se marca con etiqueta (y no con estado), se pone
+// (salvo en Inbox si la tarea ya está en el fichero de entrada).
 export const tagsForList = (task, list, tags = task.ownTags || []) => {
-  const isInboxTag = (x) => x.toLowerCase() === INBOX_TAG;
-  if (list !== 'inbox') return tags.filter((x) => !isInboxTag(x));
-  if (!task.isInboxFile && !tags.some(isInboxTag)) return [...tags, INBOX_TAG];
-  return tags;
+  const cfg = getGtdConfig();
+  const target = (sectionDef(list) || {}).kind === 'list' ? cfg.sections[list] : null;
+  const targetTags = target ? target.tags.map(lower) : [];
+  const others = [];
+  exclusiveOrder(cfg)
+    .filter((id) => id !== list)
+    .forEach((id) => cfg.sections[id].tags.forEach((t) => others.push(lower(t))));
+  let out = tags.filter((x) => !others.includes(lower(x)) || targetTags.includes(lower(x)));
+  if (target && target.tags.length && !target.states.length) {
+    const has = out.some((x) => targetTags.includes(lower(x)));
+    if (!has && !(target.inboxFile && task.isInboxFile)) out = [...out, target.tags[0]];
+  }
+  return out;
 };
 
 // Programada para más adelante
@@ -261,39 +293,60 @@ export const isFutureScheduled = (task, today = new Date()) =>
 
 // ORG Mode para Eli: oculta hasta su fecha (solo se ve en Scheduled): programada a futuro, tenga o
 // no fecha límite. Si tiene prioridad ([#A], [#B]…), se ve también en su lista y en el resto.
+// (Por defecto; cada sección lo decide con sus ticks en Ajustes → Vista GTD: secciones.)
 export const isHiddenUntilScheduled = (task, today = new Date()) =>
   isFutureScheduled(task, today) && !task.priority;
 
-// Los hábitos (:STYLE: habit) solo se ven en Scheduled (sección «Hábitos»), nunca en las listas
-const isScheduledView = (t, today) =>
-  !t.isDone &&
-  !t.isProject &&
-  !isParked(t, today) &&
-  (!!t.keyword || hasInboxTag(t)) &&
-  (isFutureScheduled(t, today) || t.isHabit);
+const propertyOfTask = (task, name) => (task.header ? propertyValue(task.header, name) : null);
+const isTaskLike = (t) => !!t.keyword || hasInboxTag(t);
+const isFutureTask = (t, today) => isTaskLike(t) && isFutureScheduled(t, today);
 
-// Lista a la que pertenece una tarea (una sola; Focus es aparte)
+// Ticks de la sección: hábitos, programadas a futuro (con o sin prioridad) y proyectos aparcados
+const hiddenBy = (t, s, today) => {
+  if (isParked(t, today) && !s.parked) return 'parked';
+  if (t.isHabit && isTaskLike(t) && !s.habits) return 'habit';
+  if (isFutureTask(t, today) && !(t.priority ? s.futurePriority : s.future)) return 'scheduled';
+  return null;
+};
+
+// ¿Entra en esta lista exclusiva? (reglas + casos especiales de Inbox y Reference)
+const matchesList = (task, s) => {
+  if (matchesSectionRules(task, s, propertyOfTask)) return true;
+  if (s.inboxFile && !task.keyword && task.isInboxFile && !task.parentHasKeyword) return true;
+  if (s.noStateLeaf && !task.keyword && !task.hasTaskChildren && !task.parentHasKeyword) {
+    return true;
+  }
+  return false;
+};
+
+// Scheduled: programadas a futuro y hábitos (según sus ticks) o sus reglas extra
+const isScheduledView = (t, today) => {
+  const s = getGtdConfig().sections.scheduled;
+  if (t.isDone || t.isProject) return false;
+  const base = isTaskLike(t) && (isFutureScheduled(t, today) || (t.isHabit && s.habits));
+  if (!base && !matchesSectionRules(t, s, propertyOfTask)) return false;
+  return !hiddenBy(t, s, today);
+};
+
+// Lista a la que pertenece una tarea (una sola; Focus es aparte): la primera (en el orden de
+// Ajustes) cuyas reglas cumple. Si sus ticks la ocultan: 'parked', 'habit' o 'scheduled'.
 export const listOf = (task, today = new Date()) => {
   if (task.isDone) return 'logbook';
   if (task.isProject) return 'project';
-  if (isParked(task, today)) return 'parked';
-  if (task.isHabit && (task.keyword || hasInboxTag(task))) return 'habit';
-  const inbox = hasInboxTag(task);
-  if ((task.keyword || inbox) && isHiddenUntilScheduled(task, today)) return 'scheduled';
-  // Inbox: etiqueta @inbox, o encabezados sin estado del fichero de entrada
-  if (inbox) return 'inbox';
-  if (!task.keyword) {
-    if (task.isInboxFile && !task.parentHasKeyword) return 'inbox';
-    if (!task.hasTaskChildren && !task.parentHasKeyword) return 'reference';
-    return null;
+  const cfg = getGtdConfig();
+  for (const id of exclusiveOrder(cfg)) {
+    const s = cfg.sections[id];
+    if (s.show === false || !matchesList(task, s)) continue;
+    return hiddenBy(task, s, today) || id;
   }
-  return LIST_FOR_KEYWORD[task.keyword] || null;
+  return isParked(task, today) ? 'parked' : null;
 };
 
 // Ha llegado su fecha programada o su fecha límite (hoy o antes) y aún no tiene ★: se le pone
 // [#A] (no a los hábitos ni a las terminadas)
 const isDue = (date, today) => !!date && startOfDay(date) <= startOfDay(today);
 export const needsAutoPriority = (task, today = new Date()) =>
+  getGtdConfig().sections.focus.autoStar !== false &&
   !!task.keyword &&
   !task.isDone &&
   !task.isProject &&
@@ -312,16 +365,20 @@ export const autoPriorityKey = (task, today = new Date()) =>
     isDue(task.deadline, today) ? `D${startOfDay(task.deadline).toISOString()}` : '',
   ].join('|');
 
+// Focus: ★ [#A] o fecha (programada o límite) de hoy o vencida, o sus reglas extra; sin hábitos,
+// sin proyectos aparcados ni programadas a futuro sin prioridad (por defecto)
 export const isFocus = (task, today = new Date()) => {
-  if (task.isDone || task.isProject || !task.keyword) return false;
-  if (task.isHabit) return false; // los hábitos (:STYLE: habit) no se ven en Focus
-  if (isParked(task, today)) return false; // proyecto dormido o que aún no empieza
-  if (isHiddenUntilScheduled(task, today)) return false; // hasta su fecha, solo en Scheduled
-  if (task.priority === 'A') return true;
+  if (task.isDone || task.isProject) return false;
+  const s = getGtdConfig().sections.focus;
   const t0 = startOfDay(today);
-  if (task.scheduled && startOfDay(task.scheduled) <= t0) return true;
-  if (task.deadline && startOfDay(task.deadline) <= t0) return true;
-  return false;
+  const base =
+    !!task.keyword &&
+    ((s.star !== false && task.priority === 'A') ||
+      (s.due !== false &&
+        ((task.scheduled && startOfDay(task.scheduled) <= t0) ||
+          (task.deadline && startOfDay(task.deadline) <= t0))));
+  if (!base && !matchesSectionRules(task, s, propertyOfTask)) return false;
+  return !hiddenBy(task, s, today);
 };
 
 export const matchesFilters = (task, filters) => {
@@ -368,6 +425,7 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
   if (view.type === 'project') {
     const projectTask = tasks.find((t) => t.key === view.key);
     if (!projectTask) return [];
+    const s = getGtdConfig().sections.projects;
     out = tasks.filter(
       (t) =>
         t.path === projectTask.path &&
@@ -376,21 +434,18 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
         t.keyword &&
         !t.isDone &&
         !t.isProject &&
-        !t.isHabit &&
-        !isHiddenUntilScheduled(t, today)
+        !hiddenBy(t, s, today)
     );
   } else if (view.id === 'focus') {
     out = tasks.filter((t) => isFocus(t, today));
   } else if (view.id === 'deadline') {
+    const s = getGtdConfig().sections.deadline;
     out = tasks.filter(
       (t) =>
-        t.deadline &&
-        t.keyword &&
         !t.isDone &&
         !t.isProject &&
-        !t.isHabit &&
-        !isParked(t, today) &&
-        !isHiddenUntilScheduled(t, today)
+        ((t.deadline && t.keyword) || matchesSectionRules(t, s, propertyOfTask)) &&
+        !hiddenBy(t, s, today)
     );
   } else if (view.id === 'scheduled') {
     // Todas las programadas a futuro (también las que tienen DEADLINE y se ven en su lista)
@@ -403,7 +458,10 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
     return out.sort((a, b) => (b.closed || 0) - (a.closed || 0)).slice(0, 300);
   }
   if (view.id === 'scheduled') return out.sort((a, b) => (a.scheduled || 0) - (b.scheduled || 0));
-  if (view.id === 'deadline') return out.sort((a, b) => a.deadline - b.deadline);
+  if (view.id === 'deadline') {
+    const far = 8.64e15;
+    return out.sort((a, b) => (a.deadline || far) - (b.deadline || far));
+  }
   if (view.type === 'project') return out; // orden del fichero
   return out.sort(byDateThenTitle);
 };

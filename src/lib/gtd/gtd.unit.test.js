@@ -1,4 +1,11 @@
-import { Map, List } from 'immutable';
+import { Map, List, fromJS } from 'immutable';
+import {
+  setGtdConfig,
+  getGtdConfig,
+  normalizeGtdSections,
+  DEFAULT_GTD_CONFIG,
+} from './gtd_sections';
+import { keywordForList, tagsForList } from './gtd_model';
 import { parseOrg } from '../parse_org';
 import { exportOrg } from '../export_org';
 import rootOrgReducer from '../../reducers/org';
@@ -401,7 +408,14 @@ describe('logbookGroupOf', () => {
 
 describe('archivableDone', () => {
   const { archivableDone } = require('./gtd_model');
-  const t = (index, level, keyword, isDone) => ({ path: '/a.org', key: `k${index}`, index, level, keyword, isDone });
+  const t = (index, level, keyword, isDone) => ({
+    path: '/a.org',
+    key: `k${index}`,
+    index,
+    level,
+    keyword,
+    isDone,
+  });
   test('no archiva una terminada con subtareas abiertas', () => {
     const tasks = [
       t(0, 1, 'DONE', true),
@@ -426,8 +440,94 @@ describe('proyectos dormidos y programados', () => {
   });
   test('tareas aparcadas', () => {
     expect(isParked({ tags: ['sleep'], keyword: 'NEXT' }, today)).toBe(true);
-    expect(isParked({ tags: [], keyword: 'NEXT', projectStart: new Date(2027, 0, 1) }, today)).toBe(true);
-    expect(isParked({ tags: [], keyword: 'NEXT', projectStart: new Date(2026, 0, 1) }, today)).toBe(false);
+    expect(isParked({ tags: [], keyword: 'NEXT', projectStart: new Date(2027, 0, 1) }, today)).toBe(
+      true
+    );
+    expect(isParked({ tags: [], keyword: 'NEXT', projectStart: new Date(2026, 0, 1) }, today)).toBe(
+      false
+    );
     expect(isParked({ tags: ['sleep'], isProject: true }, today)).toBe(false);
+  });
+});
+
+// ORG Mode para Eli (2.8): secciones configurables
+describe('secciones configurables', () => {
+  const build = () =>
+    buildTasks(
+      Map({
+        '/s.org': parseOrg(
+          [
+            '#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED',
+            '* NEXT Correo :@inbox:',
+            '* TODO Esperando a Luis :@espera:',
+            '* Sin estado',
+            '* TODO Con propiedad',
+            ':PROPERTIES:',
+            ':CONTEXTO: casa',
+            ':END:',
+            '* TODO Hábito',
+            'SCHEDULED: <2026-09-25 Fri .+1d>',
+            ':PROPERTIES:',
+            ':STYLE: habit',
+            ':END:',
+            '* TODO Futura',
+            'SCHEDULED: <2026-10-20 Tue>',
+            '',
+          ].join('\n')
+        ),
+      }),
+      []
+    );
+  afterEach(() => setGtdConfig(null));
+  const titles = (tasks, id) => tasksForView(tasks, { id }, {}, TODAY).map((x) => x.title);
+
+  test('por defecto, igual que siempre', () => {
+    setGtdConfig(null);
+    const tasks = build();
+    expect(titles(tasks, 'inbox')).toEqual(['Correo']);
+    expect(titles(tasks, 'later')).toEqual(['Esperando a Luis', 'Con propiedad']);
+    expect(titles(tasks, 'reference')).toEqual(['Sin estado']);
+    expect(titles(tasks, 'scheduled')).toEqual(['Hábito', 'Futura']);
+    expect(normalizeGtdSections(Map()).order).toEqual(DEFAULT_GTD_CONFIG.order);
+  });
+
+  test('orden, reglas, ticks y secciones ocultas', () => {
+    setGtdConfig(
+      fromJS({
+        order: ['next', 'waiting', 'inbox', 'later'],
+        sections: {
+          waiting: { tags: ['@espera'], props: ['CONTEXTO=casa'] },
+          later: { habits: true, future: true },
+          reference: { show: false },
+        },
+      })
+    );
+    const tasks = build();
+    // Next va antes que Inbox: la tarea NEXT con @inbox va a Next
+    expect(titles(tasks, 'next')).toEqual(['Correo']);
+    expect(titles(tasks, 'inbox')).toEqual([]);
+    // Waiting (antes que Todo) recoge la etiqueta y la propiedad
+    expect(titles(tasks, 'waiting')).toEqual(['Esperando a Luis', 'Con propiedad']);
+    // Todo con hábitos y programadas a futuro
+    expect(titles(tasks, 'later')).toEqual(['Hábito', 'Futura']);
+    // Reference oculta: sin estado, no sale
+    expect(titles(tasks, 'reference')).toEqual([]);
+    // Las secciones que no se guardaron siguen en su sitio
+    const order = getGtdConfig().order;
+    expect(order.slice(0, 3)).toEqual(['agenda', 'focus', 'next']);
+    expect(order.length).toBe(DEFAULT_GTD_CONFIG.order.length);
+    expect(order.indexOf('inbox')).toBeLessThan(order.indexOf('later'));
+  });
+
+  test('llevar a una lista: su primer estado y sus etiquetas', () => {
+    setGtdConfig(fromJS({ sections: { waiting: { states: ['ESPERA', 'WAITING'] } } }));
+    expect(keywordForList('waiting')).toEqual({ has: true, keyword: 'ESPERA' });
+    expect(keywordForList('inbox')).toEqual({ has: true, keyword: null });
+    expect(keywordForList('scheduled')).toEqual({ has: true, keyword: 'TODO' });
+    setGtdConfig(null);
+    const t = { ownTags: ['@inbox', '@casa'], isInboxFile: false };
+    expect(tagsForList(t, 'next')).toEqual(['@casa']);
+    expect(tagsForList({ ownTags: [], isInboxFile: false }, 'inbox')).toEqual(['@inbox']);
+    expect(tagsForList({ ownTags: [], isInboxFile: true }, 'inbox')).toEqual([]);
   });
 });

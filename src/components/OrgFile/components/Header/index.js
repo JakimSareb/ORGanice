@@ -122,7 +122,8 @@ class Header extends PureComponent {
   }
 
   handleDragStart(targetElement, dragX) {
-    if (this.props.shouldDisableActions) {
+    // ORG Mode para Eli: deslizar desactivado en Ajustes
+    if (this.props.shouldDisableActions || this.props.eliNoSwipe) {
       return;
     }
 
@@ -791,6 +792,7 @@ const mapStateToProps = (state, ownProps) => {
     headers: file.get('headers'),
     todoKeywordSets: file.get('todoKeywordSets'),
     path,
+    eliNoSwipe: state.base.get('eliNoSwipeDocs') === true,
   };
 };
 
