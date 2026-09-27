@@ -1,0 +1,163 @@
+#+TITLE: ORGanice para Emacs
+#+STARTUP: content
+
+Configuración limpia de Emacs que replica el sistema de ORGanice: los mismos ficheros de
+Dropbox, estados, etiquetas, propiedades, capturas, archivo y la vista GTD (Focus, Inbox, Next…),
+con los temas Unicornio y Cuki, la paleta de comandos y los mismos atajos de formato.
+
+Lo que hagas en Emacs lo ve la app y al revés: los dos escriben Org estándar en los mismos
+ficheros.
+
+* Qué hay en esta carpeta
+| Fichero                     | Qué hace                                                                 |
+|-----------------------------+--------------------------------------------------------------------------|
+| =early-init.el=             | Arranque rápido e interfaz limpia (sin barras).                          |
+| =init.el=                   | Paquetes, básicos (guardado y relectura automáticos) y carga los módulos. |
+| =lisp/organice-core.el=     | Carpeta de Dropbox, estados, etiquetas, Energy/Effort, AREA, registro, refile, archivo y cifrado. |
+| =lisp/organice-gtd.el=      | Vistas GTD con las mismas reglas que la app, ★ automática, proyectos, Logbook. |
+| =lisp/organice-capture.el=  | Plantillas de captura.                                                   |
+| =lisp/organice-themes.el=   | Temas =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=.              |
+| =lisp/organice-ui.el=       | Paleta de comandos, atajos, formato, sincronizar, Documentos ⇄ GTD.       |
+
+* Instalación (sin tocar tu configuración actual)
+Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask emacs=, o
+=emacs-plus=) y, para el cifrado, *GnuPG* (=brew install gnupg=).
+
+1. Copia esta carpeta a =~/organice-emacs= (o donde quieras).
+2. Ábrela así, sin tocar tu =~/.emacs.d=:
+   #+begin_src sh
+   emacs --init-directory ~/organice-emacs
+   #+end_src
+   La primera vez descarga los paquetes (vertico, orderless, marginalia, consult,
+   org-super-agenda y, en Emacs 29, which-key); tarda un poco y necesita internet.
+3. Si tu carpeta de ficheros no se encuentra sola, pon su ruta al principio de =init.el=:
+   #+begin_src emacs-lisp
+   (defvar organice-directory-override "~/Dropbox/Aplicaciones/ORGanice/")
+   #+end_src
+   Se busca, por este orden: =~/Dropbox/Aplicaciones/ORGanice/=, =~/Dropbox/Apps/ORGanice/=,
+   las mismas dentro de =~/Library/CloudStorage/Dropbox/=, =~/Dropbox/org/=, =~/Dropbox/= y =~/org/=.
+   (La carpeta es la de tu app de Dropbox, =Aplicaciones/<nombre de tu app>=.)
+4. Cuando te guste, puedes convertirla en tu configuración (=~/.emacs.d=) o mezclarla con la tuya
+   (ver «Mezclar con tu configuración»).
+
+* Uso: lo mismo que en la app
+** Atajos
+| En la app                               | En Emacs                                            |
+|-----------------------------------------+-----------------------------------------------------|
+| Conmutador Documentos ⇄ GTD, tecla g    | =F12= o =C-c g g=                                   |
+| Paleta de comandos (Ctrl+K / ⌘K)        | =⌘K= (=s-k=) o =C-c k=                              |
+| Focus / Inbox / Next / Todo / Waiting   | =C-c g f= / =i= / =n= / =t= / =w=                   |
+| Scheduled / Deadline / Someday          | =C-c g s= / =d= / =m=                               |
+| Todos los proyectos / Reference / Logbook | =C-c g p= / =r= / =l=                             |
+| Acciones de un proyecto                 | En el proyecto: =C-c g P=                           |
+| Agenda                                  | =C-c g a= (o =C-c a=)                               |
+| Tablero Focus + Inbox + Next            | =C-c a g g=                                         |
+| Capturar (tecla c + letra)              | =C-c c= + letra                                     |
+| Sincronizar (↻)                         | =C-c s= o =F5= (además se guarda y relee solo)      |
+| ★ [#A]                                  | =C-c g *=                                           |
+| Dormir / despertar proyecto (:sleep:)   | =C-c g z= / =C-u C-c g z=                           |
+| Cerrar proyecto (terminado/cancelado)   | =C-c g x=                                           |
+| Archivar todas las terminadas           | =C-c g A= (en el fichero)                           |
+| Archivar una                            | =C-c C-x C-s= (el de siempre de Org)                |
+| Mover (refile)                          | =C-c C-w=                                           |
+| Negrita / cursiva / subrayado           | =⌘B= / =⌘I= / =⌘U= (o =C-c e b= / =i= / =u=)        |
+| Tachado / código / literal              | =⌘⇧X= / =⌘E= / =⌘⇧E= (o =C-c e s= / =c= / =v=)       |
+| Ver todo (widen)                        | =C-x n w=                                           |
+| Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
+En Linux o Windows, =⌘= es la tecla Super (la de Windows). Dentro de la agenda funcionan todas las
+teclas de Org: =t= cambia el estado, =,= la prioridad, =:= las etiquetas, =C-c C-s= programa,
+=C-c C-d= fecha límite, =RET= abre la tarea, =g= recalcula.
+
+** La paleta de comandos
+=⌘K= abre una lista con todo: acciones (empiezan por =>=), ficheros (=/=), etiquetas (=#=) y tareas
+y encabezados de todos los ficheros (=*=). Escribe unas letras de cada palabra: =cmppnt= encuentra
+«Comprar pintura». Escribe =>= para ver solo acciones, =#= para etiquetas, =/= para ficheros.
+Lo último que usaste sale primero. Una tarea se abre reducida a ella (narrow); =C-x n w= la amplía.
+
+** Las vistas GTD
+Mismas reglas por defecto que la app:
+| Vista       | Qué muestra                                                                 |
+|-------------+-----------------------------------------------------------------------------|
+| Focus       | ★ [#A] o fecha (programada o límite) de hoy o pasada; sin hábitos            |
+| Inbox       | Etiqueta =@inbox=, o encabezados sin estado de =inbox.org=                   |
+| Next / Todo / Waiting / Someday | =NEXT= / =TODO= / =WAITING= / =MAYBE=                   |
+| Scheduled   | Programadas para más adelante y todos los hábitos: normales, «Se repiten», «Hábitos» |
+| Deadline    | Con fecha límite                                                            |
+| Proyectos   | =PROJECT=: activos, programados (SCHEDULED futuro) y dormidos (=:sleep:=)      |
+| Reference   | Encabezados sin estado ni tareas debajo                                     |
+| Logbook     | Terminadas sin archivar: esta semana, la pasada, el mes pasado, este año, anteriores |
+- Una tarea va a una sola lista: la primera que encaja en el orden Inbox, Next, Todo, Waiting,
+  Someday, Reference.
+- Las programadas para más adelante solo salen en Scheduled hasta su fecha, salvo que tengan
+  prioridad. Los hábitos, solo en Scheduled.
+- Las tareas de un proyecto dormido o que aún no ha empezado no salen en las listas.
+- *★ automática*: al abrir la vista GTD, las tareas cuya fecha ha llegado reciben [#A] una sola
+  vez (como la app; si se la quitas, no vuelve). Se desactiva con
+  =(setq organice-auto-star nil)=.
+
+** Cambiar las reglas (como Ajustes → Vista GTD: secciones)
+Con =M-x customize-group RET organice= o en =init.el=:
+#+begin_src emacs-lisp
+;; Orden de las listas (si una tarea encaja en varias, va a la primera)
+(setq organice-list-order '(next inbox later waiting someday reference))
+;; Reglas: :states, :tags (propias), :props ("NOMBRE" o "NOMBRE=valor") y casillas
+;; :habits :future :future-priority :parked
+(setf (alist-get 'waiting organice-sections)
+      '(:states ("WAITING") :tags ("@espera") :props ("CONTEXTO=casa")))
+(setf (alist-get 'later organice-sections) '(:states ("TODO") :habits t))
+#+end_src
+Si en la app cambiaste las secciones, pon aquí lo mismo para que ambas vean lo mismo.
+
+** Captura
+=C-c c= y la letra: =i= Inbox, =t= TODO, =n= NEXT, =p= proyecto, =h= hábito, =l= nota con enlace.
+Para que coincidan con tus plantillas de la app (Ajustes → Plantillas de captura), edita
+=lisp/organice-capture.el=: misma letra, mismo fichero y mismo texto.
+
+** Archivar
+Por defecto, junto al fichero (=tareas.org_archive=). Para guardar lo archivado en la subcarpeta
+=archive= de cada carpeta, como la opción de la app:
+#+begin_src emacs-lisp
+(customize-set-variable 'organice-archive-in-subfolder t)
+#+end_src
+(la carpeta se crea sola). Una línea =#+ARCHIVE:= del fichero sigue mandando.
+
+** Temas
+=M-x organice-theme= → =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=. El de arranque:
+=(setq organice-default-theme 'cuki)= (o =nil= para no cambiarlo).
+
+** Cifrado
+Igual que la app: ficheros =.org.gpg= / =.org.asc= completos (se abren y guardan con tu frase de
+paso) y encabezados con la etiqueta =:crypt:= (org-crypt; =M-x org-decrypt-entry= para verlos,
+se vuelven a cifrar al guardar). Hace falta GnuPG instalado.
+
+** Sincronización
+Emacs guarda solo a los 5 segundos (=auto-save-visited-mode=) y relee los ficheros que cambian en
+Dropbox (=global-auto-revert-mode=), así que no hace falta pulsar nada. Evita editar la misma
+tarea a la vez en la app y en Emacs: gana el último en guardar (la app avisa si hay conflicto;
+Emacs pregunta si el fichero cambió en disco).
+
+* Mezclar con tu configuración
+Todo está en módulos independientes. Lo más sencillo:
+1. Copia la carpeta =lisp/= a tu =~/.emacs.d/lisp/=.
+2. Añade a tu =init.el= (después de configurar tus paquetes):
+   #+begin_src emacs-lisp
+   (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+   (require 'organice-core)
+   (require 'organice-gtd)
+   (require 'organice-capture)
+   (require 'organice-themes)   ; opcional
+   (require 'organice-ui)       ; opcional: paleta, atajos y formato
+   #+end_src
+3. Si ya usas vertico, ivy, helm… =organice-ui= usa vertico/orderless; quita esa parte si
+   prefieres lo tuyo (la paleta funciona con cualquier sistema de completado).
+4. Revisa lo que puede chocar con tu configuración: =org-todo-keywords=, =org-tag-alist=,
+   =org-agenda-custom-commands= (se añaden las de la tecla =g=), =org-capture-templates= y los
+   atajos =C-c g=, =C-c k=, =C-c s=, =C-c e=, =F12=, =F5=, =s-k= y =s-b=… de Org.
+
+* Qué no está (o es distinto)
+- Deslizar con el dedo, arrastrar a listas y el editor tipo Nirvana: en Emacs se hace con las
+  teclas de Org (=t=, =,=, =C-c C-s=, =C-c C-w=…).
+- «Se repiten» y los grupos del Logbook y de Proyectos necesitan =org-super-agenda= (se instala
+  solo); sin él las vistas funcionan igual, pero sin secciones.
+- La ★ automática recuerda qué tareas ya marcó en =organice-auto-star.eld= (dentro de la carpeta
+  de configuración), no en el navegador.
