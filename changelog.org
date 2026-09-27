@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.9.1 (septiembre de 2026)
+** Vista GTD
+- Con una tarea abierta, desplazar la lista (empezando fuera de la tarea) ya no la cierra: el editor solo se cierra con un toque fuera, sin mover el dedo o el ratón.
+
 * 2.9 (septiembre de 2026)
 ** Archivar
 - Nuevo ajuste (Ajustes → Tareas y etiquetas → «Archivar en»): *Junto al fichero* (como siempre) o *Subcarpeta archive*, que guarda lo archivado en la carpeta archive de la carpeta de cada fichero (p. ej. proyectos/archive/tareas.org_archive; se crea si no existe). Una línea #+ARCHIVE: del fichero, o la propiedad ARCHIVE de la tarea, siguen mandando.

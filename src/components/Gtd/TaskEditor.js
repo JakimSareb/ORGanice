@@ -265,28 +265,61 @@ export default function TaskEditor({
     void el.offsetWidth; // eslint-disable-line no-void
     el.classList.add('is-attention');
   };
+  // ORG Mode para Eli: se cierra con un TOQUE fuera (pulsar y soltar sin moverse). Si el dedo o el
+  // ratón se mueven (p. ej. para desplazar la lista), no se cierra.
   useEffect(() => {
-    const onDown = (e) => {
+    let pending = null;
+    const isOutside = (e) => {
       const el = editorRef.current;
-      if (!el || el.contains(e.target)) return;
-      // ventanas propias (fecha, repetir, confirmaciones) abiertas desde el editor
-      if (e.target.closest && e.target.closest('.eli-prompt__overlay, .eli-palette__overlay'))
-        return;
+      if (!el || el.contains(e.target)) return false;
+      // ventanas propias (fecha, repetir, confirmaciones, paleta) abiertas desde el editor
+      if (e.target.closest && e.target.closest('.eli-prompt__overlay, .eli-palette__overlay')) {
+        return false;
+      }
+      if (!modeRef.current.replacesRow) {
+        const row = el.previousElementSibling;
+        if (row && row.contains(e.target)) return false;
+      }
+      return true;
+    };
+    const onDown = (e) => {
+      pending = isOutside(e) ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
+    };
+    const onMove = (e) => {
+      if (pending && e.pointerId === pending.id) {
+        if (Math.hypot(e.clientX - pending.x, e.clientY - pending.y) > 10) pending = null;
+      }
+    };
+    const onUp = (e) => {
+      const p = pending;
+      pending = null;
+      if (!p || e.pointerId !== p.id) return;
+      if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 10) return;
       if (modeRef.current.mustDecide) {
         attention();
         return;
       }
-      if (!modeRef.current.replacesRow) {
-        const row = el.previousElementSibling;
-        if (row && row.contains(e.target)) return;
-      }
       closeRef.current();
+    };
+    const onCancel = () => {
+      pending = null; // el navegador ha empezado a desplazar la página
+    };
+    const onScroll = () => {
+      pending = null;
     };
     const onAttention = () => modeRef.current.mustDecide && attention();
     document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('pointermove', onMove, true);
+    document.addEventListener('pointerup', onUp, true);
+    document.addEventListener('pointercancel', onCancel, true);
+    document.addEventListener('scroll', onScroll, true);
     window.addEventListener('eli:gtd-attention', onAttention);
     return () => {
       document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('pointermove', onMove, true);
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onCancel, true);
+      document.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('eli:gtd-attention', onAttention);
     };
   }, []);
