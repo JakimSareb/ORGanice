@@ -17,9 +17,11 @@ import { STATIC_FILE_PREFIX } from '../../../../lib/org_utils';
 const selectClient = (state) => state.syncBackend.get('client');
 const selectPath = (state) => state.org.present.get('path');
 
-export default function EliMedia({ target, title }) {
+// `orgPath`: fichero del enlace si no es el abierto (p. ej. desde la vista GTD)
+export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) {
   const client = useSelector(selectClient);
-  const orgPath = useSelector(selectPath);
+  const openPath = useSelector(selectPath);
+  const orgPath = ownOrgPath || openPath;
   const path =
     orgPath && !orgPath.startsWith(STATIC_FILE_PREFIX) ? resolveDropboxPath(orgPath, target) : null;
   const kind = mediaKind(target);
@@ -35,7 +37,8 @@ export default function EliMedia({ target, title }) {
     setSrc(null);
     setError(null);
     if (!supported || (kind !== 'image' && kind !== 'video' && kind !== 'audio')) return;
-    const loader = kind === 'image' ? loadPreviewUrl(client, path) : loadTemporaryLink(client, path);
+    const loader =
+      kind === 'image' ? loadPreviewUrl(client, path) : loadTemporaryLink(client, path);
     loader
       .then((url) => alive && setSrc(url))
       .catch(() => alive && setError('No se encontró en Dropbox'));
@@ -51,7 +54,9 @@ export default function EliMedia({ target, title }) {
     openInNewTab(client, path).catch(() => setError('No se pudo abrir desde Dropbox'));
   };
 
-  const icon = { image: 'fa-image', video: 'fa-film', audio: 'fa-music', file: 'fa-paperclip' }[kind];
+  const icon = { image: 'fa-image', video: 'fa-film', audio: 'fa-music', file: 'fa-paperclip' }[
+    kind
+  ];
 
   const chip = (
     <span className="eli-media__chip" onClick={open} title={path || target} role="link">

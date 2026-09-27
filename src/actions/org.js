@@ -5,6 +5,10 @@ import {
   removeLinksToTarget,
   confirmAndDeleteAttachment,
   chooseAttachmentToDelete,
+  findFinishedAttachments,
+  reviewAttachmentsDialog,
+  referencedOutside,
+  isArchiveFile,
 } from '../lib/eli_attachments';
 import { addConflict, sameContents } from '../lib/eli_conflicts';
 import { announceSaved } from '../lib/eli_multi';
@@ -24,7 +28,7 @@ import {
   closePopup,
 } from './base';
 import { exportOrg, createRawDescriptionText } from '../lib/export_org';
-import { uploadAssets } from '../lib/eli_media';
+import { uploadAssets, openInNewTab } from '../lib/eli_media';
 import { getCurrentTimestampAsText } from '../lib/timestamps';
 import { toggledPriorityATitle } from '../lib/eli_priority';
 import {
@@ -49,7 +53,11 @@ import {
 } from '../lib/eli_crypto';
 import { showMessage, askConfirm } from '../lib/eli_prompt';
 import substituteTemplateVariables from '../lib/capture_template_substitution';
-import { headerWithPath, STATIC_FILE_PREFIX } from '../lib/org_utils';
+import {
+  headerWithPath,
+  STATIC_FILE_PREFIX,
+  createIsTodoKeywordInDoneState,
+} from '../lib/org_utils';
 
 import sampleCaptureTemplates from '../lib/sample_capture_templates';
 
@@ -1464,28 +1472,191 @@ export const eliDeleteHeaderAttachments = (headerId, orgPath = null) => async (
       excludedIds: new Set([headerId]),
     });
     if (!result) continue;
-    const h = headerOf();
-    if (!h) return;
-    const newRaw = removeLinksToTarget(h.get('rawDescription') || '', chosen.target);
-    dispatch({
-      type: 'ELI_IN_FILE',
-      path,
-      dirtying: true,
-      inner: {
-        type: 'UPDATE_HEADER_DESCRIPTION',
-        headerId,
-        newRawDescription: createRawDescriptionText(
-          h.set('rawDescription', newRaw),
-          false,
-          getState().base.get('eliIndentOnExport') !== true
-        ),
-        dirtying: true,
-      },
-    });
-    dispatch(setDirty(true, path));
+    if (!headerOf()) return;
+    removeAttachmentLinkInState(dispatch, getState, path, headerId, chosen.target);
     dispatch(sync({ path, shouldSuppressMessages: true }));
     if (attachmentsOfHeader(headerOf(), path).length === 0) return;
   }
+};
+
+// Quita del cuerpo de un encabezado (fichero cargado) los enlaces a un adjunto
+const removeAttachmentLinkInState = (dispatch, getState, path, headerId, target) => {
+  const h = (getState().org.present.getIn(['files', path, 'headers']) || List()).find(
+    (x) => x.get('id') === headerId
+  );
+  if (!h) return false;
+  const oldRaw = h.get('rawDescription') || '';
+  const newRaw = removeLinksToTarget(oldRaw, target);
+  if (newRaw === oldRaw) return false;
+  dispatch({
+    type: 'ELI_IN_FILE',
+    path,
+    dirtying: true,
+    inner: {
+      type: 'UPDATE_HEADER_DESCRIPTION',
+      headerId,
+      newRawDescription: createRawDescriptionText(
+        h.set('rawDescription', newRaw),
+        false,
+        getState().base.get('eliIndentOnExport') !== true
+      ),
+      dirtying: true,
+    },
+  });
+  dispatch(setDirty(true, path));
+  return true;
+};
+
+// ORG Mode para Eli (2.11): revisar los adjuntos de tareas terminadas, canceladas o archivadas.
+// Los ficheros *_archive que no están cargados se leen (y, al quitar un enlace, se reescriben)
+// directamente en Dropbox o en la carpeta.
+const MAX_ARCHIVE_FILES = 60;
+export const eliReviewFinishedAttachments = () => async (dispatch, getState) => {
+  const client = getState().syncBackend.get('client');
+  if (!client || !client.deleteFile) {
+    showMessage('Adjuntos', 'Esta conexión no permite borrar archivos.');
+    return;
+  }
+  const isDone = (path, keyword) => {
+    const sets = getState().org.present.getIn(['files', path, 'todoKeywordSets']);
+    return createIsTodoKeywordInDoneState(sets && sets.size ? sets : null)(keyword);
+  };
+  const search = async () => {
+    let all = null;
+    try {
+      all = client.listAllFiles ? await client.listAllFiles() : null;
+    } catch (e) {
+      all = null;
+    }
+    const loaded = getState().org.present.get('files');
+    const archives = [];
+    const archivePaths = (all || [])
+      .filter((p) => isArchiveFile(p) && !/\/backups\//i.test(p) && !loaded.has(p))
+      .slice(0, MAX_ARCHIVE_FILES);
+    for (const p of archivePaths) {
+      try {
+        const text = await client.getFileContents(p);
+        if (typeof text === 'string') archives.push({ path: p, text });
+      } catch (e) {
+        // un archivo que no se puede leer se salta
+      }
+    }
+    return findFinishedAttachments({
+      files: getState().org.present.get('files'),
+      isDone,
+      archives,
+      existing: all ? new Set(all.map((p) => p.toLowerCase())) : null,
+    });
+  };
+
+  const touched = new Set();
+  const removeLink = async (group, target) => {
+    if (group.headerId) {
+      if (removeAttachmentLinkInState(dispatch, getState, group.orgPath, group.headerId, target))
+        touched.add(group.orgPath);
+      return;
+    }
+    const text = await client.getFileContents(group.orgPath);
+    const next = removeLinksToTarget(text, target, { skipHeadings: true });
+    if (next !== text) await client.updateFile(group.orgPath, next);
+  };
+  const flush = () => {
+    touched.forEach((path) => dispatch(sync({ path, shouldSuppressMessages: true })));
+    touched.clear();
+  };
+
+  const onDelete = async (group, att) => {
+    const result = await confirmAndDeleteAttachment({
+      client,
+      files: getState().org.present.get('files'),
+      orgFilePath: group.orgPath,
+      path: att.path,
+      excludedIds: new Set(group.headerId ? [group.headerId] : []),
+    });
+    if (!result) return false;
+    try {
+      await removeLink(group, att.target);
+    } catch (e) {
+      await showMessage(
+        'Se borró el archivo, pero no se pudo quitar el enlace',
+        `${group.orgPath}\n\n${(e && e.message) || ''}`.trim()
+      );
+    }
+    flush();
+    return true;
+  };
+
+  const onDeleteAll = async (groups) => {
+    const removed = new Set();
+    const count = groups.reduce((n, g) => n + g.attachments.length, 0);
+    const isLocal = client.type === 'LocalFolder';
+    const ok = await askConfirm({
+      title: `¿Borrar los ${count} adjuntos?`,
+      message:
+        `Se borrarán los archivos de ${groups.length} ${
+          groups.length === 1 ? 'tarea' : 'tareas'
+        } terminadas, canceladas o archivadas, y sus enlaces.\n\n` +
+        'Los que también estén enlazados en otras tareas o notas se conservan.\n\n' +
+        (isLocal
+          ? 'Se borrarán definitivamente de la carpeta del ordenador.'
+          : 'Dropbox los guarda un tiempo en «Archivos eliminados» por si necesitas recuperarlos.') +
+        '\nDeshacer (↶) no recupera los archivos.',
+      okLabel: 'Borrar todos',
+      cancelLabel: 'Cancelar',
+      focusCancel: true,
+    });
+    if (!ok) return removed;
+    const candidateKeys = new Set(groups.map((g) => g.key));
+    const kept = [];
+    const failed = [];
+    for (const g of groups) {
+      for (const a of g.attachments) {
+        // Enlazado también desde una tarea que sigue abierta (o una nota): se conserva
+        if (referencedOutside(getState().org.present.get('files'), a.path, candidateKeys)) {
+          kept.push(a.path);
+          continue;
+        }
+        try {
+          if (!a.missing) await client.deleteFile(a.path);
+        } catch (e) {
+          failed.push(a.path);
+          continue;
+        }
+        try {
+          await removeLink(g, a.target);
+        } catch (e) {
+          failed.push(`${g.orgPath} (enlace a ${a.name})`);
+        }
+        removed.add(`${g.key}|${a.path}`);
+      }
+    }
+    flush();
+    if (kept.length || failed.length) {
+      await showMessage(
+        'Adjuntos',
+        [
+          `Borrados: ${removed.size}.`,
+          kept.length
+            ? `\nSe conservan (enlazados en otras tareas o notas):\n${kept.join('\n')}`
+            : '',
+          failed.length ? `\nNo se pudieron borrar:\n${failed.join('\n')}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+      );
+    }
+    return removed;
+  };
+
+  await reviewAttachmentsDialog({
+    groupsPromise: search(),
+    onOpen: (group, att) =>
+      openInNewTab(client, att.path).catch((e) =>
+        showMessage('No se pudo abrir', `${att.path}\n\n${(e && e.message) || ''}`.trim())
+      ),
+    onDelete,
+    onDeleteAll,
+  });
 };
 
 // ORG Mode para Eli: seguir un enlace Org a un fichero o encabezado (file:x.org::*Título,

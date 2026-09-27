@@ -247,7 +247,10 @@ Toca una celda para editar la tabla.
 - Prueba: [[*Muéveme con las flechas][ir a «Muéveme con las flechas»]] o [[*Las listas del menú lateral][ir a las listas de la vista GTD]].
 - Adjuntar (clip): la imagen o el fichero se sube a la carpeta assets/año de tu Dropbox y se inserta su enlace. Las imágenes se ven dentro del texto, y los vídeos de YouTube también.
 - *Borrar adjuntos*: en un encabezado con adjuntos, ⋯ → «Borrar adjuntos…» muestra sus archivos; «Borrar» pide confirmación, borra el archivo de Dropbox (o de la carpeta) y quita su enlace del texto. Si el archivo está enlazado en otro sitio, avisa.
-- En la vista GTD, el editor de una tarea tiene *Adjuntar* (también puedes pegar una imagen en las notas): el enlace se añade a las notas y se guarda con *Guardar*. En «Enlaces», cada archivo tiene una papelera para borrarlo (y quitar su enlace de las notas).
+- En la vista GTD, el editor de una tarea tiene *Adjuntar* (también puedes pegar una imagen en las notas): el enlace se añade a las notas y se guarda con *Guardar*.
+- *Ver los adjuntos en la vista GTD*: al abrir una tarea, la zona «Adjuntos» muestra las imágenes en miniatura, los vídeos y audios con su reproductor y el resto de archivos con su nombre; al tocarlos se abren. Cada uno tiene una papelera para borrarlo (y quitar su enlace de las notas).
+- *Clip*: un encabezado o una tarea con archivos adjuntos lleva un clip junto al título (con el número si hay más de uno), en la hoja y en las listas de la vista GTD, sin tener que abrirlos.
+- *Revisar adjuntos de tareas terminadas*: las tareas terminadas, canceladas o archivadas rara vez necesitan ya sus archivos. En la vista GTD → Logbook, botón *Revisar* (o en la paleta, «Revisar adjuntos de tareas terminadas»): lista esas tareas con sus adjuntos (también las de los ficheros _archive, aunque no estén abiertos), para abrirlos, borrarlos uno a uno o *Borrar todos*. Borrar todos conserva los archivos que siguen enlazados en una tarea abierta o una nota. Al borrar un archivo se quita también su enlace; si el archivo ya no existía, «Quitar enlace» limpia solo el enlace.
 
 * Buscar, mover y archivar
 - *b*: buscar en tareas, encabezados o texto, con fragmentos; «Solo esta hoja» limita la búsqueda al fichero abierto.

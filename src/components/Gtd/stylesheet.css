@@ -1481,3 +1481,51 @@
   color: var(--red);
   opacity: 1;
 }
+
+/* ORG Mode para Eli (2.11): adjuntos a la vista en el editor y clip en la fila */
+.gtd-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.gtd-editor--nirvana .gtd-attachments {
+  margin-left: 34px;
+}
+.gtd-attachments .gtd-editor__label {
+  margin: 0;
+}
+.gtd-attachments__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-start;
+}
+.gtd-attachment {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 2px;
+  max-width: 100%;
+}
+.gtd-attachment .eli-media {
+  margin: 0;
+}
+.gtd-attachment .eli-media__img {
+  max-height: 140px;
+  max-width: 220px;
+}
+.gtd-attachment .eli-media__player {
+  max-width: 260px;
+}
+.gtd-attachment .eli-media--audio .eli-media__player {
+  width: 240px;
+}
+.gtd-attachment .eli-media__placeholder {
+  padding: 10px 12px;
+}
+.gtd-meta--attach {
+  color: var(--blue);
+}
+.gtd-attach-bar i.fa-paperclip {
+  color: var(--blue);
+}

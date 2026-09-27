@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.11 (septiembre de 2026)
+** Adjuntos
+- Clip junto al título de los encabezados y de las tareas de la vista GTD que tienen archivos adjuntos (con el número si hay más de uno).
+- Vista GTD: el editor de una tarea muestra sus adjuntos a la vista, en «Adjuntos»: imágenes en miniatura, vídeo y audio con reproductor y el resto de archivos por su nombre. Se abren al tocarlos y cada uno tiene su papelera.
+- Revisar adjuntos de tareas terminadas: Logbook → *Revisar* (o la paleta). Lista las tareas terminadas, canceladas o archivadas (también en los ficheros _archive sin abrir) que tienen adjuntos, para abrirlos o borrarlos uno a uno o todos a la vez. «Borrar todos» conserva los que siguen enlazados en tareas abiertas o notas, y siempre se quita el enlace del archivo borrado.
+
 * 2.10 (septiembre de 2026)
 ** Adjuntos
 - Vista GTD: botón *Adjuntar* en el editor de una tarea (y pegar imágenes en las notas). El archivo se sube a assets/año junto al fichero de la tarea y su enlace se añade a las notas.

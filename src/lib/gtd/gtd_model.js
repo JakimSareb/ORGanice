@@ -14,6 +14,7 @@ import { List } from 'immutable';
 import { attributedStringToRawText } from '../export_org';
 import { dateForTimestamp } from '../timestamps';
 import { DEFAULT_ENERGY, DEFAULT_EFFORT } from '../eli_todo_defaults';
+import { fileTargetsInText } from '../eli_attachments';
 import {
   getGtdConfig,
   exclusiveOrder,
@@ -230,6 +231,9 @@ const buildFileTasks = (file, path, isInboxFile) => {
         parentHasKeyword: parent ? parent.hasKeyword : false,
         hasTaskChildren: false,
         description: header.get('rawDescription') || '',
+        // ORG Mode para Eli (2.11): nº de archivos adjuntos (enlaces a ficheros que no son .org)
+        attachmentCount: fileTargetsInText(`${rawTitle}\n${header.get('rawDescription') || ''}`)
+          .length,
       };
       // Marcar a los antepasados que tienen tareas debajo
       if (keyword) stack.forEach((s) => (byIndex[s.index].hasTaskChildren = true));

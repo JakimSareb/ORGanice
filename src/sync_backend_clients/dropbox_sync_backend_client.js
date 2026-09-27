@@ -256,7 +256,8 @@ export default () => {
 
   // ORG Mode para Eli: todos los ficheros .org (también .org.gpg/.org.asc) del Dropbox de la app,
   // sin copias de seguridad ni ficheros de archivo
-  const listOrgFiles = () =>
+  // ORG Mode para Eli: todos los ficheros de la carpeta (recursivo)
+  const listAllFiles = () =>
     withDbx(async (dbx) => {
       let response = await dbx.filesListFolder({ path: '', recursive: true, limit: 2000 });
       let entries = response.result.entries;
@@ -267,9 +268,13 @@ export default () => {
       return entries
         .filter((e) => e['.tag'] === 'file')
         .map((e) => e.path_display)
-        .filter((p) => /\.org(\.gpg|\.asc)?$/i.test(p) && !/\/backups\//i.test(p))
         .sort((a, b) => a.localeCompare(b));
     });
+
+  const listOrgFiles = () =>
+    listAllFiles().then((paths) =>
+      paths.filter((p) => /\.org(\.gpg|\.asc)?$/i.test(p) && !/\/backups\//i.test(p))
+    );
 
   // ¿Existe el fichero? (organice no resuelve getFileContents cuando no existe)
   const pathExists = (path) =>
@@ -290,6 +295,7 @@ export default () => {
     getTemporaryLink,
     uploadBinaryFile,
     listOrgFiles,
+    listAllFiles,
     isSignedIn,
     getDirectoryListing,
     getMoreDirectoryListing,

@@ -21,6 +21,7 @@ import {
   selectHeaderAndOpenParents,
   eliNarrowAndExpand,
   sync,
+  eliReviewFinishedAttachments,
 } from '../../actions/org';
 import {
   activatePopup,
@@ -262,6 +263,14 @@ export default function EliCommandPalette() {
       () => gtdCommand(history, pathname, { view: { id: 'logbook' } }),
       '',
       'hechas done'
+    );
+    act(
+      'review-attachments',
+      'Revisar adjuntos de tareas terminadas',
+      'fas fa-paperclip',
+      () => dispatch(eliReviewFinishedAttachments()),
+      '',
+      'archivos borrar archivadas canceladas done limpiar'
     );
     act(
       'all-projects',

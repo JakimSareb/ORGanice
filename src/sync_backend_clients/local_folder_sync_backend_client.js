@@ -198,16 +198,16 @@ export default () => {
   };
 
   // Todos los .org de la carpeta (sin backups/ ni carpetas ocultas)
-  const listOrgFiles = async () => {
+  const walkFiles = async (accept, max) => {
     const out = [];
     const walk = async (dir, prefix, depth) => {
-      if (depth > 8 || out.length > 5000) return;
+      if (depth > 8 || out.length > max) return;
       for await (const [name, handle] of dir.entries()) {
         if (name.startsWith('.')) continue;
         const full = `${prefix}/${name}`;
         if (handle.kind === 'directory') {
           if (name.toLowerCase() !== 'backups') await walk(handle, full, depth + 1);
-        } else if (/\.org(\.gpg|\.asc)?$/i.test(name)) {
+        } else if (accept(name)) {
           out.push(full);
         }
       }
@@ -215,6 +215,9 @@ export default () => {
     await walk(await root(), '', 0);
     return out.sort((a, b) => a.localeCompare(b));
   };
+  const listOrgFiles = () => walkFiles((name) => /\.org(\.gpg|\.asc)?$/i.test(name), 5000);
+  // ORG Mode para Eli: todos los ficheros (sin backups/ ni carpetas ocultas)
+  const listAllFiles = () => walkFiles(() => true, 20000);
 
   return {
     type: 'LocalFolder',
@@ -232,5 +235,6 @@ export default () => {
     getTemporaryLink,
     uploadBinaryFile,
     listOrgFiles,
+    listAllFiles,
   };
 };

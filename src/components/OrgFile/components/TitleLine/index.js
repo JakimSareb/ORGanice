@@ -15,6 +15,7 @@ import { createIsTodoKeywordInDoneState } from '../../../../lib/org_utils';
 
 import { generateTitleLine } from '../../../../lib/export_org';
 import AttributedString from '../AttributedString';
+import { attachmentCountOfHeader } from '../../../../lib/eli_attachments';
 
 class TitleLine extends PureComponent {
   constructor(props) {
@@ -116,6 +117,8 @@ class TitleLine extends PureComponent {
     const isTodoKeywordInDoneState = createIsTodoKeywordInDoneState(todoKeywordSets);
     const todoKeyword = header.getIn(['titleLine', 'todoKeyword']);
     const priority = getPriority(header);
+    // ORG Mode para Eli (2.11): clip si el encabezado tiene archivos adjuntos
+    const attachmentCount = attachmentCountOfHeader(header);
 
     const titleStyle = {
       color,
@@ -176,6 +179,20 @@ class TitleLine extends PureComponent {
                   }}
                 />
                 {!header.get('opened') && hasContent ? '...' : ''}
+                {attachmentCount > 0 && (
+                  <span
+                    className="eli-attach-indicator"
+                    title={
+                      attachmentCount === 1
+                        ? 'Tiene 1 archivo adjunto'
+                        : `Tiene ${attachmentCount} archivos adjuntos`
+                    }
+                    data-testid="eli-attach-indicator"
+                  >
+                    <i className="fas fa-paperclip" />
+                    {attachmentCount > 1 ? ` ${attachmentCount}` : ''}
+                  </span>
+                )}
               </span>
               {addition ? <span style={additionStyle}>{addition}</span> : null}
               {showDeadlineDisplay && headerDeadlineMap && (

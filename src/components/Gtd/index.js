@@ -48,6 +48,7 @@ import {
   eliOfferDeleteAttachments,
   eliFollowOrgLink,
   eliArchiveMany,
+  eliReviewFinishedAttachments,
 } from '../../actions/org';
 import { parseOrgLink } from '../../lib/eli_org_links';
 import { declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
@@ -228,6 +229,20 @@ function TaskRow({
             )}
             {task.description.trim() && (
               <i className="far fa-sticky-note gtd-meta" title="Tiene notas" />
+            )}
+            {task.attachmentCount > 0 && (
+              <span
+                className="gtd-meta gtd-meta--attach"
+                title={
+                  task.attachmentCount === 1
+                    ? 'Tiene 1 archivo adjunto'
+                    : `Tiene ${task.attachmentCount} archivos adjuntos`
+                }
+                data-testid="gtd-task-attach"
+              >
+                <i className="fas fa-paperclip" />
+                {task.attachmentCount > 1 ? ` ${task.attachmentCount}` : ''}
+              </span>
             )}
           </div>
         </div>
@@ -433,6 +448,11 @@ export default function GtdView() {
       blocked: blocked.filter((t) => matchesFilters(t, f)),
     };
   }, [isLogbook, tasks, area, text, filters, logSearch]);
+  // ORG Mode para Eli (2.11): terminadas o canceladas (sin archivar) que tienen adjuntos
+  const doneWithAttachments = useMemo(
+    () => (isLogbook ? tasks.filter((t) => t.isDone && t.attachmentCount > 0).length : 0),
+    [isLogbook, tasks]
+  );
   const archivableBySection = useMemo(() => {
     const out = {};
     archivable.ok.forEach((t) => {
@@ -1381,6 +1401,28 @@ export default function GtdView() {
               data-testid="gtd-archive-all"
             >
               <i className="fas fa-archive" /> {logSearch ? 'Archivar estas' : 'Archivar todas'}
+            </button>
+          </div>
+        )}
+
+        {isLogbook && (
+          <div className="gtd-archive-bar gtd-attach-bar" data-testid="gtd-attach-bar">
+            <span>
+              <i className="fas fa-paperclip" />{' '}
+              {doneWithAttachments === 0
+                ? 'Adjuntos de terminadas y archivadas'
+                : doneWithAttachments === 1
+                ? '1 terminada con adjuntos'
+                : `${doneWithAttachments} terminadas con adjuntos`}
+            </span>
+            <button
+              type="button"
+              className="gtd-btn"
+              onClick={() => dispatch(eliReviewFinishedAttachments())}
+              data-testid="gtd-review-attachments"
+              title="Ver y borrar los adjuntos de las tareas terminadas, canceladas o archivadas"
+            >
+              <i className="fas fa-search" /> Revisar
             </button>
           </div>
         )}

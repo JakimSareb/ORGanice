@@ -75,3 +75,12 @@
   margin-right: 5px;
   vertical-align: middle;
 }
+
+/* ORG Mode para Eli (2.11): el encabezado tiene archivos adjuntos */
+.eli-attach-indicator {
+  margin-left: 6px;
+  font-size: 0.8em;
+  color: var(--blue);
+  white-space: nowrap;
+  opacity: 0.85;
+}

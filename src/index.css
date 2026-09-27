@@ -230,6 +230,84 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.eli-attachments__open {
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.eli-attachments__name.is-missing {
+  color: var(--base1, #93a1a1);
+  font-style: italic;
+}
+/* ORG Mode para Eli (2.11): revisar adjuntos de tareas terminadas */
+.eli-prompt__box.eli-review {
+  max-width: 560px;
+  max-height: 88vh;
+}
+.eli-review__intro {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+.eli-review__body {
+  overflow-y: auto;
+  min-height: 60px;
+  flex: 1;
+}
+.eli-review__body .eli-attachments {
+  max-height: none;
+  margin: 4px 0 0;
+}
+.eli-review__summary {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+.eli-review__empty {
+  padding: 14px 0;
+  opacity: 0.8;
+}
+.eli-review__task {
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--base2, #eee8d5);
+}
+.eli-review__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.eli-review__title {
+  font-weight: bold;
+  word-break: break-word;
+}
+.eli-review__file {
+  font-size: 0.8em;
+  opacity: 0.7;
+  word-break: break-all;
+}
+.eli-review__badge {
+  font-size: 0.75em;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #fff;
+  background: var(--green, #859900);
+}
+.eli-review__badge--cancelled {
+  background: var(--base1, #93a1a1);
+}
+.eli-review__badge--archived {
+  background: var(--violet, #6c71c4);
+}
+.eli-review__task .eli-attachments__item {
+  padding-left: 10px;
+}
+.eli-review__all {
+  color: var(--red, #dc322f);
+  margin-right: auto;
+}
 .eli-attachments__delete {
   color: var(--red, #dc322f);
   white-space: nowrap;

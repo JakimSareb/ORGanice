@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import EliFormatBar from '../EliFormatBar';
 import ScheduleField from './ScheduleField';
 import { fileLinkTarget } from '../../lib/eli_media';
-import { removeLinksToTarget } from '../../lib/eli_attachments';
+import { removeLinksToTarget, fileTargetsInText } from '../../lib/eli_attachments';
+import EliMedia from '../OrgFile/components/EliMedia';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -77,6 +78,16 @@ export const linksOf = (text) => {
   return out;
 };
 const isWebLink = (target) => /^(https?:|mailto:)/i.test(target);
+// ORG Mode para Eli (2.11): enlaces a archivos adjuntos (se ven en «Adjuntos») y el resto
+const fileLinksOf = (text) => {
+  const labelled = linksOf(text);
+  return fileTargetsInText(text).map((file) => {
+    const l = labelled.find((x) => !isWebLink(x.target) && fileLinkTarget(x.target) === file);
+    return l ? { ...l, file } : { target: `file:${file}`, label: file, file };
+  });
+};
+const otherLinksOf = (text) =>
+  linksOf(text).filter((l) => isWebLink(l.target) || !fileLinkTarget(l.target));
 
 export const currentListOf = (task) => {
   if (task.isDone) return task.keyword === 'CANCELLED' ? 'cancelled' : 'done';
@@ -539,10 +550,46 @@ export default function TaskEditor({
           </div>
         )}
 
-        {!encrypted && linksOf(notes).length > 0 && (
+        {/* ORG Mode para Eli (2.11): adjuntos a la vista (miniaturas, vídeo, audio y ficheros) */}
+        {!encrypted && fileLinksOf(notes).length > 0 && (
+          <div className="gtd-attachments" data-testid="gtd-attachments">
+            <span className="gtd-editor__label">
+              <i className="fas fa-paperclip" /> Adjuntos
+            </span>
+            <div className="gtd-attachments__grid">
+              {fileLinksOf(notes).map((l) => (
+                <div key={l.target} className="gtd-attachment" data-testid="gtd-attachment">
+                  <EliMedia
+                    target={l.file}
+                    title={l.label !== l.target ? l.label : null}
+                    orgPath={task.path}
+                  />
+                  {onDeleteFile && (
+                    <button
+                      type="button"
+                      className="gtd-link-delete"
+                      title="Borrar este archivo adjunto"
+                      aria-label={`Borrar ${l.label}`}
+                      onClick={async () => {
+                        if (await onDeleteFile(l.file)) {
+                          setNotes((n) => removeLinksToTarget(n, l.file));
+                        }
+                      }}
+                      data-testid="gtd-link-delete"
+                    >
+                      <i className="fas fa-trash-alt" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!encrypted && otherLinksOf(notes).length > 0 && (
           <div className="gtd-links" data-testid="gtd-links">
             <span className="gtd-editor__label">Enlaces</span>
-            {linksOf(notes).map((l) =>
+            {otherLinksOf(notes).map((l) =>
               isWebLink(l.target) ? (
                 <a
                   key={l.target}
@@ -562,26 +609,8 @@ export default function TaskEditor({
                     title={l.target}
                     onClick={() => onOpenLink && onOpenLink(l.target)}
                   >
-                    <i className="fas fa-paperclip" /> {l.label}
+                    <i className="fas fa-link" /> {l.label}
                   </button>
-                  {/* ORG Mode para Eli: borrar el archivo adjunto (y su enlace de las notas) */}
-                  {onDeleteFile && fileLinkTarget(l.target) && (
-                    <button
-                      type="button"
-                      className="gtd-link-delete"
-                      title="Borrar este archivo adjunto"
-                      aria-label={`Borrar ${l.label}`}
-                      onClick={async () => {
-                        const target = fileLinkTarget(l.target);
-                        if (await onDeleteFile(target)) {
-                          setNotes((n) => removeLinksToTarget(n, target));
-                        }
-                      }}
-                      data-testid="gtd-link-delete"
-                    >
-                      <i className="fas fa-trash-alt" />
-                    </button>
-                  )}
                 </span>
               )
             )}
