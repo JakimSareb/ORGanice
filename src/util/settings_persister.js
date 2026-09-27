@@ -189,6 +189,11 @@ export const persistableFields = [
   },
   {
     category: 'base',
+    name: 'eliArchiveInSubfolder',
+    type: 'boolean',
+  },
+  {
+    category: 'base',
     name: 'eliNoSwipeDocs',
     type: 'boolean',
   },

@@ -6,6 +6,7 @@ import {
   insertIntoArchiveText,
   newArchiveFileText,
   targetLevelFor,
+  SUBFOLDER_LOCATION,
 } from './eli_archive';
 import { getPriority, toggledPriorityATitle, titlePartsWithoutPriority } from './eli_priority';
 
@@ -39,6 +40,23 @@ test('destino por defecto, #+ARCHIVE y cifrados', () => {
   });
   const withLine = parseOrg('#+ARCHIVE: ../arch.org::* Viejo\n* A\n');
   expect(archiveLocationFor(withLine, withLine.get('headers'), 0)).toBe('../arch.org::* Viejo');
+});
+
+test('ajuste «Archivar en la subcarpeta archive»', () => {
+  const loc = archiveLocationFor(file, headers, 1, SUBFOLDER_LOCATION);
+  expect(resolveArchiveLocation(loc, '/Notas/gtd.org')).toEqual({
+    path: '/Notas/archive/gtd.org_archive',
+    heading: '',
+  });
+  expect(resolveArchiveLocation(loc, '/gtd.org').path).toBe('/archive/gtd.org_archive');
+  expect(resolveArchiveLocation(loc, '/Notas/diario.org.gpg').path).toBe(
+    '/Notas/archive/diario.org_archive.gpg'
+  );
+  // #+ARCHIVE del fichero manda sobre el ajuste
+  const withLine = parseOrg('#+ARCHIVE: ../arch.org::* Viejo\n* A\n');
+  expect(archiveLocationFor(withLine, withLine.get('headers'), 0, SUBFOLDER_LOCATION)).toBe(
+    '../arch.org::* Viejo'
+  );
 });
 
 test('subárbol archivado como Emacs', () => {

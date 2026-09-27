@@ -73,6 +73,7 @@ const Settings = ({
   shouldLogIntoDrawer,
   closeSubheadersRecursively,
   eliIndentOnExport,
+  eliArchiveInSubfolder,
   eliTodoKeywordsLine,
   eliDefaultTagsLine,
   editorDescriptionHeightValue,
@@ -230,6 +231,24 @@ const Settings = ({
           onSave={(l) => base.setEliSetting('eliDefaultTagsLine', l)}
           testId="eli-setting-tags"
         />
+        <div className="setting-container">
+          <div className="setting-label">
+            Archivar en
+            <div className="setting-label__description">
+              Dónde van las tareas archivadas (si el fichero o la tarea no dicen otra cosa con
+              #+ARCHIVE:). «Subcarpeta archive»: en la carpeta archive de la carpeta de cada
+              fichero, p. ej. proyectos/archive/tareas.org_archive (se crea si no existe).
+            </div>
+          </div>
+          <div data-testid="eli-setting-archive">
+            <TabButtons
+              buttons={['Junto al fichero', 'Subcarpeta archive']}
+              values={['same', 'subfolder']}
+              selectedButton={eliArchiveInSubfolder ? 'subfolder' : 'same'}
+              onSelect={(v) => base.setEliSetting('eliArchiveInSubfolder', v === 'subfolder')}
+            />
+          </div>
+        </div>
       </details>
 
       <details className="eli-settings-section" data-testid="eli-settings-gtd">
@@ -593,6 +612,7 @@ const mapStateToProps = (state) => {
     eliIndentOnExport: state.base.get('eliIndentOnExport') === true,
     eliTodoKeywordsLine: state.base.get('eliTodoKeywordsLine'),
     eliDefaultTagsLine: state.base.get('eliDefaultTagsLine'),
+    eliArchiveInSubfolder: state.base.get('eliArchiveInSubfolder') === true,
     hasUnseenChangelog: state.base.get('hasUnseenChangelog'),
     showClockDisplay: state.org.present.get('showClockDisplay'),
     preferEditRawValues: state.base.get('preferEditRawValues'),

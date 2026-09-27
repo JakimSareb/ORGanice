@@ -165,7 +165,7 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
 - *Logbook*: tiene su propio buscador («Buscar en las terminadas…»), que busca solo entre las terminadas (título, notas, etiquetas y área). En sus filas no hay casilla ni ★: para cambiar algo, toca la tarea y se abre su editor.
-- *Archivar las terminadas*: en Logbook, «Archivar todas» archiva de una vez todas las terminadas (con sus subencabezados), como org-archive-subtree de Emacs, en el fichero _archive de cada fichero. Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
+- *Archivar las terminadas*: en Logbook, «Archivar todas» archiva de una vez todas las terminadas (con sus subencabezados), como org-archive-subtree de Emacs, en el fichero _archive de cada fichero (o en su subcarpeta archive, según Ajustes). Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
 - *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
 
 ** Proyectos dormidos y programados
@@ -250,7 +250,7 @@ Toca una celda para editar la tabla.
 - *b*: buscar en tareas, encabezados o texto, con fragmentos; «Solo esta hoja» limita la búsqueda al fichero abierto.
 - *m*: mover el encabezado seleccionado con las flechas.
 - Mover (refile): a otro encabezado o al nivel superior de cualquier fichero.
-- Archivar: como org-archive-subtree de Emacs.
+- Archivar: como org-archive-subtree de Emacs. Por defecto va al fichero _archive junto al fichero (tareas.org → tareas.org_archive). Con Ajustes → Tareas y etiquetas → «Archivar en: Subcarpeta archive», va a la carpeta archive de la carpeta de cada fichero (proyectos/tareas.org → proyectos/archive/tareas.org_archive; se crea si no existe). Si el fichero tiene su propia línea #+ARCHIVE: (o la tarea la propiedad ARCHIVE), manda esa.
 ** Este encabezado se puede mover
 ** Y este archivar
 
@@ -313,6 +313,7 @@ Todos se pueden cambiar en Ajustes → Atajos de teclado.
 
 * Ajustes que conviene conocer
 - *Estados de las tareas* y *Etiquetas por defecto*: para los ficheros que no los definen.
+- *Archivar en*: junto al fichero (tareas.org_archive) o en la subcarpeta archive de cada carpeta.
 - Los ajustes están en secciones plegables: *Apariencia*, *Tareas y etiquetas*, *Vista GTD y gestos* y *Opciones avanzadas*.
 - *Vista GTD y gestos*: deslizar sí/no, por separado en los documentos y en la vista GTD, y las secciones de la vista GTD (ver «Secciones configurables»).
 - *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.

@@ -1,6 +1,7 @@
 // ORG Mode para Eli: archivar un subárbol como `org-archive-subtree` (C-c C-x C-s) de Emacs.
 //
-// - Destino: propiedad ARCHIVE (heredada) > línea "#+ARCHIVE:" > "%s_archive::" (por defecto).
+// - Destino: propiedad ARCHIVE (heredada) > línea "#+ARCHIVE:" > "%s_archive::" (por defecto;
+//   con el ajuste «Archivar en la subcarpeta archive», "archive/%s_archive::").
 //   Formato "fichero::encabezado"; %s = nombre del fichero actual; fichero vacío = el mismo.
 // - Se añaden las propiedades ARCHIVE_TIME, ARCHIVE_FILE, ARCHIVE_OLPATH, ARCHIVE_CATEGORY,
 //   ARCHIVE_TODO y ARCHIVE_ITAGS, como hace Emacs.
@@ -14,6 +15,7 @@ import { subheadersOfHeaderWithId } from './org_utils';
 import generateId from './id_generator';
 
 const DEFAULT_LOCATION = '%s_archive::';
+export const SUBFOLDER_LOCATION = 'archive/%s_archive::';
 
 const basename = (p) => p.slice(p.lastIndexOf('/') + 1);
 const dirname = (p) => p.slice(0, p.lastIndexOf('/'));
@@ -54,7 +56,7 @@ const ancestors = (headers, index) => {
   return result;
 };
 
-export const archiveLocationFor = (file, headers, index) => {
+export const archiveLocationFor = (file, headers, index, defaultLocation = DEFAULT_LOCATION) => {
   const own = [headers.get(index), ...ancestors(headers, index)];
   for (const h of own) {
     const v = propertyValue(h, 'ARCHIVE');
@@ -68,7 +70,7 @@ export const archiveLocationFor = (file, headers, index) => {
     : [];
   const line = [...configLines, ...lines].find((l) => /^#\+ARCHIVE:/i.test(l));
   if (line) return line.replace(/^#\+ARCHIVE:\s*/i, '').trim();
-  return DEFAULT_LOCATION;
+  return defaultLocation;
 };
 
 const ENCRYPTED = /\.(gpg|asc)$/i;

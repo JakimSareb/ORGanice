@@ -76,6 +76,7 @@ const selectFiles = (s) => s.org.present.get('files');
 const selectFileSettings = (s) => s.org.present.get('fileSettings');
 const selectGtdSections = (s) => s.base.get('eliGtdSections');
 const selectNoSwipeGtd = (s) => s.base.get('eliNoSwipeGtd') === true;
+const selectArchiveInSubfolder = (s) => s.base.get('eliArchiveInSubfolder') === true;
 const selectTemplates = (s) => s.capture.get('captureTemplates') || List();
 const selectCanUndo = (s) => s.org.past.length > 0;
 const selectCanRedo = (s) => s.org.future.length > 0;
@@ -281,6 +282,7 @@ export default function GtdView() {
   // (hay que Guardar o Cancelar; Cancelar la borra)
   const [newKey, setNewKey] = useState(null);
   const noSwipeGtd = useSelector(selectNoSwipeGtd);
+  const archiveInSubfolder = useSelector(selectArchiveInSubfolder);
   // ORG Mode para Eli: proyecto nuevo en el editor (aún no existe en el fichero)
   const [newProject, setNewProject] = useState(null);
   const [newTitle, setNewTitle] = useState('');
@@ -445,8 +447,9 @@ export default function GtdView() {
       message:
         `¿Archivar ${n === 1 ? '1 tarea terminada' : `${n} tareas terminadas`}` +
         (label ? ` (${label.toLowerCase()})` : '') +
-        '?\n\nSe moverán con sus subencabezados al fichero _archive de su fichero, como hace ' +
-        'Emacs (org-archive-subtree).',
+        '?\n\nSe moverán con sus subencabezados al fichero _archive de su fichero' +
+        (archiveInSubfolder ? ', en la subcarpeta archive de su carpeta' : '') +
+        ', como hace Emacs (org-archive-subtree).',
       okLabel: 'Archivar',
     });
     if (!ok) return;

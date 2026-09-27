@@ -204,6 +204,7 @@ export default (state = Map(), action) => {
         'eliTodoKeywordsLine',
         'eliDefaultTagsLine',
         'eliAllOrgFiles',
+        'eliArchiveInSubfolder',
         'eliNoSwipeDocs',
         'eliNoSwipeGtd',
         'eliGtdSections',

@@ -28,7 +28,12 @@ import {
   newArchiveFileText,
   insertIntoArchiveText,
   targetLevelFor,
+  SUBFOLDER_LOCATION,
 } from '../lib/eli_archive';
+
+// ORG Mode para Eli: destino por defecto del archivo (junto al fichero o en su subcarpeta archive)
+const eliDefaultArchiveLocation = (getState) =>
+  getState().base.get('eliArchiveInSubfolder') ? SUBFOLDER_LOCATION : undefined;
 import { isEncryptedPath } from '../lib/eli_crypto';
 import { List } from 'immutable';
 import {
@@ -1163,7 +1168,7 @@ export const archiveSubtree = (headerId, explicitPath = null) => async (dispatch
   const root = headers.get(index);
   const subCount = subheadersOfHeaderWithIdForArchive(headers, headerId);
   const { path: archivePath, heading } = resolveArchiveLocation(
-    archiveLocationFor(file, headers, index),
+    archiveLocationFor(file, headers, index, eliDefaultArchiveLocation(getState)),
     path
   );
   if (archivePath === path) {
@@ -1283,7 +1288,7 @@ export const eliArchiveMany = (items) => async (dispatch, getState) => {
       const groups = {};
       roots.forEach((r) => {
         const { path: archivePath, heading } = resolveArchiveLocation(
-          archiveLocationFor(file, headers, r.index),
+          archiveLocationFor(file, headers, r.index, eliDefaultArchiveLocation(getState)),
           path
         );
         if (archivePath === path) {
