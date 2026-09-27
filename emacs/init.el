@@ -57,6 +57,7 @@
 (require 'organice-core)      ; Org: carpeta, estados, etiquetas, propiedades, archivo, cifrado
 (require 'organice-gtd)       ; vistas GTD como en la app (Focus, Inbox, Next…), ★ automática
 (require 'organice-capture)   ; plantillas de captura
+(require 'organice-attach)    ; adjuntos: adjuntar, abrir, borrar, clip 📎 y revisar terminadas
 (require 'organice-themes)    ; temas Unicornio y Cuki (claro y oscuro)
 (require 'organice-ui)        ; paleta de comandos, atajos, formato, modos Documentos/GTD
 

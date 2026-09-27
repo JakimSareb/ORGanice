@@ -16,6 +16,7 @@ ficheros.
 | =lisp/organice-core.el=     | Carpeta de Dropbox, estados, etiquetas, Energy/Effort, AREA, registro, refile, archivo y cifrado. |
 | =lisp/organice-gtd.el=      | Vistas GTD con las mismas reglas que la app, ★ automática, proyectos, Logbook. |
 | =lisp/organice-capture.el=  | Plantillas de captura.                                                   |
+| =lisp/organice-attach.el=   | Adjuntos: adjuntar, abrir, borrar, clip 📎 y revisar los de terminadas.   |
 | =lisp/organice-themes.el=   | Temas =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=.              |
 | =lisp/organice-ui.el=       | Paleta de comandos, atajos, formato, sincronizar, Documentos ⇄ GTD.       |
 
@@ -62,6 +63,10 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Mover (refile)                          | =C-c C-w=                                           |
 | Negrita / cursiva / subrayado           | =⌘B= / =⌘I= / =⌘U= (o =C-c e b= / =i= / =u=)        |
 | Tachado / código / literal              | =⌘⇧X= / =⌘E= / =⌘⇧E= (o =C-c e s= / =c= / =v=)       |
+| Adjuntar archivo (editor GTD, clip)     | =C-c g j= (en el fichero o en la agenda)            |
+| Abrir un adjunto de la tarea            | =C-c g o= (o =C-c C-o= sobre el enlace)             |
+| Borrar un adjunto (papelera)            | =C-c g D=                                           |
+| Revisar adjuntos de terminadas (Logbook) | =C-c g R=                                          |
 | Ver todo (widen)                        | =C-x n w=                                           |
 | Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
 En Linux o Windows, =⌘= es la tecla Super (la de Windows). Dentro de la agenda funcionan todas las
@@ -121,6 +126,28 @@ Por defecto, junto al fichero (=tareas.org_archive=). Para guardar lo archivado 
 #+end_src
 (la carpeta se crea sola). Una línea =#+ARCHIVE:= del fichero sigue mandando.
 
+** Adjuntos
+Como en la app: son enlaces =file:= normales y los archivos viven en =assets/<año>/= junto al
+fichero =.org= (no se usa =org-attach=).
+- =C-c g j= adjunta un archivo a la tarea (también con el cursor en la agenda): lo copia a
+  =assets/<año>/= y añade =[[file:assets/<año>/nombre]]= al final de su texto. Si ya existe uno
+  con ese nombre, lo guarda como =nombre-1=.
+- =C-c g o= abre un adjunto de la tarea (si hay varios, pregunta cuál). Las imágenes se ven dentro
+  del texto (=org-startup-with-inline-images=).
+- =C-c g D= borra un adjunto: pide confirmación, avisa si otra tarea enlaza el mismo archivo, lo
+  manda a la *papelera* y quita su enlace del texto. Si el archivo ya no existe, ofrece quitar
+  solo el enlace. Para borrar del todo en vez de a la papelera:
+  =(setq organice-attach-use-trash nil)=.
+- *Clip 📎*: los encabezados con adjuntos llevan un clip al final del título (con el número si hay
+  más de uno), en los ficheros y en las listas de la agenda. Se quita con
+  =(setq organice-attach-indicator nil)=.
+- *Revisar adjuntos de tareas terminadas* (=C-c g R=, o en la paleta): una lista con las tareas
+  terminadas, canceladas o archivadas (también las de los ficheros =_archive=) que tienen
+  adjuntos. En la lista: =RET= abre el archivo, =t= va a la tarea, =d= borra ese adjunto, =D= los
+  borra todos (conserva los que siguen enlazados en tareas abiertas o notas), =g= actualiza y
+  =q= sale. Al borrar un archivo se quita también su enlace (en el texto de la tarea, no en el
+  título).
+
 ** Temas
 =M-x organice-theme= → =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=. El de arranque:
 =(setq organice-default-theme 'cuki)= (o =nil= para no cambiarlo).
@@ -155,6 +182,8 @@ Todo está en módulos independientes. Lo más sencillo:
    atajos =C-c g=, =C-c k=, =C-c s=, =C-c e=, =F12=, =F5=, =s-k= y =s-b=… de Org.
 
 * Qué no está (o es distinto)
+- La vista previa de adjuntos del editor de GTD: en Emacs, las imágenes se ven en el propio texto
+  y el resto se abre con =C-c g o=.
 - Deslizar con el dedo, arrastrar a listas y el editor tipo Nirvana: en Emacs se hace con las
   teclas de Org (=t=, =,=, =C-c C-s=, =C-c C-w=…).
 - «Se repiten» y los grupos del Logbook y de Proyectos necesitan =org-super-agenda= (se instala

@@ -6,12 +6,14 @@
 ;; - Documentos ⇄ GTD: F12 (o C-c g g).
 ;; - Vistas GTD: C-c g f Focus, i Inbox, n Next, t Todo, w Waiting, s Scheduled, d Deadline,
 ;;   m Someday, p Proyectos, r Reference, l Logbook, a Agenda.
+;; - Adjuntos: C-c g j adjuntar, o abrir, D borrar, R revisar los de tareas terminadas.
 ;; - Formato como en la app: ⌘B negrita, ⌘I cursiva, ⌘U subrayado, ⌘⇧X tachado, ⌘E código,
 ;;   ⌘⇧E literal (en Linux/Windows, la tecla Super; y siempre también C-c e b/i/u/s/c/v).
 
 (require 'org)
 (require 'organice-core)
 (require 'organice-gtd)
+(require 'organice-attach)
 
 ;;;; Completado: vertico + orderless (búsqueda tolerante) + marginalia + consult ---------------
 
@@ -95,6 +97,10 @@
     ("Todos los proyectos" . organice-gtd-projects)
     ("Sincronizar" . organice-sync)
     ("Archivar las terminadas de este fichero" . organice-archive-done)
+    ("Adjuntar archivo a la tarea…" . organice-attach-file)
+    ("Abrir adjunto de la tarea…" . organice-open-attachment)
+    ("Borrar adjunto de la tarea…" . organice-delete-attachment)
+    ("Revisar adjuntos de tareas terminadas" . organice-review-finished-attachments)
     ("Buscar en todos los ficheros" . ,(lambda () (org-search-view)))
     ("Mover (refile)…" . org-refile)
     ("Ficheros de la carpeta" . ,(lambda () (dired organice-directory)))
@@ -169,6 +175,10 @@
     (define-key m "z" #'organice-set-sleep)
     (define-key m "x" #'organice-close-project)
     (define-key m "A" #'organice-archive-done)
+    (define-key m "j" #'organice-attach-file)
+    (define-key m "o" #'organice-open-attachment)
+    (define-key m "D" #'organice-delete-attachment)
+    (define-key m "R" #'organice-review-finished-attachments)
     m)
   "Atajos de la vista GTD (C-c g …).")
 
