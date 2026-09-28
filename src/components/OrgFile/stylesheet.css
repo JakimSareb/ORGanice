@@ -27,3 +27,18 @@
   padding: 10px;
   font-size: 20px;
 }
+
+/* ORG Mode para Eli (2.15): error de un fichero, con «Reintentar» */
+.eli-file-error__actions {
+  margin-top: 12px;
+}
+.eli-file-error--banner {
+  font-size: 15px;
+  margin: 8px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  background: var(--base2);
+}
+.eli-file-error--banner .eli-file-error__actions {
+  margin-top: 6px;
+}

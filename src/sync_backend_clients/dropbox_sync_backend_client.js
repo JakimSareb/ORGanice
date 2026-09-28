@@ -38,6 +38,118 @@ export const filterAndSortDirectoryListing = (listing) => {
   });
 };
 
+// ORG Mode para Eli (2.15): descargas de Dropbox más robustas.
+// - Como mucho 3 descargas a la vez (con «todos los ficheros .org» se pedían decenas de golpe y
+//   Dropbox respondía «429 too_many_requests»).
+// - Si Dropbox pide esperar (429) o falla un momento (5xx, red), se reintenta tras la espera.
+// - Si no, se rechaza con un error de verdad (antes, con cualquier error que no fuera «no existe»
+//   la promesa no terminaba nunca y la app acababa diciendo «El servidor no responde»).
+const MAX_PARALLEL_DOWNLOADS = 3;
+let activeDownloads = 0;
+const downloadQueue = [];
+// Si Dropbox no contesta (pasa sin conexión), el hueco de la cola se libera igualmente
+const SLOT_TIMEOUT = 60000;
+export const queuedDownload = (run, onStart) =>
+  new Promise((resolve, reject) => {
+    const start = () => {
+      activeDownloads++;
+      if (onStart) {
+        try {
+          onStart();
+        } catch (e) {}
+      }
+      let timer = null;
+      const timeout = new Promise((_, rej) => {
+        timer = setTimeout(() => {
+          const e = new Error('El servidor no responde');
+          e.eliTimeout = true;
+          e.eliTransient = true;
+          rej(e);
+        }, SLOT_TIMEOUT);
+      });
+      Promise.race([Promise.resolve().then(run), timeout])
+        .then(resolve, reject)
+        .finally(() => {
+          clearTimeout(timer);
+          activeDownloads--;
+          const next = downloadQueue.shift();
+          if (next) next();
+        });
+    };
+    if (activeDownloads < MAX_PARALLEL_DOWNLOADS) start();
+    else downloadQueue.push(start);
+  });
+
+const statusOf = (error) =>
+  (error && (error.status || (error.response && error.response.status))) || 0;
+const errorText = (error) => {
+  try {
+    return typeof error === 'string'
+      ? error
+      : JSON.stringify((error && (error.error || error)) || '');
+  } catch (e) {
+    return String(error);
+  }
+};
+export const isNotFoundError = (error) => {
+  if (typeof error === 'string' && /missing required field 'path'/.test(error)) return true;
+  try {
+    const inner = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
+    if (inner && inner.error && inner.error.path && inner.error.path['.tag'] === 'not_found') {
+      return true;
+    }
+  } catch (e) {}
+  return /path\/not_found|"not_found"/.test(errorText(error));
+};
+const retryAfterMs = (error, attempt) => {
+  let seconds = null;
+  try {
+    const inner = typeof error.error === 'string' ? JSON.parse(error.error) : error.error;
+    if (inner && inner.error && inner.error.retry_after) seconds = +inner.error.retry_after;
+  } catch (e) {}
+  const header =
+    error && error.headers && (error.headers.get ? error.headers.get('Retry-After') : null);
+  if (!seconds && header) seconds = +header;
+  const ms = seconds ? seconds * 1000 : 1000 * 2 ** attempt;
+  return Math.min(ms, 15000);
+};
+const isRetryable = (error) => {
+  const status = statusOf(error);
+  if (status === 429 || status >= 500) return true;
+  if (/too_many_requests|too_many_write_operations/.test(errorText(error))) return true;
+  return /failed to fetch|networkerror|network error|load failed/i.test(
+    (error && error.message) || ''
+  );
+};
+// Mensaje claro para mostrar
+export const dropboxErrorMessage = (error) => {
+  const status = statusOf(error);
+  if (status === 401 || /expired_access_token|invalid_access_token/.test(errorText(error))) {
+    return 'Dropbox no acepta la sesión (vuelve a conectar la app con Dropbox desde Ajustes)';
+  }
+  if (status === 429 || /too_many_requests/.test(errorText(error))) {
+    return 'Dropbox está recibiendo demasiadas peticiones; prueba de nuevo en un momento';
+  }
+  if (status >= 500) return `Dropbox no está disponible ahora mismo (error ${status})`;
+  if (
+    /failed to fetch|networkerror|network error|load failed/i.test((error && error.message) || '')
+  ) {
+    return 'No se ha podido conectar con Dropbox';
+  }
+  return `Dropbox ha devuelto un error${status ? ` (${status})` : ''}`;
+};
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+export const withRetries = async (run, attempts = 4) => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (attempt >= attempts - 1 || isNotFoundError(error) || !isRetryable(error)) throw error;
+      await wait(retryAfterMs(error, attempt));
+    }
+  }
+};
+
 function getCodeFromUrl() {
   return parseQueryString(window.location.search).code;
 }
@@ -63,15 +175,18 @@ export default () => {
     new Promise((resolve, reject) => {
       dbxPromise
         .then((dbx) => {
-          dbx.filesListFolder({ path }).then((response) => {
-            resolve({
-              listing: transformDirectoryListing(response.result.entries),
-              hasMore: response.result.has_more,
-              additionalSyncBackendState: Map({
-                cursor: response.result.cursor,
-              }),
-            });
-          });
+          withRetries(() => dbx.filesListFolder({ path }))
+            .then((response) => {
+              resolve({
+                listing: transformDirectoryListing(response.result.entries),
+                hasMore: response.result.has_more,
+                additionalSyncBackendState: Map({
+                  cursor: response.result.cursor,
+                }),
+              });
+            })
+            // ORG Mode para Eli (2.15): antes un error dejaba la lista esperando para siempre
+            .catch(reject);
         })
         .catch(reject);
     });
@@ -80,15 +195,17 @@ export default () => {
     const cursor = additionalSyncBackendState.get('cursor');
     return new Promise((resolve, reject) =>
       dbxPromise.then((dbx) => {
-        dbx.filesListFolderContinue({ cursor }).then((response) =>
-          resolve({
-            listing: transformDirectoryListing(response.result.entries),
-            hasMore: response.result.has_more,
-            additionalSyncBackendState: Map({
-              cursor: response.result.cursor,
-            }),
-          })
-        );
+        withRetries(() => dbx.filesListFolderContinue({ cursor }))
+          .then((response) =>
+            resolve({
+              listing: transformDirectoryListing(response.result.entries),
+              hasMore: response.result.has_more,
+              additionalSyncBackendState: Map({
+                cursor: response.result.cursor,
+              }),
+            })
+          )
+          .catch(reject);
       })
     );
   };
@@ -117,59 +234,43 @@ export default () => {
   const updateFile = uploadFile;
   const createFile = uploadFile;
 
-  const getFileContentsAndMetadata = (path) =>
-    new Promise((resolve, reject) =>
-      dbxPromise.then((dbx) => {
-        dbx
-          .filesDownload({ path })
-          .then((response) => {
-            const reader = new FileReader();
-            reader.addEventListener('loadend', () =>
-              resolve({
-                contents: reader.result,
-                lastModifiedAt: response.result.server_modified,
-              })
-            );
-            if (/\.gpg$/i.test(path)) {
-              // ORG Mode para Eli: .gpg es binario, se entrega como Uint8Array
-              response.result.fileBlob.arrayBuffer().then((buf) =>
-                resolve({
-                  contents: new Uint8Array(buf),
-                  lastModifiedAt: response.result.server_modified,
-                })
-              );
-            } else {
-              reader.readAsText(response.result.fileBlob);
-            }
-          })
-          .catch((error) => {
-            // INFO: It's possible organice is using the Dropbox API
-            // wrongly. In any case, for some files and only sometimes,
-            // when a file is requested, there's either:
-            //   - a 400 with a plain text error or
-            //   - a 409 with an embedded JSON error
-            //   - a 409 with a plain text error under `.error`
-            // coming back. Sometimes, there's even two API calls to
-            // `/download` happening at the same time (of types `json`
-            // and `octet-stream`) where one might fail and the other
-            // might prevail.
-            // More debug information in this issue:
-            // https://github.com/200ok-ch/organice/issues/108
-            const objectContainsTagErrorP = (function () {
-              try {
-                return JSON.parse(error.error).error.path['.tag'] === 'not_found';
-              } catch (e) {
-                return false;
-              }
-            })();
-            if (
-              (typeof error === 'string' && error.match(/missing required field 'path'/)) ||
-              objectContainsTagErrorP
-            ) {
-              reject();
-            }
-          });
-      })
+  // opts.onStart: se llama cuando la descarga sale de la cola (para contar el tiempo de espera
+  // del servidor desde ahí, no desde que se pidió)
+  const getFileContentsAndMetadata = (path, opts = {}) =>
+    queuedDownload(
+      () => withRetries(() => dbxPromise.then((dbx) => dbx.filesDownload({ path }))),
+      opts.onStart
+    ).then(
+      (response) =>
+        new Promise((resolve, reject) => {
+          const lastModifiedAt = response.result.server_modified;
+          if (/\.gpg$/i.test(path)) {
+            // ORG Mode para Eli: .gpg es binario, se entrega como Uint8Array
+            response.result.fileBlob
+              .arrayBuffer()
+              .then((buf) => resolve({ contents: new Uint8Array(buf), lastModifiedAt }), reject);
+            return;
+          }
+          const reader = new FileReader();
+          reader.addEventListener('loadend', () =>
+            resolve({ contents: reader.result, lastModifiedAt })
+          );
+          reader.addEventListener('error', () =>
+            reject(new Error('No se ha podido leer el fichero'))
+          );
+          reader.readAsText(response.result.fileBlob);
+        }),
+      (error) => {
+        // «No existe»: se rechaza sin motivo, como siempre (la app lo trata como fichero que no
+        // está). Cualquier otro error: con su mensaje (y el original, para quien lo necesite).
+        if (isNotFoundError(error)) return Promise.reject();
+        const e = new Error(dropboxErrorMessage(error));
+        e.status = statusOf(error);
+        e.dropboxError = error;
+        // Fallo pasajero (red, 429, 5xx): la capa sin conexión puede usar la copia del dispositivo
+        e.eliTransient = isRetryable(error);
+        return Promise.reject(e);
+      }
     );
 
   const getFileContents = (path) => {
@@ -233,7 +334,9 @@ export default () => {
   const withDbx = (fn) => dbxPromise.then(fn);
 
   const getFileBlob = (path) =>
-    withDbx((dbx) => dbx.filesDownload({ path })).then((response) => response.result.fileBlob);
+    queuedDownload(() => withRetries(() => withDbx((dbx) => dbx.filesDownload({ path })))).then(
+      (response) => response.result.fileBlob
+    );
 
   const getThumbnailBlob = (path, size = 'w1024h768') =>
     withDbx((dbx) =>
@@ -290,6 +393,7 @@ export default () => {
 
   return {
     type: 'Dropbox',
+    supportsOnStart: true,
     pathExists,
     getFileBlob,
     getThumbnailBlob,

@@ -205,7 +205,7 @@ export default class SyncServiceSignIn extends PureComponent {
 }
 
 // ORG Mode para Eli: trabajar con una carpeta del ordenador en lugar de Dropbox
-function EliLocalFolderOption() {
+function EliLocalFolderOption({ first = false }) {
   const supported = isLocalFolderSupported();
   const [error, setError] = useState('');
   const choose = async () => {
@@ -220,9 +220,13 @@ function EliLocalFolderOption() {
     }
   };
   return (
-    <div className="eli-signin__local" data-testid="eli-local-option">
+    <div
+      className={`eli-signin__local${first ? ' eli-signin__local--first' : ''}`}
+      data-testid="eli-local-option"
+    >
       <h3 className="eli-signin__local-title">
-        <i className="fas fa-laptop" /> O trabaja con una carpeta de este ordenador
+        <i className="fas fa-laptop" /> {first ? 'Trabaja' : 'O trabaja'} con una carpeta de este
+        ordenador
       </h3>
       <p className="sync-service-sign-in__help-text">
         Los ficheros .org se leen y se guardan directamente en la carpeta que elijas; no salen de tu
@@ -253,6 +257,8 @@ function EliDropboxSignIn({ onConnect }) {
   const [showGuide, setShowGuide] = useState(!hasKey);
   const [copied, setCopied] = useState(false);
   const redirect = appRootUrl();
+  // 2.15: en el ordenador (donde se puede) la carpeta local va primero; en el iPhone, al final
+  const localFirst = isLocalFolderSupported();
 
   const copy = () => {
     const done = () => {
@@ -266,7 +272,10 @@ function EliDropboxSignIn({ onConnect }) {
 
   return (
     <div className="sync-service-sign-in-container eli-signin">
-      <h2 className="eli-signin__title">Conectar con Dropbox</h2>
+      {localFirst && <EliLocalFolderOption first />}
+      <h2 className="eli-signin__title">
+        {localFirst ? 'O conecta con Dropbox' : 'Conectar con Dropbox'}
+      </h2>
       <p className="sync-service-sign-in__help-text">
         ORGanice lee y guarda tus ficheros .org directamente en tu Dropbox. Pulsa el logo: se abrirá
         la web de Dropbox para que autorices el acceso (tu contraseña solo la ve Dropbox). Se hace
@@ -359,7 +368,7 @@ function EliDropboxSignIn({ onConnect }) {
         </ol>
       )}
 
-      <EliLocalFolderOption />
+      {!localFirst && <EliLocalFolderOption />}
     </div>
   );
 }

@@ -203,7 +203,7 @@ const doSync = ({
     dispatch(setLoadingMessage(`Sincronizando…`));
   }
   dispatch(setIsLoading(true, path));
-  dispatch(setOrgFileErrorMessage(null));
+  dispatch(setOrgFileErrorMessage(null, path));
 
   client
     .getFileContentsAndMetadata(path)
@@ -342,7 +342,8 @@ const doSync = ({
         setOrgFileErrorMessage(
           error && error.message
             ? `${path}: ${error.message}`
-            : `No se encuentra el fichero ${path}`
+            : `No se encuentra el fichero ${path}`,
+          path
         )
       );
     });
@@ -584,6 +585,9 @@ export const eliNarrowAndExpand = (headerId) => (dispatch) => {
   dispatch(narrowHeader(headerId));
   dispatch({ type: 'ELI_OPEN_SUBTREE', headerId });
 };
+
+// ORG Mode para Eli (2.15): contraer (false) o expandir (true) todas las cabeceras
+export const eliSetAllHeadersOpened = (opened) => ({ type: 'ELI_SET_ALL_OPENED', opened });
 
 export const widenHeader = () => ({
   type: 'WIDEN_HEADER',
@@ -963,9 +967,12 @@ export const updatePropertyListItems = (headerId, newPropertyListItems) => ({
   dirtying: true,
 });
 
-export const setOrgFileErrorMessage = (message) => ({
+// ORG Mode para Eli (2.15): con `path`, el error es de ESE fichero (solo se ve en su hoja); sin
+// él, es general (como antes)
+export const setOrgFileErrorMessage = (message, path = null) => ({
   type: 'SET_ORG_FILE_ERROR_MESSAGE',
   message,
+  path,
 });
 
 export const setLogEntryStop = (headerId, entryId, time) => ({
@@ -1760,6 +1767,9 @@ export const eliReviewFinishedAttachments = () => async (dispatch, getState) => 
 
 // ORG Mode para Eli: seguir un enlace Org a un fichero o encabezado (file:x.org::*Título,
 // *Título, #id, id:…) como org-open-at-point: abre el fichero y va al encabezado
+// (2.15) Ruta del fichero abierto (para componentes sin acceso al estado)
+export const eliCurrentPath = () => (dispatch, getState) => getState().org.present.get('path');
+
 export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getState) => {
   const link = parseOrgLink(uri);
   if (!link) return false;
@@ -1806,9 +1816,9 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
     header = findLinkedHeader(headers, link.search);
     if (!header) showMessage('Enlace', `No se encuentra «${link.search}» en ${targetPath}.`);
   }
-  if (targetPath !== getState().org.present.get('path')) {
-    window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
-  }
+  // (2.15) también si se está en otra vista (GTD, ficheros…) aunque sea el fichero de antes; la
+  // navegación no hace nada si ya se está ahí
+  window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
   if (header) {
     dispatch(selectHeaderAndOpenParents(targetPath, header.get('id'), { widen: true }));
   } else {

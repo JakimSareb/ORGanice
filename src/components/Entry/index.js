@@ -26,6 +26,7 @@ import GtdView from '../Gtd';
 import EliConflicts from '../EliConflicts';
 import EliCommandPalette from '../EliCommandPalette';
 import EliCalendar from '../EliCalendar';
+import EliCalculator from '../EliCalculator';
 import { installFormatHotkeys } from '../EliFormatBar';
 import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
 import { notWhileTyping, matchesBinding, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
@@ -102,8 +103,19 @@ class Entry extends PureComponent {
   // ORG Mode para Eli: navegar a una ruta pedida desde fuera de React Router (p. ej. un enlace)
   eliNavigate(event) {
     const to = event && event.detail;
-    if (to && this.props.location.pathname !== to) this.props.history.push(to);
+    if (!to) return;
+    let here = this.props.location.pathname;
+    try {
+      here = decodeURIComponent(here);
+    } catch (e) {}
+    if (here !== to && this.props.location.pathname !== to) this.props.history.push(to);
   }
+
+  // ORG Mode para Eli (2.15): enlace que manda abrir la otra columna (pantalla dividida)
+  eliFollowLink = (event) => {
+    const d = (event && event.detail) || {};
+    if (d.uri) this.props.org.eliFollowOrgLink(d.uri, d.basePath || null);
+  };
 
   // ORG Mode para Eli (2.12): al arrancar en la página inicial, volver a la última vista
   eliResume() {
@@ -121,6 +133,7 @@ class Entry extends PureComponent {
     window.addEventListener('eli:open-docs', this.openDocs);
     window.addEventListener('keydown', this.eliGtdKey);
     window.addEventListener('eli:navigate', this.eliNavigate);
+    window.addEventListener('eli:follow-link', this.eliFollowLink);
     this.setChangelogUnseenChanges();
     this.props.filesToLoad.forEach((path) => this.props.syncBackend.downloadFile(path));
     this.props.filesToSync.forEach((path) => this.props.org.sync({ path }));
@@ -161,6 +174,7 @@ class Entry extends PureComponent {
     window.removeEventListener('eli:open-docs', this.openDocs);
     window.removeEventListener('keydown', this.eliGtdKey);
     window.removeEventListener('eli:navigate', this.eliNavigate);
+    window.removeEventListener('eli:follow-link', this.eliFollowLink);
     document.removeEventListener('visibilitychange', this.eliOnVisible);
     window.onbeforeunload = undefined;
   }
@@ -266,6 +280,7 @@ class Entry extends PureComponent {
         {isAuthenticated && <EliConflicts />}
         {isAuthenticated && <EliCommandPalette />}
         {isAuthenticated && <EliCalendar />}
+        <EliCalculator />
 
         {isAuthenticated &&
           ([

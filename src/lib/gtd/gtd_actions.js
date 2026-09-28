@@ -123,9 +123,30 @@ const sameDay = (a, b) =>
   (!a && !b) ||
   (a && b && a.toDateString && b.toDateString && a.toDateString() === b.toDateString());
 
+// ¿Colocarla junto a esa otra no cambia nada? (ya está ahí, o sería meterla dentro de sí misma)
+const subtreeSize = (headers, index) => {
+  const level = headers.getIn([index, 'nestingLevel']);
+  let n = 1;
+  while (index + n < headers.size && headers.getIn([index + n, 'nestingLevel']) > level) n++;
+  return n;
+};
+export const isNoopMove = (getState, path, headerId, targetId, position) => {
+  const headers = getState().org.present.getIn(['files', path, 'headers']) || List();
+  const i = headers.findIndex((h) => h.get('id') === headerId);
+  const j = headers.findIndex((h) => h.get('id') === targetId);
+  if (i < 0 || j < 0) return true;
+  const size = subtreeSize(headers, i);
+  if (j >= i && j < i + size) return true;
+  const sameLevel = headers.getIn([i, 'nestingLevel']) === headers.getIn([j, 'nestingLevel']);
+  if (!sameLevel) return false;
+  if (position === 'after') return j + subtreeSize(headers, j) === i;
+  return j === i + size;
+};
+
 /**
  * Guardar los cambios de una tarea.
- * changes: { rawTitle, notes, list, priority, tags, area, energy, effort, scheduled, deadline }
+ * changes: { rawTitle, notes, list, priority, tags, area, energy, effort, scheduled, deadline,
+ *            moveNextTo: { targetId, position: 'before' | 'after' } }
  */
 export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   const header = headerOf(getState, task.path, task.id);
@@ -231,6 +252,24 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
     }
   }
 
+  // 4) ORG Mode para Eli (2.15): colocarla junto a otra tarea del mismo fichero (reordenar
+  // arrastrando); va en el mismo paso, así un solo «Deshacer» lo deshace todo
+  const move = changes.moveNextTo;
+  if (
+    move &&
+    move.targetId &&
+    move.targetId !== task.id &&
+    !isNoopMove(getState, task.path, task.id, move.targetId, move.position)
+  ) {
+    inner.push({
+      type: 'ELI_MOVE_SUBTREE_NEXT_TO',
+      headerId: task.id,
+      targetId: move.targetId,
+      position: move.position === 'after' ? 'after' : 'before',
+      dirtying: true,
+    });
+  }
+
   if (!inner.length) return;
   const newKeyword = inner.find((a) => a.type === 'SET_TODO_STATE');
   const needed = [
@@ -241,6 +280,10 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   dispatch(inFile(task.path, inner));
   syncFile(dispatch, task.path);
 };
+
+// ORG Mode para Eli (2.15): reordenar: poner la tarea antes o después de otra del mismo fichero
+export const gtdMoveNextTo = (task, targetId, position) => (dispatch) =>
+  dispatch(gtdSaveTask(task, { moveNextTo: { targetId, position } }));
 
 export const gtdToggleDone = (task) => (dispatch) =>
   dispatch(gtdSaveTask(task, { list: task.isDone ? 'later' : 'done' }));
@@ -255,8 +298,11 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (!target || !target.path || !getState().org.present.getIn(['files', target.path, 'headers']))
     return null;
   const dontIndent = getState().base.get('eliIndentOnExport') !== true;
+  // (2.15) fields.keyword: estado exacto (p. ej. el de una plantilla de captura)
   const keyword =
-    fields.list === 'project'
+    fields.keyword !== undefined
+      ? fields.keyword || null
+      : fields.list === 'project'
       ? 'PROJECT'
       : fields.list && keywordForList(fields.list).has
       ? keywordForList(fields.list).keyword
@@ -292,8 +338,11 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
     .set('propertyListItems', props)
     .set('planningItems', planning)
     .set('rawDescription', fields.notes || '');
+  // (2.15) fields.rawDescription: el cuerpo tal cual (p. ej. el de una plantilla de captura)
   const description =
-    props.size || planning.size || fields.notes
+    fields.rawDescription !== undefined
+      ? fields.rawDescription
+      : props.size || planning.size || fields.notes
       ? createRawDescriptionText(fake, false, dontIndent)
       : '';
   dispatch(

@@ -48,8 +48,13 @@ const updateConfigForGitLab = async (client, contents) => {
   }
 };
 
+// ORG Mode para Eli (2.15): si no se pudieron leer los ajustes del servidor (fallo pasajero), no
+// se suben los de aquí encima (se perderían los guardados allí)
+let eliConfigLoadFailed = false;
+
 const debouncedPushConfigToSyncBackend = _.debounce(
   (syncBackendClient, contents) => {
+    if (eliConfigLoadFailed) return;
     switch (syncBackendClient.type) {
       case 'Dropbox':
       case 'WebDAV':
@@ -469,6 +474,7 @@ export const loadSettingsFromConfigFile = (dispatch, getState) => {
 
   fileContentsPromise
     .then((configFileContents) => {
+      eliConfigLoadFailed = false;
       try {
         let config;
 
@@ -494,7 +500,11 @@ export const loadSettingsFromConfigFile = (dispatch, getState) => {
         // overwrite it with a good local copy.
       }
     })
-    .catch(() => {})
+    .catch((error) => {
+      // Sin motivo = no existe (se creará con los ajustes de aquí). Con motivo (red, Dropbox…):
+      // no se sube nada hasta la próxima vez que se lean bien
+      if (error) eliConfigLoadFailed = true;
+    })
     // ORG Mode para Eli: con «todos los ficheros .org», buscar los nuevos después de restaurar
     // los ajustes (si no, la restauración pisaría la lista recién actualizada)
     .then(() => dispatch(eliRefreshAllOrgFiles({ force: true })));

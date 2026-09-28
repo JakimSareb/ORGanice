@@ -98,6 +98,20 @@ const eliOpenSubtree = (state, action) => {
   return state.set('headers', next);
 };
 
+// ORG Mode para Eli (2.15): contraer / expandir todas las cabeceras del fichero. Con la vista
+// reducida (narrow) el encabezado reducido sigue abierto (si no, no se vería nada).
+const eliSetAllOpened = (state, action) => {
+  const narrowedId = state.get('narrowedHeaderId');
+  const headers = state.get('headers');
+  if (!headers) return state;
+  return state.set(
+    'headers',
+    headers.map((h) =>
+      h.set('opened', !!action.opened || (!!narrowedId && h.get('id') === narrowedId))
+    )
+  );
+};
+
 const toggleHeaderOpened = (state, action) => {
   const headers = state.get('headers');
 
@@ -563,6 +577,34 @@ const moveHeaderToPosition = (state, action) => {
   return state.set('headers', headers);
 };
 
+// ORG Mode para Eli (2.15): colocar un encabezado (con sus subencabezados) justo antes o después
+// de otro, adoptando su nivel (y por tanto su padre). Lo usa el reordenado de la vista GTD.
+const eliMoveSubtreeNextTo = (state, action) => {
+  let headers = state.get('headers');
+  const { headerId, targetId, position } = action;
+  if (!headerId || !targetId || headerId === targetId) return state;
+  const sourceIndex = indexOfHeaderWithId(headers, headerId);
+  const targetIndex = indexOfHeaderWithId(headers, targetId);
+  if (sourceIndex < 0 || targetIndex < 0) return state;
+  const size = 1 + subheadersOfHeaderWithId(headers, headerId).size;
+  // No se puede poner dentro de sí mismo
+  if (targetIndex >= sourceIndex && targetIndex < sourceIndex + size) return state;
+  const previousParentId = parentIdOfHeaderWithId(headers, headerId);
+  const delta =
+    headers.getIn([targetIndex, 'nestingLevel']) - headers.getIn([sourceIndex, 'nestingLevel']);
+  const tree = headers
+    .slice(sourceIndex, sourceIndex + size)
+    .map((h) => h.set('nestingLevel', Math.max(1, h.get('nestingLevel') + delta)));
+  headers = headers.splice(sourceIndex, size);
+  let at = indexOfHeaderWithId(headers, targetId);
+  if (position === 'after') at += 1 + subheadersOfHeaderWithId(headers, targetId).size;
+  headers = headers.splice(at, 0, ...tree.toArray());
+  state = state.set('headers', headers);
+  if (previousParentId) state = updateCookiesOfHeaderWithId(state, previousParentId);
+  state = updateCookiesOfParentOfHeaderWithId(state, headerId);
+  return state;
+};
+
 const moveHeaderLeft = (state, action) => {
   const headers = state.get('headers');
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
@@ -973,6 +1015,9 @@ const moveTableColumnRight = (state) => {
 };
 
 const updateTableCellValue = (state, action) => {
+  // ORG Mode para Eli (2.15): si la celda ya no existe (el fichero se ha vuelto a leer mientras se
+  // escribía en ella), no se hace nada en vez de romper
+  if (!headerThatContainsTableCellId(state.get('headers') || List(), action.cellId)) return state;
   state = state.update('headers', (headers) =>
     updateTableContainingCellId(headers, action.cellId, (rowIndex, colIndex) => (rows) =>
       rows.updateIn([rowIndex, 'contents', colIndex], (cell) =>
@@ -1900,7 +1945,15 @@ const toggleTodoFilter = (state, action) => {
   return state;
 };
 
-const setOrgFileErrorMessage = (state, action) => state.set('orgFileErrorMessage', action.message);
+const setOrgFileErrorMessage = (state, action) => {
+  // ORG Mode para Eli (2.15): error de un fichero concreto
+  if (action.path) {
+    return action.message
+      ? state.setIn(['eliFileErrors', action.path], action.message)
+      : state.deleteIn(['eliFileErrors', action.path]);
+  }
+  return state.set('orgFileErrorMessage', action.message);
+};
 
 const setPath = (state, action) => state.set('path', action.path);
 
@@ -2119,6 +2172,8 @@ const reducer = (state, action) => {
       return inFile(openHeader);
     case 'ELI_OPEN_SUBTREE':
       return inFile(eliOpenSubtree);
+    case 'ELI_SET_ALL_OPENED':
+      return inFile(eliSetAllOpened);
     case 'ELI_MOVE_HEADER_LINE':
       return inFile(eliMoveHeaderLine);
     case 'SELECT_HEADER':
@@ -2159,6 +2214,8 @@ const reducer = (state, action) => {
       return inFile(moveHeaderDown);
     case 'MOVE_HEADER_TO_POSITION':
       return inFile(moveHeaderToPosition);
+    case 'ELI_MOVE_SUBTREE_NEXT_TO':
+      return inFile(eliMoveSubtreeNextTo);
     case 'MOVE_HEADER_LEFT':
       return inFile(moveHeaderLeft);
     case 'MOVE_HEADER_RIGHT':

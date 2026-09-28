@@ -123,6 +123,9 @@ class OrgFile extends PureComponent {
   // ORG Mode para Eli: atajos propios con un listener directo
   handleEliKeyDown(event) {
     if (!this.eliHandlers || event.defaultPrevented) return;
+    // (2.15) Escribiendo en una celda de una tabla, ningún atajo del documento (ni con Ctrl/Alt)
+    const t = event.target;
+    if (t && t.closest && t.closest('.table-part__cell-input')) return;
     const bindings = _.fromPairs(calculateActionedKeybindings(this.props.customKeybindings));
     // Todos los atajos (los de organice y los propios) pasan por aquí: react-hotkeys se quedaba
     // a veces con teclas "pulsadas" y dejaba de responder (p. ej. «d» tras cerrar con Esc)
@@ -966,8 +969,32 @@ class OrgFile extends PureComponent {
       );
     }
 
-    if (!!orgFileErrorMessage) {
-      return <div className="error-message-container">{orgFileErrorMessage}</div>;
+    // ORG Mode para Eli (2.15): con el fichero ya cargado, el error va en un aviso encima (no se
+    // deja de ver el fichero); sin él, en su lugar. En los dos casos, con «Reintentar».
+    const retry = () => {
+      this.props.org.setOrgFileErrorMessage(null);
+      this.props.org.setOrgFileErrorMessage(null, path);
+      if (headers) this.props.org.sync({ path });
+      else this.props.syncBackend.downloadFile(path);
+    };
+    const errorBox = !!orgFileErrorMessage && (
+      <div
+        className={'error-message-container' + (headers ? ' eli-file-error--banner' : '')}
+        data-testid="eli-file-error"
+      >
+        {orgFileErrorMessage}
+        {!staticFile && (
+          <div className="eli-file-error__actions">
+            <button type="button" className="btn" onClick={retry} data-testid="eli-file-retry">
+              <i className="fas fa-redo" /> Reintentar
+            </button>
+          </div>
+        )}
+      </div>
+    );
+
+    if (!!orgFileErrorMessage && !headers) {
+      return errorBox;
     }
 
     if (!headers) {
@@ -1078,6 +1105,7 @@ class OrgFile extends PureComponent {
     return (
       <>
         <div className="org-file-container" tabIndex="-1" ref={this.handleContainerRef}>
+          {errorBox}
           {headers.size === 0 ? (
             <div className="org-file__parsing-error-message">
               <h3>Este fichero no tiene encabezados</h3>
@@ -1256,7 +1284,12 @@ const mapStateToProps = (state) => {
     captureTemplates: state.capture.get('captureTemplates').concat(sampleCaptureTemplates),
     pendingCapture: state.org.present.get('pendingCapture'),
     closeSubheadersRecursively: state.base.get('closeSubheadersRecursively'),
-    orgFileErrorMessage: state.org.present.get('orgFileErrorMessage'),
+    // ORG Mode para Eli (2.15): solo el error general o el de ESTE fichero (antes, el fallo de
+    // cualquier fichero tapaba la hoja que se estaba viendo)
+    orgFileErrorMessage:
+      state.org.present.get('orgFileErrorMessage') ||
+      state.org.present.getIn(['eliFileErrors', path]) ||
+      null,
     preferEditRawValues: state.base.get('preferEditRawValues'),
     todoKeywordSets: file.get('todoKeywordSets'),
     editorDescriptionHeightValue: state.base.get('editorDescriptionHeightValue'),

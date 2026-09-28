@@ -1,4 +1,4 @@
-// ORG Mode para Eli: paleta de comandos (idea de OrbitalNote). Ctrl+K / ⌘K (o «⋯ → Paleta de
+// ORG Mode para Eli: paleta de comandos (idea de OrbitalNote). Ctrl+Espacio o Ctrl+K / ⌘K (o «⋯ → Paleta de
 // comandos» en el móvil) abre un cuadro de búsqueda con resultados mezclados: ficheros .org,
 // encabezados y tareas de todos los ficheros cargados, listas y proyectos GTD, etiquetas y
 // acciones de la app. Búsqueda tolerante (cmppnt → «Comprar pintura»); vacía = recientes.
@@ -22,9 +22,11 @@ import {
   eliNarrowAndExpand,
   sync,
   eliReviewFinishedAttachments,
+  eliSetAllHeadersOpened,
 } from '../../actions/org';
 import { eliPrepareOffline } from '../../actions/eli_offline';
 import { openCalendar } from '../EliCalendar';
+import { openCalculator } from '../EliCalculator';
 import {
   activatePopup,
   setTheme,
@@ -110,15 +112,20 @@ export default function EliCommandPalette() {
 
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  // Abrir: Ctrl+K / ⌘K en cualquier sitio, o el evento «eli:palette» (menú ⋯)
+  // Abrir: Ctrl+Espacio (o Ctrl+K / ⌘K) en cualquier sitio, o el evento «eli:palette» (menú ⋯)
   useEffect(() => {
     const onKey = (e) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
+      // 2.15: Ctrl+Espacio (principal). Ctrl+K / ⌘K siguen funcionando: en el Mac ⌃Espacio es el
+      // atajo del sistema para cambiar el idioma del teclado si hay más de uno.
+      const isCtrlSpace =
+        e.ctrlKey &&
+        !e.metaKey &&
         !e.altKey &&
         !e.shiftKey &&
-        (e.key || '').toLowerCase() === 'k'
-      ) {
+        (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar');
+      const isCtrlK =
+        (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key || '').toLowerCase() === 'k';
+      if (isCtrlSpace || isCtrlK) {
         if (!isAuthenticated) return;
         e.preventDefault();
         e.stopPropagation();
@@ -324,6 +331,22 @@ export default function EliCommandPalette() {
         () => window.dispatchEvent(new CustomEvent('eli:move-menu')),
         key('openMoveMenu')
       );
+      act(
+        'collapse-all',
+        'Contraer todas las cabeceras',
+        'fas fa-angle-double-up',
+        () => dispatch(eliSetAllHeadersOpened(false)),
+        '',
+        'plegar cerrar todo'
+      );
+      act(
+        'expand-all',
+        'Expandir todas las cabeceras',
+        'fas fa-angle-double-down',
+        () => dispatch(eliSetAllHeadersOpened(true)),
+        '',
+        'desplegar abrir todo'
+      );
       act('raw', 'Editar como texto plano', 'fas fa-align-left', openRawEditor);
       act('pdf', 'Exportar a PDF', 'fas fa-file-pdf', () => openPrintPreview(null), '', 'imprimir');
     }
@@ -409,6 +432,7 @@ export default function EliCommandPalette() {
       'changelog versión'
     );
     act('moon', 'Fases de la Luna', 'fas fa-moon', openMoonPhases);
+    act('calculator', 'Calculadora', 'fas fa-calculator', () => openCalculator(), '', 'calcular sumar cuentas');
 
     // Listas GTD
     const gtdCfg = normalizeGtdSections(state.base.get('eliGtdSections'));

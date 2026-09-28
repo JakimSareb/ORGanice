@@ -15,7 +15,13 @@ import { activatePopup } from '../../actions/base';
 import { useDispatch } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 
-export const openCalendar = () => window.dispatchEvent(new CustomEvent('eli:calendar'));
+// date (opcional, 2.15): abrir el calendario en ese día (p. ej. el que se ve en la agenda)
+export const openCalendar = (date) =>
+  window.dispatchEvent(
+    new CustomEvent('eli:calendar', {
+      detail: { date: date instanceof Date && !isNaN(date) ? date : null },
+    })
+  );
 
 const MONTHS = [
   'enero',
@@ -193,11 +199,13 @@ export default function EliCalendar() {
   const touch = useRef(null);
 
   useEffect(() => {
-    const onOpen = () => {
+    const onOpen = (e) => {
       const now = startOfDay(new Date());
+      const wanted = e && e.detail && e.detail.date ? startOfDay(e.detail.date) : null;
+      const at = wanted || now;
       setToday(now);
-      setAnchor({ year: now.getFullYear(), month: now.getMonth() });
-      setSelected(null);
+      setAnchor({ year: at.getFullYear(), month: at.getMonth() });
+      setSelected(wanted);
       setRangeEnd(null);
       setShowOptions(false);
       setOpen(true);

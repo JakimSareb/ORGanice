@@ -24,6 +24,7 @@
 (require 'org-agenda)
 (require 'org-habit)
 (require 'seq)
+(require 'cl-lib)
 (require 'subr-x)
 (require 'organice-core)
 
@@ -55,6 +56,12 @@ casillas :habits :future :future-priority :parked (por defecto: no, no, sí, no)
 
 (defcustom organice-auto-star t
   "Poner ★ [#A] a las tareas cuando llega su fecha (una sola vez), como la app."
+  :type 'boolean :group 'organice)
+
+(defcustom organice-group-by-project nil
+  "Agrupar las listas (Focus, Inbox, Next, Todo, Waiting, Someday, Reference) por proyecto,
+como el botón «Agrupar por proyecto» de la app: primero las tareas sin proyecto y después un
+grupo por proyecto (necesita org-super-agenda)."
   :type 'boolean :group 'organice)
 
 (defun organice--section (id) (cdr (assq id organice-sections)))
@@ -293,11 +300,32 @@ casillas :habits :future :future-priority :parked (por defecto: no, no, sí, no)
   "Función (sin argumentos) que dice si el encabezado va en la lista ID."
   (lambda () (eq (organice-list-of) id)))
 
+(defun organice--project-title-here ()
+  "Título del PROJECT que contiene el punto (o nil si la tarea está suelta)."
+  (save-excursion
+    (let (title)
+      (while (and (not title) (org-up-heading-safe))
+        (when (organice--project-p) (setq title (org-get-heading t t t t))))
+      title)))
+(defun organice--item-project-title (item)
+  (organice--at-item item (organice--project-title-here)))
+(defun organice--item-loose-p (item) (not (organice--item-project-title item)))
+
 (defun organice--list-block (title id)
   (let ((fn (intern (format "organice--in-%s-p" id))))
     (defalias fn (organice--list-pred id))
-    (organice--block 'tags "LEVEL>0" title fn
-                     '(org-agenda-sorting-strategy '(priority-down deadline-up scheduled-up alpha-up)))))
+    (if organice-group-by-project
+        ;; Agrupadas: dentro de cada proyecto, el orden del fichero (las que ya han llegado a
+        ;; su fecha, primero), como en la app
+        (apply #'organice--block 'tags "LEVEL>0" title fn
+               '(org-agenda-sorting-strategy '(user-defined-up))
+               '(org-agenda-cmp-user-defined #'organice--cmp-due-first)
+               (organice--groups
+                '((:name "Sin proyecto" :pred organice--item-loose-p :order 0)
+                  (:auto-map organice--item-project-title :order 1))))
+      (organice--block 'tags "LEVEL>0" title fn
+                       '(org-agenda-sorting-strategy
+                         '(priority-down deadline-up scheduled-up alpha-up))))))
 
 (defun organice--not-habit-nor-repeat-p (item)
   (not (or (organice-item-habit-p item) (organice-item-repeats-p item))))
@@ -321,8 +349,19 @@ casillas :habits :future :future-priority :parked (por defecto: no, no, sí, no)
                           '((:name "Activos" :pred organice--project-active-p :order 1)
                             (:name "Programados" :pred organice--project-scheduled-p :order 2)
                             (:name "Dormidos" :pred organice--project-sleep-p :order 3)))))
-        (project-actions (organice--block 'todo "" "Acciones del proyecto"
-                                          'organice--project-action-p))
+        ;; (2.15) Como la app: por secciones de estado (Next, Todo, Waiting, Programadas, Someday),
+        ;; en el orden del fichero, con las que ya han llegado a su fecha primero
+        (project-actions (apply #'organice--block 'todo "" "Acciones del proyecto"
+                                'organice--project-action-p
+                                '(org-agenda-sorting-strategy '(user-defined-up))
+                                '(org-agenda-cmp-user-defined #'organice--cmp-due-first)
+                                (organice--groups
+                                 '((:name "Programadas" :pred organice--item-future-p :order 4)
+                                   (:name "Next" :todo "NEXT" :order 1)
+                                   (:name "Todo" :todo "TODO" :order 2)
+                                   (:name "Waiting" :todo "WAITING" :order 3)
+                                   (:name "Someday" :todo "MAYBE" :order 5)
+                                   (:name "Otras" :anything t :order 6)))))
         (logbook (apply #'organice--block 'tags "LEVEL>0" "✓ Logbook (terminadas sin archivar)"
                         'organice--done-p
                         '(org-agenda-sorting-strategy '(alpha-up))
@@ -374,10 +413,31 @@ casillas :habits :future :future-priority :parked (por defecto: no, no, sí, no)
 
 (when (organice--super-agenda-p) (org-super-agenda-mode 1))
 
-;; Proyecto concreto: sus acciones abiertas (como la vista de un proyecto de la app)
+;; Proyecto concreto: sus acciones abiertas (como la vista de un proyecto de la app). Desde la
+;; 2.15 también las programadas a futuro (van en su sección «Programadas»).
 (defun organice--project-action-p ()
   (and (organice--kw) (not (organice--done-p)) (not (organice--project-p))
-       (not (organice--hidden-by 'projects))))
+       (not (memq (organice--hidden-by 'projects) '(parked habit)))))
+
+(defun organice--item-future-p (item) (organice--at-item item (organice--future-scheduled-p)))
+
+(defun organice--item-due-p (item)
+  "¿Ha llegado ya (hoy o antes) su fecha programada o su fecha límite?"
+  (organice--at-item
+   item
+   (let ((today (org-today)))
+     (cl-some (lambda (prop)
+                (let ((v (org-entry-get (point) prop)))
+                  (and v (<= (time-to-days (org-time-string-to-time v)) today))))
+              '("SCHEDULED" "DEADLINE")))))
+
+(defun organice--cmp-due-first (a b)
+  "Dentro de un proyecto las fechas no cambian el orden (el del fichero), salvo las que ya han
+llegado, que van primero."
+  (let ((da (organice--item-due-p a)) (db (organice--item-due-p b)))
+    (cond ((and da (not db)) -1)
+          ((and db (not da)) 1)
+          (t nil))))
 
 (defun organice-project-view ()
   "Acciones abiertas del PROJECT en el que está el punto (en un fichero .org)."

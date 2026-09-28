@@ -9,3 +9,12 @@
 
   margin-top: 20px;
 }
+
+/* ORG Mode para Eli (2.15) */
+.keyboard-shortcuts-editor__section {
+  margin: 18px 0 6px;
+  font-size: 15px;
+  color: var(--blue);
+  border-bottom: 1px solid var(--base2);
+  padding-bottom: 4px;
+}

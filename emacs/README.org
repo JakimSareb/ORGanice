@@ -47,7 +47,7 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | En la app                               | En Emacs                                            |
 |-----------------------------------------+-----------------------------------------------------|
 | Conmutador Documentos ⇄ GTD, tecla g    | =F12= o =C-c g g=                                   |
-| Paleta de comandos (Ctrl+K / ⌘K)        | =⌘K= (=s-k=) o =C-c k=                              |
+| Paleta de comandos (Ctrl+Espacio / ⌘K)  | =⌘K= (=s-k=) o =C-c k= (=C-SPC= es la marca de Emacs) |
 | Focus / Inbox / Next / Todo / Waiting   | =C-c g f= / =i= / =n= / =t= / =w=                   |
 | Scheduled / Deadline / Someday          | =C-c g s= / =d= / =m=                               |
 | Todos los proyectos / Reference / Logbook | =C-c g p= / =r= / =l=                             |
@@ -70,10 +70,24 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Revisar adjuntos de terminadas (Logbook) | =C-c g R=                                          |
 | Calendario (⋯ → Calendario)             | =C-c g C= (o =M-x calendar=)                        |
 | Ver todo (widen)                        | =C-x n w=                                           |
+| Reducir a este encabezado (⋯ del encabezado) | =C-x n s=                                      |
+| Contraer / expandir todas las cabeceras | =S-TAB= (ciclo) o paleta: «Contraer…» / «Expandir…» |
+| Editar una celda de una tabla           | En la celda: =TAB= / =S-TAB= / =RET= (org-table)    |
+| Calculadora (⋯ → Calculadora)           | =C-x * q= (quick-calc) o paleta: «Calculadora»      |
+| Atrás / adelante (barra de arriba)      | =C-x ←= / =C-x →= (buffer anterior / siguiente)     |
+| Agrupar por proyecto (vista GTD)        | =(setq organice-group-by-project t)=                |
+| Ordenar tareas de un proyecto (asa ⋮⋮)  | =M-↑= / =M-↓= en el fichero (es el mismo orden)     |
 | Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
 En Linux o Windows, =⌘= es la tecla Super (la de Windows). Dentro de la agenda funcionan todas las
 teclas de Org: =t= cambia el estado, =,= la prioridad, =:= las etiquetas, =C-c C-s= programa,
 =C-c C-d= fecha límite, =RET= abre la tarea, =g= recalcula.
+
+** Los atajos de la vista GTD de la app (como Nirvana)
+En la app, en la vista GTD, las teclas sueltas n, i, x, w, s, y, f, p, l, c, 1…9, 0, [ ], /, r, a…
+crean tareas y cambian de lista (ventana de atajos: tecla k). En Emacs no se replican: la agenda
+de Org ya usa esas teclas (=t=, =s=, =r=, =/=…). Equivalencias: crear = =C-c c= + letra; ir a una
+lista = =C-c g= + letra (tabla de arriba); buscar = la paleta (=⌘K=) o =/= en la agenda (filtro);
+sincronizar = =C-c s=.
 
 ** La paleta de comandos
 =⌘K= abre una lista con todo: acciones (empiezan por =>=), ficheros (=/=), etiquetas (=#=) y tareas
@@ -82,6 +96,10 @@ y encabezados de todos los ficheros (=*=). Escribe unas letras de cada palabra: 
 Lo último que usaste sale primero. Una tarea se abre reducida a ella (narrow); =C-x n w= la amplía.
 
 ** Las vistas GTD
+Mismas reglas por defecto que la app. La vista de un proyecto (=C-c g P=) va por secciones de
+estado, como en la app: Next, Todo, Waiting, Programadas y Someday, en el orden del fichero (las
+que ya han llegado a su fecha, primero).
+
 Mismas reglas por defecto que la app:
 | Vista       | Qué muestra                                                                 |
 |-------------+-----------------------------------------------------------------------------|

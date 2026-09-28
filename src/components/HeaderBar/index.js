@@ -1,6 +1,8 @@
 import { openRawEditor, openPrintPreview, openMoonPhases, openFavorites } from '../EliTools';
 import { openPalette } from '../../lib/eli_palette';
 import { openCalendar } from '../EliCalendar';
+import { openCalculator } from '../EliCalculator';
+import { installNavHistory, canGoBack, canGoForward } from '../../lib/eli_nav_history';
 import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
@@ -176,11 +178,16 @@ class HeaderBar extends PureComponent {
     this.rememberDocument();
     this.updateWindowTitle();
     window.addEventListener('eli:split-open', this.eliOpenSplit);
+    window.addEventListener('eli:nav-history', this.eliNavChanged);
+    installNavHistory(this.props.history);
   }
 
   componentWillUnmount() {
     window.removeEventListener('eli:split-open', this.eliOpenSplit);
+    window.removeEventListener('eli:nav-history', this.eliNavChanged);
   }
+
+  eliNavChanged = () => this.forceUpdate();
 
   // ORG Mode para Eli: «Dos columnas» pedido desde la paleta de comandos
   eliOpenSplit = () => {
@@ -566,6 +573,18 @@ class HeaderBar extends PureComponent {
                 testId: 'eli-narrow',
               },
             inRealFile && {
+              icon: 'fas fa-angle-double-up',
+              label: 'Contraer todas las cabeceras',
+              onClick: () => this.props.org.eliSetAllHeadersOpened(false),
+              testId: 'eli-collapse-all',
+            },
+            inRealFile && {
+              icon: 'fas fa-angle-double-down',
+              label: 'Expandir todas las cabeceras',
+              onClick: () => this.props.org.eliSetAllHeadersOpened(true),
+              testId: 'eli-expand-all',
+            },
+            inRealFile && {
               icon: 'fas fa-arrows-alt',
               label: 'Mover (flechas)',
               onClick: () => window.dispatchEvent(new CustomEvent('eli:move-menu')),
@@ -600,6 +619,12 @@ class HeaderBar extends PureComponent {
               label: 'Calendario',
               onClick: openCalendar,
               testId: 'eli-calendar-menu',
+            },
+            {
+              icon: 'fas fa-calculator',
+              label: 'Calculadora',
+              onClick: () => openCalculator(),
+              testId: 'eli-calculator-menu',
             },
             {
               icon: 'fas fa-moon',
@@ -656,6 +681,34 @@ class HeaderBar extends PureComponent {
             </button>
           )}
 
+          {/* ORG Mode para Eli (2.15): atrás / adelante (como en el navegador) */}
+          {isAuthenticated && (inFile || inGtd) && (
+            <>
+              <i
+                className={
+                  'fas fa-arrow-left header-bar__actions__item eli-nav-btn' +
+                  (canGoBack() ? '' : ' header-bar__actions__item--disabled')
+                }
+                onClick={() => canGoBack() && this.props.history.goBack()}
+                title="Atrás"
+                aria-label="Atrás"
+                data-testid="eli-nav-back"
+                role="button"
+              />
+              <i
+                className={
+                  'fas fa-arrow-right header-bar__actions__item eli-nav-btn' +
+                  (canGoForward() ? '' : ' header-bar__actions__item--disabled')
+                }
+                onClick={() => canGoForward() && this.props.history.goForward()}
+                title="Adelante"
+                aria-label="Adelante"
+                data-testid="eli-nav-forward"
+                role="button"
+              />
+            </>
+          )}
+
           {/* ORG Mode para Eli: sincronizar, en los dos modos */}
           {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
             <i
@@ -675,8 +728,19 @@ class HeaderBar extends PureComponent {
             <i
               className="fas fa-search header-bar__actions__item"
               onClick={openPalette}
-              title="Paleta de comandos: buscar o hacer cualquier cosa (Ctrl+K)"
+              title="Paleta de comandos: buscar o hacer cualquier cosa (Ctrl+Espacio)"
               data-testid="eli-palette-btn"
+              role="button"
+            />
+          )}
+
+          {/* ORG Mode para Eli (2.15): calendario, en las dos vistas */}
+          {isAuthenticated && (inFile || inGtd) && (
+            <i
+              className="far fa-calendar-alt header-bar__actions__item"
+              onClick={() => openCalendar()}
+              title="Calendario"
+              data-testid="eli-calendar-btn"
               role="button"
             />
           )}

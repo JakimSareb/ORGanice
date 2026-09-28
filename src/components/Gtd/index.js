@@ -1,7 +1,7 @@
 // ORG Mode para Eli: vista GTD al estilo de Nirvana (menú lateral de listas y proyectos; las
 // tareas, filtradas, a la derecha). Trabaja sobre los mismos ficheros Org.
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { List } from 'immutable';
 
@@ -26,6 +26,13 @@ import {
   matchesFilters,
   projectState,
   projectsOverview,
+  projectSections,
+  projectSectionOf,
+  groupByProject,
+  GROUPABLE_LISTS,
+  REORDERABLE_LISTS,
+  keywordForList,
+  PRIORITY_RE,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -52,6 +59,7 @@ import {
   eliRemoveAttachmentLink,
 } from '../../actions/org';
 import { parseOrgLink } from '../../lib/eli_org_links';
+import { followOrgLinkSplitAware } from '../../lib/eli_split_links';
 import { declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import TaskEditor from './TaskEditor';
@@ -69,7 +77,17 @@ import {
 import { openUploadDialog } from '../EliTools';
 import { confirmAndDeleteAttachment } from '../../lib/eli_attachments';
 import useTaskDrag from './useTaskDrag';
+import useReorderDrag from './useReorderDrag';
 import { setGtdConfig, isSectionShown } from '../../lib/gtd/gtd_sections';
+import { createRawDescriptionText } from '../../lib/export_org';
+import { Map as IMap } from 'immutable';
+import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
+import { headerWithPath } from '../../lib/org_utils';
+import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
+import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
+import { calculateGtdKeybindings } from '../../lib/keybindings';
+import GtdShortcutsModal from './GtdShortcutsModal';
+import { pushModalPage } from '../../actions/base';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -84,8 +102,10 @@ const selectArchiveInSubfolder = (s) => s.base.get('eliArchiveInSubfolder') === 
 const selectTemplates = (s) => s.capture.get('captureTemplates') || List();
 const selectCanUndo = (s) => s.org.past.length > 0;
 const selectCanRedo = (s) => s.org.future.length > 0;
+const selectCustomKeybindings = (s) => s.base.get('customKeybindings');
 
 const LS_VIEW = 'eliGtdView';
+const LS_GROUP = 'eliGtdGroupByProject';
 const LS_AREA = 'eliGtdArea';
 const readLS = (k, fallback) => {
   try {
@@ -160,6 +180,9 @@ function TaskRow({
   onPointerDown,
   isDragging,
   hideActions = false,
+  reorderSection = null,
+  onReorderStart = null,
+  isReordering = false,
 }) {
   const due = task.deadline;
   const overdue = due && due < today;
@@ -169,11 +192,30 @@ function TaskRow({
         'gtd-task' +
         (open ? ' is-open' : '') +
         (task.isDone ? ' is-done' : '') +
-        (isDragging ? ' is-dragging' : '')
+        (isDragging ? ' is-dragging' : '') +
+        (isReordering ? ' is-reordering' : '') +
+        (onReorderStart ? ' has-handle' : '')
       }
       data-testid="gtd-task"
+      data-reorder-slot=""
+      data-reorder-key={task.key}
+      data-reorder-section={reorderSection || 'list'}
     >
       <div className="gtd-task__row" onClick={onToggleOpen} onPointerDown={onPointerDown}>
+        {/* ORG Mode para Eli (2.15): asa para reordenar arrastrando */}
+        {onReorderStart && (
+          <button
+            type="button"
+            className="gtd-task__handle"
+            onPointerDown={onReorderStart}
+            onClick={(e) => e.stopPropagation()}
+            title="Arrastra para cambiar el orden"
+            aria-label="Cambiar el orden"
+            data-testid="gtd-reorder-handle"
+          >
+            <i className="fas fa-grip-vertical" />
+          </button>
+        )}
         {/* ORG Mode para Eli: en el Logbook no se reabre ni se pone ★ desde la fila (se edita
             abriendo la tarea) */}
         {!hideActions && (
@@ -270,6 +312,7 @@ function TaskRow({
 
 export default function GtdView() {
   const dispatch = useDispatch();
+  const store = useStore();
   const history = useHistory();
   const files = useSelector(selectFiles);
   const fileSettings = useSelector(selectFileSettings);
@@ -295,6 +338,10 @@ export default function GtdView() {
   // de lista)
   const [freshKeys, setFreshKeys] = useState([]);
   const [projGroupsOpen, setProjGroupsOpen] = useState({});
+  // ORG Mode para Eli (2.15): agrupar las listas por proyecto (se recuerda) y, en un proyecto,
+  // la sección de terminadas plegada
+  const [groupByProj, setGroupByProj] = useState(() => readLS(LS_GROUP, false) === true);
+  const [doneOpen, setDoneOpen] = useState(false);
   const [openKey, setOpenKey] = useState(null);
   // ORG Mode para Eli: tarea recién creada con su editor abierto: no se cierra al tocar fuera
   // (hay que Guardar o Cancelar; Cancelar la borra)
@@ -437,6 +484,112 @@ export default function GtdView() {
     return out;
   }, [rendered, splitHabits, view.id, today, freshKeys]);
 
+  // ORG Mode para Eli (2.15): lo que se pinta en la lista: cabeceras y filas. En un proyecto, por
+  // secciones de estado (como Nirvana); en las listas, opcionalmente agrupado por proyecto.
+  const isProjectView = view.type === 'project';
+  const canGroup = !isProjectView && GROUPABLE_LISTS.includes(view.id);
+  const grouped = canGroup && groupByProj;
+  const canReorderLoose = !isProjectView && REORDERABLE_LISTS.includes(view.id);
+  const projSections = useMemo(
+    () =>
+      isProjectView ? projectSections(tasks, view.key, { area, text, ...filters }, today) : null,
+    [isProjectView, tasks, view.key, area, text, filters, today]
+  );
+  const onReorderDropRef = useRef(null);
+  const { startReorder, reordering: reorderingKey, dropSection } = useReorderDrag({
+    onDrop: (task, pos) => onReorderDropRef.current && onReorderDropRef.current(task, pos),
+  });
+  const items = useMemo(() => {
+    const out = [];
+    if (isProjectView && projSections) {
+      projSections.forEach((sec) => {
+        const isDone = sec.id === 'done';
+        // Mientras se arrastra se ven también las secciones vacías (para poder soltar en ellas)
+        if (!sec.tasks.length && !reorderingKey) return;
+        out.push({
+          kind: 'header',
+          id: `ps-${sec.id}`,
+          section: sec.id,
+          label: sec.label,
+          icon: sec.icon,
+          count: sec.tasks.length,
+          reorder: true,
+          collapsible: isDone,
+          collapsed: isDone && !doneOpen,
+          testId: `gtd-psec-${sec.id}`,
+        });
+        if (isDone && !doneOpen) return;
+        sec.tasks.forEach((t) =>
+          out.push({ kind: 'task', task: t, section: sec.id, reorderable: !isDone })
+        );
+      });
+      return out;
+    }
+    if (grouped) {
+      const { loose, groups } = groupByProject(rendered, today);
+      if (loose.length && groups.length) {
+        out.push({
+          kind: 'header',
+          id: 'g-loose',
+          section: 'loose',
+          label: 'Sin proyecto',
+          icon: 'far fa-circle',
+          count: loose.length,
+          reorder: true,
+          testId: 'gtd-group-loose',
+        });
+      }
+      loose.forEach((t) =>
+        out.push({
+          kind: 'task',
+          task: t,
+          section: 'loose',
+          reorderable: canReorderLoose && !t.isDone && !t.scheduled && !t.deadline,
+        })
+      );
+      groups.forEach((g) => {
+        out.push({
+          kind: 'header',
+          id: `g-${g.key}`,
+          section: `proj:${g.key}`,
+          label: g.project.title,
+          icon: 'fas fa-project-diagram',
+          count: g.tasks.length,
+          reorder: true,
+          projectKey: g.key,
+          testId: 'gtd-group-project',
+        });
+        g.tasks.forEach((t) =>
+          out.push({ kind: 'task', task: t, section: `proj:${g.key}`, reorderable: false })
+        );
+      });
+      return out;
+    }
+    rendered.forEach((t) => {
+      if (sectionStarts[t.key]) {
+        out.push({ kind: 'header', id: `s-${t.key}`, info: sectionStarts[t.key] });
+      }
+      out.push({
+        kind: 'task',
+        task: t,
+        section: 'list',
+        // Solo las sueltas sin fechas: las que tienen fecha las ordena la fecha
+        reorderable: canReorderLoose && !t.project && !t.isDone && !t.scheduled && !t.deadline,
+      });
+    });
+    return out;
+  }, [
+    isProjectView,
+    projSections,
+    grouped,
+    rendered,
+    sectionStarts,
+    today,
+    canReorderLoose,
+    doneOpen,
+    reorderingKey,
+  ]);
+
   // ORG Mode para Eli: Logbook → terminadas sin archivar (todas, no solo las 300 que se ven) y
   // botones para archivarlas de una vez, en total o por sección
   const isLogbook = view.id === 'logbook';
@@ -540,7 +693,10 @@ export default function GtdView() {
     }
     // Enlace a un fichero .org o a un encabezado: se abre en la app, en ese encabezado
     if (parseOrgLink(target)) {
-      dispatch(eliFollowOrgLink(target, task.path));
+      // 2.15: con dos columnas, se puede abrir en la de al lado
+      followOrgLinkSplitAware(target, task.path, () =>
+        dispatch(eliFollowOrgLink(target, task.path))
+      );
       return;
     }
     showMessage('Enlace', target);
@@ -671,6 +827,236 @@ export default function GtdView() {
     if (newId && !info.stay) selectView({ type: 'project', key: `${target.path}::${newId}` });
   };
 
+  // ORG Mode para Eli (2.15): tarea NUEVA en un editor (como Nirvana): se abre sin título y con
+  // las propiedades de la lista (estado, ★, fecha, proyecto, área…); no existe en el fichero hasta
+  // que se guarda con título. Si se cierra sin título, no se crea nada.
+  const [draft, setDraft] = useState(null);
+  const day = (n) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + n);
+  const areaPreset = area !== '*' && area !== '-' ? area : '';
+  const draftFor = (kind, { top = false } = {}) => {
+    let list = kind;
+    if (kind === 'current') {
+      if (isProjectView) list = 'next';
+      else if (view.id === 'projects') return null;
+      else list = view.id;
+    }
+    const d = {
+      rev: Date.now(),
+      top,
+      list,
+      keyword: undefined,
+      priority: null,
+      scheduled: null,
+      deadline: null,
+      tags: [...filters.tags],
+      area: areaPreset,
+      notes: '',
+      target: { path: tasksFile },
+      projectKey: isProjectView && projectTask ? projectTask.key : '',
+    };
+    if (list === 'focus') {
+      d.list = 'next';
+      d.priority = 'A';
+    } else if (list === 'scheduled') {
+      d.list = 'later';
+      d.scheduled = day(1);
+    } else if (list === 'deadline') {
+      d.list = 'later';
+      d.deadline = day(0);
+    } else if (list === 'logbook') {
+      d.list = 'later';
+    } else if (list === 'inbox') {
+      d.target = { path: inboxFile || tasksFile };
+      if (!inboxPaths.includes(d.target.path))
+        d.tags = Array.from(new Set([...d.tags, inboxTag()]));
+    }
+    if (d.projectKey && projectTask && kind !== 'inbox' && kind !== 'reference') {
+      d.target = { path: projectTask.path, parentId: projectTask.id };
+    } else {
+      d.projectKey = '';
+    }
+    return d;
+  };
+  const openDraft = (kind, opts) => {
+    if (!tasksFile) return;
+    const d = draftFor(kind, opts);
+    if (!d) {
+      addProject();
+      return;
+    }
+    setOpenKey(null);
+    setNewProject(null);
+    setDraft(d);
+  };
+  // Plantilla de captura (tecla c o botón): el editor de tarea nueva con lo que trae la plantilla
+  const captureWithTemplate = async () => {
+    const list = templates.toArray();
+    if (!list.length) {
+      showMessage(
+        'Plantillas de captura',
+        'No tienes plantillas de captura. Añade alguna en Ajustes → Plantillas de captura.'
+      );
+      return;
+    }
+    const t = await chooseCaptureTemplate(list);
+    if (!t) return;
+    const path = t.get('file') ? norm(t.get('file')) : tasksFile;
+    const file = files.get(path);
+    if (!file || !file.get('headers')) {
+      showMessage('Plantilla', `No se ha podido abrir el fichero ${path} de la plantilla.`);
+      return;
+    }
+    const parsed = parseCaptureTemplate(
+      t.get('template') || '',
+      file.get('todoKeywordSets') || List(),
+      IMap()
+    );
+    const headerPath = (t.get('headerPaths') || List()).filter((x) => String(x || '').trim());
+    const parent = headerPath.size ? headerWithPath(file.get('headers'), headerPath) : null;
+    // La tarea de la plantilla, leída como las demás (título, estado, fechas, notas…)
+    const fake = buildTasks(
+      IMap({
+        '/__plantilla__': IMap({
+          headers: List([parsed.header.set('nestingLevel', 1)]),
+          todoKeywordSets: file.get('todoKeywordSets') || List(),
+        }),
+      }),
+      []
+    )[0];
+    if (!fake) return;
+    setOpenKey(null);
+    setNewProject(null);
+    setDraft({
+      rev: Date.now(),
+      template: t.get('description') || t.get('letter') || '',
+      list: null,
+      keyword: fake.keyword,
+      // Sin recortar el final: «Llamar a %?» deja el cursor tras «a »
+      title: (fake.rawTitle || '')
+        .replace(PRIORITY_RE, '')
+        .replace(/^\s+/, '')
+        .replace(/\s+$/, ' '),
+      priority: fake.priority,
+      scheduled: fake.scheduled,
+      deadline: fake.deadline,
+      tags: fake.ownTags,
+      area: fake.ownArea || areaPreset,
+      notes: fake.description,
+      templateHeader: parsed.header,
+      target: { path, parentId: parent ? parent.get('id') : null },
+      projectKey: '',
+    });
+  };
+  const draftTask = (d) => {
+    const keyword =
+      d.keyword !== undefined
+        ? d.keyword
+        : keywordForList(d.list).has
+        ? keywordForList(d.list).keyword
+        : null;
+    const proj = d.projectKey ? allProjects.find((p) => p.key === d.projectKey) : null;
+    return {
+      key: `__draft__${d.rev}`,
+      path: d.target.path,
+      keyword,
+      isInboxFile: inboxPaths.includes(d.target.path),
+      rawTitle: d.title || '',
+      priority: d.priority,
+      scheduled: d.scheduled,
+      deadline: d.deadline,
+      ownTags: d.tags,
+      tags: d.tags,
+      ownArea: d.area,
+      description: d.notes || '',
+      project: proj ? { path: proj.path, id: proj.id, title: proj.title } : null,
+    };
+  };
+  const createFromDraft = (changes, projectKey) => {
+    const d = draft;
+    if (!d) return;
+    const title = (changes.rawTitle !== undefined ? changes.rawTitle : d.title || '').trim();
+    if (!title) return;
+    const pk = projectKey !== undefined ? projectKey : d.projectKey;
+    const parent = pk ? allProjects.find((p) => p.key === pk) : null;
+    const target = parent ? { path: parent.path, parentId: parent.id } : d.target;
+    if (!files.getIn([target.path, 'headers'])) return;
+    // 1) se crea con lo que trae la lista (o la plantilla) y el título
+    // Con plantilla, su cuerpo tal cual (propiedades, fechas, notas)
+    const rawDescription = d.templateHeader
+      ? createRawDescriptionText(
+          d.templateHeader,
+          false,
+          store.getState().base.get('eliIndentOnExport') !== true
+        )
+      : undefined;
+    const newId = dispatch(
+      gtdAddTask(target, {
+        title,
+        list: d.list || undefined,
+        keyword: d.keyword,
+        priority: d.priority || null,
+        tags: d.tags,
+        area: d.area || null,
+        scheduled: d.templateHeader ? null : d.scheduled,
+        deadline: d.templateHeader ? null : d.deadline,
+        rawDescription,
+      })
+    );
+    if (!newId) return;
+    const key = `${target.path}::${newId}`;
+    // 2) después, lo cambiado en el editor (lista, fechas, etiquetas, notas…)
+    const rest = { ...changes };
+    delete rest.rawTitle;
+    const created = () =>
+      buildTasks(
+        IMap({ [target.path]: store.getState().org.present.getIn(['files', target.path]) }),
+        inboxPaths
+      ).find((t) => t.id === newId);
+    if (Object.keys(rest).length) {
+      const t = created();
+      if (t) dispatch(gtdSaveTask(t, rest));
+    }
+    // 3) «arriba de la lista»: delante de la primera tarea que se ve de su mismo fichero
+    if (d.top) {
+      // …entre sus hermanas (mismo padre): si no, pasaría a otro encabezado o proyecto
+      const parentId = target.parentId || null;
+      const first = items.find(
+        (i) =>
+          i.kind === 'task' &&
+          i.task.path === target.path &&
+          i.task.id !== newId &&
+          (i.task.parentId || null) === parentId
+      );
+      const t = created();
+      if (first && t) {
+        dispatch(gtdSaveTask(t, { moveNextTo: { targetId: first.task.id, position: 'before' } }));
+      }
+    }
+    setFreshKeys((k) => [key, ...k.filter((x) => x !== key)]);
+  };
+  const renderDraftEditor = () => (
+    <div className="gtd-new-project gtd-new-task" data-testid="gtd-new-task">
+      {draft.template && (
+        <div className="gtd-new-task__template">
+          <i className="fas fa-plus" /> Plantilla: {draft.template}
+        </div>
+      )}
+      <TaskEditor
+        key={'draft:' + draft.rev}
+        isNew
+        task={draftTask(draft)}
+        projects={allProjects}
+        areas={areas}
+        allTags={allTags}
+        contextTags={contextTags}
+        onSave={createFromDraft}
+        onClose={() => setDraft(null)}
+        energyOptions={energyOptions}
+        effortOptions={effortOptions}
+      />
+    </div>
+  );
+
   // ORG Mode para Eli: cerrar un proyecto (terminado o cancelado), con confirmación
   const closeProject = async (project) => {
     const open = tasks.filter(
@@ -747,6 +1133,88 @@ export default function GtdView() {
       dispatch(gtdSaveTask(task, { list: id, tags: tagsForList(task, id) }));
     }
   };
+  // ORG Mode para Eli (2.15): soltar una tarea reordenada. En un proyecto, si se suelta en otra
+  // sección, cambia de estado; y en todo caso se coloca junto a la tarea de al lado en el fichero.
+  onReorderDropRef.current = async (task, pos) => {
+    const rows = items.filter((i) => i.kind === 'task' && i.task.key !== task.key);
+    const rowTasks = rows.map((i) => i.task);
+    const keyIndex = (k) => rowTasks.findIndex((t) => t.key === k);
+    if (isProjectView) {
+      const target = pos.section;
+      if (!target) return;
+      const own = projectSectionOf(task, today);
+      const inTarget = rows.filter((i) => i.section === target).map((i) => i.task);
+      const before = pos.beforeKey && inTarget.find((t) => t.key === pos.beforeKey);
+      const after = pos.afterKey && inTarget.find((t) => t.key === pos.afterKey);
+      const changes = {};
+      if (target !== 'done') {
+        if (before) changes.moveNextTo = { targetId: before.id, position: 'before' };
+        else if (after) changes.moveNextTo = { targetId: after.id, position: 'after' };
+      }
+      if (target !== own) {
+        if (target === 'done') {
+          changes.list = 'done';
+        } else if (target === 'scheduled') {
+          const day1 = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+          const date = await askDate({
+            title: 'Programar (Scheduled)',
+            message: `«${task.title}»: ¿desde qué día?`,
+            value: task.scheduled && task.scheduled > today ? task.scheduled : day1,
+          });
+          if (!date) return;
+          changes.scheduled = date;
+          if (task.isDone) changes.list = 'later';
+        } else {
+          changes.list = target;
+          changes.tags = tagsForList(task, target);
+          // Sale de «Programadas»: se quita la fecha de inicio (como al llevarla a una lista)
+          if (own === 'scheduled') changes.scheduled = null;
+        }
+      }
+      if (Object.keys(changes).length) dispatch(gtdSaveTask(task, changes));
+      return;
+    }
+    // Listas: solo las tareas sueltas, y solo entre sueltas de su mismo fichero
+    let idx = pos.beforeKey
+      ? keyIndex(pos.beforeKey)
+      : pos.afterKey
+      ? keyIndex(pos.afterKey) + 1
+      : rows.findIndex((i) => i.section === pos.section);
+    if (idx < 0) idx = rowTasks.length;
+    // Solo entre hermanas (mismo fichero y mismo encabezado padre): así la tarea no cambia de
+    // sitio en el árbol (ni hereda otra área o etiquetas)
+    const ok = (t) =>
+      !t.project &&
+      !t.isDone &&
+      !t.isProject &&
+      t.path === task.path &&
+      (t.parentId || null) === (task.parentId || null);
+    let move = null;
+    for (let i = idx; i < rowTasks.length; i++) {
+      if (ok(rowTasks[i])) {
+        move = { targetId: rowTasks[i].id, position: 'before' };
+        break;
+      }
+    }
+    if (!move) {
+      for (let i = idx - 1; i >= 0; i--) {
+        if (ok(rowTasks[i])) {
+          move = { targetId: rowTasks[i].id, position: 'after' };
+          break;
+        }
+      }
+    }
+    if (!move) {
+      showMessage(
+        'No se puede colocar ahí',
+        'Las tareas sueltas se ordenan entre las demás tareas sueltas de su mismo fichero y de ' +
+          'su mismo encabezado.'
+      );
+      return;
+    }
+    dispatch(gtdSaveTask(task, { moveNextTo: move }));
+  };
+
   const { onPointerDown, dragging, dropTarget, clickSuppressed } = useTaskDrag({
     onDrop: applyDrop,
     canSwipe: (task) => !noSwipeGtd && !task.isDone && view.id !== 'logbook',
@@ -793,6 +1261,117 @@ export default function GtdView() {
       setTimeout(() => gtdCmdRef.current(pending), 0);
     }
     return () => window.removeEventListener('eli:gtd', onCmd);
+  }, []);
+
+  // ORG Mode para Eli (2.15): atajos de teclado de la vista GTD (como Nirvana; configurables en
+  // Ajustes → Atajos de teclado). Nunca mientras se escribe, con una ventana abierta ni con el
+  // editor de una tarea abierto.
+  const customKeybindings = useSelector(selectCustomKeybindings);
+  const gtdBindings = useMemo(() => calculateGtdKeybindings(customKeybindings || IMap()), [
+    customKeybindings,
+  ]);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const sidebarViews = () => {
+    const out = [];
+    gtdCfg.order.forEach((id) => {
+      if (!isSectionShown(id, gtdCfg) || id === 'agenda') return;
+      if (id === 'projects') {
+        if (gtdCfg.sections.projects.allProjects !== false) out.push({ id: 'projects' });
+        projectGroups.active.forEach((p) => out.push({ type: 'project', key: p.key }));
+      } else out.push({ id });
+    });
+    return out;
+  };
+  const stepList = (dir) => {
+    const views = sidebarViews();
+    if (!views.length) return;
+    const i = views.findIndex((v) =>
+      view.type === 'project' ? v.key === view.key : !v.type && v.id === view.id
+    );
+    const next = views[(i + dir + views.length) % views.length] || views[0];
+    selectView(next);
+  };
+  const stepArea = (dir) => {
+    const all = ['*', ...areas, '-'];
+    const i = Math.max(0, all.indexOf(area));
+    selectArea(all[(i + dir + all.length) % all.length]);
+  };
+  const goList = (id) => {
+    if (id === 'projects' || isSectionShown(id, gtdCfg)) selectView({ id });
+  };
+  const cleanup = () => {
+    const { ok } = archivableDone(tasks);
+    if (!ok.length) {
+      showMessage('Limpiar', 'No hay tareas terminadas para archivar.');
+      return;
+    }
+    archiveTasks(ok);
+  };
+  const gtdActions = {
+    gtdNew: () => openDraft('current'),
+    gtdNewTop: () => openDraft('current', { top: true }),
+    gtdNewInbox: () => openDraft('inbox'),
+    gtdNewNext: () => openDraft('next'),
+    gtdNewWaiting: () => openDraft('waiting'),
+    gtdNewScheduled: () => openDraft('scheduled'),
+    gtdNewSomeday: () => openDraft('someday'),
+    gtdNewFocus: () => openDraft('focus'),
+    gtdNewProject: () => addProject(),
+    gtdNewReference: () => openDraft('reference'),
+    gtdCapture: () => captureWithTemplate(),
+    gtdGoInbox: () => goList('inbox'),
+    gtdGoNext: () => goList('next'),
+    gtdGoLater: () => goList('later'),
+    gtdGoWaiting: () => goList('waiting'),
+    gtdGoScheduled: () => goList('scheduled'),
+    gtdGoSomeday: () => goList('someday'),
+    gtdGoFocus: () => goList('focus'),
+    gtdGoProjects: () => goList('projects'),
+    gtdGoReference: () => goList('reference'),
+    gtdGoLogbook: () => goList('logbook'),
+    gtdPrevList: () => stepList(-1),
+    gtdNextList: () => stepList(1),
+    gtdAreaAll: () => selectArea('*'),
+    gtdAreaNext: () => stepArea(1),
+    gtdAreaPrev: () => stepArea(-1),
+    gtdAreaNone: () => selectArea('-'),
+    gtdSearch: () => {
+      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
+      setTimeout(() => {
+        const el = document.querySelector('[data-testid="gtd-search"]');
+        if (el) el.focus();
+      }, 50);
+    },
+    gtdSync: () => syncAll(),
+    gtdAgenda: () => setShowAgenda(true),
+    gtdCleanup: () => cleanup(),
+    gtdSettings: () => history.push('/settings'),
+    gtdManual: () => history.push('/sample'),
+    gtdShortcuts: () => setShowShortcuts(true),
+    gtdShortcuts2: () => setShowShortcuts(true),
+  };
+  const keyRef = useRef(null);
+  keyRef.current = (e) => {
+    if (e.defaultPrevented || e.repeat) return;
+    if (['Shift', 'Control', 'Alt', 'Meta', 'AltGraph'].includes(e.key)) return;
+    if (isEditable(e.target) || isEditable(document.activeElement)) return;
+    if (shouldIgnoreOrganiceHotkey(e, null)) return;
+    if (showAgenda || showShortcuts || draft || newProject || openKey) return;
+    if (
+      document.querySelector(
+        '.eli-cal__overlay, .eli-calc__overlay, .drawer, [data-testid="drawer"]'
+      )
+    )
+      return;
+    const hit = gtdBindings.find((b) => gtdMatchesBinding(e, b.binding));
+    if (!hit || !gtdActions[hit.action]) return;
+    e.preventDefault();
+    gtdActions[hit.action]();
+  };
+  useEffect(() => {
+    const onKey = (e) => keyRef.current && keyRef.current(e);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const renderEditor = (task) => (
@@ -1099,6 +1678,39 @@ export default function GtdView() {
           </h1>
           <button
             className="gtd-main__sync"
+            onClick={() => captureWithTemplate()}
+            title="Capturar con una plantilla (c)"
+            aria-label="Capturar con una plantilla"
+            data-testid="gtd-capture"
+          >
+            <i className="fas fa-plus-square" />
+          </button>
+          <button
+            className="gtd-main__sync gtd-main__keys"
+            onClick={() => setShowShortcuts(true)}
+            title="Atajos de teclado (k)"
+            aria-label="Atajos de teclado"
+            data-testid="gtd-shortcuts-btn"
+          >
+            <i className="far fa-keyboard" />
+          </button>
+          {canGroup && (
+            <button
+              className={'gtd-main__sync gtd-main__group' + (groupByProj ? ' is-on' : '')}
+              onClick={() => {
+                const v = !groupByProj;
+                setGroupByProj(v);
+                writeLS(LS_GROUP, v);
+              }}
+              aria-pressed={groupByProj}
+              title={groupByProj ? 'Ver sin agrupar' : 'Agrupar por proyecto'}
+              data-testid="gtd-group-toggle"
+            >
+              <i className="fas fa-stream" />
+            </button>
+          )}
+          <button
+            className="gtd-main__sync"
             onClick={() => dispatch(gtdUndo())}
             disabled={!canUndo}
             title="Deshacer"
@@ -1117,6 +1729,7 @@ export default function GtdView() {
         </header>
 
         {newProject && renderNewProjectEditor()}
+        {draft && renderDraftEditor()}
 
         {projectTask && (
           <div className="gtd-project-info">
@@ -1430,67 +2043,123 @@ export default function GtdView() {
           </div>
         )}
 
-        <div className="gtd-list" style={view.id === 'projects' ? { display: 'none' } : undefined}>
-          {loading && visible.length === 0 && <div className="gtd-empty">Cargando ficheros…</div>}
-          {!loading && visible.length === 0 && (
+        <div
+          className={'gtd-list' + (reorderingKey ? ' is-reordering' : '')}
+          style={view.id === 'projects' ? { display: 'none' } : undefined}
+          data-reorder-container=""
+        >
+          {loading && items.length === 0 && <div className="gtd-empty">Cargando ficheros…</div>}
+          {!loading && items.length === 0 && (
             <div className="gtd-empty">
               {view.id === 'inbox' ? 'Inbox vacío. ¡Bien hecho!' : 'No hay nada aquí.'}
             </div>
           )}
-          {rendered.map((task) => (
-            <React.Fragment key={task.key}>
-              {sectionStarts[task.key] && (
+          {items.map((item) =>
+            item.kind === 'header' ? (
+              item.info ? (
                 <div
+                  key={item.id}
                   className="gtd-section"
-                  data-testid={`gtd-section-${sectionStarts[task.key].id}`}
+                  data-testid={`gtd-section-${item.info.id}`}
                 >
-                  <i className={sectionStarts[task.key].icon} /> {sectionStarts[task.key].label}
-                  {isLogbook && (archivableBySection[sectionStarts[task.key].id] || []).length > 0 && (
+                  <i className={item.info.icon} /> {item.info.label}
+                  {isLogbook && (archivableBySection[item.info.id] || []).length > 0 && (
                     <button
                       type="button"
                       className="gtd-section__action"
                       onClick={() =>
-                        archiveTasks(
-                          archivableBySection[sectionStarts[task.key].id],
-                          sectionStarts[task.key].label
-                        )
+                        archiveTasks(archivableBySection[item.info.id], item.info.label)
                       }
                       title="Archivar las terminadas de esta sección"
-                      data-testid={`gtd-archive-section-${sectionStarts[task.key].id}`}
+                      data-testid={`gtd-archive-section-${item.info.id}`}
                     >
                       <i className="fas fa-archive" /> Archivar (
-                      {archivableBySection[sectionStarts[task.key].id].length})
+                      {archivableBySection[item.info.id].length})
                     </button>
                   )}
                 </div>
-              )}
-              {openKey === task.key ? (
-                renderEditor(task)
               ) : (
-                <TaskRow
-                  task={task}
-                  open={false}
-                  onToggleOpen={() => {
-                    if (clickSuppressed()) return;
-                    // con una tarea nueva a medio crear, primero hay que guardarla o cancelarla
-                    if (newKey && openKey === newKey) {
-                      window.dispatchEvent(new CustomEvent('eli:gtd-attention'));
-                      return;
-                    }
-                    setOpenKey(task.key);
-                  }}
-                  onPointerDown={onPointerDown(task)}
-                  isDragging={dragging === task.key}
-                  dispatch={dispatch}
-                  today={today}
-                  showProject={view.type !== 'project'}
-                  hideActions={isLogbook}
-                />
-              )}
-            </React.Fragment>
-          ))}
+                <div
+                  key={item.id}
+                  className={
+                    'gtd-section gtd-section--group' +
+                    (item.projectKey ? ' is-project' : '') +
+                    (reorderingKey && dropSection === item.section ? ' is-drop' : '')
+                  }
+                  data-reorder-slot=""
+                  data-reorder-header=""
+                  data-reorder-section={item.section}
+                  data-testid={item.testId}
+                >
+                  {item.collapsible ? (
+                    <button
+                      type="button"
+                      className="gtd-section__toggle"
+                      onClick={() => setDoneOpen((o) => !o)}
+                      aria-expanded={!item.collapsed}
+                      data-testid={`${item.testId}-toggle`}
+                    >
+                      <i className={item.collapsed ? 'fas fa-caret-right' : 'fas fa-caret-down'} />{' '}
+                      <i className={item.icon} /> {item.label}
+                    </button>
+                  ) : item.projectKey ? (
+                    <button
+                      type="button"
+                      className="gtd-section__toggle"
+                      onClick={() => selectView({ type: 'project', key: item.projectKey })}
+                      title="Abrir el proyecto"
+                    >
+                      <i className={item.icon} /> {item.label}
+                    </button>
+                  ) : (
+                    <span>
+                      <i className={item.icon} /> {item.label}
+                    </span>
+                  )}
+                  <span className="gtd-section__n">{item.count}</span>
+                </div>
+              )
+            ) : openKey === item.task.key ? (
+              <React.Fragment key={item.task.key}>{renderEditor(item.task)}</React.Fragment>
+            ) : (
+              <TaskRow
+                key={item.task.key}
+                task={item.task}
+                open={false}
+                onToggleOpen={() => {
+                  if (clickSuppressed()) return;
+                  // con una tarea nueva a medio crear, primero hay que guardarla o cancelarla
+                  if (newKey && openKey === newKey) {
+                    window.dispatchEvent(new CustomEvent('eli:gtd-attention'));
+                    return;
+                  }
+                  setOpenKey(item.task.key);
+                }}
+                onPointerDown={onPointerDown(item.task)}
+                isDragging={dragging === item.task.key}
+                dispatch={dispatch}
+                today={today}
+                showProject={!isProjectView && !(grouped && item.task.project)}
+                hideActions={isLogbook}
+                reorderSection={item.section}
+                onReorderStart={item.reorderable ? startReorder(item.task) : null}
+                isReordering={reorderingKey === item.task.key}
+              />
+            )
+          )}
         </div>
       </main>
+      {showShortcuts && (
+        <GtdShortcutsModal
+          bindings={gtdBindings}
+          onClose={() => setShowShortcuts(false)}
+          onConfigure={() => {
+            setShowShortcuts(false);
+            history.push('/settings');
+            dispatch(pushModalPage('keyboard_shortcuts_editor'));
+          }}
+        />
+      )}
       {showAgenda && (
         <Drawer onClose={() => setShowAgenda(false)} maxSize>
           <EliErrorBoundary label="la agenda" onClose={() => setShowAgenda(false)}>

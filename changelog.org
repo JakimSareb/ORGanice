@@ -3,6 +3,30 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.15 (septiembre de 2026)
+** Vista GTD
+- Atajos de teclado como en Nirvana, configurables (Ajustes → Atajos de teclado → «Vista GTD»): n tarea nueva en la lista actual (Mayús+n, arriba), i x w s y f l para crearla en Inbox, Next, Waiting, Scheduled, Someday, Focus o Reference, p proyecto, 1…9 y 0 para ir a las listas, [ ] lista anterior/siguiente, Mayús+0/9/[/] para las áreas, / buscar, r sincronizar, a agenda, Mayús+c limpiar, k o ? la ventana de atajos.
+- Tarea nueva: se abre directamente su editor, sin título y con las propiedades de la lista; si se cierra sin título, no se crea.
+- Tecla c y botón ⊞: capturar con una plantilla en el editor de tarea nueva.
+- Agrupar por proyecto (botón de las rayas): un separador por proyecto; las tareas sin proyecto, arriba del todo.
+- Dentro de un proyecto, secciones por estado como Nirvana (Next, Todo, Waiting, Programadas, Someday y Terminadas, plegada). Arrastrar una tarea a otra sección le cambia el estado.
+- Ordenar las tareas de un proyecto arrastrando su asa ⋮⋮: se ordena el fichero, así que se ve igual en todas partes (y en Emacs). En un proyecto las fechas no cambian el orden, salvo las que ya han llegado, que van primero. En Next, Todo… el orden sigue por fechas y solo se reordenan las tareas sueltas.
+- En el editor de una tarea, «Abrir» va antes que «Adjuntar».
+** Documentos
+- Tablas: se escribe directamente en la celda (Intro, Tab, Mayús+Tab, Esc, como en Emacs). El botón junto a la tabla abre el editor de filas y columnas.
+- ⋯ → Contraer / Expandir todas las cabeceras (también en la paleta).
+- ⋯ de cada encabezado → Reducir a este encabezado (narrow), o Ver todo si ya lo está.
+- Agenda: botón del calendario, que lo abre en el día que se está viendo.
+** En toda la app
+- Barra de arriba: botones atrás / adelante y botón del calendario.
+- Calculadora: ⋯ → Calculadora (y en la paleta).
+- Paleta de comandos: Ctrl+Espacio (Ctrl+K y ⌘K siguen funcionando).
+- Dos columnas: un enlace a un fichero o encabezado se puede abrir en la otra columna (pregunta; Ctrl/⌘+clic, directamente).
+- Pantalla de acceso: en el ordenador, la carpeta local va primero y Dropbox debajo; en el iPhone, al revés.
+** Arreglos
+- «El servidor no responde» al abrir un fichero: el error de otro fichero ya no tapa el que estás viendo; cada fichero muestra su propio aviso, con el motivo real y el botón Reintentar. Las descargas de Dropbox van de tres en tres y se reintentan solas si Dropbox pide esperar (antes, con algunos errores, la descarga no terminaba nunca).
+- Vista GTD: si falta alguno de sus ficheros (p. ej. tasks.org), ya no se queda «Cargando ficheros…» y la ★ automática al llegar la fecha vuelve a funcionar.
+
 * 2.14 (septiembre de 2026)
 ** Calendario
 - Tocar un día abre la agenda de ese día (vista «Día»; al cerrarla vuelve la vista que tenía). En Opciones se puede cambiar por «ver sus datos y contar días» (y entonces «Ver su agenda», doble toque o Intro).

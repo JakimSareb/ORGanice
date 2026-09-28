@@ -42,12 +42,44 @@ const withTimeout = (promise, ms) =>
     );
   });
 
+// (2.15) Igual, pero el tiempo empieza a contar cuando la petición sale de la cola de descargas
+// (si el cliente lo dice con onStart); si no, desde ya
+const withStartTimeout = (run, ms, supportsOnStart) =>
+  new Promise((resolve, reject) => {
+    let t = null;
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      t = setTimeout(() => reject(timeoutError()), ms);
+    };
+    let promise;
+    try {
+      promise = run(start);
+    } catch (e) {
+      reject(e);
+      return;
+    }
+    if (!supportsOnStart) start();
+    promise.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      }
+    );
+  });
+
 // ¿Fallo de red (no «no existe» ni un error de programación)?
 export const isNetworkError = (e) =>
   !isOnline() ||
   (!!e &&
     (e.eliTimeout ||
       e.eliOffline ||
+      e.eliTransient ||
       /failed to fetch|networkerror|network error|load failed|internet connection|network request failed|connection was lost|timed out|could not be found|could not connect|offline/i.test(
         (e && e.message) || ''
       )));
@@ -119,9 +151,10 @@ export const withOfflineCache = (client) => {
       throw offlineError(path);
     }
     try {
-      const result = await withTimeout(
-        client.getFileContentsAndMetadata(path),
-        copy ? WAIT_WITH_COPY : WAIT_WITHOUT_COPY
+      const result = await withStartTimeout(
+        (onStart) => client.getFileContentsAndMetadata(path, { onStart }),
+        copy ? WAIT_WITH_COPY : WAIT_WITHOUT_COPY,
+        !!client.supportsOnStart
       );
       remember(path, result);
       return result;

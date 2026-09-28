@@ -1,4 +1,4 @@
-# ORGanice 2.14
+# ORGanice 2.15
 
 <img src="src/images/logo-unicornio.svg" alt="" width="96" align="right">
 
@@ -18,11 +18,12 @@ App publicada: **https://jakimsareb.github.io/ORGanice/**
 ## Qué ofrece
 
 - Vista GTD: Focus, Inbox, Next, Todo, Waiting, Scheduled, Deadline, Someday, proyectos, áreas,
-  contextos, energía y tiempo; arrastrar tareas entre listas.
+  contextos, energía y tiempo; arrastrar tareas entre listas; proyectos por secciones de estado,
+  agrupar por proyecto, ordenar arrastrando y atajos de teclado como Nirvana.
 - Agenda con vencidas, prioritarias, hábitos y registro de lo terminado.
-- Calendario para consultar (tres meses o el año, semanas, festivos de España, Luna).
-- Todo Org Mode: estados, prioridades, etiquetas, fechas y repeticiones, tablas, listas con
-  casillas, reloj, adjuntos, enlaces, búsqueda, refile y archivado.
+- Calendario para consultar (tres meses o el año, semanas, festivos de España, Luna) y calculadora.
+- Todo Org Mode: estados, prioridades, etiquetas, fechas y repeticiones, tablas (editables en la
+  celda), listas con casillas, reloj, adjuntos, enlaces, búsqueda, refile y archivado.
 - Sincronización con avisos de conflicto y diferencias; uso sin conexión; copias de seguridad.
 - Cifrado GPG compatible con Emacs y bloqueo por inactividad.
 - Interfaz en español, atajos de teclado configurables y captura rápida desde el iPhone.

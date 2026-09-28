@@ -34,3 +34,47 @@
 .insert-timestamp-icon {
   margin-right: 5px;
 }
+/* ORG Mode para Eli (2.15): edición de las celdas en su sitio */
+.table-part__wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.table-part__cell--editable {
+  cursor: text;
+}
+.table-part__cell--editing {
+  padding: 0;
+  background-color: var(--base2);
+}
+.table-part__cell-input {
+  box-sizing: border-box;
+  min-width: 4em;
+  width: 100%;
+  border: 0;
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+  background: var(--base3);
+  color: var(--base00);
+  font: inherit;
+  /* 16px: así el iPhone no amplía la página al escribir */
+  font-size: 16px;
+  padding: 1px 4px;
+}
+.table-part__editor-btn {
+  flex: none;
+  border: 1px solid var(--base2);
+  background: transparent;
+  color: var(--base01);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.7;
+  margin-top: 3px;
+}
+.table-part__editor-btn:hover {
+  opacity: 1;
+}

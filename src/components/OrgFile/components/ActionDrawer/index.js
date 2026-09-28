@@ -381,7 +381,7 @@ const ActionDrawer = ({
               principales y Mover (flechas) están en el menú «⋯» de arriba (y con s, f y m). */}
           {renderMovementButtons()}
 
-          {/* ORG Mode para Eli: la paleta de comandos (Ctrl+K). La vista GTD está en el
+          {/* ORG Mode para Eli: la paleta de comandos (Ctrl+Espacio). La vista GTD está en el
               conmutador Documentos/GTD de arriba. Naranja mientras corre un reloj. */}
           <ActionButton
             iconName="search"
@@ -398,8 +398,8 @@ const ActionDrawer = ({
             }}
             tooltip={
               activeClocks !== 0
-                ? 'Paleta de comandos (Ctrl+K) · hay un reloj en marcha'
-                : 'Paleta de comandos (Ctrl+K)'
+                ? 'Paleta de comandos (Ctrl+Espacio) · hay un reloj en marcha'
+                : 'Paleta de comandos (Ctrl+Espacio)'
             }
           />
 

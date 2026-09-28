@@ -224,6 +224,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         deadlineRepeat: planningRepeat(header, 'DEADLINE'),
         closed: planningDate(header, 'CLOSED'),
         project: parent ? parent.project : null,
+        // (2.15) encabezado padre (para reordenar solo entre hermanas)
+        parentId: parent ? headers.getIn([parent.index, 'id']) : null,
         // Fecha de inicio del proyecto que la contiene (SCHEDULED del PROJECT o de uno de fuera)
         projectStart: parent ? parent.projectStart : null,
         isProject,
@@ -466,9 +468,117 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
     const far = 8.64e15;
     return out.sort((a, b) => (a.deadline || far) - (b.deadline || far));
   }
-  if (view.type === 'project') return out; // orden del fichero
+  if (view.type === 'project') return dueFirstFileOrder(out, today); // orden del fichero
   return out.sort(byDateThenTitle);
 };
+
+// ORG Mode para Eli (2.15): dentro de un proyecto (y en los grupos de «agrupar por proyecto») las
+// fechas no cambian el orden (manda el del fichero, que se cambia arrastrando), salvo las tareas
+// cuya fecha programada o límite ya ha llegado: esas van primero. Orden estable.
+export const isDueToday = (task, today = new Date()) =>
+  isDue(task.scheduled, today) || isDue(task.deadline, today);
+export const dueFirstFileOrder = (list, today = new Date()) => {
+  const due = [];
+  const rest = [];
+  list.forEach((t) => (isDueToday(t, today) ? due : rest).push(t));
+  return [...due, ...rest];
+};
+
+// Vista de un proyecto separada por estado, como Nirvana
+export const PROJECT_SECTIONS = [
+  { id: 'next', label: 'Next', icon: 'fas fa-play' },
+  { id: 'later', label: 'Todo', icon: 'fas fa-forward' },
+  { id: 'waiting', label: 'Waiting', icon: 'fas fa-hourglass-half' },
+  { id: 'scheduled', label: 'Programadas', icon: 'far fa-calendar-alt' },
+  { id: 'someday', label: 'Someday', icon: 'fas fa-cloud' },
+  { id: 'done', label: 'Terminadas', icon: 'fas fa-check' },
+];
+
+// Sección de una tarea dentro de su proyecto
+export const projectSectionOf = (task, today = new Date()) => {
+  if (task.isDone) return 'done';
+  if (isFutureScheduled(task, today)) return 'scheduled';
+  for (const id of ['next', 'waiting', 'someday', 'later']) {
+    const k = keywordForList(id);
+    if (k.has && k.keyword && task.keyword === k.keyword) return id;
+  }
+  return 'later';
+};
+
+// Tareas del proyecto por secciones: [{ ...sección, tasks }] (también las vacías)
+export const projectSections = (tasks, projectKey, filters = {}, today = new Date()) => {
+  const projectTask = tasks.find((t) => t.key === projectKey);
+  const out = PROJECT_SECTIONS.map((s) => ({ ...s, tasks: [] }));
+  if (!projectTask) return out;
+  const s = getGtdConfig().sections.projects;
+  const byId = {};
+  out.forEach((sec) => (byId[sec.id] = sec));
+  tasks
+    .filter(
+      (t) =>
+        t.path === projectTask.path &&
+        t.project &&
+        t.project.id === projectTask.id &&
+        t.keyword &&
+        !t.isProject
+    )
+    .filter((t) => {
+      if (t.isDone) return true;
+      // Aparcadas (proyecto dormido) y hábitos: según los ticks de Ajustes; las programadas a
+      // futuro se ven siempre, en su sección
+      const why = hiddenBy(t, s, today);
+      return why !== 'parked' && why !== 'habit';
+    })
+    .filter((t) => matchesFilters(t, filters))
+    .forEach((t) => byId[projectSectionOf(t, today)].tasks.push(t));
+  out.forEach((sec) => {
+    sec.tasks =
+      sec.id === 'done'
+        ? [...sec.tasks].sort((a, b) => (b.closed || 0) - (a.closed || 0))
+        : dueFirstFileOrder(sec.tasks, today);
+  });
+  return out;
+};
+
+// Agrupar una lista por proyecto: primero las sueltas (sin proyecto), después cada proyecto en el
+// orden en que aparece por primera vez; dentro de cada proyecto, el orden de dueFirstFileOrder
+export const groupByProject = (list, today = new Date()) => {
+  const loose = [];
+  const groups = [];
+  const byKey = {};
+  list.forEach((t) => {
+    if (!t.project) {
+      loose.push(t);
+      return;
+    }
+    const key = `${t.project.path}::${t.project.id}`;
+    if (!byKey[key]) {
+      byKey[key] = { key, project: t.project, tasks: [] };
+      groups.push(byKey[key]);
+    }
+    byKey[key].tasks.push(t);
+  });
+  groups.forEach((g) => {
+    g.tasks = dueFirstFileOrder(
+      [...g.tasks].sort((a, b) => a.index - b.index),
+      today
+    );
+  });
+  return { loose, groups };
+};
+
+// Secciones que se pueden agrupar por proyecto (las de fechas tienen sus propias secciones)
+export const GROUPABLE_LISTS = [
+  'focus',
+  'inbox',
+  'next',
+  'later',
+  'waiting',
+  'someday',
+  'reference',
+];
+// Listas en las que se pueden reordenar (arrastrando) las tareas sueltas
+export const REORDERABLE_LISTS = GROUPABLE_LISTS;
 
 export const projectsOf = (tasks, filters = {}) =>
   tasks

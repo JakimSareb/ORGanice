@@ -24,6 +24,7 @@ class HeaderContent extends PureComponent {
 
     _.bindAll(this, [
       'handleTableSelect',
+      'handleTableCellEdit',
       'handleCheckboxClick',
       'handleListItemSelect',
       'handleEnterListTitleEditMode',
@@ -77,12 +78,19 @@ class HeaderContent extends PureComponent {
     return createRawDescriptionText(header, false, dontIndent);
   }
 
-  handleTableSelect(tableId, descriptionItemIndex) {
+  handleTableSelect(tableId, descriptionItemIndex, cellId = null) {
     this.props.org.selectHeader(this.props.header.get('id'));
     this.props.org.selectHeaderIndex(this.props.headerIndex);
     this.props.org.setSelectedDescriptionItemIndex(descriptionItemIndex);
     this.props.org.setSelectedTableId(tableId);
+    // 2.15: si se venía editando una celda, el editor de tablas empieza en ella
+    if (cellId) this.props.org.setSelectedTableCellId(cellId);
     this.props.base.activatePopup('table-editor');
+  }
+
+  // ORG Mode para Eli (2.15): edición de una celda en su sitio
+  handleTableCellEdit(cellId, newValue) {
+    this.props.org.updateTableCellValue(cellId, newValue);
   }
 
   handleCheckboxClick(listItemId) {
@@ -261,6 +269,7 @@ class HeaderContent extends PureComponent {
                 parts={header.get('description')}
                 subPartDataAndHandlers={{
                   onTableSelect: shouldDisableActions ? undefined : this.handleTableSelect,
+                  onTableCellEdit: shouldDisableActions ? undefined : this.handleTableCellEdit,
                   onCheckboxClick: this.handleCheckboxClick,
                   onListItemSelect: this.handleListItemSelect,
                   onEnterListTitleEditMode: this.handleEnterListTitleEditMode,

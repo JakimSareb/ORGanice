@@ -149,3 +149,74 @@ export const blockedWhileTyping = (event, action, binding) => {
     ['ctrl', 'control', 'alt', 'option', 'meta', 'cmd', 'command'].includes(m)
   );
 };
+
+// ORG Mode para Eli (2.15): nombre de la tecla FÍSICA pulsada, igual que la graba el editor de
+// atajos (Ajustes → Atajos de teclado): «a», «1», «[», «,», «/»…
+const CODE_NAMES = {
+  Minus: '-',
+  Equal: '=',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Semicolon: ';',
+  Quote: '"',
+  Backslash: '\\',
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  Space: 'space',
+  Escape: 'escape',
+  Enter: 'enter',
+  Tab: 'tab',
+  Backspace: 'backspace',
+};
+export const physicalKeyName = (event) => {
+  const code = (event && event.code) || '';
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+  if (/^Digit\d$/.test(code)) return code.slice(5);
+  if (/^Numpad\d$/.test(code)) return code.slice(6);
+  return CODE_NAMES[code] || null;
+};
+
+// Atajos de la vista GTD (teclas sueltas, como Nirvana). Coincide si coincide la tecla física
+// con los mismos modificadores (así funciona «Mayús+0» en un teclado español) o si coincide el
+// CARÁCTER escrito: para «[», «]», «/», «?»… se admite AltGr / Opción / Mayúsculas, que en un
+// teclado español son necesarias para escribirlos.
+export const gtdMatchesBinding = (event, binding) => {
+  if (!binding || !event || event.metaKey) return false;
+  const text = String(binding).toLowerCase().trim();
+  const parts =
+    text.length > 1 && text.endsWith('++')
+      ? [...text.slice(0, -2).split('+'), '+']
+      : text.split('+');
+  const key = BINDING_ALIASES[parts[parts.length - 1]] || parts[parts.length - 1];
+  const mods = new Set(parts.slice(0, -1).map((m) => BINDING_ALIASES[m] || m));
+  if (mods.has('meta')) return false;
+  const phys = physicalKeyName(event);
+  if (
+    phys &&
+    phys === key &&
+    !!event.ctrlKey === mods.has('ctrl') &&
+    !!event.altKey === mods.has('alt') &&
+    !!event.shiftKey === mods.has('shift')
+  ) {
+    return true;
+  }
+  const ch = event.key || '';
+  const isSymbol = key.length === 1 && !/^[a-z0-9]$/.test(key);
+  if (isSymbol && !mods.size) {
+    // Ctrl sola (sin Alt) no es AltGr: entonces no
+    if (event.ctrlKey && !event.altKey) return false;
+    return ch === key;
+  }
+  if (/^[a-z]$/.test(key)) {
+    return (
+      ch.toLowerCase() === key &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !!event.shiftKey === mods.has('shift') &&
+      !mods.has('ctrl') &&
+      !mods.has('alt')
+    );
+  }
+  return false;
+};

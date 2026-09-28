@@ -94,7 +94,15 @@ export const getDirectoryListing = (path) => (dispatch, getState) => {
     .catch((error) => {
       dispatch(hideLoadingMessage());
       const error_summary = _.get(error, 'error.error_summary') || '';
-      if ([400, 401].includes(error.status) || error_summary.includes('expired_access_token')) {
+      // ORG Mode para Eli (2.15): cerrar la sesión solo si Dropbox no acepta la sesión (un 400
+      // por otra causa, p. ej. una ruta mala, ya no saca de la app)
+      const status = error && (error.status || (error.dropboxError && error.dropboxError.status));
+      const text = JSON.stringify((error && (error.error || error.dropboxError)) || '');
+      if (
+        status === 401 ||
+        error_summary.includes('expired_access_token') ||
+        /expired_access_token|invalid_access_token/.test(text)
+      ) {
         dispatch(signOut());
       } else {
         alert('¡Error al obtener los ficheros!');
@@ -118,6 +126,11 @@ export const loadMoreDirectoryListing = () => (dispatch, getState) => {
         setCurrentFileBrowserDirectoryListing(extendedListing, hasMore, additionalSyncBackendState)
       );
       dispatch(setIsLoadingMoreDirectoryListing(false));
+    })
+    .catch((error) => {
+      // (2.15) antes el error quedaba sin atender y el «cargando» no terminaba
+      dispatch(setIsLoadingMoreDirectoryListing(false));
+      console.error(error);
     });
 };
 
@@ -142,6 +155,7 @@ export const pushBackup = (pathOrFileId, contents) => {
 export const downloadFile = (path) => {
   return (dispatch, getState) => {
     dispatch(setLoadingMessage(`Descargando fichero…`));
+    dispatch(setOrgFileErrorMessage(null, path));
     getState()
       .syncBackend.get('client')
       .getFileContentsAndMetadata(path)
@@ -170,7 +184,8 @@ export const downloadFile = (path) => {
           setOrgFileErrorMessage(
             error && error.message
               ? `${path}: ${error.message}`
-              : `No se encuentra el fichero ${path}`
+              : `No se encuentra el fichero ${path}`,
+            path
           )
         );
       });
@@ -202,7 +217,7 @@ export const createFile = (path, content) => {
       .catch(() => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
-        dispatch(setOrgFileErrorMessage(`No se encuentra el fichero ${path}`));
+        dispatch(setOrgFileErrorMessage(`No se encuentra el fichero ${path}`, path));
       });
   };
 };

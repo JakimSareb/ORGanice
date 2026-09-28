@@ -93,3 +93,17 @@
     padding-right: 56px;
   }
 }
+
+/* ORG Mode para Eli (2.15): botón del calendario, a la izquierda (el de Log va a la derecha) */
+.agenda__calendar-btn {
+  position: absolute;
+  left: 0;
+  font: inherit;
+  font-size: 15px;
+  padding: 3px 10px;
+  border: 1px solid var(--base1);
+  border-radius: 999px;
+  background: var(--base3);
+  color: var(--base01);
+  cursor: pointer;
+}

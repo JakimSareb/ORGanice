@@ -32,7 +32,7 @@ Selecciona este encabezado. A la vista están solo los iconos de cada día; el r
 | Más            | Nuevo encabezado debajo (mantenlo pulsado para duplicar el actual)                                             |
 | Mover          | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                      |
 | Reloj de arena | Solo se ve con el reloj en marcha: tócalo para pararlo                                                         |
-| ⋯              | Etiquetas, nota, reloj, tiempo registrado, propiedades, adjuntar, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
+| ⋯              | Etiquetas, nota, reloj, tiempo registrado, *reducir a este encabezado (narrow)* (o «Ver todo» si ya lo está), propiedades, adjuntar, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
 
 ** El editor de título
 Selecciona este encabezado y toca el lápiz.
@@ -63,10 +63,10 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 ** La barra superior y los botones de abajo
 - *Documentos | GTD*: arriba a la izquierda, el conmutador entre los dos modos de la app. *Documentos* son tus ficheros y el explorador; *GTD*, la vista de tareas. Un toque en cualquier parte del conmutador (o la tecla g) cambia de modo, y cada modo recuerda dónde lo dejaste: al volver a Documentos se abre el último fichero, con el mismo encabezado seleccionado (y en narrow si lo estaba). La línea de color bajo la barra dice en qué modo estás. En el móvil, el modo activo lleva su nombre y el otro solo el icono.
 - Junto al conmutador, *‹* sube a la carpeta del fichero (o a la carpeta de arriba en el explorador).
-- A la derecha, a la vista: *sincronizar* (en Documentos, el fichero abierto; en GTD, sus ficheros; tecla s; normalmente es automático), la *lupa* (paleta de comandos, Ctrl+K), *deshacer* y *⋯*.
-- En *⋯*: buscar en el fichero (tecla b), rehacer, reducir al encabezado seleccionado (narrow), mover con flechas (tecla m), editar como texto plano, PDF, ficheros principales (tecla f), dos columnas, fases de la Luna, novedades y ajustes.
+- A la derecha, a la vista: *← →* (atrás y adelante, como en el navegador: vuelven a la vista, fichero o carpeta anterior), *sincronizar* (en Documentos, el fichero abierto; en GTD, sus ficheros; tecla s; normalmente es automático), la *lupa* (paleta de comandos, Ctrl+Espacio), el *calendario*, *deshacer* y *⋯*.
+- En *⋯*: buscar en el fichero (tecla b), rehacer, reducir al encabezado seleccionado (narrow), *contraer todas las cabeceras* y *expandir todas las cabeceras*, mover con flechas (tecla m), editar como texto plano, PDF, ficheros principales (tecla f), dos columnas, calendario, *calculadora*, fases de la Luna, novedades y ajustes.
 - En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero.
-- *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa.
+- *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa. Al tocar un enlace a un fichero o a un encabezado, te pregunta si abrirlo *aquí* o *en la otra columna* (Ctrl+clic, o ⌘+clic en el Mac, lo abre directamente en la otra).
 - Abajo quedan tres botones: *paleta de comandos* (la lupa; se pone naranja si hay un reloj en marcha), *agenda* y *+ capturar*.
 - Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de la barra superior, sin tapar el texto. Tócala para ocultarla.
 
@@ -156,9 +156,11 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 
 ** Añadir, editar y organizar
 - Escribe en «Añadir» y pulsa Intro: se crea y se abre su editor. Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org. La tarea recién creada se queda arriba del todo en la lista que estás viendo (hasta que cambies de lista).
+- O pulsa la tecla *n* (como en Nirvana): se abre el editor de una tarea nueva, sin título y ya con lo de la lista en la que estás (su estado, la ★ en Focus, «empieza» mañana en Scheduled, el proyecto si estás dentro de uno, el área elegida…). Escribe el título y pulsa Intro. Si lo cierras sin título, no se crea nada. Con *i*, *x*, *w*, *s*, *y*, *f* y *l* se crea directamente en Inbox, Next, Waiting, Scheduled, Someday, Focus o Reference (ver «Atajos de teclado»).
+- *Plantillas de captura* en la vista GTD: la tecla *c* o el botón ⊞ de arriba muestran tus plantillas; al elegir una se abre el editor de tarea nueva con lo que trae la plantilla (estado, título, etiquetas, propiedades, notas), para completarla y guardarla en el fichero y encabezado de la plantilla.
 - El editor de una tarea recién creada no se cierra al tocar fuera (se agita para recordártelo): *Guardar* (o Intro en el título, o Esc) la guarda y *Cancelar* la borra, como si no la hubieras creado.
 - Al editar una tarea, el editor ocupa su sitio en la lista.
-- Toca una tarea para editarla (como en Nirvana): a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza; ver «Programar y repetir»), lista o estado (también Done, Cancelled y «No task», que quita el estado), proyecto («Suelta» = sin proyecto) y área. Abajo: el fichero donde está la tarea (en pequeño), Abrir, Archivar, Borrar, Deshacer, Rehacer, *Cancelar* (descarta los cambios) y *Guardar*.
+- Toca una tarea para editarla (como en Nirvana): a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza; ver «Programar y repetir»), lista o estado (también Done, Cancelled y «No task», que quita el estado), proyecto («Suelta» = sin proyecto) y área. Abajo: el fichero donde está la tarea (en pequeño), Abrir, Adjuntar, Archivar, Borrar, Deshacer, Rehacer, *Cancelar* (descarta los cambios) y *Guardar*.
 - *Programar y repetir* (como en Nirvana): el campo de la fecha programada muestra «Programada › fecha · repetición». Al tocarlo se abre un menú con la fecha de inicio (y atajos: hoy, mañana, el lunes, en una semana, en un mes), *Repetir…*, *Quitar la repetición* y *Quitar la fecha*. En *Repetir…* eliges diaria, semanal, mensual o anual, cada cuántos días/semanas/meses/años, la próxima fecha (con las siguientes de muestra) y desde cuándo se cuenta: la fecha prevista (+1w), la fecha prevista saltando las ya pasadas (++1w) o el día en que la terminas (.+1w). «Añadir también la fecha límite» pone DEADLINE el mismo día con la misma repetición. Se guarda como en Emacs: SCHEDULED: <2026-10-05 Mon +1w>. Al cambiar la fecha, la repetición se conserva.
 - Puedes desplazar la lista con el editor abierto: solo se cierra con un toque fuera (sin arrastrar).
 - En las tareas que ya existían, al tocar fuera del editor, en otra tarea, con Esc o con Intro en el título, lo cambiado también se guarda (y *Cancelar* descarta los cambios). Si te equivocas, *Deshacer*.
@@ -168,6 +170,10 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 - *Logbook*: tiene su propio buscador («Buscar en las terminadas…»), que busca solo entre las terminadas (título, notas, etiquetas y área). En sus filas no hay casilla ni ★: para cambiar algo, toca la tarea y se abre su editor.
 - *Archivar las terminadas*: en Logbook, «Archivar todas» archiva de una vez todas las terminadas (con sus subencabezados), como org-archive-subtree de Emacs, en el fichero _archive de cada fichero (o en su subcarpeta archive, según Ajustes). Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
 - *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
+- *Agrupar por proyecto*: el botón de las rayas (arriba, junto a deshacer) muestra la lista con un separador por proyecto y sus tareas debajo; las tareas sin proyecto van arriba del todo. Se recuerda. Toca el nombre de un proyecto para abrirlo. (En Scheduled, Deadline y Logbook no, porque ya van por fechas.)
+- *Ordenar arrastrando*: las tareas de un proyecto se ordenan arrastrando su asa ⋮⋮ (a la izquierda de la fila). Se ordena el propio fichero, así que el orden se ve igual en todas las listas, en Documentos y en Emacs. Dentro de un proyecto las fechas no cambian el orden, salvo las tareas cuya fecha (programada o límite) ya ha llegado, que van primero.
+- En las listas normales (Next, Todo…) el orden sigue siendo por fechas; ahí las tareas de un proyecto no tienen asa (se ordenan en su proyecto), pero las *sueltas* (sin proyecto) sí: se colocan entre las demás sueltas de su mismo fichero.
+- *Dentro de un proyecto*, las tareas van separadas por estado, como en Nirvana: *Next*, *Todo*, *Waiting*, *Programadas* (empiezan más adelante), *Someday* y, al final y plegadas, *Terminadas*. Arrastrar una tarea de una sección a otra le cambia el estado (a Programadas te pide la fecha; a Terminadas la termina) y la deja donde la sueltas.
 
 ** Proyectos dormidos y programados
 - *Dormido*: un proyecto con la etiqueta :sleep: está en pausa. Sus tareas desaparecen de Next, Todo, Focus, Scheduled y Deadline, y el proyecto sale del menú (va al grupo plegable «Dormidos»).
@@ -238,7 +244,7 @@ Toca una casilla para marcarla. El contador del título se actualiza solo.
 |--------+------------|
 | Lunes  |          5 |
 | Martes |          7 |
-Toca una celda para editar la tabla.
+Toca una celda para escribir en ella, en su sitio. Intro guarda y baja a la celda de abajo; Tab y Mayús+Tab pasan a la siguiente o a la anterior (como en Emacs, y entonces lo que escribas sustituye el contenido); Esc cancela; tocar fuera guarda. El botón de la tabla, a su derecha, abre el editor de tablas para añadir, borrar o mover filas y columnas.
 
 * Enlaces, adjuntos e imágenes
 - Enlace a una web: [[https://orgmode.org][Org Mode]].
@@ -261,7 +267,7 @@ Toca una celda para editar la tabla.
 ** Y este archivar
 
 * Capturar ideas rápido
-- Tecla *c* y después la letra de la plantilla (por ejemplo, i para Inbox).
+- Tecla *c* y después la letra de la plantilla (por ejemplo, i para Inbox). En la vista GTD, la tecla c (o el botón ⊞) abre el editor de tarea nueva con la plantilla elegida.
 - En la ventana de captura: *Aceptar* (o tocar fuera, o Esc) la guarda; *Cancelar* (en rojo) la descarta y se pierde lo escrito.
 - Las plantillas se configuran en Ajustes → Plantillas de captura. La «ruta de encabezado» es opcional: sin ella, lo capturado va al principio o al final del fichero; si pones una que no existe, se guarda igualmente al principio o al final y la app te avisa.
 - Captura rápida desde el iPhone o un marcador del navegador: ver el README del proyecto.
@@ -279,10 +285,11 @@ Selecciona «Escribir el informe» y mantén pulsado el reloj de arena: verás 2
 
 * Sincronización y conflictos
 - Los cambios se guardan en Dropbox en unos segundos. Sin conexión puedes seguir trabajando; al volver la red, se sincroniza.
+- Si un fichero no se puede descargar, el aviso sale solo en la hoja de ese fichero (no en la que estás viendo), con el motivo real (Dropbox no disponible, sesión caducada, demasiadas peticiones…) y un botón *Reintentar*. Si Dropbox pide esperar, la app espera y lo vuelve a intentar sola.
 - Al abrir la app desde su icono vuelve a donde estabas (la vista GTD, el fichero o la carpeta), con los encabezados abiertos como los dejaste. En el iPhone el sistema cierra la app si pasa un rato en segundo plano; ahora no se nota.
 
 * El calendario
-Un calendario para consultar fechas, como =M-x calendar= de Emacs (sin tareas). Se abre con ⋯ → *Calendario* (en Documentos y en GTD) o desde la paleta («calendario»).
+Un calendario para consultar fechas, como =M-x calendar= de Emacs (sin tareas). Se abre con su botón de la barra de arriba, con ⋯ → *Calendario* (en Documentos y en GTD), desde la paleta («calendario») o, dentro de la agenda, con el botón del calendario (a la izquierda de la fecha), que lo abre en el día que estás viendo.
 - Tres meses a la vista (el anterior, el actual y el siguiente), con la semana empezando en lunes, el número de semana (ISO) a la izquierda y hoy recuadrado. *Año* muestra los doce meses.
 - Moverse: ‹ › (o ← →) mes a mes, « » (o Mayús+← →) año a año, *Hoy* (o .), la lupa (o g) para ir a una fecha, y (o *Año*) para la vista del año. En el móvil también deslizando a los lados. Esc cierra.
 - Toca un día y se abre *la agenda de ese día* (en la hoja abierta o en la vista GTD), en su vista «Día»; al cerrarla, la agenda vuelve a la vista que tenías.
@@ -306,14 +313,14 @@ Para trabajar sin Internet, por ejemplo en un vuelo largo, prepara la app antes,
 - En Dropbox se guarda una copia de seguridad de cada fichero en la carpeta backups.
 
 * Carpeta local (sin Dropbox)
-En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador). Los ficheros no salen del ordenador y todo funciona igual.
+En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador): en el ordenador es la primera opción, y Dropbox va debajo, tras una línea fina; en el iPhone (que no lo permite), Dropbox va primero. Los ficheros no salen del ordenador y todo funciona igual.
 
 * Seguridad y cifrado
 - Ficheros .gpg y encabezados con la etiqueta :crypt: se cifran de forma compatible con Emacs.
 - Bloqueo por inactividad y ajustes de seguridad en Ajustes → Seguridad y cifrado.
 
 * La paleta de comandos
-*Ctrl+K* (⌘K en el Mac) abre un cuadro de búsqueda en el centro de la pantalla desde cualquier sitio de la app. También con la *lupa* de la barra de arriba o, en un fichero, con el botón redondo de la lupa de abajo. Se abre con el cursor ya en el cuadro (y, en el móvil, con el teclado a punto): basta con empezar a escribir.
+*Ctrl+Espacio* (también Ctrl+K, o ⌘K en el Mac) abre un cuadro de búsqueda en el centro de la pantalla desde cualquier sitio de la app. También con la *lupa* de la barra de arriba o, en un fichero, con el botón redondo de la lupa de abajo. Se abre con el cursor ya en el cuadro (y, en el móvil, con el teclado a punto): basta con empezar a escribir.
 - Mientras escribes salen, mezclados: ficheros .org, encabezados y tareas de todos los ficheros cargados (con su estado y su fichero), listas y proyectos de la vista GTD, etiquetas (@llam → @llamadas) y acciones de la app: nueva tarea en Inbox, capturar con una plantilla, agenda, sincronizar, archivar las terminadas, tema y esquema de color, dos columnas, ajustes, ajustes de ficheros, manual…
 - No hace falta escribirlo entero ni en orden exacto: basta con algunas letras de cada palabra (cmppnt encuentra «Comprar pintura»). No distingue mayúsculas ni tildes.
 - ↑ ↓ para moverte e Intro para abrir (o tócalo). Un fichero se abre; un encabezado se abre con la vista reducida a él (narrow); una acción se ejecuta. Esc cierra.
@@ -322,9 +329,10 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador). Lo
 - Cada acción muestra su atajo de teclado, si lo tiene.
 
 * Atajos de teclado
+** En Documentos
 | Tecla        | Acción                                             |
 |--------------+----------------------------------------------------|
-| Ctrl+K / ⌘K  | Paleta de comandos                                  |
+| Ctrl+Espacio | Paleta de comandos (también Ctrl+K / ⌘K; en el Mac, si usas varios idiomas de teclado, ⌃Espacio es del sistema: usa ⌘K) |
 | ↑ / ↓        | Encabezado anterior / siguiente                    |
 | Intro        | Abrir o cerrar el encabezado (en un elemento de lista, editarlo) |
 | Esc          | Cerrar la ventana de edición                        |
@@ -339,6 +347,29 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador). Lo
 | b            | Buscar                                              |
 | m            | Mover el encabezado                                 |
 Todos se pueden cambiar en Ajustes → Atajos de teclado.
+** En la vista GTD (como Nirvana)
+Solo con teclas sueltas, y nunca mientras escribes ni con el editor de una tarea abierto. La tecla *k* (o *?*), o el botón del teclado de arriba, muestran esta lista en una ventana, con el botón «Configurar».
+| Tecla     | Acción                                                        |
+|-----------+---------------------------------------------------------------|
+| n         | Tarea nueva en esta lista (Mayús+n: arriba de la lista)       |
+| i x w y   | Tarea nueva en Inbox, Next, Waiting, Someday                  |
+| s         | Tarea nueva programada (Scheduled; empieza mañana)            |
+| f         | Tarea nueva en Focus (★)                                      |
+| p / l     | Proyecto nuevo / referencia nueva                             |
+| c         | Capturar con una plantilla                                    |
+| 1 … 9, 0  | Inbox, Next, Todo, Waiting, Scheduled, Someday, Focus, Todos los proyectos, Reference; 0 Logbook |
+| [ ]       | Lista anterior / siguiente                                    |
+| Mayús+0 / Mayús+9 | Todas las áreas / sin área                            |
+| Mayús+[ ] | Área anterior / siguiente                                     |
+| /         | Buscar                                                        |
+| r         | Sincronizar                                                   |
+| a         | Agenda                                                        |
+| Mayús+c   | Limpiar: archivar las terminadas (pide confirmación)          |
+| , / h     | Ajustes / manual                                              |
+| k o ?     | Ventana de atajos                                             |
+Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
+* Calculadora
+⋯ → *Calculadora* (en todas las vistas) o la paleta. Escribe la operación con el teclado o con sus botones: + − × ÷, paréntesis, decimales con coma y porcentajes (200 + 10% = 220). Debajo se ve el resultado según escribes; Intro (o =) lo deja para seguir calculando, el botón de copiar lo copia y Esc borra o cierra.
 
 * Ajustes que conviene conocer
 - *Estados de las tareas* y *Etiquetas por defecto*: para los ficheros que no los definen.

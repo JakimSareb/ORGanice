@@ -111,6 +111,9 @@ export default class HeaderActionDrawer extends PureComponent {
       onCompleteTask,
       onClockTotals,
       onCopyLink,
+      onNarrow,
+      onWiden,
+      isNarrowed,
     } = this.props;
 
     // Create a fallback function for onDuplicateHeader if not provided
@@ -221,6 +224,20 @@ export default class HeaderActionDrawer extends PureComponent {
         onClick: onClockTotals,
         testId: 'eli-clock-totals',
       },
+      // 2.15: reducir al encabezado (narrow) desde su propio menú; si ya está reducido, «Ver todo»
+      isNarrowed
+        ? onWiden && {
+            icon: 'fas fa-expand',
+            label: 'Ver todo el fichero (widen)',
+            onClick: onWiden,
+            testId: 'eli-header-widen',
+          }
+        : onNarrow && {
+            icon: 'fas fa-compress',
+            label: 'Reducir a este encabezado (narrow)',
+            onClick: onNarrow,
+            testId: 'eli-header-narrow',
+          },
       {
         icon: 'fas fa-list',
         label: 'Propiedades',

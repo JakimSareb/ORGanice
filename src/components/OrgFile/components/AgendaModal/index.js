@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { takeAgendaDate } from '../../../../lib/eli_agenda_request';
+import { openCalendar } from '../../../EliCalendar';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -262,6 +263,15 @@ function AgendaModal(props) {
       {renderPriorityTasks()}
 
       <div className="agenda__timeframe-header-container">
+        <button
+          className="agenda__calendar-btn"
+          onClick={() => openCalendar(selectedDate)}
+          title="Calendario (tocar un día abre su agenda)"
+          aria-label="Calendario"
+          data-testid="eli-agenda-calendar"
+        >
+          <i className="far fa-calendar-alt" />
+        </button>
         <i className="fas fa-chevron-left fa-lg" onClick={handlePreviousDateClick} />
         <div className="agenda__timeframe-header">{calculateTimeframeHeader()}</div>
         <i className="fas fa-chevron-right fa-lg" onClick={handleNextDateClick} />

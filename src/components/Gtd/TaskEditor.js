@@ -349,11 +349,21 @@ export default function TaskEditor({
     if (fn) fn();
   };
 
+  // ORG Mode para Eli (2.15): una tarea nueva que se cierra sin título no se crea (se borra)
+  const closeEditor = () => {
+    if (mustDecide && onCancelNew && !latest.current.title.trim()) {
+      cancelledRef.current = true;
+      onCancelNew();
+      return;
+    }
+    onClose();
+  };
+
   const onKeyDown = (e) => {
     if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
       e.preventDefault();
       e.stopPropagation();
-      onClose();
+      closeEditor();
     }
   };
 
@@ -439,10 +449,18 @@ export default function TaskEditor({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
                 e.preventDefault();
-                onClose();
+                closeEditor();
               }
             }}
-            placeholder={isNew ? 'Nombre del proyecto nuevo' : isProject ? 'Proyecto' : 'Tarea'}
+            placeholder={
+              isNew
+                ? isProject
+                  ? 'Nombre del proyecto nuevo'
+                  : 'Tarea nueva'
+                : isProject
+                ? 'Proyecto'
+                : 'Tarea'
+            }
             data-testid="gtd-editor-title"
           />
         </div>
@@ -746,6 +764,16 @@ export default function TaskEditor({
         >
           <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
         </span>
+        {!isNew && (
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--link"
+            onClick={withCommit(onOpen)}
+            title="Abrir en su fichero"
+          >
+            <i className="fas fa-external-link-alt" /> Abrir
+          </button>
+        )}
         {onAttachFiles && !encrypted && (
           <label className="gtd-btn gtd-btn--link gtd-ed__attach" title="Adjuntar archivos">
             <i className="fas fa-paperclip" /> Adjuntar
@@ -764,16 +792,6 @@ export default function TaskEditor({
               data-testid="gtd-editor-attach"
             />
           </label>
-        )}
-        {!isNew && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link"
-            onClick={withCommit(onOpen)}
-            title="Abrir en su fichero"
-          >
-            <i className="fas fa-external-link-alt" /> Abrir
-          </button>
         )}
         {!isNew && onArchive && (
           <button
@@ -841,7 +859,7 @@ export default function TaskEditor({
         <button
           type="button"
           className="gtd-btn gtd-btn--primary"
-          onClick={() => onClose()}
+          onClick={() => closeEditor()}
           title="Guardar y cerrar"
           data-testid="gtd-editor-save"
         >

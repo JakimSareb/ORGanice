@@ -121,6 +121,18 @@
   padding-top: 16px;
   border-top: 1px solid var(--base2);
 }
+.eli-signin__local--first {
+  text-align: center;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--base2);
+}
+.eli-signin__local--first .eli-signin__local-title {
+  font-size: 1.25em;
+}
 .eli-signin__local-title {
   font-size: 1.05em;
   margin: 0 0 6px;

@@ -17,6 +17,7 @@ import ExternalLink from '../../../UI/ExternalLink';
 
 import { orgFileExtensions } from '../../../../lib/org_utils';
 import * as orgActions from '../../../../actions/org';
+import { followOrgLinkSplitAware } from '../../../../lib/eli_split_links';
 
 import classNames from 'classnames';
 
@@ -53,7 +54,8 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
           title={uri}
           onClick={(e) => {
             e.stopPropagation();
-            org.eliFollowOrgLink(uri);
+            // 2.15: con dos columnas, se puede abrir en la de al lado
+            followOrgLinkSplitAware(uri, org.eliCurrentPath(), () => org.eliFollowOrgLink(uri), e);
           }}
         >
           {title}
