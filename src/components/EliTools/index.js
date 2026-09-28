@@ -56,6 +56,25 @@ export const openRawEditor = () => window.dispatchEvent(new CustomEvent('eli:raw
 export const openPrintPreview = (headerId = null) =>
   window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId } }));
 
+// (2.16) ¿El texto del portapapeles es solo el nombre (o la ruta) de los archivos copiados?
+export const isJustFileNames = (text, files) => {
+  const names = (files || []).map((f) => String((f && f.name) || '').toLowerCase()).filter(Boolean);
+  if (!names.length) return false;
+  const lines = String(text || '')
+    .split(/[\r\n]+/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (!lines.length) return true;
+  return lines.every((l) => {
+    let raw = l.replace(/^file:\/\//i, '');
+    try {
+      raw = decodeURIComponent(raw);
+    } catch (e) {}
+    const base = raw.split(/[\\/]/).pop().toLowerCase();
+    return names.includes(base);
+  });
+};
+
 const PGP = '-----BEGIN PGP MESSAGE-----';
 
 const fileTitle = (path, file) => {
@@ -1066,8 +1085,10 @@ export default function EliTools() {
         (active.tagName === 'TEXTAREA' ||
           (active.tagName === 'INPUT' && /^(text|search)$/i.test(active.type)));
       const text = (e.clipboardData.getData && e.clipboardData.getData('text/plain')) || '';
-      // Si hay texto y se pega en un campo de texto, se respeta el pegado normal
-      if (isField && text.trim()) return;
+      // Si hay texto y se pega en un campo de texto, se respeta el pegado normal. (2.16) Salvo
+      // que ese texto sea solo el nombre o la ruta de los archivos: es lo que pone el Finder (o
+      // el Explorador de Windows) al copiar un documento, y entonces se adjuntan los archivos
+      if (isField && text.trim() && !isJustFileNames(text, pasted)) return;
       if (active && active.closest && active.closest('.eli-prompt__overlay')) return;
       e.preventDefault();
       setUpload({

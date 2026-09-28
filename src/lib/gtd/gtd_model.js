@@ -22,6 +22,9 @@ import {
   matchesSectionRules,
   keywordForSection,
   sectionDef,
+  isCustomId,
+  hasRules,
+  customOrder,
 } from './gtd_sections';
 
 export const LISTS = [
@@ -456,6 +459,18 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
   } else if (view.id === 'scheduled') {
     // Todas las programadas a futuro (también las que tienen DEADLINE y se ven en su lista)
     out = tasks.filter((t) => isScheduledView(t, today));
+  } else if (isCustomId(view.id)) {
+    // (2.16) Sección propia: tareas abiertas que cumplen sus reglas (sin reglas, todas)
+    const s = getGtdConfig().sections[view.id];
+    if (!s) return [];
+    const withRules = hasRules(s);
+    out = tasks.filter(
+      (t) =>
+        !t.isDone &&
+        !t.isProject &&
+        (withRules ? matchesSectionRules(t, s, propertyOfTask) : !!t.keyword) &&
+        !hiddenBy(t, s, today)
+    );
   } else {
     out = tasks.filter((t) => listOf(t, today) === view.id);
   }
@@ -579,6 +594,8 @@ export const GROUPABLE_LISTS = [
 ];
 // Listas en las que se pueden reordenar (arrastrando) las tareas sueltas
 export const REORDERABLE_LISTS = GROUPABLE_LISTS;
+// (2.16) …y las secciones propias
+export const isGroupableList = (id) => GROUPABLE_LISTS.includes(id) || isCustomId(id);
 
 export const projectsOf = (tasks, filters = {}) =>
   tasks
@@ -595,7 +612,7 @@ export const areasOf = (tasks) =>
 
 export const countsFor = (tasks, filters = {}, today = new Date()) => {
   const counts = {};
-  [...LISTS, ...EXTRA_LISTS].forEach((l) => {
+  [...LISTS, ...EXTRA_LISTS, ...customOrder().map((id) => ({ id }))].forEach((l) => {
     counts[l.id] = tasksForView(tasks, { id: l.id }, { area: filters.area }, today).length;
   });
   return counts;

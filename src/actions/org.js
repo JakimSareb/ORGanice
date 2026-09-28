@@ -141,8 +141,12 @@ export const sync = (options) => (dispatch, getState) => {
     if (options.forceAction === 'manual') {
       console.log('forcing sync');
       const files = getState().org.present.get('files');
-      // sync all files on manual sync
-      files.keySeq().forEach((path) => dispatch(doSync({ ...options, path })));
+      // sync all files on manual sync. (2.16) Los *.org_archive leídos para verlos
+      // («Archivadas») solo si tienen cambios
+      files
+        .keySeq()
+        .filter((path) => !isArchiveFile(path) || files.getIn([path, 'isDirty']))
+        .forEach((path) => dispatch(doSync({ ...options, path })));
     } else {
       syncDebounced(dispatch, getState, options);
     }
@@ -1004,7 +1008,8 @@ export const setSearchFilterInformation = (
   cursorPosition,
   context,
   scope,
-  onlyCurrentFile
+  onlyCurrentFile,
+  includeArchived
 ) => ({
   type: 'SET_SEARCH_FILTER_INFORMATION',
   searchFilter,
@@ -1012,6 +1017,7 @@ export const setSearchFilterInformation = (
   context,
   scope,
   onlyCurrentFile,
+  includeArchived,
 });
 
 export const setShowClockDisplay = (showClockDisplay) => ({
@@ -1248,6 +1254,18 @@ const withTimeout = (promise, ms, message) =>
     new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
   ]);
 
+// (2.16) Si el fichero de archivo está leído en la app (p. ej. con «Archivadas»), se pone al día
+// con lo que se acaba de guardar y se marca como sincronizado (sin conflictos falsos después)
+const refreshLoadedArchive = (dispatch, getState, archivePath, text) => {
+  if (!getState().org.present.getIn(['files', archivePath])) return;
+  dispatch(parseFile(archivePath, text));
+  dispatch(setLastSyncAt(new Date(Date.now() + 5000), archivePath));
+  dispatch(setDirty(false, archivePath));
+};
+// Con cambios sin subir en ese fichero de archivo, no se archiva encima (se perderían)
+const archiveHasLocalChanges = (getState, archivePath) =>
+  !!getState().org.present.getIn(['files', archivePath, 'isDirty']);
+
 export const archiveSubtree = (headerId, explicitPath = null) => async (dispatch, getState) => {
   const state = getState();
   // ORG Mode para Eli: desde la vista GTD se archiva una tarea de otro fichero
@@ -1287,6 +1305,14 @@ export const archiveSubtree = (headerId, explicitPath = null) => async (dispatch
     showMessage('Sin conexión', 'Para archivar hace falta conexión con Dropbox.');
     return;
   }
+  if (archiveHasLocalChanges(getState, archivePath)) {
+    dispatch(sync({ path: archivePath }));
+    showMessage(
+      'Archivar',
+      `${archivePath} tiene cambios que aún no se han guardado. Se están guardando: vuelve a archivar en unos segundos.`
+    );
+    return;
+  }
   dispatch(setLoadingMessage('Archivando…'));
   try {
     const subtreeText = buildArchivedSubtree({
@@ -1316,9 +1342,7 @@ export const archiveSubtree = (headerId, explicitPath = null) => async (dispatch
       30000,
       'Dropbox no responde al guardar'
     );
-    if (getState().org.present.getIn(['files', archivePath])) {
-      dispatch(parseFile(archivePath, newText));
-    }
+    refreshLoadedArchive(dispatch, getState, archivePath, newText);
     if (path === getState().org.present.get('path')) {
       dispatch(removeHeader(headerId));
     } else {
@@ -1394,6 +1418,11 @@ export const eliArchiveMany = (items) => async (dispatch, getState) => {
       const removed = [];
       for (const key of Object.keys(groups)) {
         const { archivePath, heading, ids } = groups[key];
+        // (2.16) fichero de archivo con cambios sin subir: se sube y ese grupo se deja
+        if (archiveHasLocalChanges(getState, archivePath)) {
+          dispatch(sync({ path: archivePath }));
+          continue;
+        }
         dispatch(
           setLoadingMessage(`Archivando ${archived + 1}–${archived + ids.length} de ${total}…`)
         );
@@ -1426,9 +1455,7 @@ export const eliArchiveMany = (items) => async (dispatch, getState) => {
           30000,
           'Dropbox no responde al guardar'
         );
-        if (getState().org.present.getIn(['files', archivePath])) {
-          dispatch(parseFile(archivePath, text));
-        }
+        refreshLoadedArchive(dispatch, getState, archivePath, text);
         removed.push(...ids);
         archived += ids.length;
       }
@@ -1608,6 +1635,39 @@ export const eliRemoveAttachmentLink = (path, headerId, target) => (dispatch, ge
   }
 };
 
+// ORG Mode para Eli (2.16): leer los ficheros *.org_archive (para ver y buscar lo archivado).
+// Devuelve las rutas leídas. Se buscan en toda la carpeta (sin las copias de seguridad).
+const MAX_ARCHIVED_TO_LOAD = 80;
+let eliArchivedLoading = null;
+let eliArchivedList = { at: 0, paths: [] };
+export const eliLoadArchivedFiles = () => (dispatch, getState) => {
+  if (eliArchivedLoading) return eliArchivedLoading;
+  const client = getState().syncBackend.get('client');
+  if (!client || !client.listAllFiles) return Promise.resolve([]);
+  eliArchivedLoading = (async () => {
+    // La lista de ficheros se pide como mucho cada 5 minutos
+    let all = [];
+    if (Date.now() - eliArchivedList.at < 5 * 60 * 1000) {
+      all = eliArchivedList.paths;
+    } else {
+      try {
+        all = await client.listAllFiles();
+        eliArchivedList = { at: Date.now(), paths: all || [] };
+      } catch (e) {
+        all = eliArchivedList.paths;
+      }
+    }
+    const paths = (all || [])
+      .filter((p) => isArchiveFile(p) && !/\/backups\//i.test(p))
+      .slice(0, MAX_ARCHIVED_TO_LOAD);
+    await Promise.all(paths.map((p) => dispatch(loadFileQuietly(p))));
+    return paths.filter((p) => getState().org.present.getIn(['files', p, 'headers']));
+  })().finally(() => {
+    eliArchivedLoading = null;
+  });
+  return eliArchivedLoading;
+};
+
 // ORG Mode para Eli (2.11): revisar los adjuntos de tareas terminadas, canceladas o archivadas.
 // Los ficheros *_archive que no están cargados se leen (y, al quitar un enlace, se reescriben)
 // directamente en Dropbox o en la carpeta.
@@ -1767,6 +1827,21 @@ export const eliReviewFinishedAttachments = () => async (dispatch, getState) => 
 
 // ORG Mode para Eli: seguir un enlace Org a un fichero o encabezado (file:x.org::*Título,
 // *Título, #id, id:…) como org-open-at-point: abre el fichero y va al encabezado
+// (2.16) Abrir un encabezado de otra copia de la app (la otra columna): los ids internos no
+// valen entre copias, así que se busca por su posición en el fichero y su título
+export const eliOpenHeaderByLocator = (path, index, rawTitle) => async (dispatch, getState) => {
+  await dispatch(loadFileQuietly(path));
+  const headers = getState().org.present.getIn(['files', path, 'headers']);
+  if (!headers) return false;
+  const same = (h) => (h.getIn(['titleLine', 'rawTitle']) || '').trim() === (rawTitle || '').trim();
+  let header = headers.get(index);
+  if (!header || !same(header)) header = headers.find(same) || null;
+  if (!header) return false;
+  dispatch(selectHeaderAndOpenParents(path, header.get('id'), { widen: true }));
+  dispatch(eliNarrowAndExpand(header.get('id')));
+  return true;
+};
+
 // (2.15) Ruta del fichero abierto (para componentes sin acceso al estado)
 export const eliCurrentPath = () => (dispatch, getState) => getState().org.present.get('path');
 

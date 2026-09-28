@@ -52,7 +52,7 @@ class NoteEditorModal extends PureComponent {
       <>
         <h2 className="drawer-modal__title">Añadir nota</h2>
         <div>Escribe una nota para añadir al encabezado:</div>
-        <EliFormatBar getField={() => this.textarea} />
+        <EliFormatBar getField={() => this.textarea} getListField={() => this.textarea} />
         <textarea
           autoFocus
           className="textarea drag-handle eli-note-textarea"

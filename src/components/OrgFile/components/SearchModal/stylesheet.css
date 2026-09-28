@@ -66,6 +66,7 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 6px;
+  gap: 6px;
 }
 .search-only-current__btn {
   position: static !important;

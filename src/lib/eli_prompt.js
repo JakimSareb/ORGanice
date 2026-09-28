@@ -94,10 +94,20 @@ export const askConfirm = ({
     overlay.querySelector('.eli-prompt__message').textContent = message;
     overlay.querySelector('.eli-prompt__cancel').textContent = cancelLabel;
     overlay.querySelector('.eli-prompt__ok').textContent = okLabel;
+    // (2.16) Esc cancela
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        done(false);
+      }
+    };
     const done = (v) => {
+      document.removeEventListener('keydown', onKey, true);
       overlay.remove();
       resolve(v);
     };
+    document.addEventListener('keydown', onKey, true);
     overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(false));
     overlay.querySelector('.eli-prompt__ok').addEventListener('click', () => done(true));
     document.body.appendChild(overlay);

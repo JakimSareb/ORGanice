@@ -38,3 +38,14 @@
   background: var(--base2);
   color: var(--base01);
 }
+
+/* ORG Mode para Eli (2.16): separador entre formato y marcadores de lista */
+.eli-format-bar__sep {
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--base2);
+  vertical-align: middle;
+  align-self: center;
+}

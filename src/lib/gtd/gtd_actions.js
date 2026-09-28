@@ -229,9 +229,12 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   }
 
   // 3) Estado (lista): con SET_TODO_STATE para que se añada/quite CLOSED como siempre
-  if (changes.list !== undefined) {
+  if (changes.list !== undefined || changes.keyword !== undefined) {
+    // (2.16) changes.keyword: estado exacto (p. ej. el primero de una sección propia)
     const keyword =
-      changes.list === 'done'
+      changes.keyword !== undefined
+        ? changes.keyword || null
+        : changes.list === 'done'
         ? 'DONE'
         : changes.list === 'cancelled'
         ? 'CANCELLED'
@@ -437,6 +440,9 @@ const undoRedo = (type) => (dispatch, getState) => {
   const after = getState().org.present.get('files');
   after.forEach((file, path) => {
     if (!path || !file || !file.get('headers')) return;
+    // (2.16) Los *.org_archive leídos para verlos no se suben al deshacer (podría subirse una
+    // versión antigua encima de lo archivado después)
+    if (/\.org_archive$/i.test(path)) return;
     if (before.getIn([path, 'headers']) !== file.get('headers')) {
       dispatch(setDirty(true, path));
       dispatch(sync({ path, forceAction: 'push', shouldSuppressMessages: true }));

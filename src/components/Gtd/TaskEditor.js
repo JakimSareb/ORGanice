@@ -1,6 +1,7 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useRef } from 'react';
 import EliFormatBar from '../EliFormatBar';
+import { continueListOnEnter } from '../../lib/eli_format';
 import ScheduleField from './ScheduleField';
 import { fileLinkTarget } from '../../lib/eli_media';
 import { removeLinksToTarget, fileTargetsInText } from '../../lib/eli_attachments';
@@ -89,6 +90,9 @@ const fileLinksOf = (text) => {
 const otherLinksOf = (text) =>
   linksOf(text).filter((l) => isWebLink(l.target) || !fileLinkTarget(l.target));
 
+// (2.16) lista de antes de terminarla, por tarea (para reabrirla en la misma)
+const reopenMemory = new Map();
+
 export const currentListOf = (task) => {
   if (task.isDone) return task.keyword === 'CANCELLED' ? 'cancelled' : 'done';
   if (hasInboxTag(task)) return 'inbox';
@@ -127,6 +131,8 @@ export default function TaskEditor({
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
   const [list, setList] = useState(currentListOf(task));
+  // Lista a la que vuelve al reabrirla (se recuerda aunque el editor se vuelva a crear al guardar)
+  const reopenList = useRef(reopenMemory.get(task.key) || currentListOf(task));
   const [area, setArea] = useState(task.ownArea || '');
   // ORG Mode para Eli: en un proyecto, la etiqueta :sleep: se maneja con «Activo / Dormido»
   const isProject = !!task.isProject;
@@ -416,6 +422,42 @@ export default function TaskEditor({
 
   const listOptions = LIST_OPTIONS.map((o) => ({ value: o.id, label: o.label }));
 
+  // (2.16) Casilla para terminar (DONE; con Mayúsculas, CANCELLED) en el sitio de la ★, que pasa
+  // abajo. Se guarda al momento y el editor no se cierra: se queda en gris.
+  const showDone = !isNew && !isProject && !!onSave;
+  const finished = list === 'done' || list === 'cancelled';
+  const renderStar = () => (
+    <button
+      type="button"
+      className={'gtd-ed__star' + (star ? ' is-on' : '')}
+      onClick={() => setStar(!star)}
+      title={star ? 'Quitar la estrella [#A]' : 'Poner la estrella [#A]'}
+      aria-pressed={star}
+      data-testid="gtd-editor-star"
+    >
+      <i className={star ? 'fas fa-star' : 'far fa-star'} />
+    </button>
+  );
+  const toggleDone = (e) => {
+    const target = finished
+      ? baseline.current && !['done', 'cancelled'].includes(reopenList.current)
+        ? reopenList.current
+        : 'later'
+      : e && e.shiftKey
+      ? 'cancelled'
+      : 'done';
+    if (!finished) {
+      reopenList.current = list;
+      reopenMemory.set(task.key, list);
+    }
+    commit();
+    latest.current = { ...latest.current, list: target };
+    baseline.current = { ...baseline.current, list: target };
+    setList(target);
+    // Al reabrirla, las etiquetas de su lista (p. ej. @inbox), como al cambiarla de lista
+    onSave(finished ? { list: target, tags: tagsForList(task, target, tags) } : { list: target });
+  };
+
   // ORG Mode para Eli: diseño como el de Nirvana: a la izquierda ★, título, etiquetas y notas;
   // a la derecha, tiempo, energía, fechas, lista, proyecto y área.
   return (
@@ -423,7 +465,8 @@ export default function TaskEditor({
       className={
         'gtd-editor gtd-editor--nirvana' +
         (replacesRow ? ' gtd-editor--inline' : '') +
-        (mustDecide ? ' gtd-editor--new' : '')
+        (mustDecide ? ' gtd-editor--new' : '') +
+        (finished && showDone ? ' is-finished' : '')
       }
       ref={editorRef}
       onKeyDown={onKeyDown}
@@ -431,16 +474,28 @@ export default function TaskEditor({
     >
       <div className="gtd-ed__main">
         <div className="gtd-ed__title-row">
-          <button
-            type="button"
-            className={'gtd-ed__star' + (star ? ' is-on' : '')}
-            onClick={() => setStar(!star)}
-            title={star ? 'Quitar la estrella [#A]' : 'Poner la estrella [#A]'}
-            aria-pressed={star}
-            data-testid="gtd-editor-star"
-          >
-            <i className={star ? 'fas fa-star' : 'far fa-star'} />
-          </button>
+          {showDone ? (
+            <button
+              type="button"
+              className={'gtd-ed__done' + (finished ? ' is-on' : '')}
+              onClick={toggleDone}
+              title={
+                finished
+                  ? 'Volver a abrir la tarea'
+                  : 'Terminar la tarea (DONE); con Mayúsculas, cancelarla (CANCELLED)'
+              }
+              aria-pressed={finished}
+              data-testid="gtd-editor-done"
+            >
+              {list === 'cancelled' ? (
+                <i className="fas fa-times" />
+              ) : finished ? (
+                <i className="fas fa-check" />
+              ) : null}
+            </button>
+          ) : (
+            renderStar()
+          )}
           <input
             ref={titleRef}
             className="gtd-editor__title"
@@ -465,7 +520,13 @@ export default function TaskEditor({
           />
         </div>
 
+        {finished && (
+          <div className="gtd-ed__finished" data-testid="gtd-editor-finished">
+            {list === 'cancelled' ? 'Cancelada' : 'Terminada'}
+          </div>
+        )}
         <div className="gtd-ed__tags">
+          {showDone && renderStar()}
           {tags.map((t) => (
             <span key={t} className="gtd-chip is-on">
               {t}
@@ -535,6 +596,7 @@ export default function TaskEditor({
             getField={() =>
               document.activeElement === titleRef.current ? titleRef.current : notesRef.current
             }
+            getListField={() => notesRef.current}
           />
         )}
         <textarea
@@ -543,6 +605,23 @@ export default function TaskEditor({
           value={encrypted ? '(contenido cifrado: ábrelo en su fichero para verlo)' : notes}
           disabled={encrypted}
           onChange={(e) => setNotes(e.target.value)}
+          // (2.16) Intro en una línea de lista: la siguiente empieza con el mismo marcador
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+            if (e.nativeEvent && e.nativeEvent.isComposing) return;
+            const el = e.currentTarget;
+            if (el.selectionStart !== el.selectionEnd) return;
+            const r = continueListOnEnter(el.value, el.selectionStart);
+            if (!r) return;
+            e.preventDefault();
+            // Se cambia el campo ya (con el cursor en su sitio) y después el estado, así no se
+            // pierde nada de lo que se escribe justo a continuación
+            el.value = r.value;
+            try {
+              el.setSelectionRange(r.pos, r.pos);
+            } catch (err) {}
+            setNotes(r.value);
+          }}
           onClick={onNotesClick}
           placeholder="Notas"
           rows={10}
@@ -768,7 +847,10 @@ export default function TaskEditor({
           <button
             type="button"
             className="gtd-btn gtd-btn--link"
-            onClick={withCommit(onOpen)}
+            onClick={(e) => {
+              commit();
+              if (onOpen) onOpen(e);
+            }}
             title="Abrir en su fichero"
           >
             <i className="fas fa-external-link-alt" /> Abrir

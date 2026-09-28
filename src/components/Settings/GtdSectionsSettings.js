@@ -7,10 +7,13 @@ import { fromJS } from 'immutable';
 import TabButtons from '../UI/TabButtons';
 import { setEliSetting } from '../../actions/base';
 import {
-  SECTION_DEFS,
   sectionDef,
+  sectionLabel,
   normalizeGtdSections,
   DEFAULT_SECTIONS,
+  CUSTOM_ICONS,
+  CUSTOM_PREFIX,
+  isCustomId,
 } from '../../lib/gtd/gtd_sections';
 
 const selectSections = (s) => s.base.get('eliGtdSections');
@@ -24,7 +27,7 @@ const TICKS = [
   ['parked', 'Incluir tareas de proyectos dormidos o que aún no han empezado'],
 ];
 
-const RulesInput = ({ label, value, placeholder, onSave, testId }) => {
+const RulesInput = ({ label, value, placeholder, onSave, testId, hint }) => {
   const [text, setText] = useState(value.join(', '));
   const [prev, setPrev] = useState(value);
   if (prev !== value) {
@@ -39,6 +42,31 @@ const RulesInput = ({ label, value, placeholder, onSave, testId }) => {
         placeholder={placeholder}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => onSave(text)}
+        onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+        data-testid={testId}
+      />
+      {/* (2.16) que se sepa que caben varios */}
+      {hint && <small className="eli-gtdsec__rule-hint">{hint}</small>}
+    </label>
+  );
+};
+
+// (2.16) Nombre de la sección en el menú (se guarda al salir del campo)
+const NameInput = ({ value, placeholder, onSave, testId }) => {
+  const [text, setText] = useState(value);
+  const [prev, setPrev] = useState(value);
+  if (prev !== value) {
+    setPrev(value);
+    setText(value);
+  }
+  return (
+    <label className="eli-gtdsec__rule">
+      <span>Nombre en el menú</span>
+      <input
+        value={text}
+        placeholder={placeholder}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => text !== value && onSave(text.trim())}
         onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
         data-testid={testId}
       />
@@ -81,6 +109,33 @@ export default function GtdSectionsSettings() {
   const reset = () => {
     if (window.confirm('¿Volver a la configuración de secciones de siempre?')) save({});
   };
+  // (2.16) Secciones propias
+  const addCustom = () => {
+    const id = `${CUSTOM_PREFIX}${Date.now().toString(36)}`;
+    const custom = [...(cfg.custom || []), { id, label: 'Nueva sección', icon: CUSTOM_ICONS[0] }];
+    save({ ...cfg, custom, order: [...cfg.order, id] });
+    setOpenId(id);
+  };
+  const setCustom = (id, patch) =>
+    save({ ...cfg, custom: (cfg.custom || []).map((c) => (c.id === id ? { ...c, ...patch } : c)) });
+  const removeCustom = (id) => {
+    const c = (cfg.custom || []).find((x) => x.id === id);
+    if (!window.confirm(`¿Borrar la sección «${c ? c.label : ''}»? Las tareas no se tocan.`))
+      return;
+    const sections = { ...cfg.sections };
+    delete sections[id];
+    save({
+      ...cfg,
+      sections,
+      custom: (cfg.custom || []).filter((x) => x.id !== id),
+      order: cfg.order.filter((x) => x !== id),
+    });
+    setOpenId(null);
+  };
+  const HINT_STATES = 'Varios, separados por comas: NEXT, TODO';
+  const HINT_TAGS = 'Varias, separadas por comas: @casa, @llamadas';
+  const HINT_PROPS = 'Varias, separadas por comas: CONTEXTO, ENERGY=Low';
+
   const listSplit = (text) =>
     text
       .split(/[,\s]+/)
@@ -88,21 +143,58 @@ export default function GtdSectionsSettings() {
       .filter(Boolean);
 
   const renderOptions = (id) => {
-    const def = sectionDef(id);
+    const def = sectionDef(id, cfg);
     const s = cfg.sections[id];
+    const custom = isCustomId(id);
+    const nameField =
+      def.kind === 'agenda' || id === 'projects' ? null : custom ? (
+        <>
+          <NameInput
+            value={def.label}
+            placeholder="Nombre de la sección"
+            onSave={(t) => setCustom(id, { label: t || 'Sección' })}
+            testId={`eli-gtdsec-${id}-name`}
+          />
+          <div className="eli-gtdsec__icons" role="radiogroup" aria-label="Icono">
+            {CUSTOM_ICONS.map((icon) => (
+              <button
+                key={icon}
+                type="button"
+                className={'eli-gtdsec__icon' + (def.icon === icon ? ' is-on' : '')}
+                onClick={() => setCustom(id, { icon })}
+                aria-pressed={def.icon === icon}
+                title="Icono"
+              >
+                <i className={icon} />
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <NameInput
+          value={s.label || ''}
+          placeholder={def.label}
+          onSave={(t) => setSection(id, { label: t })}
+          testId={`eli-gtdsec-${id}-name`}
+        />
+      );
     if (def.kind === 'agenda') {
       return <div className="eli-gtdsec__note">La agenda solo se puede mostrar u ocultar.</div>;
     }
     if (id === 'logbook') {
       return (
-        <div className="eli-gtdsec__note">
-          Las tareas terminadas (DONE, CANCELLED y demás estados de cierre).
+        <div className="eli-gtdsec__options">
+          {nameField}
+          <div className="eli-gtdsec__note">
+            Las tareas terminadas (DONE, CANCELLED y demás estados de cierre).
+          </div>
         </div>
       );
     }
     const isList = def.kind === 'list';
     return (
       <div className="eli-gtdsec__options">
+        {nameField}
         {id === 'projects' ? (
           <>
             <Tick
@@ -116,7 +208,9 @@ export default function GtdSectionsSettings() {
         ) : (
           <>
             <div className="eli-gtdsec__note">
-              {isList
+              {custom
+                ? 'Sección propia: muestra las tareas abiertas que tengan alguno de estos estados, etiquetas o propiedades (si no pones ninguno, todas). Las tareas siguen también en su lista de siempre.'
+                : isList
                 ? 'Entran las tareas con cualquiera de estos (si cumplen varias listas, van a la primera en este orden):'
                 : 'Además de su criterio propio, entran también las tareas con:'}
             </div>
@@ -124,6 +218,7 @@ export default function GtdSectionsSettings() {
               label="Estados"
               value={s.states}
               placeholder="p. ej. NEXT"
+              hint={HINT_STATES}
               onSave={(t) => setSection(id, { states: listSplit(t).map((x) => x.toUpperCase()) })}
               testId={`eli-gtdsec-${id}-states`}
             />
@@ -131,6 +226,7 @@ export default function GtdSectionsSettings() {
               label="Etiquetas"
               value={s.tags}
               placeholder="p. ej. @casa"
+              hint={HINT_TAGS}
               onSave={(t) => setSection(id, { tags: listSplit(t) })}
               testId={`eli-gtdsec-${id}-tags`}
             />
@@ -138,6 +234,7 @@ export default function GtdSectionsSettings() {
               label="Propiedades"
               value={s.props}
               placeholder="p. ej. CONTEXTO o CONTEXTO=casa"
+              hint={HINT_PROPS}
               onSave={(t) => setSection(id, { props: listSplit(t) })}
               testId={`eli-gtdsec-${id}-props`}
             />
@@ -190,14 +287,25 @@ export default function GtdSectionsSettings() {
             testId={`eli-gtdsec-${id}-${key}`}
           />
         ))}
-        {JSON.stringify(s) !== JSON.stringify(normalizeGtdSections(null).sections[id]) && (
+        {custom ? (
           <button
             type="button"
             className="btn eli-gtdsec__reset-one"
-            onClick={() => setSection(id, { ...DEFAULT_SECTIONS[id], show: s.show })}
+            onClick={() => removeCustom(id)}
+            data-testid={`eli-gtdsec-${id}-delete`}
           >
-            Restablecer esta sección
+            Borrar esta sección
           </button>
+        ) : (
+          JSON.stringify(s) !== JSON.stringify(normalizeGtdSections(null).sections[id]) && (
+            <button
+              type="button"
+              className="btn eli-gtdsec__reset-one"
+              onClick={() => setSection(id, { ...DEFAULT_SECTIONS[id], show: s.show, label: '' })}
+            >
+              Restablecer esta sección
+            </button>
+          )
         )}
       </div>
     );
@@ -250,7 +358,8 @@ export default function GtdSectionsSettings() {
           la primera), elige cuáles se ven y toca una para decidir qué tareas entran.
         </div>
         {cfg.order.map((id, i) => {
-          const def = SECTION_DEFS.find((d) => d.id === id);
+          const def = sectionDef(id, cfg);
+          if (!def) return null;
           const s = cfg.sections[id];
           const open = openId === id;
           return (
@@ -285,7 +394,7 @@ export default function GtdSectionsSettings() {
                   checked={s.show !== false}
                   onChange={(e) => setSection(id, { show: e.target.checked })}
                   title="Mostrar esta sección"
-                  aria-label={`Mostrar ${def.label}`}
+                  aria-label={`Mostrar ${sectionLabel(id, cfg)}`}
                   data-testid={`eli-gtdsec-${id}-show`}
                 />
                 <button
@@ -295,7 +404,7 @@ export default function GtdSectionsSettings() {
                   aria-expanded={open}
                   data-testid={`eli-gtdsec-${id}-open`}
                 >
-                  <i className={def.icon} /> {def.label}
+                  <i className={def.icon} /> {sectionLabel(id, cfg)}
                   <i className={'fas ' + (open ? 'fa-caret-down' : 'fa-caret-right')} />
                 </button>
               </div>
@@ -303,6 +412,14 @@ export default function GtdSectionsSettings() {
             </div>
           );
         })}
+        <button
+          type="button"
+          className="btn eli-gtdsec__add"
+          onClick={addCustom}
+          data-testid="eli-gtdsec-add"
+        >
+          <i className="fas fa-plus" /> Nueva sección
+        </button>
       </div>
     </>
   );

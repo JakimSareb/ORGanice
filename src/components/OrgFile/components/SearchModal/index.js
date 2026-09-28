@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getShowArchived, setShowArchived } from '../../../../lib/eli_archived';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { capitalize } from 'lodash';
@@ -43,17 +44,45 @@ function SearchModal(props) {
       return false;
     }
   });
+  // (2.16) «Archivadas»: buscar también en lo archivado (se recuerda)
+  const [archived, setArchived] = useState(() => getShowArchived());
+  const [loadingArchived, setLoadingArchived] = useState(false);
+  // (2.16) lo último escrito (la carga de lo archivado tarda: no se usa el filtro de entonces)
+  const filterRef = useRef(searchFilter);
+  filterRef.current = searchFilter;
   useEffect(() => {
-    if (context === 'search') {
+    if (context !== 'search') return;
+    let alive = true;
+    const run = () =>
+      alive &&
       props.org.setSearchFilterInformation(
-        searchFilter,
-        searchFilter.length,
+        filterRef.current,
+        filterRef.current.length,
         context,
         undefined,
-        onlyCurrent
+        onlyCurrent,
+        archived
       );
+    run();
+    if (archived && !onlyCurrent) {
+      setLoadingArchived(true);
+      Promise.resolve(props.org.eliLoadArchivedFiles())
+        .catch(() => null)
+        .then(() => {
+          if (!alive) return;
+          setLoadingArchived(false);
+          run();
+        });
     }
-  }, [onlyCurrent, context]);
+    return () => {
+      alive = false;
+    };
+  }, [onlyCurrent, context, archived]);
+  function toggleArchived() {
+    const next = !archived;
+    setArchived(next);
+    setShowArchived(next);
+  }
   function toggleOnlyCurrent() {
     const next = !onlyCurrent;
     setOnlyCurrent(next);
@@ -180,6 +209,19 @@ function SearchModal(props) {
             data-testid="eli-search-only-current"
           >
             <i className="far fa-file-alt" /> Solo esta hoja
+          </button>
+          <button
+            className={
+              'agenda__log-toggle search-only-current__btn' + (archived ? ' is-active' : '')
+            }
+            onClick={toggleArchived}
+            aria-pressed={archived}
+            disabled={onlyCurrent}
+            title="Buscar también en lo archivado (ficheros _archive)"
+            data-testid="eli-search-archived"
+          >
+            <i className={loadingArchived ? 'fas fa-spinner fa-spin' : 'fas fa-archive'} />{' '}
+            Archivadas
           </button>
         </div>
       ) : null}

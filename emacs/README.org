@@ -77,6 +77,13 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Atrás / adelante (barra de arriba)      | =C-x ←= / =C-x →= (buffer anterior / siguiente)     |
 | Agrupar por proyecto (vista GTD)        | =(setq organice-group-by-project t)=                |
 | Ordenar tareas de un proyecto (asa ⋮⋮)  | =M-↑= / =M-↓= en el fichero (es el mismo orden)     |
+| Aa → marcadores de lista (- [ ], -, +, 1.) | =C-c -= (cambia el tipo de lista), =C-c C-x C-b= casilla |
+| Intro sigue la lista (notas de GTD)     | =M-RET= (nuevo elemento; =M-S-RET= con casilla)     |
+| Casilla de terminar en el editor GTD    | =C-c C-t= (en la agenda: =t=)                       |
+| Recorrer la lista con ↑ ↓ / Supr        | En la agenda: =n= / =p=, =C-k= borra la tarea        |
+| Logbook / búsqueda → «Archivadas»       | En la agenda: =v A= (org-agenda-archives-mode)      |
+| Atrás / adelante (Alt+← / Alt+→)        | =C-x ←= / =C-x →=                                   |
+| Secciones propias (Ajustes)             | Vistas propias en =org-agenda-custom-commands=      |
 | Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
 En Linux o Windows, =⌘= es la tecla Super (la de Windows). Dentro de la agenda funcionan todas las
 teclas de Org: =t= cambia el estado, =,= la prioridad, =:= las etiquetas, =C-c C-s= programa,

@@ -121,3 +121,30 @@ describe('2.15: movimientos que no cambian nada', () => {
     expect(store.state()).toBe(before);
   });
 });
+
+describe('2.16: secciones propias y nombres', () => {
+  test('una sección propia es una vista: la tarea sigue en su lista', () => {
+    const { normalizeGtdSections, sectionLabel } = require('./gtd_sections');
+    const { tasksForView } = require('./gtd_model');
+    const cfgRaw = {
+      custom: [{ id: 'c_x', label: 'Casa', icon: 'fas fa-home' }],
+      sections: { c_x: { states: 'WAITING, MAYBE' }, next: { label: 'Siguiente' } },
+    };
+    setGtdConfig(cfgRaw);
+    const cfg = normalizeGtdSections(cfgRaw);
+    expect(cfg.order).toContain('c_x');
+    expect(sectionLabel('next', cfg)).toBe('Siguiente');
+    expect(sectionLabel('c_x', cfg)).toBe('Casa');
+    const tasks = tasksOf(makeStore().state());
+    const titles = (id) =>
+      tasksForView(tasks, { id }, {}, TODAY)
+        .map((t) => t.title)
+        .sort();
+    expect(titles('c_x')).toEqual(['Cinco', 'Seis']);
+    expect(titles('waiting')).toEqual(['Cinco']);
+    // sin reglas: todas las abiertas
+    setGtdConfig({ custom: [{ id: 'c_y', label: 'Todo' }] });
+    expect(titles('c_y').length).toBeGreaterThan(5);
+    setGtdConfig(null);
+  });
+});

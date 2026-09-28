@@ -3,6 +3,7 @@ import { openPalette } from '../../lib/eli_palette';
 import { openCalendar } from '../EliCalendar';
 import { openCalculator } from '../EliCalculator';
 import { installNavHistory, canGoBack, canGoForward } from '../../lib/eli_nav_history';
+import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
@@ -179,12 +180,46 @@ class HeaderBar extends PureComponent {
     this.updateWindowTitle();
     window.addEventListener('eli:split-open', this.eliOpenSplit);
     window.addEventListener('eli:nav-history', this.eliNavChanged);
+    window.addEventListener('keydown', this.eliNavKey);
     installNavHistory(this.props.history);
   }
+
+  // (2.16) Atrás / adelante con el teclado: Alt+← / Alt+→ (y ⌘[ / ⌘] en el Mac), como en el
+  // navegador; nunca mientras se escribe (Alt+← mueve por palabras)
+  eliNavKey = (e) => {
+    if (e.defaultPrevented || !this.props.isAuthenticated) return;
+    const t = e.target;
+    const editable =
+      t &&
+      (t.isContentEditable ||
+        t.tagName === 'TEXTAREA' ||
+        t.tagName === 'SELECT' ||
+        (t.tagName === 'INPUT' && !/^(checkbox|radio|button|submit)$/i.test(t.type || '')));
+    if (editable) return;
+    // Con una ventana abierta (confirmación, editor…), no se cambia de página debajo
+    if (
+      shouldIgnoreOrganiceHotkey(e, null) ||
+      document.querySelector('.drawer, .eli-cal__overlay, .eli-calc__overlay')
+    )
+      return;
+    let dir = 0;
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      if (e.key === 'ArrowLeft') dir = -1;
+      else if (e.key === 'ArrowRight') dir = 1;
+    } else if (e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey) {
+      if (e.code === 'BracketLeft') dir = -1;
+      else if (e.code === 'BracketRight') dir = 1;
+    }
+    if (!dir) return;
+    e.preventDefault();
+    if (dir < 0 && canGoBack()) this.props.history.goBack();
+    if (dir > 0 && canGoForward()) this.props.history.goForward();
+  };
 
   componentWillUnmount() {
     window.removeEventListener('eli:split-open', this.eliOpenSplit);
     window.removeEventListener('eli:nav-history', this.eliNavChanged);
+    window.removeEventListener('keydown', this.eliNavKey);
   }
 
   eliNavChanged = () => this.forceUpdate();
@@ -620,6 +655,14 @@ class HeaderBar extends PureComponent {
               onClick: openCalendar,
               testId: 'eli-calendar-menu',
             },
+            // (2.16) en la vista GTD, la ventana de atajos va aquí (antes, un botón en la lista)
+            inGtd && {
+              icon: 'far fa-keyboard',
+              label: 'Atajos de teclado (k)',
+              onClick: () =>
+                window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { shortcuts: true } })),
+              testId: 'gtd-shortcuts-btn',
+            },
             {
               icon: 'fas fa-calculator',
               label: 'Calculadora',
@@ -690,7 +733,7 @@ class HeaderBar extends PureComponent {
                   (canGoBack() ? '' : ' header-bar__actions__item--disabled')
                 }
                 onClick={() => canGoBack() && this.props.history.goBack()}
-                title="Atrás"
+                title="Atrás (Alt+←)"
                 aria-label="Atrás"
                 data-testid="eli-nav-back"
                 role="button"
@@ -701,7 +744,7 @@ class HeaderBar extends PureComponent {
                   (canGoForward() ? '' : ' header-bar__actions__item--disabled')
                 }
                 onClick={() => canGoForward() && this.props.history.goForward()}
-                title="Adelante"
+                title="Adelante (Alt+→)"
                 aria-label="Adelante"
                 data-testid="eli-nav-forward"
                 role="button"

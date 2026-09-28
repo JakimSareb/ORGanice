@@ -4,6 +4,8 @@ import React from 'react';
 
 import {
   ORG_EMPHASIS,
+  LIST_MARKERS,
+  applyListMarker,
   toggleOrgEmphasis,
   emphasisForKeyEvent,
   emphasisShortcutLabel,
@@ -18,6 +20,21 @@ const setFieldValue = (el, value) => {
   el.dispatchEvent(new Event('input', { bubbles: true }));
 };
 
+// (2.16) marcador de lista al principio de la línea (o de cada línea seleccionada)
+export const applyList = (el, kind) => {
+  if (!el) return;
+  const result = applyListMarker(el.value, el.selectionStart, el.selectionEnd, kind);
+  setFieldValue(el, result.value);
+  const restore = () => {
+    try {
+      el.focus();
+      el.setSelectionRange(result.start, result.end);
+    } catch (e) {}
+  };
+  restore();
+  requestAnimationFrame(() => el.value === result.value && restore());
+};
+
 export const applyEmphasis = (el, marker) => {
   if (!el) return;
   const result = toggleOrgEmphasis(el.value, el.selectionStart, el.selectionEnd, marker);
@@ -29,8 +46,9 @@ export const applyEmphasis = (el, marker) => {
     } catch (e) {}
   };
   restore();
-  // React vuelve a pintar el valor: se recoloca la selección después
-  requestAnimationFrame(restore);
+  // React vuelve a pintar el valor: se recoloca la selección después (salvo que ya se haya
+  // escrito algo, para no mover el cursor en medio)
+  requestAnimationFrame(() => el.value === result.value && restore());
 };
 
 // ORG Mode para Eli: Ctrl/⌘+B, I, U, Mayús+X, E y Mayús+E en cualquier campo de texto de la app
@@ -73,7 +91,15 @@ const readOpen = () => {
 };
 
 // Plegada tras un botón «Aa» (se recuerda si se deja abierta)
-export default ({ getField, className = '', compact = false, collapsible = true }) => {
+// getListField (2.16): campo donde van los marcadores de lista (descripción, notas); sin él, no
+// se muestran (en un título no tienen sentido)
+export default ({
+  getField,
+  getListField = null,
+  className = '',
+  compact = false,
+  collapsible = true,
+}) => {
   const [open, setOpen] = React.useState(!collapsible || readOpen());
   const keep = (e) => e.preventDefault();
   const toggle = (e) => {
@@ -127,6 +153,26 @@ export default ({ getField, className = '', compact = false, collapsible = true 
             </button>
           );
         })}
+      {open && getListField && <span className="eli-format-bar__sep" aria-hidden="true" />}
+      {open &&
+        getListField &&
+        LIST_MARKERS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className="eli-format-bar__btn"
+            title={item.title}
+            aria-label={item.title}
+            data-testid={`eli-format-list-${item.id}`}
+            onMouseDown={keep}
+            onClick={(e) => {
+              e.stopPropagation();
+              applyList(getListField(), item.id);
+            }}
+          >
+            <i className={item.icon} />
+          </button>
+        ))}
     </div>
   );
 };

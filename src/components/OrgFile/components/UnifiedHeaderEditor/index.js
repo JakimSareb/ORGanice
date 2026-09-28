@@ -487,7 +487,10 @@ class UnifiedHeaderEditor extends PureComponent {
         </h2>
 
         <div className="header-content__edit-container">
-          <EliFormatBar getField={() => this.descriptionTextarea} />
+          <EliFormatBar
+            getField={() => this.descriptionTextarea}
+            getListField={() => this.descriptionTextarea}
+          />
           <textarea
             autoFocus
             className="textarea drag-handle"

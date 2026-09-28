@@ -117,6 +117,15 @@ class Entry extends PureComponent {
     if (d.uri) this.props.org.eliFollowOrgLink(d.uri, d.basePath || null);
   };
 
+  // (2.16) «Abrir» del editor GTD en la otra columna: la tarea, en su fichero, reducida a ella
+  eliOpenTask = async (event) => {
+    const d = (event && event.detail) || {};
+    if (!d.path) return;
+    await this.props.org.eliOpenHeaderByLocator(d.path, d.index, d.title);
+    const to = `/file${d.path}`;
+    if (this.props.location.pathname !== to) this.props.history.push(to);
+  };
+
   // ORG Mode para Eli (2.12): al arrancar en la página inicial, volver a la última vista
   eliResume() {
     if (this.eliResumeRoute === undefined) this.eliResumeRoute = takeResumeRoute();
@@ -134,6 +143,7 @@ class Entry extends PureComponent {
     window.addEventListener('keydown', this.eliGtdKey);
     window.addEventListener('eli:navigate', this.eliNavigate);
     window.addEventListener('eli:follow-link', this.eliFollowLink);
+    window.addEventListener('eli:open-task', this.eliOpenTask);
     this.setChangelogUnseenChanges();
     this.props.filesToLoad.forEach((path) => this.props.syncBackend.downloadFile(path));
     this.props.filesToSync.forEach((path) => this.props.org.sync({ path }));
@@ -175,6 +185,7 @@ class Entry extends PureComponent {
     window.removeEventListener('keydown', this.eliGtdKey);
     window.removeEventListener('eli:navigate', this.eliNavigate);
     window.removeEventListener('eli:follow-link', this.eliFollowLink);
+    window.removeEventListener('eli:open-task', this.eliOpenTask);
     document.removeEventListener('visibilitychange', this.eliOnVisible);
     window.onbeforeunload = undefined;
   }

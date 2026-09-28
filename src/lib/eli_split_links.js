@@ -27,7 +27,7 @@ const askWhere = () =>
     overlay.className = 'eli-prompt__overlay';
     overlay.innerHTML = `
       <div class="eli-prompt__box" role="dialog" data-testid="eli-split-link">
-        <div class="eli-prompt__title">Abrir el enlace</div>
+        <div class="eli-prompt__title">¿Dónde lo abro?</div>
         <div class="eli-prompt__message" style="font-size: 0.85em">Consejo: Ctrl+clic (⌘+clic en el Mac) lo abre directamente en la otra columna.</div>
         <div class="eli-prompt__buttons">
           <button type="button" class="btn eli-prompt__cancel" data-where="here">Aquí</button>
@@ -46,9 +46,9 @@ const askWhere = () =>
         done(null);
       }
     };
-    overlay.querySelectorAll('[data-where]').forEach((b) =>
-      b.addEventListener('click', () => done(b.getAttribute('data-where')))
-    );
+    overlay
+      .querySelectorAll('[data-where]')
+      .forEach((b) => b.addEventListener('click', () => done(b.getAttribute('data-where'))));
     overlay.addEventListener('click', (e) => e.target === overlay && done(null));
     document.addEventListener('keydown', onKey, true);
     document.body.appendChild(overlay);
@@ -59,14 +59,19 @@ const askWhere = () =>
  * Seguir un enlace Org teniendo en cuenta las dos columnas. followHere() lo abre en esta.
  * event: el del clic (Ctrl/⌘ = directamente en la otra columna).
  */
-export const followOrgLinkSplitAware = async (uri, basePath, followHere, event) => {
+export const followOrgLinkSplitAware = (uri, basePath, followHere, event) =>
+  openSplitAware(followHere, 'eli:follow-link', { uri, basePath }, event);
+
+/**
+ * (2.16) Genérico: abrir aquí (openHere) o mandar a la otra columna el evento `eventName` con
+ * `detail` (p. ej. el botón «Abrir» del editor de la vista GTD).
+ */
+export const openSplitAware = async (openHere, eventName, detail, event) => {
   const other = inSplitFrame() ? otherFrameWindow() : null;
-  if (!other) return followHere();
+  if (!other) return openHere();
   const direct = event && (event.ctrlKey || event.metaKey);
   const where = direct ? 'other' : await askWhere();
-  if (where === 'here') return followHere();
-  if (where === 'other') {
-    other.dispatchEvent(new CustomEvent('eli:follow-link', { detail: { uri, basePath } }));
-  }
+  if (where === 'here') return openHere();
+  if (where === 'other') other.dispatchEvent(new CustomEvent(eventName, { detail }));
   return null;
 };

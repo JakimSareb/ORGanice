@@ -29,7 +29,42 @@ export const SECTION_DEFS = [
   { id: 'logbook', kind: 'view', label: 'Logbook', icon: 'fas fa-check' },
 ];
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);
-export const sectionDef = (id) => SECTION_DEFS.find((s) => s.id === id) || null;
+
+// (2.16) Secciones propias (creadas en Ajustes): son VISTAS como Focus: una tarea sigue en su
+// lista de siempre y además sale aquí si cumple sus reglas (sin reglas: todas las abiertas).
+export const CUSTOM_PREFIX = 'c_';
+export const isCustomId = (id) => typeof id === 'string' && id.startsWith(CUSTOM_PREFIX);
+export const CUSTOM_ICONS = [
+  'fas fa-bookmark',
+  'fas fa-heart',
+  'fas fa-home',
+  'fas fa-briefcase',
+  'fas fa-phone',
+  'fas fa-shopping-cart',
+  'fas fa-book',
+  'fas fa-lightbulb',
+  'fas fa-users',
+  'fas fa-bolt',
+  'fas fa-leaf',
+  'fas fa-flag',
+];
+
+// Definición de una sección (las de siempre, o una propia de la configuración `cfg`)
+export const sectionDef = (id, cfg) => {
+  const fixed = SECTION_DEFS.find((s) => s.id === id);
+  if (fixed) return fixed;
+  const c = (cfg || current || { custom: [] }).custom || [];
+  const own = c.find((x) => x.id === id);
+  return own ? { id, kind: 'custom', label: own.label, icon: own.icon } : null;
+};
+// Nombre que se ve (el propio, si se ha cambiado en Ajustes)
+export const sectionLabel = (id, cfg) => {
+  const conf = cfg || current;
+  const s = conf && conf.sections && conf.sections[id];
+  if (s && s.label && String(s.label).trim()) return String(s.label).trim();
+  const def = sectionDef(id, conf);
+  return def ? def.label : id;
+};
 
 const base = { show: true, states: [], tags: [], props: [] };
 const listTicks = { habits: false, future: false, futurePriority: true, parked: false };
@@ -69,7 +104,15 @@ const toArr = (v) =>
 // Configuración efectiva a partir de lo guardado (Map de immutable, objeto o nada)
 export const normalizeGtdSections = (stored) => {
   const raw = stored && stored.toJS ? stored.toJS() : stored || {};
-  const savedOrder = Array.isArray(raw.order) ? raw.order.filter((id) => SECTION_IDS.includes(id)) : [];
+  const custom = (Array.isArray(raw.custom) ? raw.custom : [])
+    .filter((c) => c && isCustomId(c.id))
+    .map((c) => ({
+      id: c.id,
+      label: String(c.label || 'Sección').trim() || 'Sección',
+      icon: CUSTOM_ICONS.includes(c.icon) ? c.icon : CUSTOM_ICONS[0],
+    }));
+  const allIds = [...SECTION_IDS, ...custom.map((c) => c.id)];
+  const savedOrder = Array.isArray(raw.order) ? raw.order.filter((id) => allIds.includes(id)) : [];
   // Las que falten (p. ej. secciones nuevas de una versión futura) van en su sitio por defecto
   const order = [...savedOrder];
   SECTION_IDS.forEach((id, i) => {
@@ -79,16 +122,20 @@ export const normalizeGtdSections = (stored) => {
       .find((x) => order.includes(x));
     order.splice(prev ? order.indexOf(prev) + 1 : 0, 0, id);
   });
+  // Las propias que no estén en el orden guardado, al final
+  custom.forEach((c) => !order.includes(c.id) && order.push(c.id));
   const sections = {};
-  SECTION_IDS.forEach((id) => {
+  allIds.forEach((id) => {
     const saved = (raw.sections && raw.sections[id]) || {};
-    const merged = { ...DEFAULT_SECTIONS[id], ...saved };
+    const defaults = DEFAULT_SECTIONS[id] || { ...base, ...listTicks };
+    const merged = { ...defaults, ...saved };
     merged.states = toArr(merged.states).map((s) => s.toUpperCase());
     merged.tags = toArr(merged.tags);
     merged.props = toArr(merged.props);
+    merged.label = typeof merged.label === 'string' ? merged.label : '';
     sections[id] = merged;
   });
-  return { order, sections };
+  return { order, sections, custom };
 };
 
 export const DEFAULT_GTD_CONFIG = normalizeGtdSections(null);
@@ -111,7 +158,14 @@ export const isSectionShown = (id, cfg = current) => {
 
 // Listas exclusivas en su orden
 export const exclusiveOrder = (cfg = current) =>
-  cfg.order.filter((id) => (sectionDef(id) || {}).kind === 'list');
+  cfg.order.filter((id) => (sectionDef(id, cfg) || {}).kind === 'list');
+
+// (2.16) Secciones propias, en su orden
+export const customOrder = (cfg = current) => cfg.order.filter((id) => isCustomId(id));
+
+// ¿Tiene la sección alguna regla (estados, etiquetas o propiedades)?
+export const hasRules = (section) =>
+  !!section && (section.states.length > 0 || section.tags.length > 0 || section.props.length > 0);
 
 // Etiquetas de Inbox (para @inbox automático)
 export const inboxTags = (cfg = current) => {

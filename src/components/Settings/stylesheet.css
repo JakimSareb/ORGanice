@@ -303,3 +303,40 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* ORG Mode para Eli (2.16): ayuda de los campos, secciones propias */
+.eli-gtdsec__rule-hint {
+  flex-basis: 100%;
+  margin-left: 98px;
+  margin-top: -2px;
+  font-size: 12px;
+  color: var(--base1);
+}
+.eli-gtdsec__icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 6px 98px;
+}
+.eli-gtdsec__icon {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--base01);
+  cursor: pointer;
+}
+.eli-gtdsec__icon.is-on {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.eli-gtdsec__add {
+  margin-top: 10px;
+}
+@media (max-width: 600px) {
+  .eli-gtdsec__rule-hint,
+  .eli-gtdsec__icons {
+    margin-left: 0;
+  }
+}

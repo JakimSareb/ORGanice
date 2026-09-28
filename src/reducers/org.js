@@ -1740,6 +1740,9 @@ export const setSearchFilterInformation = (state, action) => {
   if (typeof action.onlyCurrentFile === 'boolean') {
     state.setIn(['search', 'onlyCurrentFile'], action.onlyCurrentFile);
   }
+  if (typeof action.includeArchived === 'boolean') {
+    state.setIn(['search', 'includeArchived'], action.includeArchived);
+  }
   state.setIn(['search', 'context'], context);
   state.setIn(['search', 'cursorPosition'], cursorPosition);
   const scope = context === 'search' ? state.getIn(['search', 'scope']) || 'headers' : 'headers';
@@ -1762,10 +1765,18 @@ export const setSearchFilterInformation = (state, action) => {
   if (context === 'agenda') {
     files = determineIncludedFiles(files, fileSettings, path, 'includeInAgenda', false);
   } else if (context === 'search') {
+    const allFiles = files;
     files = determineIncludedFiles(files, fileSettings, path, 'includeInSearch', false);
     // ORG Mode para Eli: buscar solo en la hoja abierta
     if (state.getIn(['search', 'onlyCurrentFile'])) {
       files = files.filter((_file, filePath) => filePath === path);
+    } else if (state.getIn(['search', 'includeArchived'])) {
+      // (2.16) «Archivadas»: también los ficheros *.org_archive leídos
+      allFiles.forEach((file, filePath) => {
+        if (filePath && /\.org_archive$/i.test(filePath) && file && file.get('headers')) {
+          files = files.set(filePath, file);
+        }
+      });
     }
   } else if (context === 'task-list') {
     files = determineIncludedFiles(files, fileSettings, path, 'includeInTasklist', false);

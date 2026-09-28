@@ -1676,3 +1676,90 @@
   opacity: 0.75;
   margin: 0 0 6px 4px;
 }
+
+/* ORG Mode para Eli (2.16): selección con el teclado, fila «Añadir» con «Capturar» */
+.gtd-task.is-selected > .gtd-task__row {
+  background: var(--base2);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+.gtd-add-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.gtd-add-row .gtd-add {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.gtd-capture-pill {
+  flex: none;
+  border: 1px solid var(--base2);
+  background: transparent;
+  color: var(--base01);
+  border-radius: 999px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gtd-capture-pill:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.gtd-capture-pill i {
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+/* ORG Mode para Eli (2.16): casilla de terminar en el editor; terminada = en gris */
+.gtd-ed__done {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  align-self: center;
+  margin-right: 2px;
+  border: 2px solid var(--base1);
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.gtd-ed__done:hover {
+  border-color: var(--green);
+}
+.gtd-ed__done.is-on {
+  background: var(--green);
+  border-color: var(--green);
+}
+.gtd-editor.is-finished .gtd-ed__done.is-on .fa-times {
+  color: #fff;
+}
+.gtd-editor.is-finished {
+  filter: grayscale(0.85);
+  opacity: 0.85;
+}
+.gtd-editor.is-finished .gtd-editor__title {
+  text-decoration: line-through;
+}
+.gtd-ed__finished {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--base1);
+  margin: -4px 0 6px 30px;
+}
+.gtd-ed__tags > .gtd-ed__star {
+  flex: 0 0 22px;
+  font-size: 18px;
+  align-self: center;
+}

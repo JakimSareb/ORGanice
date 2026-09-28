@@ -48,6 +48,7 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 - Selecciona el texto y toca el botón: se le ponen los marcadores de Org Mode. Si ya los tenía, se quitan.
 - Sin seleccionar nada, pone los dos marcadores y deja el cursor en medio para escribir.
 - Si seleccionas varias líneas, se marca cada una por separado (así lo entiende Emacs).
+- En la descripción, las notas y el editor de la vista GTD, tras una rayita vertical vienen los *marcadores de lista*: casilla (- [ ]), guion (-), más (+), numerada (1. 2. 3.) y la goma, que los quita. Van al principio de la línea (o de cada línea seleccionada); pulsar otra vez el mismo los quita.
 - Con el teclado, en cualquier campo de texto (Ctrl en Windows y Linux, ⌘ en el Mac): *Ctrl+B* negrita, *Ctrl+I* cursiva, *Ctrl+U* subrayado, *Ctrl+Mayús+X* tachado, *Ctrl+E* código y *Ctrl+Mayús+E* literal. Al pasar el ratón por cada botón se ve su atajo.
 *** Muéveme con las flechas
 *** Y a mí también
@@ -63,10 +64,10 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 ** La barra superior y los botones de abajo
 - *Documentos | GTD*: arriba a la izquierda, el conmutador entre los dos modos de la app. *Documentos* son tus ficheros y el explorador; *GTD*, la vista de tareas. Un toque en cualquier parte del conmutador (o la tecla g) cambia de modo, y cada modo recuerda dónde lo dejaste: al volver a Documentos se abre el último fichero, con el mismo encabezado seleccionado (y en narrow si lo estaba). La línea de color bajo la barra dice en qué modo estás. En el móvil, el modo activo lleva su nombre y el otro solo el icono.
 - Junto al conmutador, *‹* sube a la carpeta del fichero (o a la carpeta de arriba en el explorador).
-- A la derecha, a la vista: *← →* (atrás y adelante, como en el navegador: vuelven a la vista, fichero o carpeta anterior), *sincronizar* (en Documentos, el fichero abierto; en GTD, sus ficheros; tecla s; normalmente es automático), la *lupa* (paleta de comandos, Ctrl+Espacio), el *calendario*, *deshacer* y *⋯*.
+- A la derecha, a la vista: *← →* (atrás y adelante, como en el navegador: vuelven a la vista, fichero o carpeta anterior; también Alt+← / Alt+→, o ⌘[ / ⌘] en el Mac), *sincronizar* (en Documentos, el fichero abierto; en GTD, sus ficheros; tecla s; normalmente es automático), la *lupa* (paleta de comandos, Ctrl+Espacio), el *calendario*, *deshacer* y *⋯*.
 - En *⋯*: buscar en el fichero (tecla b), rehacer, reducir al encabezado seleccionado (narrow), *contraer todas las cabeceras* y *expandir todas las cabeceras*, mover con flechas (tecla m), editar como texto plano, PDF, ficheros principales (tecla f), dos columnas, calendario, *calculadora*, fases de la Luna, novedades y ajustes.
 - En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero.
-- *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa. Al tocar un enlace a un fichero o a un encabezado, te pregunta si abrirlo *aquí* o *en la otra columna* (Ctrl+clic, o ⌘+clic en el Mac, lo abre directamente en la otra).
+- *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa. Al tocar un enlace a un fichero o a un encabezado (o «Abrir» en el editor de la vista GTD), te pregunta si abrirlo *aquí* o *en la otra columna* (Ctrl+clic, o ⌘+clic en el Mac, lo abre directamente en la otra).
 - Abajo quedan tres botones: *paleta de comandos* (la lupa; se pone naranja si hay un reloj en marcha), *agenda* y *+ capturar*.
 - Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de la barra superior, sin tapar el texto. Tócala para ocultarla.
 
@@ -167,8 +168,12 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 - *Desliza* una tarea hacia la derecha para marcarla como hecha, o hacia la izquierda para borrarla (pide confirmación). Con el ratón, el gesto es en horizontal dentro de la fila; si sales de la fila, pasa a arrastrar. Se desactiva en Ajustes → «Deslizar en la vista GTD».
 - *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
 - Deshacer y rehacer arriba a la derecha.
-- *Logbook*: tiene su propio buscador («Buscar en las terminadas…»), que busca solo entre las terminadas (título, notas, etiquetas y área). En sus filas no hay casilla ni ★: para cambiar algo, toca la tarea y se abre su editor.
+- *Logbook*: el botón *Archivadas* muestra también, al final, las tareas de los ficheros _archive (junto a cada fichero o en su subcarpeta archive); tocarlas abre su fichero. Se recuerda. Tiene su propio buscador («Buscar en las terminadas…»), que busca solo entre las terminadas (título, notas, etiquetas y área). En sus filas no hay casilla ni ★: para cambiar algo, toca la tarea y se abre su editor.
 - *Archivar las terminadas*: en Logbook, «Archivar todas» archiva de una vez todas las terminadas (con sus subencabezados), como org-archive-subtree de Emacs, en el fichero _archive de cada fichero (o en su subcarpeta archive, según Ajustes). Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
+- *Terminar desde el editor*: la casilla redonda a la izquierda del título la termina (DONE); con Mayúsculas pulsada, la cancela (CANCELLED); otra vez, la reabre. El editor no se cierra: se queda en gris con «Terminada» (al cerrarlo, la tarea pasa al Logbook). La ★ está debajo, junto a las etiquetas.
+- *Notas*: al pulsar Intro en una línea que empieza por «- », «+ », «- [ ] » o «1. », la siguiente empieza igual (casilla vacía, número siguiente); Intro en un elemento vacío termina la lista. Pegar un documento (PDF, Word…) lo adjunta, igual que una imagen.
+- *Con el teclado*: ↓ selecciona la primera tarea y ↑ la última; sigue con las flechas. Intro la abre; Supr o Retroceso la borran (pregunta: Intro confirma, Esc cancela); ← salta al menú lateral, donde ↑ ↓ cambian de sección (se ve al momento) y → vuelve a la lista. En el buscador, Esc sale de él.
+- *Plantillas de captura*: la pastilla «+ Capturar», a la derecha de «Añadir», o la tecla c.
 - *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
 - *Agrupar por proyecto*: el botón de las rayas (arriba, junto a deshacer) muestra la lista con un separador por proyecto y sus tareas debajo; las tareas sin proyecto van arriba del todo. Se recuerda. Toca el nombre de un proyecto para abrirlo. (En Scheduled, Deadline y Logbook no, porque ya van por fechas.)
 - *Ordenar arrastrando*: las tareas de un proyecto se ordenan arrastrando su asa ⋮⋮ (a la izquierda de la fila). Se ordena el propio fichero, así que el orden se ve igual en todas las listas, en Documentos y en Emacs. Dentro de un proyecto las fechas no cambian el orden, salvo las tareas cuya fecha (programada o límite) ya ha llegado, que van primero.
@@ -192,6 +197,9 @@ En Ajustes → *Vista GTD y gestos* → «Secciones de la vista GTD» está la l
 - *Casillas* de cada sección: incluir hábitos; incluir tareas programadas para más adelante; incluirlas si tienen prioridad; incluir tareas de proyectos dormidos o que aún no empiezan. Por defecto, los hábitos y las programadas a futuro solo en Scheduled.
 - Casos especiales: Inbox («encabezados sin estado del fichero de entrada»), Reference («sin estado ni tareas debajo»), Focus (con ★, con fecha de hoy o pasada, ★ automática al llegar la fecha) y Proyectos («Todos los proyectos»).
 - Al llevar una tarea a una lista (editor o arrastrar) se le pone el primer estado configurado de esa lista (o su primera etiqueta, si la lista no tiene estados, como Inbox con @inbox).
+- En estados, etiquetas y propiedades caben *varios, separados por comas* (p. ej. NEXT, TODO).
+- *Nombre en el menú*: cada sección puede llamarse como quieras (vacío = el de siempre).
+- *Nueva sección*: al final de la lista. Le pones nombre, icono y reglas. Muestra las tareas abiertas que cumplen alguna de sus reglas (si no tiene ninguna, todas las abiertas), y esas tareas siguen también en su lista de siempre. Se ordena, se oculta y se borra como las demás; «n» dentro de ella crea la tarea con su primer estado y su primera etiqueta.
 - *Restablecer* vuelve a la configuración de siempre (hay uno general y otro en cada sección).
 
 ** Áreas
@@ -259,7 +267,7 @@ Toca una celda para escribir en ella, en su sitio. Intro guarda y baja a la celd
 - *Revisar adjuntos de tareas terminadas*: las tareas terminadas, canceladas o archivadas rara vez necesitan ya sus archivos. En la vista GTD → Logbook, botón *Revisar* (o en la paleta, «Revisar adjuntos de tareas terminadas»): lista esas tareas con sus adjuntos (también las de los ficheros _archive, aunque no estén abiertos), para abrirlos, borrarlos uno a uno o *Borrar todos*. Borrar todos conserva los archivos que siguen enlazados en una tarea abierta o una nota. Al borrar un archivo se quita también su enlace; si el archivo ya no existía, «Quitar enlace» limpia solo el enlace.
 
 * Buscar, mover y archivar
-- *b*: buscar en tareas, encabezados o texto, con fragmentos; «Solo esta hoja» limita la búsqueda al fichero abierto.
+- *b*: buscar en tareas, encabezados o texto, con fragmentos; «Solo esta hoja» limita la búsqueda al fichero abierto y «Archivadas» busca también en los ficheros _archive (se recuerda; en la paleta, «Archivadas: mostrar lo archivado»).
 - *m*: mover el encabezado seleccionado con las flechas.
 - Mover (refile): a otro encabezado o al nivel superior de cualquier fichero.
 - Archivar: como org-archive-subtree de Emacs. Por defecto va al fichero _archive junto al fichero (tareas.org → tareas.org_archive). Con Ajustes → Tareas y etiquetas → «Archivar en: Subcarpeta archive», va a la carpeta archive de la carpeta de cada fichero (proyectos/tareas.org → proyectos/archive/tareas.org_archive; se crea si no existe). Si el fichero tiene su propia línea #+ARCHIVE: (o la tarea la propiedad ARCHIVE), manda esa.
@@ -338,6 +346,7 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador): en
 | Esc          | Cerrar la ventana de edición                        |
 | a            | Agenda                                              |
 | g            | Cambiar entre Documentos y GTD                      |
+| Alt+← / Alt+→ | Atrás / adelante (en el Mac también ⌘[ / ⌘])      |
 | Ctrl/⌘+B, I, U | Negrita, cursiva, subrayado (al escribir)         |
 | Ctrl/⌘+Mayús+X | Tachado (al escribir)                              |
 | Ctrl/⌘+E / +Mayús+E | Código / literal (al escribir)                |
@@ -366,7 +375,9 @@ Solo con teclas sueltas, y nunca mientras escribes ni con el editor de una tarea
 | a         | Agenda                                                        |
 | Mayús+c   | Limpiar: archivar las terminadas (pide confirmación)          |
 | , / h     | Ajustes / manual                                              |
-| k o ?     | Ventana de atajos                                             |
+| k o ?     | Ventana de atajos (también en el ⋯ de arriba)                 |
+| ↑ ↓ / Intro / Supr | Recorrer la lista / abrir / borrar (con confirmación) |
+| ← / →     | Al menú lateral (↑ ↓ cambian de sección) / a la lista          |
 Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
 * Calculadora
 ⋯ → *Calculadora* (en todas las vistas) o la paleta. Escribe la operación con el teclado o con sus botones: + − × ÷, paréntesis, decimales con coma y porcentajes (200 + 10% = 220). Debajo se ve el resultado según escribes; Intro (o =) lo deja para seguir calculando, el botón de copiar lo copia y Esc borra o cierra.

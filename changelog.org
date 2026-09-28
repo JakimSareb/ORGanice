@@ -3,6 +3,26 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.16 (septiembre de 2026)
+** Vista GTD
+- Teclado: ↓ empieza por la primera tarea de la lista y ↑ por la última; Intro abre la seleccionada; Supr o Retroceso la borran (pide confirmación: Intro confirma, Esc cancela); ← vuelve al menú lateral. En el menú lateral, ↑ ↓ pasan de sección y se ve al momento; → entra en la lista.
+- Editor de una tarea: casilla para terminarla donde estaba la ★ (clic: DONE; Mayúsculas+clic: CANCELLED; otra vez: reabrir). La ventana no se cierra: se queda en gris con «Terminada». La ★ pasa abajo, junto a las etiquetas.
+- Notas: Intro en una línea de lista (- , + , - [ ] , 1. ) sigue la lista en la línea siguiente; Intro en un elemento vacío la termina.
+- Pegar en las notas cualquier documento (PDF, Word…) lo adjunta, no solo las imágenes.
+- «Abrir» (en el editor) con dos columnas: pregunta si abrirla aquí o en la otra.
+- «+ Capturar» junto a «Añadir» (plantillas de captura); la ventana de atajos pasa al ⋯ de arriba.
+- Buscador: Esc sale de él y vuelve a la lista.
+- Logbook → «Archivadas»: muestra también las tareas de los ficheros _archive.
+** Ajustes → secciones de la vista GTD
+- Se indica que caben varios estados, etiquetas o propiedades, separados por comas.
+- Cada sección puede tener su propio nombre en el menú.
+- Secciones nuevas («Nueva sección»): con su nombre, icono y reglas; muestran las tareas abiertas que las cumplen (sin reglas, todas), sin quitarlas de su lista.
+** En toda la app
+- Botón Aa: marcadores de lista al principio de la línea (casilla, guion, más, numerada y quitar), en la descripción, las notas y el editor de GTD.
+- Búsqueda (b) y paleta: «Archivadas» para buscar también en lo archivado.
+- Atrás / adelante con Alt+← / Alt+→ (y ⌘[ / ⌘] en el Mac).
+- Las ventanas de confirmación se cierran con Esc.
+
 * 2.15 (septiembre de 2026)
 ** Vista GTD
 - Atajos de teclado como en Nirvana, configurables (Ajustes → Atajos de teclado → «Vista GTD»): n tarea nueva en la lista actual (Mayús+n, arriba), i x w s y f l para crearla en Inbox, Next, Waiting, Scheduled, Someday, Focus o Reference, p proyecto, 1…9 y 0 para ir a las listas, [ ] lista anterior/siguiente, Mayús+0/9/[/] para las áreas, / buscar, r sincronizar, a agenda, Mayús+c limpiar, k o ? la ventana de atajos.

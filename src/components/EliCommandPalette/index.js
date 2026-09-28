@@ -13,7 +13,7 @@ import './stylesheet.css';
 import { fuzzyScore, normalize } from '../../lib/eli_fuzzy';
 import { calculateActionedKeybindings } from '../../lib/keybindings';
 import { displayTitle, LISTS, EXTRA_LISTS } from '../../lib/gtd/gtd_model';
-import { normalizeGtdSections, isSectionShown } from '../../lib/gtd/gtd_sections';
+import { normalizeGtdSections, isSectionShown, sectionLabel } from '../../lib/gtd/gtd_sections';
 import { STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import {
   loadFileQuietly,
@@ -23,10 +23,12 @@ import {
   sync,
   eliReviewFinishedAttachments,
   eliSetAllHeadersOpened,
+  eliLoadArchivedFiles,
 } from '../../actions/org';
 import { eliPrepareOffline } from '../../actions/eli_offline';
 import { openCalendar } from '../EliCalendar';
 import { openCalculator } from '../EliCalculator';
+import { getShowArchived, setShowArchived, isArchiveFile } from '../../lib/eli_archived';
 import {
   activatePopup,
   setTheme,
@@ -160,6 +162,7 @@ export default function EliCommandPalette() {
     const client = store.getState().syncBackend.get('client');
     let alive = true;
     listAllOrgFiles(client).then((paths) => alive && setRemoteFiles(paths));
+    if (getShowArchived()) dispatch(eliLoadArchivedFiles());
     return () => {
       alive = false;
     };
@@ -432,31 +435,57 @@ export default function EliCommandPalette() {
       'changelog versión'
     );
     act('moon', 'Fases de la Luna', 'fas fa-moon', openMoonPhases);
-    act('calculator', 'Calculadora', 'fas fa-calculator', () => openCalculator(), '', 'calcular sumar cuentas');
+    act(
+      'calculator',
+      'Calculadora',
+      'fas fa-calculator',
+      () => openCalculator(),
+      '',
+      'calcular sumar cuentas'
+    );
 
     // Listas GTD
     const gtdCfg = normalizeGtdSections(state.base.get('eliGtdSections'));
-    [...LISTS, ...EXTRA_LISTS]
+    [...LISTS, ...EXTRA_LISTS, ...(gtdCfg.custom || [])]
       .filter((l) => isSectionShown(l.id, gtdCfg))
       .forEach((l) =>
         add({
           rid: `g:${l.id}`,
           kind: 'gtd',
-          label: `GTD: ${l.label}`,
+          // (2.16) con su nombre de Ajustes; y también las secciones propias
+          label: `GTD: ${sectionLabel(l.id, gtdCfg)}`,
           icon: l.icon,
           run: () => gtdCommand(history, pathname, { view: { id: l.id } }),
         })
       );
 
+    // (2.16) Lo archivado (*.org_archive) solo con «Archivadas» encendido
+    const showArchived = getShowArchived();
+    act(
+      'archived',
+      showArchived ? 'Archivadas: ocultar lo archivado' : 'Archivadas: mostrar lo archivado',
+      'fas fa-archive',
+      () => {
+        setShowArchived(!showArchived);
+        if (!showArchived) dispatch(eliLoadArchivedFiles());
+      },
+      '',
+      'archive archivo buscar ficheros _archive'
+    );
+
     // Ficheros
-    const loaded = Array.from(files.keys()).filter(isRealPath);
+    const loaded = Array.from(files.keys())
+      .filter(isRealPath)
+      .filter((p) => showArchived || !isArchiveFile(p));
     const filePaths = Array.from(
       new Set([
         ...loaded,
         ...(state.org.present.get('fileSettings') || List()).map((s) => s.get('path')).toArray(),
         ...remoteFiles,
       ])
-    ).filter(isRealPath);
+    )
+      .filter(isRealPath)
+      .filter((p) => showArchived || !isArchiveFile(p));
     filePaths.forEach((p) =>
       add({
         rid: `f:${p}`,

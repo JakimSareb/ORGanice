@@ -1,6 +1,6 @@
 {
   "name": "organice",
-  "version": "2.15.0",
+  "version": "2.16.0",
   "private": true,
   "engines": {
     "node": "^20.17.0"
