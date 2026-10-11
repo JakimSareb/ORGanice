@@ -94,7 +94,7 @@ import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
-import { pushModalPage } from '../../actions/base';
+import { pushModalPage, setDisappearingLoadingMessage } from '../../actions/base';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -1346,8 +1346,16 @@ export default function GtdView() {
     className: dropTarget === dropId ? ' is-drop' : '',
   });
 
-  const syncAll = () =>
-    scopePaths.forEach((p) => dispatch(sync({ path: p, shouldSuppressMessages: true })));
+  // (2.17) Sincronizar con aviso: antes se hacía en silencio y no se veía si había funcionado. Ahora
+  // es la sincronización manual de siempre (como en Documentos): «Sincronizando…» y después
+  // «Cambios subidos», «Nada que sincronizar» o «Última versión descargada».
+  const syncAll = () => {
+    if (!store.getState().base.get('online')) {
+      dispatch(setDisappearingLoadingMessage('Sin conexión: no se puede sincronizar', 2500));
+      return;
+    }
+    dispatch(sync({ forceAction: 'manual' }));
+  };
 
   // ORG Mode para Eli: órdenes de la paleta de comandos (ver EliCommandPalette)
   const gtdCmdRef = useRef();
