@@ -1041,6 +1041,24 @@
   font-size: 18px;
   cursor: pointer;
 }
+/* (2.17) «Archivadas» reutiliza la clase agenda__log-toggle (position: absolute; right: 0), que
+   lo dejaba pisando el cuadro de búsqueda: aquí va en el flujo, a la derecha, sin encoger */
+.gtd-log-search .gtd-archived-toggle {
+  position: static;
+  flex: none;
+  white-space: nowrap;
+  font-size: 13px;
+  padding: 3px 10px;
+  border: 1px solid var(--base1);
+  border-radius: 999px;
+  background: var(--base3);
+  color: var(--base01);
+}
+.gtd-log-search .gtd-archived-toggle.is-active {
+  background: var(--base01);
+  border-color: var(--base01);
+  color: var(--base3);
+}
 
 /* ORG Mode para Eli: fichero de origen de la tarea, discreto */
 .gtd-ed__file {
