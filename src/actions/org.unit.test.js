@@ -156,4 +156,48 @@ describe('org actions', () => {
       expect(client.getFileContentsAndMetadata).not.toHaveBeenCalledWith('/a.org');
     });
   });
+
+  describe('captura con el fichero destino sin cargar (2.17)', () => {
+    it('carga el destino y captura a la primera', async () => {
+      const state = readInitialState();
+      const client = {
+        getFileContentsAndMetadata: jest.fn(() =>
+          Promise.resolve({ contents: '* Target\n', lastModifiedAt: new Date() })
+        ),
+      };
+      const template = fromJS({
+        description: 'Capture to target',
+        headerPaths: [],
+        iconName: 'inbox',
+        id: 'unloaded-target',
+        isAvailableInAllOrgFiles: true,
+        letter: '',
+        file: '/target.org',
+        orgFilesWhereAvailable: [],
+        shouldPrepend: false,
+        template: '* TODO %?',
+      });
+      const header = parseOrg('* TODO Captured\n').get('headers').first();
+
+      state.base = state.base.set('online', true);
+      state.syncBackend = state.syncBackend.set('client', client);
+      state.org.present = state.org.present
+        .set('path', '/a.org')
+        .set('files', Map({ '/a.org': parseOrg('* Main\n') }));
+      state.capture = state.capture.set(
+        'captureTemplates',
+        state.capture.get('captureTemplates').push(template)
+      );
+      const store = createStore(rootReducer, state, applyMiddleware(thunk));
+
+      await store.dispatch(insertCaptureFromHeader('unloaded-target', header, false));
+
+      const titles = store
+        .getState()
+        .org.present.getIn(['files', '/target.org', 'headers'])
+        .map((h) => h.getIn(['titleLine', 'rawTitle']))
+        .toJS();
+      expect(titles).toEqual(['Target', 'Captured']);
+    });
+  });
 });

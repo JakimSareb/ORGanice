@@ -726,6 +726,11 @@ const warnIfCaptureParentMissing = (getState, template, shouldPrepend) => {
   );
 };
 
+const captureTargetNeedsLoading = (getState, template) => {
+  const file = template && template.get('file');
+  return !!file && !getState().org.present.getIn(['files', file, 'headers']);
+};
+
 export const insertCapture = (templateId, content, shouldPrepend) => (dispatch, getState) => {
   dispatch(closePopup());
 
@@ -733,8 +738,16 @@ export const insertCapture = (templateId, content, shouldPrepend) => (dispatch, 
     .capture.get('captureTemplates')
     .concat(sampleCaptureTemplates)
     .find((template) => template.get('id') === templateId);
-  warnIfCaptureParentMissing(getState, template, shouldPrepend);
-  dispatch({ type: 'INSERT_CAPTURE', template, content, shouldPrepend, dirtying: true });
+  const doInsert = () => {
+    warnIfCaptureParentMissing(getState, template, shouldPrepend);
+    dispatch({ type: 'INSERT_CAPTURE', template, content, shouldPrepend, dirtying: true });
+  };
+  // ORG Mode para Eli: si el fichero destino de la plantilla aún no está cargado, se carga antes
+  // (antes la primera captura se perdía y la segunda sí funcionaba)
+  if (captureTargetNeedsLoading(getState, template)) {
+    return dispatch(loadFileQuietly(template.get('file'))).then(doInsert);
+  }
+  doInsert();
 };
 
 export const insertCaptureFromHeader = (templateId, header, shouldPrepend) => (
@@ -748,16 +761,28 @@ export const insertCaptureFromHeader = (templateId, header, shouldPrepend) => (
     .concat(sampleCaptureTemplates)
     .find((template) => template.get('id') === templateId);
   const targetPath = template.get('file') || getState().org.present.get('path');
-  warnIfCaptureParentMissing(getState, template, shouldPrepend);
-  dispatch({ type: 'INSERT_CAPTURE_FROM_HEADER', template, header, shouldPrepend, dirtying: true });
-  dispatch(sync({ successMessage: 'Elemento capturado', path: targetPath }));
+  const doInsert = () => {
+    warnIfCaptureParentMissing(getState, template, shouldPrepend);
+    dispatch({
+      type: 'INSERT_CAPTURE_FROM_HEADER',
+      template,
+      header,
+      shouldPrepend,
+      dirtying: true,
+    });
+    dispatch(sync({ successMessage: 'Elemento capturado', path: targetPath }));
+  };
+  if (captureTargetNeedsLoading(getState, template)) {
+    return dispatch(loadFileQuietly(targetPath)).then(doInsert);
+  }
+  doInsert();
 };
 
 export const clearPendingCapture = () => ({
   type: 'CLEAR_PENDING_CAPTURE',
 });
 
-export const insertPendingCapture = () => (dispatch, getState) => {
+export const insertPendingCapture = () => async (dispatch, getState) => {
   const path = getState().org.present.get('path');
   const pendingCapture = getState().org.present.get('pendingCapture');
   const templateName = pendingCapture.get('captureTemplateName');
@@ -786,6 +811,9 @@ export const insertPendingCapture = () => (dispatch, getState) => {
   }
 
   const targetPath = template.get('file') || path;
+  if (captureTargetNeedsLoading(getState, template)) {
+    await dispatch(loadFileQuietly(targetPath));
+  }
 
   const headerPaths = template.get('headerPaths').filter((p) => String(p || '').trim());
   const targetHeaders = getState().org.present.getIn(['files', targetPath, 'headers']);
@@ -814,7 +842,7 @@ export const insertPendingCapture = () => (dispatch, getState) => {
       )}${captureContent}${substitutedTemplate.substring(initialCursorIndex)}`
     : `${substitutedTemplate}${captureContent}`;
 
-  dispatch(insertCapture(template.get('id'), content, template.get('shouldPrepend')));
+  await dispatch(insertCapture(template.get('id'), content, template.get('shouldPrepend')));
   dispatch(sync({ successMessage: 'Elemento capturado', path: targetPath }));
 };
 
