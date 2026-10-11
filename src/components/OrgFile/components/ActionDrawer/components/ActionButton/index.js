@@ -46,6 +46,9 @@ export default class ActionButton extends PureComponent {
         'fa-lg': !letter,
         [`fa-${iconName}`]: !letter,
         'action-drawer__btn--with-sub-icon': !!subIconName,
+        // ORG Mode para Eli: un botón oculto (pointerEvents none en su estilo) no debe recibir
+        // clics; el CSS fuerza pointer-events: all !important y tapaba la cruz de las flechas
+        'action-drawer__btn--inert': !!style && style.pointerEvents === 'none',
         'btn--disabled': isDisabled,
         'action-drawer__btn--letter': !!letter,
       }

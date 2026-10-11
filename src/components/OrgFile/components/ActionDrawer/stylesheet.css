@@ -24,6 +24,10 @@
   pointer-events: all !important;
 }
 
+.action-drawer__btn.action-drawer__btn--inert {
+  pointer-events: none !important;
+}
+
 .action-drawer__done-btn {
   font-weight: bold;
   font-size: 18px;
@@ -62,6 +66,7 @@
   bottom: 0;
   transform: translateX(-50%);
   visibility: hidden;
+  z-index: 3; /* por encima de los botones de abajo (la cruz no debe quedar tapada) */
 }
 .action-drawer__arrow-buttons-container.eli-arrows.is-open {
   visibility: visible;
