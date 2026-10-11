@@ -94,7 +94,9 @@ const eliOpenSubtree = (state, action) => {
   if (index < 0) return state;
   const count = subheadersOfHeaderWithId(headers, action.headerId).size;
   let next = headers;
-  for (let i = index; i <= index + count; i++) next = next.setIn([i, 'opened'], true);
+  // (2.17) titlesOnly: se abre el encabezado pero sus subencabezados quedan plegados (solo títulos)
+  for (let i = index; i <= index + count; i++)
+    next = next.setIn([i, 'opened'], action.titlesOnly ? i === index : true);
   return state.set('headers', next);
 };
 

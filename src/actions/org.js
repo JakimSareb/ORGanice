@@ -585,9 +585,9 @@ export const narrowHeader = (headerId) => ({
 });
 
 // ORG Mode para Eli: vista reducida a un encabezado, con todo su contenido desplegado
-export const eliNarrowAndExpand = (headerId) => (dispatch) => {
+export const eliNarrowAndExpand = (headerId, { titlesOnly = false } = {}) => (dispatch) => {
   dispatch(narrowHeader(headerId));
-  dispatch({ type: 'ELI_OPEN_SUBTREE', headerId });
+  dispatch({ type: 'ELI_OPEN_SUBTREE', headerId, titlesOnly });
 };
 
 // ORG Mode para Eli (2.15): contraer (false) o expandir (true) todas las cabeceras

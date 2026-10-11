@@ -326,6 +326,9 @@ function TaskRow({
   );
 }
 
+// (2.17) última tarea abierta en su fichero desde GTD: al volver se marca y se centra
+let lastOpenedTaskKey = null;
+
 export default function GtdView() {
   const dispatch = useDispatch();
   const store = useStore();
@@ -364,6 +367,28 @@ export default function GtdView() {
   // ORG Mode para Eli: tarea recién creada con su editor abierto: no se cierra al tocar fuera
   // (hay que Guardar o Cancelar; Cancelar la borra)
   const [newKey, setNewKey] = useState(null);
+  // (2.17) al cerrar el editor de una tarea, ésta queda marcada y centrada en la lista
+  useEffect(() => {
+    const key = lastOpenedTaskKey;
+    lastOpenedTaskKey = null;
+    if (!key) return;
+    setSelKey(key);
+    setTimeout(() => {
+      const el = document.querySelector(`[data-reorder-key="${CSS.escape(key)}"]`);
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+    }, 150);
+  }, []);
+  const prevOpenKey = useRef(null);
+  useEffect(() => {
+    const prev = prevOpenKey.current;
+    prevOpenKey.current = openKey;
+    if (!prev || openKey) return;
+    setSelKey(prev);
+    setTimeout(() => {
+      const el = document.querySelector(`[data-reorder-key="${CSS.escape(prev)}"]`);
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+    }, 50);
+  }, [openKey]);
   const noSwipeGtd = useSelector(selectNoSwipeGtd);
   const archiveInSubfolder = useSelector(selectArchiveInSubfolder);
   // ORG Mode para Eli: proyecto nuevo en el editor (aún no existe en el fichero)
@@ -836,7 +861,10 @@ export default function GtdView() {
     openSplitAware(
       () => {
         dispatch(selectHeaderAndOpenParents(task.path, task.id, { widen: true }));
-        dispatch(eliNarrowAndExpand(task.id));
+        // (2.17) «Abrir»: el encabezado con sus subencabezados plegados (solo títulos)
+        dispatch(eliNarrowAndExpand(task.id, { titlesOnly: true }));
+        // …y al volver a GTD, la tarea sigue marcada
+        lastOpenedTaskKey = task.key;
         history.push(`/file${task.path}`);
       },
       'eli:open-task',
@@ -870,6 +898,7 @@ export default function GtdView() {
         ...(customSec && customSec.states.length ? { keyword: customSec.states[0] } : {}),
         area: area !== '*' && area !== '-' ? area : null,
         priority: view.id === 'focus' ? 'A' : null,
+        created: true,
         scheduled,
         deadline: view.id === 'deadline' ? today : null,
         // Si Inbox no va a su fichero de entrada, se marca con @inbox para que se vea en Inbox

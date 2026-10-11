@@ -167,3 +167,19 @@ describe('2.17: fecha de creación en tareas nuevas', () => {
     expect(textOf(store.state())).not.toMatch(/:Created:/);
   });
 });
+
+describe('2.17: «Abrir» muestra el encabezado con los subencabezados plegados', () => {
+  const nested = '* TODO Padre\n** TODO Hija\n*** Nieta\n** Otra\n* Aparte\n';
+  const run = (titlesOnly) => {
+    let state = Map({ path: P, files: Map({ [P]: parseOrg(nested) }), fileSettings: List() });
+    const id = state.getIn(['files', P, 'headers', 0, 'id']);
+    state = rootOrgReducer(state, { type: 'ELI_OPEN_SUBTREE', headerId: id, titlesOnly });
+    return state.getIn(['files', P, 'headers']).map((h) => !!h.get('opened')).toJS();
+  };
+  test('solo títulos: se abre el padre y nada más', () => {
+    expect(run(true)).toEqual([true, false, false, false, false]);
+  });
+  test('sin la opción, se abre todo el subárbol como antes', () => {
+    expect(run(false)).toEqual([true, true, true, true, false]);
+  });
+});
