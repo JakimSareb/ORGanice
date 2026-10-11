@@ -190,5 +190,55 @@ Una línea #+ARCHIVE: del fichero, o la propiedad ARCHIVE, siguen mandando."
 ;; Abrir ficheros .org con líneas largas cortadas en pantalla y sangría visual opcional
 (add-hook 'org-mode-hook #'visual-line-mode)
 
+;;;; 2.17: finales de línea, y de inbox.org a tasks.org al dar estado --------------------------
+
+;; Sin ^M: los ficheros se guardan siempre con finales de línea Unix (LF), como la app desde 2.17
+(defun organice--force-unix-eol ()
+  (when (and buffer-file-name (derived-mode-p 'org-mode)
+             (memq (coding-system-eol-type buffer-file-coding-system) '(1 2)))
+    (set-buffer-file-coding-system 'unix)))
+(add-hook 'before-save-hook #'organice--force-unix-eol)
+
+(defcustom organice-refile-from-inbox t
+  "t: al darle estado (TODO, NEXT…) a un encabezado de primer nivel de `organice-inbox-file',
+pasa solo al final de `organice-tasks-file' (como en la app). Los encabezados sin estado se quedan."
+  :type 'boolean)
+
+(defun organice--refile-from-inbox-now (marker)
+  "Pasa el subárbol de MARKER a `organice-tasks-file' (al final, nivel 1)."
+  (when (and (markerp marker) (marker-buffer marker)
+             (file-exists-p (organice-tasks-path)))
+    (condition-case err
+        (with-current-buffer (marker-buffer marker)
+          (org-with-wide-buffer
+           (goto-char marker)
+           (org-back-to-heading t)
+           (org-cut-subtree)
+           (save-buffer))
+          (with-current-buffer (find-file-noselect (organice-tasks-path))
+            (org-with-wide-buffer
+             (goto-char (point-max))
+             (unless (bolp) (insert "\n"))
+             (org-paste-subtree 1)
+             (save-buffer))))
+      (error (message "ORGanice: no se pudo pasar a %s: %s" organice-tasks-file
+                      (error-message-string err))))
+    (set-marker marker nil)))
+
+(defun organice--refile-from-inbox ()
+  "En `org-after-todo-state-change-hook': de inbox.org a tasks.org al darle estado."
+  (when (and organice-refile-from-inbox
+             (derived-mode-p 'org-mode)
+             buffer-file-name
+             (stringp org-state) (not (string-empty-p org-state))
+             (string-empty-p (or (bound-and-true-p org-last-state) ""))
+             (equal (file-truename buffer-file-name) (file-truename (organice-inbox-path)))
+             (not (equal (file-truename (organice-inbox-path))
+                         (file-truename (organice-tasks-path))))
+             (= (org-outline-level) 1))
+    ;; con un instante de margen: que Org termine de cambiar el estado antes de mover el árbol
+    (run-with-timer 0.2 nil #'organice--refile-from-inbox-now (point-marker))))
+(add-hook 'org-after-todo-state-change-hook #'organice--refile-from-inbox)
+
 (provide 'organice-core)
 ;;; organice-core.el ends here

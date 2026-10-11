@@ -85,6 +85,17 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Atrás / adelante (Alt+← / Alt+→)        | =C-x ←= / =C-x →=                                   |
 | Secciones propias (Ajustes)             | Vistas propias en =org-agenda-custom-commands=      |
 | Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
+| (2.17) Esc / Tab en el buscador de GTD  | Sin equivalente: en Emacs se usa =/= en la agenda (filtro)  |
+| (2.17) Fecha de creación en tareas nuevas | Las plantillas de captura escriben =:Created: [fecha]= (=organice-capture.el=) |
+| (2.17) De inbox.org a tasks.org al dar estado | Automático al cambiar el estado (=organice-refile-from-inbox=, =nil= para desactivarlo) |
+| (2.17) Botón «Refile» de GTD            | =C-c C-w= (org-refile) en el encabezado, o dar estado desde la agenda |
+| (2.17) «Archivar todas» solo de ciertos ficheros | =C-c g B= con =(setq organice-archive-files '("tasks.org" "casa.org"))= (nil: todos) |
+| (2.17) Sin ^M al final de las líneas    | Automático: se guarda siempre con finales de línea Unix |
+| (2.17) Calendario: semanas y festivos con interruptor | =W= (semanas) y =X= (festivos) dentro del calendario |
+| (2.17) Encabezados DONE / CANCELLED atenuados | La cara =org-headline-done= de los temas de ORGanice (ya lo hacía) |
+| (2.17) Subtareas anidadas, Referencias, notas del proyecto | Org ya lo muestra así: los subencabezados cuelgan de su tarea, las notas van bajo el encabezado y las referencias son los encabezados sin estado |
+| (2.17) Reordenar subtareas arrastrando  | =M-↑= / =M-↓= (mueve el subárbol entre sus hermanas) |
+| (2.17) Adjuntos en pestaña nueva        | Se abren con la aplicación del sistema (=C-c g o=)   |
 En Linux o Windows, =⌘= es la tecla Super (la de Windows). Dentro de la agenda funcionan todas las
 teclas de Org: =t= cambia el estado, =,= la prioridad, =:= las etiquetas, =C-c C-s= programa,
 =C-c C-d= fecha límite, =RET= abre la tarea, =g= recalcula.
@@ -144,6 +155,9 @@ Si en la app cambiaste las secciones, pon aquí lo mismo para que ambas vean lo 
 =C-c c= y la letra: =i= Inbox, =t= TODO, =n= NEXT, =p= proyecto, =h= hábito, =l= nota con enlace.
 Para que coincidan con tus plantillas de la app (Ajustes → Plantillas de captura), edita
 =lisp/organice-capture.el=: misma letra, mismo fichero y mismo texto.
+Desde la 2.17 las plantillas escriben =:Created: [fecha]= bajo el título, como las tareas nuevas de
+la vista GTD de la app. Al dar estado a un encabezado de primer nivel de =inbox.org=, pasa solo
+al final de =tasks.org= (como en la app; =(setq organice-refile-from-inbox nil)= lo desactiva).
 
 ** Archivar
 Por defecto, junto al fichero (=tareas.org_archive=). Para guardar lo archivado en la subcarpeta
@@ -152,6 +166,12 @@ Por defecto, junto al fichero (=tareas.org_archive=). Para guardar lo archivado 
 (customize-set-variable 'organice-archive-in-subfolder t)
 #+end_src
 (la carpeta se crea sola). Una línea =#+ARCHIVE:= del fichero sigue mandando.
+
+«Archivar todas» solo de ciertos ficheros (Ajustes → Vista GTD → Ficheros de la app): =C-c g B=
+archiva las terminadas de todos los ficheros, o solo de estos si los indicas:
+#+begin_src emacs-lisp
+(setq organice-archive-files '("tasks.org" "casa.org"))   ; nil = todos
+#+end_src
 
 ** Adjuntos
 Como en la app: son enlaces =file:= normales y los archivos viven en =assets/<año>/= junto al
@@ -187,6 +207,8 @@ marcados.
   (setq organice-calendar-custom-holidays '((9 24 "La Mercè") (5 15 2027 "Puente")))
   #+end_src
 - =RET= (o =c=) sobre un día abre la agenda de ese día, como tocar un día en la app.
+- =W= muestra u oculta los números de semana y =X= los festivos (los botones «Sem» y bandera del
+  calendario de la app). Los fines de semana salen resaltados.
 - Teclas: =<= =>= meses, =C-x [= =C-x ]= años, =.= hoy, =g d= ir a una fecha, =h= el festivo
   del día, =a= lista de festivos, =M= fases de la Luna, =q= salir.
 - Contar días entre dos fechas: marca una con =C-SPC=, ve a la otra y pulsa =M-==.

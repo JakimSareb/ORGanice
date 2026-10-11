@@ -8,6 +8,8 @@
 ;; En el calendario: RET (o c) la agenda de ese día, < > meses, C-x [ ] años, . hoy,
 ;; g d ir a una fecha, h festivo del día,
 ;; x marcar festivos, M fases de la Luna, M-= contar los días de la región (marca con C-SPC).
+;; (2.17) W muestra u oculta los números de semana, X los festivos marcados (como los botones
+;; «Sem» y la bandera del calendario de la app); los fines de semana, resaltados.
 
 (require 'calendar)
 (require 'holidays)
@@ -164,6 +166,33 @@
 (with-eval-after-load 'calendar
   (define-key calendar-mode-map (kbd "RET") #'organice-calendar-agenda-for-date)
   (define-key calendar-mode-map (kbd "c") #'organice-calendar-agenda-for-date))
+
+;;;; (2.17) Semanas y festivos con interruptor, fines de semana resaltados ------------------------
+
+(defvar organice-calendar--intermonth-text calendar-intermonth-text
+  "Texto de los números de semana (para poder volver a ponerlo).")
+
+(setq calendar-weekend-days '(6 0))
+(with-eval-after-load 'calendar
+  (set-face-attribute 'calendar-weekend-header nil :inherit 'font-lock-comment-face)
+  (set-face-attribute 'holiday nil :weight 'bold))
+
+(defun organice-calendar-toggle-weeks ()
+  "Muestra u oculta los números de semana (botón «Sem» de la app)."
+  (interactive)
+  (setq calendar-intermonth-text
+        (if calendar-intermonth-text nil organice-calendar--intermonth-text))
+  (calendar-redraw))
+
+(defun organice-calendar-toggle-holidays ()
+  "Marca u oculta los festivos (la bandera de la app)."
+  (interactive)
+  (setq calendar-mark-holidays-flag (not calendar-mark-holidays-flag))
+  (calendar-redraw))
+
+(with-eval-after-load 'calendar
+  (define-key calendar-mode-map (kbd "W") #'organice-calendar-toggle-weeks)
+  (define-key calendar-mode-map (kbd "X") #'organice-calendar-toggle-holidays))
 
 (defun organice-calendar ()
   "Abre el calendario (como el de la app)."

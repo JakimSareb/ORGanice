@@ -245,3 +245,21 @@
   cursor: pointer;
   white-space: nowrap;
 }
+
+/* (2.17) con tantos botones, en pantallas estrechas se aprietan para que quepan todos */
+@media (max-width: 480px) {
+  .eli-cal__bar {
+    gap: 3px;
+  }
+  .eli-cal__nav,
+  .eli-cal__today,
+  .eli-cal__tool {
+    min-width: 28px;
+    height: 32px;
+    padding: 0 5px;
+    font-size: 14px;
+  }
+  .eli-cal__nav {
+    font-size: 18px;
+  }
+}

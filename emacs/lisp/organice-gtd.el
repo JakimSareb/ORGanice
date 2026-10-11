@@ -590,5 +590,23 @@ Las que tienen alguna subtarea abierta no se archivan (como en la app)."
      "/DONE|CANCELLED" 'file)
     (message "Archivadas: %d%s" n (if (> blocked 0) (format " · %d con subtareas abiertas" blocked) ""))))
 
+(defcustom organice-archive-files nil
+  "Ficheros (relativos a la carpeta) de los que `organice-archive-done-all' archiva las
+terminadas, como «Archivar todas» limitado a ficheros de la app (Ajustes → Vista GTD). nil: todos."
+  :type '(repeat string)
+  :group 'organice)
+
+(defun organice-archive-done-all ()
+  "Archiva las terminadas de `organice-archive-files' (o de todos los ficheros si es nil)."
+  (interactive)
+  (let ((files (if organice-archive-files
+                   (mapcar (lambda (f) (expand-file-name f organice-directory)) organice-archive-files)
+                 (organice-org-files))))
+    (dolist (f files)
+      (when (file-exists-p f)
+        (with-current-buffer (find-file-noselect f)
+          (organice-archive-done)
+          (save-buffer))))))
+
 (provide 'organice-gtd)
 ;;; organice-gtd.el ends here

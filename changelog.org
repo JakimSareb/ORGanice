@@ -3,6 +3,33 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.17 (octubre de 2026)
+** Vista GTD
+- Editor de una tarea: *Deshacer* y *Rehacer* junto al botón «Aa». Al cerrarlo, la tarea queda marcada y centrada en la lista.
+- Tarea nueva: lleva el botón *Adjuntar* y la línea =:Created: [2026-10-03 Sat 19:55]= con su fecha de creación (en las que se crean sin plantilla).
+- Buscador: *Esc* borra lo escrito (con el buscador vacío, sale de él) y *Tab* salta a la primera tarea de la lista.
+- «Abrir» (en el editor): el encabezado se ve con sus subencabezados plegados (solo títulos), y al volver a GTD la tarea sigue marcada.
+- *Subtareas asociadas*: en las listas y en los proyectos cuelgan de su tarea, con sangría y una línea a la izquierda; si su tarea no está en esa lista, se indica «de qué tarea son». Se reordenan arrastrando entre sus hermanas.
+- Dentro de un proyecto: división plegable *Referencias* (los encabezados sin estado del proyecto, con un contador discreto, como «Terminadas») y las *notas del proyecto* bajo su cabecera, plegables.
+- Ficheros de la vista GTD (Ajustes → Vista GTD): fichero de *entrada*, fichero de *tareas* y los ficheros de los que «Archivar todas» archiva (ninguno marcado: todos). Al darle estado a una tarea sin estado de la entrada, *pasa sola* al fichero de tareas; los encabezados sin estado se quedan. El botón *Refile* (aparece arriba cuando hay tareas con estado en la entrada) las pasa todas de una vez.
+** Documentos
+- Barra de arriba: el calendario ya solo está en ⋯; en un documento, el botón de *ficheros principales* ocupa el lugar de la lupa.
+- Explorador de ficheros: se quita el botón redondo de la vista GTD; el *+* de abajo a la derecha abre siempre las plantillas de captura, y «Nuevo fichero Org» pasa al menú de ficheros principales (solo dentro de una carpeta).
+- Encabezados DONE y CANCELLED atenuados.
+- Los adjuntos se abren siempre en una pestaña nueva (nunca sustituyen la app).
+** Calendario
+- Botones para mostrar u ocultar los *números de semana* («Sem», tecla w) y los *festivos* (la bandera, tecla h). Fines de semana con fondo suave, como en Emacs.
+** Arreglos
+- La flecha de cerrar del selector de flechas (mover) abría la agenda en vez de cerrarse.
+- Logbook: el botón «Archivadas» ya no se monta sobre el cuadro de búsqueda.
+- Los ficheros ya no acumulan =^M= al final de las líneas: se leen y se guardan siempre con finales de línea Unix (los que ya los tenían se limpian al guardar).
+- Las tareas con repetición =.+4w= (y =+= / =++=) vuelven a avanzar la fecha al terminarlas, también con varios =#+TODO= en el fichero.
+- Los mensajes de error y las confirmaciones se aceptan con *Intro*.
+- Vista GTD: «Sincronizar» avisa de lo que hace (o de que no hay conexión).
+- Captura con plantillas: la primera vez ya no se pierde cuando el fichero de la plantilla aún no estaba cargado.
+** Emacs
+- Plantillas con =:Created:=, paso de =inbox.org= a =tasks.org= al dar estado, =C-c g B= (archivar las terminadas de los ficheros elegidos), =W= y =X= en el calendario y finales de línea Unix. Ver =emacs/README.org=.
+
 * 2.16 (septiembre de 2026)
 ** Vista GTD
 - Teclado: ↓ empieza por la primera tarea de la lista y ↑ por la última; Intro abre la seleccionada; Supr o Retroceso la borran (pide confirmación: Intro confirma, Esc cancela); ← vuelve al menú lateral. En el menú lateral, ↑ ↓ pasan de sección y se ve al momento; → entra en la lista.
