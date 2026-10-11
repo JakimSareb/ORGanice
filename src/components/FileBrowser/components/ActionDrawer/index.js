@@ -58,6 +58,13 @@ const ActionDrawer = ({
   // abre su fichero de destino con la ventana de captura
   const startCapture = async () => {
     const templates = (captureTemplates || []).filter((t) => !!t.get('file'));
+    if (!templates.length) {
+      showMessage(
+        'Sin plantillas',
+        'No hay plantillas de captura con fichero de destino. Añade alguna en Ajustes → Plantillas de captura.'
+      );
+      return;
+    }
     const template = await chooseCaptureTemplate(templates);
     if (!template) return;
     const file = template.get('file').startsWith('/')
@@ -74,6 +81,12 @@ const ActionDrawer = ({
   // Atajos (los mismos que dentro de un fichero, configurables en Keyboard shortcuts)
   const latest = useRef();
   latest.current = { openAgenda, startCapture, showAgenda, customKeybindings };
+  const newFileRef = useRef();
+  useEffect(() => {
+    const onNewFile = () => newFileRef.current && newFileRef.current();
+    window.addEventListener('eli:new-file', onNewFile);
+    return () => window.removeEventListener('eli:new-file', onNewFile);
+  }, []);
   useEffect(() => {
     const onKey = notWhileTyping((event) => {
       const { showAgenda: agendaOpen, customKeybindings: custom } = latest.current;
@@ -122,6 +135,8 @@ const ActionDrawer = ({
     }
   };
 
+  newFileRef.current = handleAddNewOrgFileClick;
+
   const mainButtonStyle = {
     opacity: 1,
     position: 'relative',
@@ -156,20 +171,15 @@ const ActionDrawer = ({
                 style={{ ...mainButtonStyle, marginRight: 14 }}
                 tooltip="Mostrar agenda"
               />
-              <ActionButton
-                iconName="tasks"
-                isDisabled={false}
-                onClick={() => history.push('/gtd')}
-                dataTestId="eli-browser-gtd"
-                style={{ ...mainButtonStyle, marginRight: 14 }}
-                tooltip="Vista GTD (Nirvana)"
-              />
+              {/* (2.17) «+» abre siempre las plantillas de captura; «Nuevo fichero Org» está en el menú
+                  de ficheros principales. La vista GTD se abre con el conmutador de arriba. */}
               <ActionButton
                 iconName="plus"
                 isDisabled={false}
-                onClick={handleAddNewOrgFileClick}
+                onClick={startCapture}
+                dataTestId="eli-browser-capture"
                 style={mainButtonStyle}
-                tooltip="Nuevo fichero Org"
+                tooltip="Capturar con una plantilla"
               />
             </div>
           </Fragment>

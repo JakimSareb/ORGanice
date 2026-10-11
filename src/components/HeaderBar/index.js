@@ -766,24 +766,23 @@ class HeaderBar extends PureComponent {
             />
           )}
 
-          {/* ORG Mode para Eli: paleta de comandos, siempre a mano */}
-          {isAuthenticated && (
+          {/* ORG Mode para Eli (2.17): en un documento, el botón de ficheros principales (favoritos);
+              la paleta de comandos queda en el resto de vistas. El calendario está en el menú ⋯ */}
+          {isAuthenticated && inFile && (
+            <i
+              className="far fa-copy header-bar__actions__item"
+              onClick={openFavorites}
+              title="Ficheros principales"
+              data-testid="eli-favorites-btn"
+              role="button"
+            />
+          )}
+          {isAuthenticated && !inFile && (
             <i
               className="fas fa-search header-bar__actions__item"
               onClick={openPalette}
               title="Paleta de comandos: buscar o hacer cualquier cosa (Ctrl+Espacio)"
               data-testid="eli-palette-btn"
-              role="button"
-            />
-          )}
-
-          {/* ORG Mode para Eli (2.15): calendario, en las dos vistas */}
-          {isAuthenticated && (inFile || inGtd) && (
-            <i
-              className="far fa-calendar-alt header-bar__actions__item"
-              onClick={() => openCalendar()}
-              title="Calendario"
-              data-testid="eli-calendar-btn"
               role="button"
             />
           )}

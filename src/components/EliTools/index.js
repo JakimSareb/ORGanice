@@ -569,6 +569,8 @@ function FavoritesPopup({ currentPath, onClose }) {
   const favorites = favoritePaths(useSelector(selectFileSettings));
   const canToggleCurrent = !!currentPath && !currentPath.startsWith(STATIC_FILE_PREFIX);
   const currentIsFavorite = favorites.includes(currentPath);
+  // (2.17) «Nuevo fichero Org» solo dentro de una carpeta (explorador), no dentro de un documento
+  const inFolder = /^\/files(\/|$)/.test(history.location.pathname);
 
   // Teclado: Esc cierra; ↑/↓ eligen; Intro abre el elegido
   const [active, setActive] = useState(() => Math.max(0, favorites.indexOf(currentPath)));
@@ -667,6 +669,18 @@ function FavoritesPopup({ currentPath, onClose }) {
               </li>
             ))}
           </ul>
+        )}
+        {inFolder && (
+          <button
+            className="btn eli-fav__toggle"
+            data-testid="eli-fav-new-file"
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new CustomEvent('eli:new-file'));
+            }}
+          >
+            <i className="fas fa-plus" /> Nuevo fichero Org
+          </button>
         )}
         {canToggleCurrent && (
           <button
