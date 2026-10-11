@@ -295,7 +295,8 @@ export const generateTitleLine = (header, includeStars) => {
 export const exportOrg = ({ headers, linesBeforeHeadings, dontIndent }) => {
   let configContent = linesBeforeHeadings.map((x) => x + '\n').join('');
   const headerContent = headers.map((x) => createRawDescriptionText(x, true, dontIndent)).join('');
-  return configContent + headerContent;
+  // ORG Mode para Eli (2.17): nunca se escribe un «\r» (en Emacs se veía como ^M al final de la línea)
+  return (configContent + headerContent).replace(/\r\n?/g, '\n');
 };
 
 /**

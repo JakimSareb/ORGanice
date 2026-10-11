@@ -938,7 +938,9 @@ const getLinesFromFileContents = (fileContents) => {
   // We expect a newline at EOF (from the last line of fileContents).
   // After split(), this results in an empty string at the last position of the
   // array => Remove that last array item.
-  const lines = fileContents.split('\n');
+  // ORG Mode para Eli (2.17): los finales de línea de Windows (\r\n) y los antiguos de Mac (\r)
+  // se pasan a \n al leer; al guardar el fichero queda limpio (sin ^M en Emacs)
+  const lines = fileContents.replace(/\r\n?/g, '\n').split('\n');
 
   // Special case when last line did not end with a newline character:
   if (lines.length > 0 && lines[lines.length - 1] !== '') return lines;
