@@ -49,3 +49,9 @@
   vertical-align: middle;
   align-self: center;
 }
+
+.eli-format-bar__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}

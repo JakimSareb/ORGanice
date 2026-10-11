@@ -1,6 +1,7 @@
 // ORG Mode para Eli: acciones de la vista GTD. Cada cambio se aplica al fichero de la tarea
 // (aunque no sea el abierto) con ELI_IN_FILE y después se sincroniza ese fichero.
 import { fromJS, List } from 'immutable';
+import formatDate from 'date-fns/format';
 import { ActionTypes } from 'redux-undo';
 import { createRawDescriptionText, generateTitleLine } from '../export_org';
 import { timestampForDate } from '../timestamps';
@@ -297,6 +298,10 @@ export const gtdToggleStar = (task) => (dispatch) =>
 /**
  * Nueva tarea. target: { path, parentId? } · fields: { title, list, area, tags }
  */
+// (2.17) Línea con la fecha de creación de una tarea nueva: «:Created: [2026-10-03 Sat 19:55]»
+export const createdLine = (date = new Date()) =>
+  `:Created: [${formatDate(date, 'yyyy-MM-dd eee HH:mm')}]`;
+
 export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (!target || !target.path || !getState().org.present.getIn(['files', target.path, 'headers']))
     return null;
@@ -340,12 +345,15 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   })
     .set('propertyListItems', props)
     .set('planningItems', planning)
-    .set('rawDescription', fields.notes || '');
+    .set(
+      'rawDescription',
+      [fields.created ? createdLine() : '', fields.notes || ''].filter(Boolean).join('\n')
+    );
   // (2.15) fields.rawDescription: el cuerpo tal cual (p. ej. el de una plantilla de captura)
   const description =
     fields.rawDescription !== undefined
       ? fields.rawDescription
-      : props.size || planning.size || fields.notes
+      : props.size || planning.size || fields.notes || fields.created
       ? createRawDescriptionText(fake, false, dontIndent)
       : '';
   dispatch(

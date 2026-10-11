@@ -99,6 +99,7 @@ export default ({
   className = '',
   compact = false,
   collapsible = true,
+  after = null,
 }) => {
   const [open, setOpen] = React.useState(!collapsible || readOpen());
   const keep = (e) => e.preventDefault();
@@ -131,6 +132,7 @@ export default ({
           Aa
         </button>
       )}
+      {after}
       {open &&
         ORG_EMPHASIS.map((item) => {
           const { marker, icon, id } = item;

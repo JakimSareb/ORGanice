@@ -597,6 +597,34 @@ export default function TaskEditor({
               document.activeElement === titleRef.current ? titleRef.current : notesRef.current
             }
             getListField={() => notesRef.current}
+            after={
+              !isNew && onUndo ? (
+                <>
+                  <button
+                    type="button"
+                    className="eli-format-bar__btn"
+                    onClick={withCommit(onUndo)}
+                    disabled={!canUndo && !dirty}
+                    title="Deshacer"
+                    aria-label="Deshacer"
+                    data-testid="gtd-editor-undo"
+                  >
+                    <i className="fas fa-undo" />
+                  </button>
+                  <button
+                    type="button"
+                    className="eli-format-bar__btn"
+                    onClick={withCommit(onRedo)}
+                    disabled={!canRedo}
+                    title="Rehacer"
+                    aria-label="Rehacer"
+                    data-testid="gtd-editor-redo"
+                  >
+                    <i className="fas fa-redo" />
+                  </button>
+                </>
+              ) : null
+            }
           />
         )}
         <textarea
@@ -897,32 +925,6 @@ export default function TaskEditor({
           </button>
         )}
         <span className="gtd-spacer" />
-        {!isNew && (
-          <>
-            <button
-              type="button"
-              className="gtd-btn gtd-btn--icon"
-              onClick={withCommit(onUndo)}
-              disabled={!canUndo && !dirty}
-              title="Deshacer"
-              aria-label="Deshacer"
-              data-testid="gtd-editor-undo"
-            >
-              <i className="fas fa-undo" />
-            </button>
-            <button
-              type="button"
-              className="gtd-btn gtd-btn--icon"
-              onClick={withCommit(onRedo)}
-              disabled={!canRedo}
-              title="Rehacer"
-              aria-label="Rehacer"
-              data-testid="gtd-editor-redo"
-            >
-              <i className="fas fa-redo" />
-            </button>
-          </>
-        )}
         <button
           type="button"
           className="gtd-btn gtd-btn--cancel"

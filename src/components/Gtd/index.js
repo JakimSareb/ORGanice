@@ -38,6 +38,7 @@ import {
   gtdToggleDone,
   gtdToggleStar,
   gtdAddTask,
+  createdLine,
   gtdDeleteTask,
   gtdMoveToProject,
   gtdArchiveTask,
@@ -1099,6 +1100,8 @@ export default function GtdView() {
         scheduled: d.templateHeader ? null : d.scheduled,
         deadline: d.templateHeader ? null : d.deadline,
         rawDescription,
+        // (2.17) sin plantilla, la tarea nueva lleva su fecha de creación
+        created: !d.templateHeader,
       })
     );
     if (!newId) return;
@@ -1106,6 +1109,10 @@ export default function GtdView() {
     // 2) después, lo cambiado en el editor (lista, fechas, etiquetas, notas…)
     const rest = { ...changes };
     delete rest.rawTitle;
+    // (2.17) las notas escritas en el editor no pisan la fecha de creación
+    if (!d.templateHeader && typeof rest.notes === 'string' && !/^:Created:/m.test(rest.notes)) {
+      rest.notes = [createdLine(), rest.notes].filter(Boolean).join('\n');
+    }
     const created = () =>
       buildTasks(
         IMap({ [target.path]: store.getState().org.present.getIn(['files', target.path]) }),
@@ -1149,6 +1156,9 @@ export default function GtdView() {
         allTags={allTags}
         contextTags={contextTags}
         onSave={createFromDraft}
+        onAttachFiles={(list, target) =>
+          openUploadDialog({ files: list, source: 'attach', path: draft.target.path, target })
+        }
         onClose={() => setDraft(null)}
         energyOptions={energyOptions}
         effortOptions={effortOptions}
@@ -1874,12 +1884,26 @@ export default function GtdView() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
-              // (2.16) Esc: fuera del buscador, de vuelta a la lista (el texto se queda)
+              // (2.17) Esc: borra el texto; con el buscador ya vacío, fuera de él y de vuelta a la lista
               if (e.key === 'Escape') {
                 e.preventDefault();
                 e.stopPropagation();
-                e.currentTarget.blur();
-                setSideOpen(false);
+                if (text) {
+                  setText('');
+                } else {
+                  e.currentTarget.blur();
+                  setSideOpen(false);
+                }
+              }
+              // (2.17) Tab: salta a la primera tarea de la lista que se ve
+              if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const first = items.find((x) => x.kind === 'task');
+                if (first) {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                  setSideOpen(false);
+                  setSelKey(first.task.key);
+                }
               }
             }}
             placeholder="Buscar"

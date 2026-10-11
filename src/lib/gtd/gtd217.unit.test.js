@@ -134,3 +134,36 @@ describe('2.17: tareas repetitivas al marcarlas hechas', () => {
     expect(out).toMatch(/\* DONE A\n\s+CLOSED: \[/);
   });
 });
+
+describe('2.17: fecha de creación en tareas nuevas', () => {
+  const { gtdAddTask, createdLine } = require('./gtd_actions');
+
+  test('createdLine tiene el formato de Emacs', () => {
+    expect(createdLine(new Date(2026, 9, 3, 19, 55))).toBe(':Created: [2026-10-03 Sat 19:55]');
+  });
+
+  test('una tarea nueva lleva :Created: y sus notas', () => {
+    const store = makeStore();
+    store.dispatch(gtdAddTask({ path: P }, { title: 'Nueva', keyword: 'TODO', created: true, notes: 'algo' }));
+    const out = textOf(store.state());
+    expect(out).toMatch(/\* TODO Nueva\n:Created: \[\d{4}-\d\d-\d\d \w{3} \d\d:\d\d\]\nalgo/);
+  });
+
+  test('con fecha programada, la planificación va antes de :Created:', () => {
+    const store = makeStore();
+    store.dispatch(
+      gtdAddTask(
+        { path: P },
+        { title: 'Con fecha', keyword: 'TODO', created: true, scheduled: new Date(2026, 9, 20) }
+      )
+    );
+    const out = textOf(store.state());
+    expect(out).toMatch(/\* TODO Con fecha\n\s*SCHEDULED: <2026-10-20 Tue>\n:Created:/);
+  });
+
+  test('sin created no se añade nada', () => {
+    const store = makeStore();
+    store.dispatch(gtdAddTask({ path: P }, { title: 'Sin', keyword: 'TODO' }));
+    expect(textOf(store.state())).not.toMatch(/:Created:/);
+  });
+});
