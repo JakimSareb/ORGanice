@@ -552,6 +552,20 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
         ? [...sec.tasks].sort((a, b) => (b.closed || 0) - (a.closed || 0))
         : dueFirstFileOrder(sec.tasks, today);
   });
+  // (2.17) «Referencias»: los encabezados sin estado del proyecto (notas, material…), en el orden
+  // del fichero; división plegable al final, como «Terminadas»
+  const refs = tasks
+    .filter(
+      (t) =>
+        t.path === projectTask.path &&
+        !t.keyword &&
+        t.project &&
+        t.project.id === projectTask.id &&
+        t.id !== projectTask.id
+    )
+    .filter((t) => matchesFilters(t, filters))
+    .sort((a, b) => a.index - b.index);
+  out.push({ id: 'refs', label: 'Referencias', icon: 'far fa-file-alt', tasks: refs });
   return out;
 };
 
@@ -724,4 +738,46 @@ export const projectsOverview = (tasks, filters = {}, today = new Date()) => {
   };
   Object.values(groups).forEach((g) => g.sort(byDate));
   return groups;
+};
+
+// (2.17) Subtareas asociadas: dentro de cada tramo de tareas seguidas (entre dos cabeceras de
+// sección), las subtareas van justo debajo de su tarea, con su profundidad (`depth`, 1 = hija).
+// Una tarea cuyo padre no está en el tramo queda donde estaba (sin sangría). `skip(task)` deja
+// fuera las que no deben moverse (p. ej. vistas ordenadas por fecha).
+export const nestSubtasks = (items, skip = null) => {
+  const out = [];
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    const byKey = new Map(run.map((i) => [i.task.key, i]));
+    const parentKeyOf = (i) =>
+      i.task.parentId && !(skip && skip(i.task)) ? `${i.task.path}::${i.task.parentId}` : null;
+    const children = new Map();
+    const roots = [];
+    run.forEach((i) => {
+      const pk = parentKeyOf(i);
+      const parent = pk && byKey.get(pk);
+      if (parent && !parent.task.isProject && !i.task.isProject) {
+        if (!children.has(pk)) children.set(pk, []);
+        children.get(pk).push(i);
+      } else {
+        roots.push(i);
+      }
+    });
+    const emit = (i, depth) => {
+      out.push(depth ? { ...i, depth } : i);
+      (children.get(i.task.key) || []).forEach((c) => emit(c, depth + 1));
+    };
+    roots.forEach((r) => emit(r, 0));
+    run = [];
+  };
+  items.forEach((i) => {
+    if (i.kind === 'task') run.push(i);
+    else {
+      flush();
+      out.push(i);
+    }
+  });
+  flush();
+  return out;
 };

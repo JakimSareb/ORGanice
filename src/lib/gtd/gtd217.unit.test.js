@@ -278,3 +278,74 @@ describe('2.17: «Archivar todas» limitado a ficheros', () => {
     expect(r[0].path).toBe('/b.org');
   });
 });
+
+describe('2.17: subtareas asociadas (anidado visual)', () => {
+  const { nestSubtasks } = require('./gtd_model');
+  const nested = [
+    '#+TODO: TODO NEXT | DONE',
+    '* TODO A',
+    '** TODO A1',
+    '*** TODO A1a',
+    '** TODO A2',
+    '* TODO B',
+    '',
+  ].join('\n');
+  const tasks = buildTasks(Map({ [P]: parseOrg(nested) }), []);
+  const item = (t, section = 'list') => ({ kind: 'task', task: t, section });
+  const by = (title) => tasks.find((t) => t.title === title);
+  const names = (list) => list.map((i) => `${'-'.repeat(i.depth || 0)}${i.task ? i.task.title : i.header}`);
+
+  test('las hijas van justo debajo de su tarea, con su profundidad', () => {
+    // orden «desordenado»: B primero, las hijas separadas del padre
+    const items = [item(by('A1a')), item(by('B')), item(by('A2')), item(by('A')), item(by('A1'))];
+    expect(names(nestSubtasks(items))).toEqual(['B', 'A', '-A2', '-A1', '--A1a']);
+  });
+
+  test('si el padre no está en la lista, la tarea queda como estaba (sin sangría)', () => {
+    const items = [item(by('A1')), item(by('B'))];
+    expect(names(nestSubtasks(items))).toEqual(['A1', 'B']);
+  });
+
+  test('las cabeceras de sección separan los tramos', () => {
+    const items = [
+      item(by('A'), 's1'),
+      { kind: 'header', header: 'H' },
+      item(by('A1'), 's2'),
+    ];
+    expect(names(nestSubtasks(items))).toEqual(['A', 'H', 'A1']);
+  });
+
+  test('skip deja fuera a las que no deben moverse', () => {
+    const items = [item(by('A1')), item(by('A'))];
+    expect(names(nestSubtasks(items, (t) => t.title === 'A1'))).toEqual(['A1', 'A']);
+  });
+});
+
+describe('2.17: Referencias de un proyecto', () => {
+  const { projectSections } = require('./gtd_model');
+  const proj = [
+    '#+TODO: TODO NEXT PROJECT | DONE',
+    '* PROJECT Casa',
+    '** TODO Pintar',
+    '** Presupuestos',
+    '*** Oferta A',
+    '** NEXT Comprar',
+    '* Fuera del proyecto',
+    '',
+  ].join('\n');
+  const tasks = buildTasks(Map({ [P]: parseOrg(proj) }), []);
+  const project = tasks.find((t) => t.title === 'Casa');
+
+  test('las cabeceras sin estado del proyecto salen en «Referencias», en orden de fichero', () => {
+    const secs = projectSections(tasks, project.key, {}, new Date(2026, 9, 11));
+    const refs = secs.find((s) => s.id === 'refs');
+    expect(refs.tasks.map((t) => t.title)).toEqual(['Presupuestos', 'Oferta A']);
+    expect(secs[secs.length - 1].id).toBe('refs');
+  });
+
+  test('no se cuelan como tareas de ninguna otra sección', () => {
+    const secs = projectSections(tasks, project.key, {}, new Date(2026, 9, 11));
+    const titles = secs.filter((s) => s.id !== 'refs').flatMap((s) => s.tasks.map((t) => t.title));
+    expect(titles.sort()).toEqual(['Comprar', 'Pintar']);
+  });
+});

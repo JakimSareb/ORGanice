@@ -11,6 +11,7 @@ import './stylesheet.css';
 import {
   LISTS,
   EXTRA_LISTS,
+  nestSubtasks,
   buildTasks,
   tasksForView,
   projectsOf,
@@ -196,6 +197,8 @@ function TaskRow({
   isReordering = false,
   isSelected = false,
   archivedFrom = null,
+  depth = 0,
+  parentTitle = null,
 }) {
   const due = task.deadline;
   const overdue = due && due < today;
@@ -208,6 +211,7 @@ function TaskRow({
         (isDragging ? ' is-dragging' : '') +
         (isReordering ? ' is-reordering' : '') +
         (isSelected ? ' is-selected' : '') +
+        (depth ? ` is-sub is-sub-${Math.min(depth, 3)}` : '') +
         (onReorderStart ? ' has-handle' : '')
       }
       data-testid="gtd-task"
@@ -264,6 +268,11 @@ function TaskRow({
             {archivedFrom && (
               <span className="gtd-meta" title="Archivada en">
                 <i className="fas fa-archive" /> {archivedFrom.replace(/^\//, '')}
+              </span>
+            )}
+            {parentTitle && !depth && (
+              <span className="gtd-meta gtd-meta--parent" title="Subtarea de">
+                <i className="fas fa-level-up-alt fa-rotate-90" /> {parentTitle}
               </span>
             )}
             {showProject && task.project && (
@@ -364,6 +373,9 @@ export default function GtdView() {
   // la sección de terminadas plegada
   const [groupByProj, setGroupByProj] = useState(() => readLS(LS_GROUP, false) === true);
   const [doneOpen, setDoneOpen] = useState(false);
+  const [refsOpen, setRefsOpen] = useState(false);
+  // (2.17) notas del proyecto, bajo su cabecera (plegables; se recuerda si se pliegan)
+  const [projNotesOpen, setProjNotesOpen] = useState(() => readLS('eliGtdProjNotes', true) !== false);
   const [openKey, setOpenKey] = useState(null);
   // (2.16) tarea seleccionada con el teclado (↑ ↓; Intro la abre, Supr la borra)
   const [selKey, setSelKey] = useState(null);
@@ -566,14 +578,22 @@ export default function GtdView() {
       today,
       canReorderLoose,
       doneOpen,
+      refsOpen,
       reorderingKey,
     ]
   );
   // (2.16) La tarea abierta en el editor no desaparece de la lista aunque deje de encajar en
   // ella (p. ej. al terminarla desde el editor): se queda en su sitio hasta cerrarla
   const stickyRef = useRef(null);
+  const tasksByKey = useMemo(() => new Map(tasks.map((t) => [t.key, t])), [tasks]);
+  const parentTitleOf = (t) => {
+    const p = t.parentId ? tasksByKey.get(`${t.path}::${t.parentId}`) : null;
+    return p && p.keyword && !p.isProject ? p.title : null;
+  };
   const items = useMemo(() => {
-    const out = buildItems();
+    // (2.17) subtareas bajo su tarea (no en las vistas ordenadas por fecha)
+    const byDate = ['focus', 'scheduled', 'deadline', 'logbook'].includes(view.id);
+    const out = nestSubtasks(buildItems(), byDate ? () => true : null);
     if (openKey) {
       const at = out.findIndex((i) => i.kind === 'task' && i.task.key === openKey);
       if (at >= 0) {
@@ -594,14 +614,16 @@ export default function GtdView() {
     }
     return out;
     // eslint-disable-next-line
-  }, [buildDeps, openKey, tasks]);
+  }, [buildDeps, openKey, tasks, view.id]);
   function buildItems() {
     const out = [];
     if (isProjectView && projSections) {
       projSections.forEach((sec) => {
         const isDone = sec.id === 'done';
+        const isRefs = sec.id === 'refs';
         // Mientras se arrastra se ven también las secciones vacías (para poder soltar en ellas)
-        if (!sec.tasks.length && !reorderingKey) return;
+        if (!sec.tasks.length && (!reorderingKey || isRefs)) return;
+        const open = isRefs ? refsOpen : doneOpen;
         out.push({
           kind: 'header',
           id: `ps-${sec.id}`,
@@ -609,14 +631,21 @@ export default function GtdView() {
           label: sec.label,
           icon: sec.icon,
           count: sec.tasks.length,
-          reorder: true,
-          collapsible: isDone,
-          collapsed: isDone && !doneOpen,
+          reorder: !isRefs,
+          collapsible: isDone || isRefs,
+          collapsed: (isDone || isRefs) && !open,
+          toggle: isRefs ? 'refs' : 'done',
           testId: `gtd-psec-${sec.id}`,
         });
-        if (isDone && !doneOpen) return;
+        if ((isDone || isRefs) && !open) return;
         sec.tasks.forEach((t) =>
-          out.push({ kind: 'task', task: t, section: sec.id, reorderable: !isDone })
+          out.push({
+            kind: 'task',
+            task: t,
+            section: sec.id,
+            reorderable: !isDone && !isRefs,
+            isRef: isRefs,
+          })
         );
       });
       return out;
@@ -1304,15 +1333,32 @@ export default function GtdView() {
     const keyIndex = (k) => rowTasks.findIndex((t) => t.key === k);
     if (isProjectView) {
       const target = pos.section;
-      if (!target) return;
+      if (!target || target === 'refs') return;
       const own = projectSectionOf(task, today);
       const inTarget = rows.filter((i) => i.section === target).map((i) => i.task);
       const before = pos.beforeKey && inTarget.find((t) => t.key === pos.beforeKey);
       const after = pos.afterKey && inTarget.find((t) => t.key === pos.afterKey);
       const changes = {};
       if (target !== 'done') {
-        if (before) changes.moveNextTo = { targetId: before.id, position: 'before' };
-        else if (after) changes.moveNextTo = { targetId: after.id, position: 'after' };
+        // (2.17) una subtarea solo se coloca entre sus hermanas (si no, saldría de su tarea)
+        const siblingOf = (t) =>
+          t && t.path === task.path && (t.parentId || null) === (task.parentId || null);
+        const isSub = !!task.parentId && !(projectTask && task.parentId === projectTask.id);
+        const ordered = inTarget;
+        const at = (t) => ordered.findIndex((x) => x.key === t.key);
+        let ref = null;
+        if (before && siblingOf(before)) ref = { id: before.id, position: 'before' };
+        else if (after && siblingOf(after)) ref = { id: after.id, position: 'after' };
+        else if (isSub || (before && !siblingOf(before)) || (after && !siblingOf(after))) {
+          // el vecino no es hermano: se busca la hermana más cercana en esa sección
+          const from = before ? at(before) : after ? at(after) + 1 : ordered.length;
+          const sib = (list) => list.find(siblingOf);
+          const next = sib(ordered.slice(from));
+          const prev = sib(ordered.slice(0, from).reverse());
+          if (next) ref = { id: next.id, position: 'before' };
+          else if (prev) ref = { id: prev.id, position: 'after' };
+        }
+        if (ref) changes.moveNextTo = { targetId: ref.id, position: ref.position };
       }
       if (target !== own) {
         if (target === 'done') {
@@ -1548,7 +1594,7 @@ export default function GtdView() {
     if (e.ctrlKey || e.metaKey || e.altKey) return false;
     const t = e.target;
     if (t && t.closest && t.closest('.gtd-side')) return false;
-    const rows = items.filter((i) => i.kind === 'task').map((i) => i.task);
+    const rows = items.filter((i) => i.kind === 'task' && !i.isRef).map((i) => i.task);
     const idx = selKey ? rows.findIndex((x) => x.key === selKey) : -1;
     const select = (task) => {
       setSelKey(task ? task.key : null);
@@ -2082,6 +2128,27 @@ export default function GtdView() {
             </button>
           </div>
         )}
+        {projectTask && projectTask.description.trim() && openKey !== projectTask.key && (
+          <div className="gtd-project-notes" data-testid="gtd-project-notes">
+            <button
+              type="button"
+              className="gtd-project-notes__toggle"
+              aria-expanded={projNotesOpen}
+              onClick={() => {
+                const v = !projNotesOpen;
+                setProjNotesOpen(v);
+                writeLS('eliGtdProjNotes', v);
+              }}
+              data-testid="gtd-project-notes-toggle"
+            >
+              <i className={projNotesOpen ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
+              <i className="far fa-sticky-note" /> Notas
+            </button>
+            {projNotesOpen && (
+              <div className="gtd-project-notes__body">{projectTask.description.trim()}</div>
+            )}
+          </div>
+        )}
         {projectTask && openKey === projectTask.key && renderEditor(projectTask)}
 
         {view.id === 'projects' && (
@@ -2440,7 +2507,7 @@ export default function GtdView() {
                     <button
                       type="button"
                       className="gtd-section__toggle"
-                      onClick={() => setDoneOpen((o) => !o)}
+                      onClick={() => (item.toggle === 'refs' ? setRefsOpen : setDoneOpen)((o) => !o)}
                       aria-expanded={!item.collapsed}
                       data-testid={`${item.testId}-toggle`}
                     >
@@ -2471,8 +2538,13 @@ export default function GtdView() {
                 key={item.task.key}
                 task={item.task}
                 open={false}
-                onToggleOpen={() => {
+                onToggleOpen={(e) => {
                   if (clickSuppressed()) return;
+                  // (2.17) una referencia (encabezado sin estado) se abre en su fichero
+                  if (item.isRef) {
+                    openInFile(item.task, e);
+                    return;
+                  }
                   // con una tarea nueva a medio crear, primero hay que guardarla o cancelarla
                   if (newKey && openKey === newKey) {
                     window.dispatchEvent(new CustomEvent('eli:gtd-attention'));
@@ -2485,11 +2557,13 @@ export default function GtdView() {
                 dispatch={dispatch}
                 today={today}
                 showProject={!isProjectView && !(grouped && item.task.project)}
-                hideActions={isLogbook}
+                hideActions={isLogbook || !!item.isRef}
                 reorderSection={item.section}
                 onReorderStart={item.reorderable ? startReorder(item.task) : null}
                 isReordering={reorderingKey === item.task.key}
                 isSelected={selKey === item.task.key}
+                depth={item.depth || 0}
+                parentTitle={parentTitleOf(item.task)}
               />
             )
           )}
