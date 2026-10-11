@@ -280,6 +280,14 @@ const eliDropPriorityWhenDone = (state, headerIndex, newTodoState) => {
     .setIn(['headers', headerIndex, 'titleLine', 'title'], fromJS(parseMarkupAndCookies(newRaw)));
 };
 
+// ORG Mode para Eli (2.17): ¿es `keyword` un estado terminado (DONE, CANCELLED…) de alguna de las
+// secuencias #+TODO del fichero?
+const isCompletedKeywordInAnySet = (state, keyword) =>
+  !!keyword &&
+  (state.get('todoKeywordSets') || List()).some((set) =>
+    (set.get('completedKeywords') || List()).includes(keyword)
+  );
+
 const setTodoState = (state, action) => {
   const { headerId, logIntoDrawer, newTodoState, timestamp } = action;
   const existingHeaderId = headerId || state.get('selectedHeaderId');
@@ -294,13 +302,19 @@ const setTodoState = (state, action) => {
   const currentTodoSet = todoKeywordSetForKeyword(state.get('todoKeywordSets'), currentTodoState);
   const newTodoSet = todoKeywordSetForKeyword(state.get('todoKeywordSets'), newTodoState);
   const isInSameTodoSet = currentTodoSet === newTodoSet;
+  const indexedPlanningItemsWithRepeaters = header
+    .get('planningItems')
+    .map((planningItem, index) => [planningItem, index])
+    .filter(([planningItem]) => !!planningItem.getIn(['timestamp', 'repeaterType']));
 
-  if (isInSameTodoSet) {
-    const indexedPlanningItemsWithRepeaters = header
-      .get('planningItems')
-      .map((planningItem, index) => [planningItem, index])
-      .filter(([planningItem]) => !!planningItem.getIn(['timestamp', 'repeaterType']));
+  // ORG Mode para Eli (2.17): una tarea repetitiva (.+4w, +1w, ++1d…) que se termina con un
+  // estado de OTRA secuencia #+TODO (p. ej. WAITING en una segunda línea y DONE en la primera)
+  // también debe avanzar su fecha y volver a abrirse, como en Emacs; antes quedaba en DONE con la
+  // fecha sin cambiar.
+  const isCompletingRepeater =
+    indexedPlanningItemsWithRepeaters.size > 0 && isCompletedKeywordInAnySet(state, newTodoState);
 
+  if (isInSameTodoSet || isCompletingRepeater) {
     state = updateHeadlines({
       currentTodoSet,
       newTodoState,
@@ -2449,7 +2463,8 @@ function updateHeadlines({
   timestamp,
 }) {
   if (
-    currentTodoSet.get('completedKeywords').includes(newTodoState) &&
+    (currentTodoSet.get('completedKeywords').includes(newTodoState) ||
+      isCompletedKeywordInAnySet(state, newTodoState)) &&
     indexedPlanningItemsWithRepeaters.size > 0
   )
     return updatePlanningItemsWithRepeaters({
