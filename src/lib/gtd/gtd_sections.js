@@ -124,6 +124,20 @@ export const normalizeGtdSections = (stored) => {
   });
   // Las propias que no estén en el orden guardado, al final
   custom.forEach((c) => !order.includes(c.id) && order.push(c.id));
+  // (2.17) Ficheros de la vista GTD (Ajustes): el de entrada, el de tareas y los que se archivan
+  const rf = raw.files || {};
+  const normPath = (v) => {
+    const t = String(v || '').trim();
+    return t ? (t.startsWith('/') ? t : `/${t}`) : '';
+  };
+  const files = {
+    inbox: normPath(rf.inbox),
+    tasks: normPath(rf.tasks),
+    // al darle estado a una tarea sin estado del fichero de entrada, pasa al de tareas
+    moveFromInbox: rf.moveFromInbox !== false,
+    // «Archivar todas»: solo las de estos ficheros (vacío: de todos)
+    archive: toArr(Array.isArray(rf.archive) ? rf.archive : []).map(normPath).filter(Boolean),
+  };
   const sections = {};
   allIds.forEach((id) => {
     const saved = (raw.sections && raw.sections[id]) || {};
@@ -135,7 +149,7 @@ export const normalizeGtdSections = (stored) => {
     merged.label = typeof merged.label === 'string' ? merged.label : '';
     sections[id] = merged;
   });
-  return { order, sections, custom };
+  return { order, sections, custom, files };
 };
 
 export const DEFAULT_GTD_CONFIG = normalizeGtdSections(null);
@@ -150,6 +164,7 @@ export const setGtdConfig = (stored) => {
   return current;
 };
 export const getGtdConfig = () => current;
+export const getGtdFiles = () => current.files;
 
 export const isSectionShown = (id, cfg = current) => {
   const s = cfg.sections[id];

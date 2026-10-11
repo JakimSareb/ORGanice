@@ -664,11 +664,13 @@ export const logbookGroupOf = (closed, today = new Date()) => {
 
 // ORG Mode para Eli: tareas terminadas que se pueden archivar (Logbook → «Archivar»). Una tarea
 // terminada con alguna subtarea todavía abierta NO se archiva (se llevaría la subtarea).
-export const archivableDone = (tasks) => {
+export const archivableDone = (tasks, onlyPaths = null) => {
   const ok = [];
   const blocked = [];
   const byPath = {};
-  tasks.forEach((t) => (byPath[t.path] = byPath[t.path] || []).push(t));
+  // (2.17) solo los ficheros elegidos en Ajustes (vacío: todos)
+  const allowed = onlyPaths && onlyPaths.length ? new Set(onlyPaths) : null;
+  tasks.filter((t) => !allowed || allowed.has(t.path)).forEach((t) => (byPath[t.path] = byPath[t.path] || []).push(t));
   Object.values(byPath).forEach((list) => {
     const sorted = [...list].sort((a, b) => a.index - b.index);
     sorted.forEach((t, i) => {

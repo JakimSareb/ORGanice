@@ -17,6 +17,14 @@ import {
 } from '../../lib/gtd/gtd_sections';
 
 const selectSections = (s) => s.base.get('eliGtdSections');
+// (2.17) rutas de los ficheros que se pueden elegir (los de «Ajustes de ficheros» y los cargados)
+const selectOrgPaths = (s) => {
+  const fromSettings = s.org.present.get('fileSettings').map((f) => f.get('path')).toArray();
+  const loaded = s.org.present.get('files').keySeq().toArray();
+  return Array.from(new Set([...fromSettings, ...loaded]))
+    .filter((p) => p && /\.org(\.gpg|\.asc)?$/i.test(p) && !/_archive/i.test(p))
+    .sort((a, b) => a.localeCompare(b));
+};
 const selectNoSwipeDocs = (s) => s.base.get('eliNoSwipeDocs') === true;
 const selectNoSwipeGtd = (s) => s.base.get('eliNoSwipeGtd') === true;
 
@@ -89,6 +97,7 @@ const Tick = ({ checked, label, onChange, testId }) => (
 export default function GtdSectionsSettings() {
   const dispatch = useDispatch();
   const stored = useSelector(selectSections);
+  const orgPaths = useSelector(selectOrgPaths, (a, b) => a.join('\n') === b.join('\n'));
   const noSwipeDocs = useSelector(selectNoSwipeDocs);
   const noSwipeGtd = useSelector(selectNoSwipeGtd);
   const cfg = normalizeGtdSections(stored);
@@ -106,6 +115,7 @@ export default function GtdSectionsSettings() {
     order.splice(j, 0, id);
     save({ ...cfg, order });
   };
+  const setFiles = (patch) => save({ ...cfg, files: { ...cfg.files, ...patch } });
   const reset = () => {
     if (window.confirm('¿Volver a la configuración de secciones de siempre?')) save({});
   };
@@ -343,6 +353,68 @@ export default function GtdSectionsSettings() {
             selectedButton={noSwipeGtd ? 'no' : 'yes'}
             onSelect={(v) => dispatch(setEliSetting('eliNoSwipeGtd', v === 'no'))}
           />
+        </div>
+      </div>
+
+      <div className="eli-gtdsec" data-testid="eli-gtd-files">
+        <div className="eli-gtdsec__head">
+          <div className="setting-label">Ficheros de la vista GTD</div>
+        </div>
+        <div className="eli-gtdsec__hint">
+          Las tareas nuevas sin estado van al fichero de entrada. Al darles un estado (Next, Todo…)
+          pasan solas al fichero de tareas; los encabezados sin estado se quedan en la entrada.
+        </div>
+        <label className="eli-gtdsec__rule">
+          <span>Fichero de entrada (Inbox)</span>
+          <select
+            value={cfg.files.inbox}
+            onChange={(e) => setFiles({ inbox: e.target.value })}
+            data-testid="eli-gtdfiles-inbox"
+          >
+            <option value="">Automático (inbox.org)</option>
+            {orgPaths.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="eli-gtdsec__rule">
+          <span>Fichero de tareas</span>
+          <select
+            value={cfg.files.tasks}
+            onChange={(e) => setFiles({ tasks: e.target.value })}
+            data-testid="eli-gtdfiles-tasks"
+          >
+            <option value="">Automático (tasks.org)</option>
+            {orgPaths.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Tick
+          checked={cfg.files.moveFromInbox}
+          label="Al dar estado a una tarea del fichero de entrada, pasarla al de tareas"
+          onChange={(v) => setFiles({ moveFromInbox: v })}
+          testId="eli-gtdfiles-move"
+        />
+        <div className="eli-gtdsec__rule">
+          <span>«Archivar todas» solo de estos ficheros (ninguno marcado: de todos)</span>
+          {orgPaths.map((p) => (
+            <Tick
+              key={p}
+              checked={cfg.files.archive.includes(p)}
+              label={p}
+              onChange={(v) =>
+                setFiles({
+                  archive: v ? [...cfg.files.archive, p] : cfg.files.archive.filter((x) => x !== p),
+                })
+              }
+              testId={`eli-gtdfiles-archive-${p}`}
+            />
+          ))}
         </div>
       </div>
 

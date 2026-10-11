@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { List } from 'immutable';
+import { fileDisplayName } from '../../lib/eli_app_name';
 
 import './stylesheet.css';
 
@@ -45,6 +46,8 @@ import {
   gtdCloseProject,
   gtdUndo,
   gtdRedo,
+  gtdRefileInbox,
+  tasksFileForRefile,
 } from '../../lib/gtd/gtd_actions';
 import { ActionCreators } from 'redux-undo';
 import {
@@ -444,15 +447,24 @@ export default function GtdView() {
     files,
     scopePaths,
   ]);
-  const inboxPaths = useMemo(() => inboxPathsOf(templates, scopePaths), [templates, scopePaths]);
-  const tasksFile = tasksFileOf(templates, scopePaths, inboxPaths);
-  // Inbox nuevo: en inbox.org (si no existe, el de la plantilla de entrada)
-  const inboxFile =
-    pickByName(scopePaths, 'inbox.org') || inboxPaths.find((p) => scopePaths.includes(p)) || null;
-
   // ORG Mode para Eli: secciones configurables (Ajustes → Vista GTD: secciones). Al cambiar la
   // configuración se vuelve a calcular todo.
   const gtdCfg = setGtdConfig(useSelector(selectGtdSections));
+  // (2.17) ficheros elegidos en Ajustes (si están cargados); si no, los de siempre
+  const chosenInbox = gtdCfg.files.inbox && scopePaths.includes(gtdCfg.files.inbox) ? gtdCfg.files.inbox : null;
+  const chosenTasks = gtdCfg.files.tasks && scopePaths.includes(gtdCfg.files.tasks) ? gtdCfg.files.tasks : null;
+  const inboxPaths = useMemo(() => {
+    const found = inboxPathsOf(templates, scopePaths);
+    return chosenInbox && !found.includes(chosenInbox) ? [chosenInbox, ...found] : found;
+  }, [templates, scopePaths, chosenInbox]);
+  const tasksFile = chosenTasks || tasksFileOf(templates, scopePaths, inboxPaths);
+  // Inbox nuevo: el elegido en Ajustes o inbox.org (si no existe, el de la plantilla de entrada)
+  const inboxFile =
+    chosenInbox ||
+    pickByName(scopePaths, 'inbox.org') ||
+    inboxPaths.find((p) => scopePaths.includes(p)) ||
+    null;
+
   const tasks = useMemo(
     () => buildTasks(scopedFiles, inboxPaths),
     // eslint-disable-next-line
@@ -670,12 +682,12 @@ export default function GtdView() {
   const archivable = useMemo(() => {
     if (!isLogbook) return { ok: [], blocked: [] };
     const f = { area, text, ...filters, logText: logSearch };
-    const { ok, blocked } = archivableDone(tasks);
+    const { ok, blocked } = archivableDone(tasks, gtdCfg.files.archive);
     return {
       ok: ok.filter((t) => matchesFilters(t, f)),
       blocked: blocked.filter((t) => matchesFilters(t, f)),
     };
-  }, [isLogbook, tasks, area, text, filters, logSearch]);
+  }, [isLogbook, tasks, area, text, filters, logSearch, gtdCfg]);
   // (2.16) Logbook → «Archivadas»: las tareas de los ficheros *.org_archive (solo para verlas;
   // tocarlas abre su fichero)
   const [showArchived, setShowArchivedState] = useState(() => getShowArchived());
@@ -1388,6 +1400,25 @@ export default function GtdView() {
   // (2.17) Sincronizar con aviso: antes se hacía en silencio y no se veía si había funcionado. Ahora
   // es la sincronización manual de siempre (como en Documentos): «Sincronizando…» y después
   // «Cambios subidos», «Nada que sincronizar» o «Última versión descargada».
+  // (2.17) «Refile»: tareas con estado que siguen en el fichero de entrada
+  const refileTarget = tasksFileForRefile({ org: { present: store.getState().org.present } });
+  const pendingRefile = useMemo(
+    () =>
+      refileTarget && gtdCfg.files.moveFromInbox
+        ? tasks.filter((t) => t.isInboxFile && t.keyword && t.level === 1 && t.path !== refileTarget)
+        : [],
+    [tasks, refileTarget, gtdCfg]
+  );
+  const doRefile = () => {
+    const n = dispatch(gtdRefileInbox(tasks));
+    if (n)
+      dispatch(
+        setDisappearingLoadingMessage(
+          `${n === 1 ? '1 tarea pasada' : `${n} tareas pasadas`} a ${fileDisplayName(refileTarget)}`,
+          3000
+        )
+      );
+  };
   const syncAll = () => {
     if (!store.getState().base.get('online')) {
       dispatch(setDisappearingLoadingMessage('Sin conexión: no se puede sincronizar', 2500));
@@ -1460,7 +1491,7 @@ export default function GtdView() {
     if (id === 'projects' || isSectionShown(id, gtdCfg)) selectView({ id });
   };
   const cleanup = () => {
-    const { ok } = archivableDone(tasks);
+    const { ok } = archivableDone(tasks, gtdCfg.files.archive);
     if (!ok.length) {
       showMessage('Limpiar', 'No hay tareas terminadas para archivar.');
       return;
@@ -1982,6 +2013,18 @@ export default function GtdView() {
               data-testid="gtd-group-toggle"
             >
               <i className="fas fa-stream" />
+            </button>
+          )}
+          {pendingRefile.length > 0 && (
+            <button
+              className="gtd-main__sync gtd-main__refile"
+              onClick={doRefile}
+              title={`Pasar ${pendingRefile.length} tarea${
+                pendingRefile.length === 1 ? '' : 's'
+              } con estado del fichero de entrada al de tareas`}
+              data-testid="gtd-refile"
+            >
+              <i className="fas fa-share" /> <span>{pendingRefile.length}</span>
             </button>
           )}
           <button

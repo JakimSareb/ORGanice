@@ -11,6 +11,7 @@ import { keywordForList, PRIORITY_RE, parseRepeat } from './gtd_model';
 import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
 import { fileDisplayName } from '../eli_app_name';
+import { getGtdFiles } from './gtd_sections';
 
 // Estados que el fichero reconoce (#+TODO:). Si falta uno, Org lo leería como parte del título,
 // así que no se escribe y se avisa.
@@ -45,6 +46,30 @@ const headerOf = (getState, path, headerId) => {
 const syncFile = (dispatch, path) => {
   dispatch(setDirty(true, path));
   dispatch(sync({ path, shouldSuppressMessages: true }));
+};
+
+// (2.17) Fichero de tareas al que pasan las tareas del de entrada: el elegido en Ajustes o, si no,
+// tasks.org (el de ruta más corta); solo si está cargado
+export const tasksFileForRefile = (state) => {
+  const files = state.org.present.get('files');
+  const loaded = (p) => !!p && !!files.getIn([p, 'headers']);
+  const chosen = getGtdFiles().tasks;
+  if (chosen) return loaded(chosen) ? chosen : null;
+  const named = files
+    .keySeq()
+    .toArray()
+    .filter((p) => loaded(p) && /(^|\/)tasks\.org$/i.test(p))
+    .sort((a, b) => a.length - b.length)[0];
+  return named || null;
+};
+
+// Una tarea del fichero de entrada, sin estado y de primer nivel, que va a recibir uno: pasa
+// al fichero de tareas (los encabezados sin estado se quedan en la entrada)
+const refileTargetFor = (getState, task, newKeyword) => {
+  if (!task.isInboxFile || task.keyword || !newKeyword || task.level !== 1) return null;
+  if (!getGtdFiles().moveFromInbox) return null;
+  const target = tasksFileForRefile(getState());
+  return target && target !== task.path ? target : null;
 };
 
 // Línea de título (sin asteriscos) a partir de sus partes
@@ -276,6 +301,18 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
 
   if (!inner.length) return;
   const newKeyword = inner.find((a) => a.type === 'SET_TODO_STATE');
+  // (2.17) al darle estado a una tarea de inbox.org, pasa a tasks.org en el mismo paso
+  const refileTo = move ? null : refileTargetFor(getState, task, newKeyword && newKeyword.newTodoState);
+  if (refileTo && !missingKeyword(getState, refileTo, [newKeyword.newTodoState])) {
+    inner.push({
+      type: 'REFILE_SUBTREE',
+      sourcePath: task.path,
+      sourceHeaderId: task.id,
+      targetPath: refileTo,
+      targetHeaderId: null,
+      dirtying: true,
+    });
+  }
   const needed = [
     inner.some((a) => a.type === 'UPDATE_HEADER_TITLE') ? task.keyword : null,
     newKeyword ? newKeyword.newTodoState : null,
@@ -283,6 +320,35 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   if (missingKeyword(getState, task.path, needed)) return;
   dispatch(inFile(task.path, inner));
   syncFile(dispatch, task.path);
+  if (inner.some((a) => a.type === 'REFILE_SUBTREE')) syncFile(dispatch, refileTo);
+};
+
+// (2.17) Botón «Refile»: pasa al fichero de tareas todas las tareas con estado que siguen en el
+// de entrada (de primer nivel). Devuelve cuántas se han movido.
+export const gtdRefileInbox = (tasks) => (dispatch, getState) => {
+  const target = tasksFileForRefile(getState());
+  if (!target) return 0;
+  const todo = tasks.filter(
+    (t) => t.isInboxFile && t.keyword && t.level === 1 && t.path !== target
+  );
+  if (!todo.length) return 0;
+  const sources = Array.from(new Set(todo.map((t) => t.path)));
+  const files = getState().org.present.get('files');
+  const needed = Array.from(new Set(todo.map((t) => t.keyword)));
+  if (missingKeyword(getState, target, needed)) return 0;
+  todo.forEach((t) => {
+    if (!files.getIn([t.path, 'headers'])) return;
+    dispatch({
+      type: 'REFILE_SUBTREE',
+      sourcePath: t.path,
+      sourceHeaderId: t.id,
+      targetPath: target,
+      targetHeaderId: null,
+      dirtying: true,
+    });
+  });
+  sources.concat(target).forEach((p) => syncFile(dispatch, p));
+  return todo.length;
 };
 
 // ORG Mode para Eli (2.15): reordenar: poner la tarea antes o después de otra del mismo fichero

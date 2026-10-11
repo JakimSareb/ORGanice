@@ -183,3 +183,98 @@ describe('2.17: «Abrir» muestra el encabezado con los subencabezados plegados'
     expect(run(false)).toEqual([true, true, true, true, false]);
   });
 });
+
+describe('2.17: inbox.org → tasks.org al darle estado', () => {
+  const { gtdRefileInbox, tasksFileForRefile } = require('./gtd_actions');
+  const INBOX = '/inbox.org';
+  const TASKS = '/tasks.org';
+  const todo = '#+TODO: TODO NEXT | DONE\n';
+  const twoFiles = () => {
+    let state = Map({
+      path: null,
+      files: Map({
+        [INBOX]: parseOrg(`${todo}* Sin estado\n* Otra sin estado\n* Con hijos\n** TODO hija\n`),
+        [TASKS]: parseOrg(`${todo}* TODO Existente\n`),
+      }),
+      fileSettings: List(),
+    });
+    const getState = () => ({ org: { present: state }, base: Map() });
+    const dispatch = (a) => {
+      if (typeof a === 'function') return a(dispatch, getState);
+      state = rootOrgReducer(state, a);
+      return a;
+    };
+    const tasks = () => buildTasks(state.get('files'), [INBOX]);
+    const titles = (p) =>
+      state
+        .getIn(['files', p, 'headers'])
+        .map((h) => h.getIn(['titleLine', 'rawTitle']))
+        .toJS();
+    return { dispatch, tasks, titles, state: () => state };
+  };
+
+  test('el fichero de tareas se encuentra por nombre', () => {
+    const s = twoFiles();
+    expect(tasksFileForRefile({ org: { present: s.state() } })).toBe(TASKS);
+  });
+
+  test('dar estado a una tarea sin estado de inbox.org la pasa a tasks.org', () => {
+    const s = twoFiles();
+    const t = s.tasks().find((x) => x.title === 'Sin estado');
+    s.dispatch(gtdSaveTask(t, { list: 'next' }));
+    expect(s.titles(INBOX)).not.toContain('Sin estado');
+    expect(s.titles(TASKS)).toContain('Sin estado');
+    const moved = s.tasks().find((x) => x.title === 'Sin estado');
+    expect(moved.path).toBe(TASKS);
+    expect(moved.keyword).toBe('NEXT');
+  });
+
+  test('un cambio sin estado (p. ej. una etiqueta) la deja en inbox.org', () => {
+    const s = twoFiles();
+    const t = s.tasks().find((x) => x.title === 'Otra sin estado');
+    s.dispatch(gtdSaveTask(t, { tags: ['casa'] }));
+    const after = s.tasks().find((x) => x.title === 'Otra sin estado');
+    expect(after.path).toBe(INBOX);
+    expect(after.ownTags).toEqual(['casa']);
+  });
+
+  test('una tarea de tasks.org no se mueve al cambiar de estado', () => {
+    const s = twoFiles();
+    const t = s.tasks().find((x) => x.title === 'Existente');
+    s.dispatch(gtdSaveTask(t, { list: 'next' }));
+    expect(s.tasks().find((x) => x.title === 'Existente').path).toBe(TASKS);
+  });
+
+  test('«Refile» pasa a tasks.org las de primer nivel con estado y deja las demás', () => {
+    const s = twoFiles();
+    // una con estado en el fichero de entrada
+    const t = s.tasks().find((x) => x.title === 'Con hijos');
+    // darle estado a mano sin moverla: se escribe el estado directamente en el fichero
+    s.dispatch({
+      type: 'ELI_IN_FILE',
+      path: INBOX,
+      inner: [{ type: 'SET_TODO_STATE', headerId: t.id, newTodoState: 'TODO', dirtying: true }],
+      dirtying: true,
+    });
+    const n = s.dispatch(gtdRefileInbox(s.tasks()));
+    expect(n).toBe(1);
+    expect(s.titles(INBOX)).toEqual(['Sin estado', 'Otra sin estado']);
+    expect(s.titles(TASKS)).toEqual(['Existente', 'Con hijos', 'hija']);
+  });
+});
+
+describe('2.17: «Archivar todas» limitado a ficheros', () => {
+  const { archivableDone } = require('./gtd_model');
+  const text = '#+TODO: TODO | DONE\n* DONE Hecha\n';
+  const files = Map({ '/a.org': parseOrg(text), '/b.org': parseOrg(text) });
+  const tasks = buildTasks(files, []);
+  test('sin lista, de todos los ficheros', () => {
+    expect(archivableDone(tasks).ok).toHaveLength(2);
+    expect(archivableDone(tasks, []).ok).toHaveLength(2);
+  });
+  test('con lista, solo de esos', () => {
+    const r = archivableDone(tasks, ['/b.org']).ok;
+    expect(r).toHaveLength(1);
+    expect(r[0].path).toBe('/b.org');
+  });
+});
