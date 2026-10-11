@@ -63,11 +63,26 @@ export const showMessage = (title, message) =>
       </div>`;
     overlay.querySelector('.eli-prompt__title').textContent = title;
     overlay.querySelector('.eli-prompt__message').textContent = message;
-    overlay.querySelector('.eli-prompt__ok').addEventListener('click', () => {
-      overlay.parentNode.removeChild(overlay);
+    // (2.17) Intro (o Esc) acepta el aviso, sin tener que pulsar el botón. El teclado se atiende
+    // en captura para que no actúe ningún atajo de la app mientras el aviso está abierto.
+    const done = () => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
       resolve();
-    });
+    };
+    const onKey = (e) => {
+      if (e.key !== 'Enter' && e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (!e.repeat) done();
+    };
+    document.addEventListener('keydown', onKey, true);
+    overlay.querySelector('.eli-prompt__ok').addEventListener('click', done);
     document.body.appendChild(overlay);
+    setTimeout(() => {
+      const ok = overlay.querySelector('.eli-prompt__ok');
+      if (ok) ok.focus();
+    }, 30);
   });
 
 // Confirmación en la propia ventana. Devuelve Promise<boolean>.
@@ -94,12 +109,19 @@ export const askConfirm = ({
     overlay.querySelector('.eli-prompt__message').textContent = message;
     overlay.querySelector('.eli-prompt__cancel').textContent = cancelLabel;
     overlay.querySelector('.eli-prompt__ok').textContent = okLabel;
-    // (2.16) Esc cancela
+    // (2.16) Esc cancela. (2.17) Intro acepta (o cancela, si el foco está en Cancelar o la
+    // confirmación pide el foco en Cancelar); con el foco en un botón, Intro lo pulsa él.
     const onKey = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
         done(false);
+      } else if (e.key === 'Enter') {
+        const a = document.activeElement;
+        if (a && overlay.contains(a) && a.tagName === 'BUTTON') return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.repeat) done(!focusCancel);
       }
     };
     const done = (v) => {
