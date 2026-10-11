@@ -84,3 +84,13 @@
   white-space: nowrap;
   opacity: 0.85;
 }
+
+/* ORG Mode para Eli (2.17): los encabezados terminados (DONE, CANCELLED…) pasan a segundo plano */
+.title-line--finished .title-line-text,
+.title-line--finished .header-tag {
+  opacity: 0.55;
+}
+.title-line--finished .todo-keyword {
+  font-weight: normal;
+  opacity: 0.6;
+}

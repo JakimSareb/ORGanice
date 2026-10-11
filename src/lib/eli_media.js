@@ -221,7 +221,14 @@ export const openInNewTab = (client, path) => {
         w.opener = null;
         w.location.replace(link);
       } else {
-        window.location.href = link;
+        // (2.17) pestaña bloqueada: nunca se sustituye la app; se intenta abrir con un enlace
+        const a = document.createElement('a');
+        a.href = link;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       }
     })
     .catch((e) => {

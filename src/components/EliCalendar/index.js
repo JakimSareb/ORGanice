@@ -45,6 +45,7 @@ const LS = {
   view: 'eliCalView', // 'three' | 'year'
   weeks: 'eliCalWeeks', // 'false' para ocultar
   moon: 'eliCalMoon', // 'false' para ocultar
+  holidays: 'eliCalHolidays', // 'false' para ocultar los festivos (2.17)
   region: 'eliCalRegion',
   custom: 'eliCalCustom',
 };
@@ -115,7 +116,7 @@ function Month({
       <table className="eli-cal__grid">
         <thead>
           <tr>
-            {weeks && <th className="eli-cal__wk">sem</th>}
+            {weeks && <th className="eli-cal__wk" />}
             {WEEKDAYS.map((w, i) => (
               <th key={w} className={i >= 5 ? 'is-weekend' : undefined}>
                 {w}
@@ -129,10 +130,11 @@ function Month({
             return (
               <tr key={r}>
                 {weeks && (
-                  <td className="eli-cal__wk">{getISOWeek(new Date(year, month, firstDay))}</td>
+                  <td className="eli-cal__wk" title="Semana">{getISOWeek(new Date(year, month, firstDay))}</td>
                 )}
                 {row.map((dNum, i) => {
-                  if (dNum === null) return <td key={i} className="is-empty" />;
+                  if (dNum === null)
+                    return <td key={i} className={'is-empty' + (i >= 5 ? ' is-weekend' : '')} />;
                   const date = new Date(year, month, dNum);
                   const hol = holidayOf(date);
                   const moon = moonOf(date);
@@ -150,7 +152,7 @@ function Month({
                     .filter(Boolean)
                     .join(' ');
                   return (
-                    <td key={i}>
+                    <td key={i} className={i >= 5 ? 'is-weekend' : undefined}>
                       <button
                         type="button"
                         className={cls}
@@ -186,6 +188,7 @@ export default function EliCalendar() {
   const [view, setView] = useState(() => readLS(LS.view, 'three'));
   const [weeks, setWeeks] = useState(() => readLS(LS.weeks, 'true') !== 'false');
   const [moonOn, setMoonOn] = useState(() => readLS(LS.moon, 'true') !== 'false');
+  const [holidaysOn, setHolidaysOn] = useState(() => readLS(LS.holidays, 'true') !== 'false');
   const [tapMode, setTapMode] = useState(() => readLS(LS.tap, 'agenda'));
   const dispatch = useDispatch();
   const history = useHistory();
@@ -241,7 +244,7 @@ export default function EliCalendar() {
     });
     return { map: out, approx: approx.sort() };
   }, [months, region, custom, selected, rangeEnd]);
-  const holidayOf = (date) => holidays.map.get(keyOfDate(date)) || null;
+  const holidayOf = (date) => (holidaysOn ? holidays.map.get(keyOfDate(date)) || null : null);
 
   // Fases principales de la Luna
   const moons = useMemo(() => {
@@ -338,6 +341,7 @@ export default function EliCalendar() {
       else if (k === 'y' || k === 'a') toggleView();
       else if (k === 'w') toggle(LS.weeks, !weeks, setWeeks);
       else if (k === 'l' || k === 'm') toggle(LS.moon, !moonOn, setMoonOn);
+      else if (k === 'h') toggle(LS.holidays, !holidaysOn, setHolidaysOn);
       else if (k === 'Enter' && selected) openAgendaFor(selected);
       else handled = false;
       if (handled) {
@@ -503,6 +507,26 @@ export default function EliCalendar() {
           </button>
           <button
             type="button"
+            className={'eli-cal__tool' + (weeks ? ' is-on' : '')}
+            onClick={() => toggle(LS.weeks, !weeks, setWeeks)}
+            title={weeks ? 'Ocultar los números de semana (w)' : 'Mostrar los números de semana (w)'}
+            aria-pressed={weeks}
+            data-testid="eli-cal-weeks"
+          >
+            Sem
+          </button>
+          <button
+            type="button"
+            className={'eli-cal__tool' + (holidaysOn ? ' is-on' : '')}
+            onClick={() => toggle(LS.holidays, !holidaysOn, setHolidaysOn)}
+            title={holidaysOn ? 'Ocultar los festivos (h)' : 'Mostrar los festivos (h)'}
+            aria-pressed={holidaysOn}
+            data-testid="eli-cal-holidays"
+          >
+            <i className="fas fa-flag" />
+          </button>
+          <button
+            type="button"
             className={'eli-cal__tool' + (moonOn ? ' is-on' : '')}
             onClick={() => toggle(LS.moon, !moonOn, setMoonOn)}
             title={moonOn ? 'Ocultar las fases de la Luna (l)' : 'Mostrar las fases de la Luna (l)'}
@@ -549,6 +573,14 @@ export default function EliCalendar() {
                 onChange={(e) => toggle(LS.weeks, e.target.checked, setWeeks)}
               />{' '}
               Números de semana (w)
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={holidaysOn}
+                onChange={(e) => toggle(LS.holidays, e.target.checked, setHolidaysOn)}
+              />{' '}
+              Festivos (h)
             </label>
             <label>
               <input
@@ -623,12 +655,16 @@ export default function EliCalendar() {
           {info}
         </div>
         <div className="eli-cal__legend">
-          <span className="eli-cal__legend-holiday">■</span> festivo ({regionName}
-          {holidays.approx.length ? `; ${holidays.approx.join(', ')}: aproximados` : ''}) ·{' '}
+          {holidaysOn && (
+            <>
+              <span className="eli-cal__legend-holiday">■</span> festivo ({regionName}
+              {holidays.approx.length ? `; ${holidays.approx.join(', ')}: aproximados` : ''}) ·{' '}
+            </>
+          )}
           <span className="eli-cal__legend-today">■</span> hoy
           <span className="eli-cal__keys">
             {' '}
-            · ← → meses · Mayús+← → años · . hoy · g ir a · y año · Esc cerrar
+            · ← → meses · Mayús+← → años · . hoy · g ir a · y año · w semanas · h festivos · Esc cerrar
           </span>
         </div>
       </div>

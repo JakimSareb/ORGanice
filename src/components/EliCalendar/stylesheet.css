@@ -114,7 +114,7 @@
   padding: 2px 0;
 }
 .eli-cal__grid th.is-weekend {
-  opacity: 0.5;
+  opacity: 0.7;
 }
 .eli-cal__grid td {
   text-align: center;
@@ -124,6 +124,7 @@
   width: 2.2em;
   font-size: 0.72em;
   opacity: 0.5;
+  border-right: 1px solid var(--base2);
 }
 .eli-cal__day {
   position: relative;
@@ -146,8 +147,12 @@
 .eli-cal__day:hover {
   background: var(--base2);
 }
+/* (2.17) fines de semana como en Emacs: columna con un fondo suave y los números legibles */
+.eli-cal__grid td.is-weekend {
+  background: var(--base2);
+}
 .eli-cal__day.is-weekend {
-  opacity: 0.6;
+  color: var(--base01);
 }
 .eli-cal__day.is-holiday {
   color: var(--red);

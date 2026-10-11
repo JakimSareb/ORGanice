@@ -135,7 +135,10 @@ class TitleLine extends PureComponent {
 
     return (
       <div
-        className="title-line"
+        className={classNames('title-line', {
+          // (2.17) DONE / CANCELLED: encabezado atenuado
+          'title-line--finished': !!todoKeyword && isTodoKeywordInDoneState(todoKeyword),
+        })}
         onClick={this.handleTitleClick}
         style={{ width: shouldDisableExplicitWidth ? '' : containerWidth }}
       >
