@@ -6,6 +6,7 @@
 ;;
 ;; - Sale sola al entrar en GTD (F12, C-c g …) y se va al volver a Documentos.
 ;; - C-c g b la muestra u oculta.
+;; - Secciones (las de siempre y las propias): `organice-gtd-menu'.
 ;; - En la columna: ↑ ↓ (o n / p) y Intro (o clic) abren; g actualiza los contadores; q la oculta.
 
 (require 'org)
@@ -24,22 +25,79 @@
   "t: el menú lateral sale solo al entrar en la vista GTD y se va al volver a Documentos."
   :type 'boolean :group 'organice)
 
-(defcustom organice-sidebar-items
-  '(("ga" "📅" "Agenda"    nil)
-    ("gf" "★"  "Focus"     focus)
-    ("gi" "📥" "Inbox"     inbox)
-    ("gn" "▶"  "Next"      next)
-    ("gt" "⏩" "Todo"      later)
-    ("gw" "⏳" "Waiting"   waiting)
-    ("gs" "🗓" "Scheduled" scheduled)
-    ("gd" "⚑"  "Deadline"  deadline)
-    ("gm" "☁"  "Someday"   someday)
-    ("gp" "◆"  "Proyectos" projects)
-    ("gr" "📄" "Reference" reference)
-    ("gl" "✔"  "Logbook"   nil))
-  "Secciones del menú: (TECLA-DE-LA-VISTA ICONO NOMBRE CONTADOR).
-CONTADOR es la lista que se cuenta (nil: sin contador)."
-  :type '(repeat (list string string string symbol)) :group 'organice)
+;; Secciones de la vista GTD: las de siempre y las propias. Cada una:
+;;   (TECLA ICONO NOMBRE . OPCIONES)
+;; OPCIONES: :show nil (ocultarla), :count LISTA (qué contar; las de siempre) y, en las
+;; secciones PROPIAS (TECLA nil), sus reglas: :tags, :states o :props, como en Ajustes de la
+;; app. Una tarea abierta sale en una sección propia si cumple alguna regla (también por las
+;; etiquetas que hereda de su tarea madre o de su proyecto); sigue además en su lista.
+(defcustom organice-gtd-menu
+  '(("ga" "📅" "Agenda")
+    ("gf" "★"  "Focus"     :count focus)
+    ("gi" "📥" "Inbox"     :count inbox)
+    ("gn" "▶"  "Next"      :count next)
+    ("gt" "⏩" "Todo"      :count later)
+    ("gw" "⏳" "Waiting"   :count waiting)
+    ("gs" "🗓" "Scheduled" :count scheduled)
+    ("gd" "⚑"  "Deadline"  :count deadline)
+    ("gm" "☁"  "Someday"   :count someday)
+    ("gp" "◆"  "Proyectos" :count projects)
+    ("gr" "📄" "Reference" :count reference)
+    ("gl" "✔"  "Logbook"))
+  "Secciones de la vista GTD (menú lateral y menú de la agenda), en su orden."
+  :type '(repeat sexp) :group 'organice)
+
+(defun organice-gtd--custom-sections ()
+  "Secciones propias con su tecla de agenda (gc1, gc2…): lista de (TECLA NOMBRE PLIST)."
+  (let ((n 0) out)
+    (dolist (e organice-gtd-menu (nreverse out))
+      (unless (car e)
+        (setq n (1+ n))
+        (push (list (format "gc%d" n) (nth 2 e) (nthcdr 3 e)) out)))))
+
+(defun organice-gtd--custom-match-p (plist)
+  "¿Cumple la tarea del punto las reglas PLIST de una sección propia?"
+  (and (organice--kw) (not (organice--done-p)) (not (organice--project-p))
+       (or (organice--matches-rules-p (plist-put (copy-sequence plist) :tags nil))
+           (let ((tags (mapcar #'downcase (plist-get plist :tags))))
+             (and tags (seq-some (lambda (tg) (member (downcase tg) tags)) (org-get-tags)))))))
+
+(defun organice-gtd--menu-entries ()
+  "Secciones visibles: lista de (TECLA ICONO NOMBRE CONTADOR)."
+  (let ((customs (organice-gtd--custom-sections)) (i 0) out)
+    (dolist (e organice-gtd-menu (nreverse out))
+      (let* ((opts (nthcdr 3 e))
+             (key (or (car e) (car (nth (prog1 i (setq i (1+ i))) customs)))))
+        (unless (and (plist-member opts :show) (not (plist-get opts :show)))
+          (push (list key (nth 1 e) (nth 2 e) (if (car e) (plist-get opts :count) (intern key)))
+                out))))))
+
+;; El menú de la agenda: sin las ocultas, con los nombres de aquí y con las secciones propias
+(defun organice-gtd--adjust-commands (cmds)
+  (let* ((hidden (delq nil (mapcar (lambda (e) (and (car e)
+                                                      (plist-member (nthcdr 3 e) :show)
+                                                      (not (plist-get (nthcdr 3 e) :show))
+                                                      (car e)))
+                                   organice-gtd-menu)))
+         (names (delq nil (mapcar (lambda (e) (and (car e) (cons (car e) (nth 2 e))))
+                                  organice-gtd-menu)))
+         (cmds (seq-remove (lambda (c) (member (car c) hidden)) cmds))
+         (cmds (mapcar (lambda (c)
+                         (let ((nm (cdr (assoc (car c) names))))
+                           (if (and nm (stringp (cadr c))) (append (list (car c) nm) (cddr c)) c)))
+                       cmds)))
+    (append cmds
+            (mapcar (lambda (cs)
+                      (pcase-let ((`(,key ,name ,plist) cs))
+                        `(,key ,name
+                               ((tags-todo "LEVEL>0"
+                                           ((org-agenda-overriding-header ,name)
+                                            (org-agenda-skip-function
+                                             '(organice--skip-unless
+                                               (lambda () (organice-gtd--custom-match-p ',plist))))))))))
+                    (organice-gtd--custom-sections)))))
+(advice-add 'organice--custom-commands :filter-return #'organice-gtd--adjust-commands)
+(setq org-agenda-custom-commands (organice--custom-commands))
 
 (defconst organice-sidebar-buffer "*ORGanice GTD*")
 
@@ -50,7 +108,7 @@ CONTADOR es la lista que se cuenta (nil: sin contador)."
 
 (defun organice-sidebar--compute ()
   "Cuenta las tareas de cada lista y recoge los proyectos activos."
-  (let ((counts nil) (projects nil))
+  (let ((counts nil) (projects nil) (customs (organice-gtd--custom-sections)))
     (cl-flet ((bump (k) (setf (alist-get k counts) (1+ (alist-get k counts 0)))))
       (organice-refresh-agenda-files)
       (dolist (file (org-agenda-files))
@@ -71,7 +129,9 @@ CONTADOR es la lista que se cuenta (nil: sin contador)."
                         (when (memq l '(inbox next later waiting someday reference)) (bump l)))
                       (when (organice-focus-p) (bump 'focus))
                       (when (organice-scheduled-view-p) (bump 'scheduled))
-                      (when (organice-deadline-view-p) (bump 'deadline))))
+                      (when (organice-deadline-view-p) (bump 'deadline))
+                      (dolist (cs customs)
+                        (when (organice-gtd--custom-match-p (nth 2 cs)) (bump (intern (car cs)))))))
                   (error nil)))
               nil 'file))))))
     (setq organice-sidebar--counts counts
@@ -117,7 +177,7 @@ CONTADOR es la lista que se cuenta (nil: sin contador)."
           (line (line-number-at-pos)))
       (erase-buffer)
       (insert (propertize " ORGanice · GTD\n\n" 'face '(:weight bold :height 1.1)))
-      (dolist (item organice-sidebar-items)
+      (dolist (item (organice-gtd--menu-entries))
         (pcase-let ((`(,key ,icon ,name ,count) item))
           (organice-sidebar--line (format "%s  %s" icon name)
                                   (and count (alist-get count organice-sidebar--counts 0))

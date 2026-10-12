@@ -85,7 +85,7 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Recorrer la lista con ↑ ↓ / Supr        | En la agenda: =n= / =p=, =C-k= borra la tarea        |
 | Logbook / búsqueda → «Archivadas»       | En la agenda: =v A= (org-agenda-archives-mode)      |
 | Atrás / adelante (Alt+← / Alt+→)        | =C-x ←= / =C-x →=                                   |
-| Secciones propias (Ajustes)             | Vistas propias en =org-agenda-custom-commands=      |
+| Secciones propias, ocultar/renombrar (Ajustes) | =organice-gtd-menu= (ver =lisp/organice-sidebar.el=) |
 | Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
 | (2.17) Esc / Tab en el buscador de GTD  | Sin equivalente: en Emacs se usa =/= en la agenda (filtro)  |
 | (2.17) Fecha de creación en tareas nuevas | Las plantillas de captura escriben =:Created: [fecha]= (=organice-capture.el=) |
