@@ -20,6 +20,7 @@ ficheros.
 | =lisp/organice-calendar.el= | Calendario en español: lunes primero, semanas, festivos de España, Luna.  |
 | =lisp/organice-themes.el=   | Temas =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=.              |
 | =lisp/organice-ui.el=       | Paleta de comandos, atajos, formato, sincronizar, Documentos ⇄ GTD.       |
+| =lisp/organice-sidebar.el=  | Menú lateral de la vista GTD (secciones con contador y proyectos).        |
 
 * Instalación (sin tocar tu configuración actual)
 Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask emacs=, o
@@ -47,6 +48,7 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | En la app                               | En Emacs                                            |
 |-----------------------------------------+-----------------------------------------------------|
 | Conmutador Documentos ⇄ GTD, tecla g    | =F12= o =C-c g g=                                   |
+| Menú lateral de la vista GTD            | Sale solo al entrar en GTD; =C-c g b= lo muestra u oculta (=↑ ↓=, =Intro=, =g=, =q=) |
 | Paleta de comandos (Ctrl+Espacio / ⌘K)  | =⌘K= (=s-k=) o =C-c k= (=C-SPC= es la marca de Emacs) |
 | Focus / Inbox / Next / Todo / Waiting   | =C-c g f= / =i= / =n= / =t= / =w=                   |
 | Scheduled / Deadline / Someday          | =C-c g s= / =d= / =m=                               |
