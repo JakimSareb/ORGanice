@@ -172,3 +172,34 @@
     display: none;
   }
 }
+
+/* ORG Mode para Eli (2.18): conmutador «Archivados» y lista para elegir entre títulos iguales */
+.eli-palette__arch {
+  border: 1px solid var(--base2);
+  background: transparent;
+  color: var(--base00);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.eli-palette__arch.is-on {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  opacity: 1;
+}
+.eli-palette__note {
+  font-style: italic;
+}
+@media (max-width: 480px) {
+  .eli-palette__arch {
+    font-size: 0;
+    padding: 4px 6px;
+  }
+  .eli-palette__arch i {
+    font-size: 13px;
+  }
+}

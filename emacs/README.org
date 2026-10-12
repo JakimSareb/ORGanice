@@ -96,6 +96,11 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | (2.17) Subtareas anidadas, Referencias, notas del proyecto | Org ya lo muestra así: los subencabezados cuelgan de su tarea, las notas van bajo el encabezado y las referencias son los encabezados sin estado |
 | (2.17) Reordenar subtareas arrastrando  | =M-↑= / =M-↓= (mueve el subárbol entre sus hermanas) |
 | (2.17) Adjuntos en pestaña nueva        | Se abren con la aplicación del sistema (=C-c g o=)   |
+| (2.18) Tarea ⇄ subtarea (Tab / Mayús+Tab) | =M-→= / =M-←= sobre el subárbol (=org-demote-subtree= / =org-promote-subtree=), o =C-c C-w= a la tarea madre |
+| (2.18) Contador [1/6] en la tarea madre | Escribe =[/]= al final del título y =C-c C-c= encima; se actualiza solo al cambiar el estado de las subtareas |
+| (2.18) Repetidoras: casillas a [ ]      | Automático (=org-todo-repeat-hook= → =org-reset-checkbox-state-subtree=, en =organice-core.el=) |
+| (2.18) Ir a la tarea madre (Alt+←)      | =C-c C-u= (org-up-heading) en el fichero; =C-u C-SPC= vuelve |
+| (2.18) Editar como texto plano un encabezado | =C-x n s= (narrow al subárbol); =C-x n w= vuelve |
 En Linux o Windows, =⌘= es la tecla Super (la de Windows). Dentro de la agenda funcionan todas las
 teclas de Org: =t= cambia el estado, =,= la prioridad, =:= las etiquetas, =C-c C-s= programa,
 =C-c C-d= fecha límite, =RET= abre la tarea, =g= recalcula.

@@ -136,7 +136,9 @@ export const normalizeGtdSections = (stored) => {
     // al darle estado a una tarea sin estado del fichero de entrada, pasa al de tareas
     moveFromInbox: rf.moveFromInbox !== false,
     // «Archivar todas»: solo las de estos ficheros (vacío: de todos)
-    archive: toArr(Array.isArray(rf.archive) ? rf.archive : []).map(normPath).filter(Boolean),
+    archive: toArr(Array.isArray(rf.archive) ? rf.archive : [])
+      .map(normPath)
+      .filter(Boolean),
   };
   const sections = {};
   allIds.forEach((id) => {
@@ -193,7 +195,10 @@ export const matchesSectionRules = (task, section, propertyOf) => {
   if (!section) return false;
   if (section.states.length && task.keyword && section.states.includes(task.keyword)) return true;
   if (section.tags.length) {
-    const own = (task.ownTags || []).map((t) => t.toLowerCase());
+    // (2.18) Cuentan también las heredadas (de la madre o del proyecto), como en los filtros;
+    // salvo en Inbox, que se marca solo con las propias
+    const pool = section.inboxFile ? task.ownTags || [] : task.tags || task.ownTags || [];
+    const own = pool.map((t) => t.toLowerCase());
     if (section.tags.some((t) => own.includes(t.toLowerCase()))) return true;
   }
   if (section.props.length && propertyOf) {

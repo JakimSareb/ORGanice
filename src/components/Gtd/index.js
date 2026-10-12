@@ -34,6 +34,7 @@ import {
   isGroupableList,
   keywordForList,
   PRIORITY_RE,
+  listOf,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -49,6 +50,8 @@ import {
   gtdRedo,
   gtdRefileInbox,
   tasksFileForRefile,
+  gtdSetParent,
+  canBeParentOf,
 } from '../../lib/gtd/gtd_actions';
 import { ActionCreators } from 'redux-undo';
 import {
@@ -199,6 +202,7 @@ function TaskRow({
   archivedFrom = null,
   depth = 0,
   parentTitle = null,
+  onGoParent = null,
 }) {
   const due = task.deadline;
   const overdue = due && due < today;
@@ -263,7 +267,19 @@ function TaskRow({
           </>
         )}
         <div className="gtd-task__main">
-          <div className="gtd-task__title">{task.title || '(sin título)'}</div>
+          <div className="gtd-task__title">
+            {task.title || '(sin título)'}
+            {/* (2.18) contador de subtareas del título ([1/6]) como pastilla discreta */}
+            {task.cookie && (
+              <span
+                className="gtd-task__cookie"
+                title="Subtareas terminadas"
+                data-testid="gtd-task-cookie"
+              >
+                {task.cookie}
+              </span>
+            )}
+          </div>
           <div className="gtd-task__meta">
             {archivedFrom && (
               <span className="gtd-meta" title="Archivada en">
@@ -272,7 +288,25 @@ function TaskRow({
             )}
             {parentTitle && !depth && (
               <span className="gtd-meta gtd-meta--parent" title="Subtarea de">
-                <i className="fas fa-level-up-alt fa-rotate-90" /> {parentTitle}
+                <i className="fas fa-level-up-alt fa-rotate-90" />{' '}
+                {onGoParent ? (
+                  // (2.18) enlace: lleva a la tarea madre (Alt+← vuelve)
+                  <button
+                    type="button"
+                    className="gtd-meta--parent-link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onGoParent();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    title="Ir a la tarea madre (Alt+← vuelve)"
+                    data-testid="gtd-parent-link"
+                  >
+                    {parentTitle}
+                  </button>
+                ) : (
+                  parentTitle
+                )}
               </span>
             )}
             {showProject && task.project && (
@@ -283,11 +317,19 @@ function TaskRow({
             {task.area && <span className="gtd-meta gtd-meta--area">{task.area}</span>}
             {task.tags
               .filter((t) => t.toLowerCase() !== 'sleep')
-              .map((t) => (
-                <span key={t} className="gtd-meta gtd-meta--tag">
-                  {t}
-                </span>
-              ))}
+              .map((t) => {
+                // (2.18) las heredadas (de la madre o del proyecto) en gris y cursiva
+                const inherited = !(task.ownTags || []).includes(t);
+                return (
+                  <span
+                    key={t}
+                    className={'gtd-meta gtd-meta--tag' + (inherited ? ' is-inherited' : '')}
+                    title={inherited ? 'Heredada' : undefined}
+                  >
+                    {t}
+                  </span>
+                );
+              })}
             {task.energy && (
               <span className="gtd-meta" title="Energía">
                 <i className="fas fa-bolt" /> {task.energy}
@@ -375,7 +417,9 @@ export default function GtdView() {
   const [doneOpen, setDoneOpen] = useState(false);
   const [refsOpen, setRefsOpen] = useState(false);
   // (2.17) notas del proyecto, bajo su cabecera (plegables; se recuerda si se pliegan)
-  const [projNotesOpen, setProjNotesOpen] = useState(() => readLS('eliGtdProjNotes', true) !== false);
+  const [projNotesOpen, setProjNotesOpen] = useState(
+    () => readLS('eliGtdProjNotes', true) !== false
+  );
   const [openKey, setOpenKey] = useState(null);
   // (2.16) tarea seleccionada con el teclado (↑ ↓; Intro la abre, Supr la borra)
   const [selKey, setSelKey] = useState(null);
@@ -463,8 +507,10 @@ export default function GtdView() {
   // configuración se vuelve a calcular todo.
   const gtdCfg = setGtdConfig(useSelector(selectGtdSections));
   // (2.17) ficheros elegidos en Ajustes (si están cargados); si no, los de siempre
-  const chosenInbox = gtdCfg.files.inbox && scopePaths.includes(gtdCfg.files.inbox) ? gtdCfg.files.inbox : null;
-  const chosenTasks = gtdCfg.files.tasks && scopePaths.includes(gtdCfg.files.tasks) ? gtdCfg.files.tasks : null;
+  const chosenInbox =
+    gtdCfg.files.inbox && scopePaths.includes(gtdCfg.files.inbox) ? gtdCfg.files.inbox : null;
+  const chosenTasks =
+    gtdCfg.files.tasks && scopePaths.includes(gtdCfg.files.tasks) ? gtdCfg.files.tasks : null;
   const inboxPaths = useMemo(() => {
     const found = inboxPathsOf(templates, scopePaths);
     return chosenInbox && !found.includes(chosenInbox) ? [chosenInbox, ...found] : found;
@@ -586,9 +632,14 @@ export default function GtdView() {
   // ella (p. ej. al terminarla desde el editor): se queda en su sitio hasta cerrarla
   const stickyRef = useRef(null);
   const tasksByKey = useMemo(() => new Map(tasks.map((t) => [t.key, t])), [tasks]);
+  // (2.18) Tarea madre (con estado, no proyecto) de una subtarea
+  const parentTaskOf = (t) => {
+    const p = t && t.parentId ? tasksByKey.get(`${t.path}::${t.parentId}`) : null;
+    return p && p.keyword && !p.isProject ? p : null;
+  };
   const parentTitleOf = (t) => {
-    const p = t.parentId ? tasksByKey.get(`${t.path}::${t.parentId}`) : null;
-    return p && p.keyword && !p.isProject ? p.title : null;
+    const p = parentTaskOf(t);
+    return p ? p.title : null;
   };
   const items = useMemo(() => {
     // (2.17) subtareas bajo su tarea (no en las vistas ordenadas por fecha)
@@ -1451,7 +1502,9 @@ export default function GtdView() {
   const pendingRefile = useMemo(
     () =>
       refileTarget && gtdCfg.files.moveFromInbox
-        ? tasks.filter((t) => t.isInboxFile && t.keyword && t.level === 1 && t.path !== refileTarget)
+        ? tasks.filter(
+            (t) => t.isInboxFile && t.keyword && t.level === 1 && t.path !== refileTarget
+          )
         : [],
     [tasks, refileTarget, gtdCfg]
   );
@@ -1460,7 +1513,9 @@ export default function GtdView() {
     if (n)
       dispatch(
         setDisappearingLoadingMessage(
-          `${n === 1 ? '1 tarea pasada' : `${n} tareas pasadas`} a ${fileDisplayName(refileTarget)}`,
+          `${n === 1 ? '1 tarea pasada' : `${n} tareas pasadas`} a ${fileDisplayName(
+            refileTarget
+          )}`,
           3000
         )
       );
@@ -1587,6 +1642,54 @@ export default function GtdView() {
     gtdShortcuts: () => setShowShortcuts(true),
     gtdShortcuts2: () => setShowShortcuts(true),
   };
+  // (2.18) Ir a otra tarea (la madre de una subtarea): se selecciona y se abre su editor; si no
+  // está en la lista que se ve, se va a su proyecto o a su lista. Alt+← vuelve a donde se estaba.
+  const backRef = useRef([]);
+  const [jumpedKey, setJumpedKey] = useState(null);
+  useEffect(() => {
+    if (jumpedKey && openKey !== jumpedKey) setJumpedKey(null);
+  }, [openKey, jumpedKey]);
+  const goToTask = (target) => {
+    if (!target) return;
+    backRef.current = [...backRef.current, { view, selKey, openKey }].slice(-20);
+    const visible = items.some((i) => i.kind === 'task' && i.task.key === target.key);
+    if (!visible) {
+      const l = listOf(target, today);
+      const v = target.project
+        ? { type: 'project', key: `${target.project.path}::${target.project.id}` }
+        : { id: { habit: 'scheduled', parked: 'focus', project: 'focus' }[l] || l || 'focus' };
+      selectView(v);
+      if (area && area !== '*' && (target.area || '') !== (area === '-' ? '' : area)) setArea('*');
+    }
+    setSelKey(target.key);
+    setOpenKey(target.key);
+    setJumpedKey(target.key);
+  };
+  const goBack = () => {
+    const prev = backRef.current[backRef.current.length - 1];
+    if (!prev) return false;
+    backRef.current = backRef.current.slice(0, -1);
+    setView(prev.view);
+    writeLS(LS_VIEW, prev.view);
+    setOpenKey(prev.openKey);
+    setSelKey(prev.selKey || prev.openKey);
+    return true;
+  };
+
+  // (2.18) Tab: la tarea seleccionada pasa a ser subtarea de la de encima (de su hermana anterior
+  // si la de encima es una subtarea de esta); Mayús+Tab: la saca un nivel
+  const indentSelected = (task, rows, idx, out) => {
+    if (out) {
+      if (parentTaskOf(task)) dispatch(gtdSetParent(task, null));
+      return;
+    }
+    let cand = rows[idx - 1];
+    while (cand && cand.level > task.level) cand = tasksByKey.get(`${cand.path}::${cand.parentId}`);
+    if (cand && cand.id !== task.parentId && canBeParentOf(cand, task, tasks, tasksByKey)) {
+      dispatch(gtdSetParent(task, cand.id));
+    }
+  };
+
   // (2.16) Recorrer la lista con el teclado: ↓ empieza por la primera tarea, ↑ por la última;
   // Intro abre la seleccionada; Supr o Retroceso la borran (con confirmación: Intro confirma);
   // ← vuelve al menú lateral; Esc quita la selección
@@ -1627,6 +1730,15 @@ export default function GtdView() {
     }
     if (idx < 0) return false;
     const task = rows[idx];
+    // (2.18) Tab / Mayús+Tab: solo con el foco en la lista (no en un botón o un campo) y no en
+    // las vistas ordenadas por fecha (ahí la de encima puede no tener nada que ver)
+    if (e.key === 'Tab') {
+      if (t && t.closest && t.closest('button, a, select, input, textarea')) return false;
+      if (['focus', 'scheduled', 'deadline', 'logbook'].includes(view.id)) return false;
+      e.preventDefault();
+      indentSelected(task, rows, idx, e.shiftKey);
+      return true;
+    }
     if (e.key === 'Enter') {
       if (t && t.closest && t.closest('button, a, select')) return false;
       e.preventDefault();
@@ -1692,6 +1804,40 @@ export default function GtdView() {
     e.preventDefault();
     gtdActions[hit.action]();
   };
+  // (2.18) va antes (en captura) que el Alt+← de «atrás» de la barra de arriba
+  const backKeyRef = useRef(null);
+  backKeyRef.current = (e) => {
+    if (e.defaultPrevented || e.repeat || !e.altKey) return;
+    if (document.querySelector('.eli-palette__overlay, .eli-prompt__overlay')) return;
+    // (2.18) Alt+←: volver de la tarea madre a donde se estaba (también con su editor abierto).
+    // En un campo de texto solo si el cursor está al principio (si no, Opción+← en el Mac mueve
+    // el cursor una palabra, y eso se respeta)
+    const field = isEditable(e.target) ? e.target : null;
+    const atStart =
+      !field ||
+      (typeof field.selectionStart === 'number' &&
+        field.selectionStart === 0 &&
+        field.selectionEnd === 0);
+    if (
+      e.altKey &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.shiftKey &&
+      e.key === 'ArrowLeft' &&
+      backRef.current.length &&
+      atStart &&
+      (!field || openKey)
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      goBack();
+    }
+  };
+  useEffect(() => {
+    const onBack = (e) => backKeyRef.current && backKeyRef.current(e);
+    window.addEventListener('keydown', onBack, true);
+    return () => window.removeEventListener('keydown', onBack, true);
+  }, []);
   useEffect(() => {
     const onKey = (e) => keyRef.current && keyRef.current(e);
     window.addEventListener('keydown', onKey);
@@ -1747,6 +1893,16 @@ export default function GtdView() {
       onDeleteFile={(target) => deleteAttachmentFile(task, target)}
       energyOptions={energyOptions}
       effortOptions={effortOptions}
+      parentOptions={
+        task.isProject
+          ? []
+          : tasks
+              .filter((p) => canBeParentOf(p, task, tasks, tasksByKey))
+              .map((p) => ({ id: p.id, title: p.title }))
+      }
+      parentTaskId={(parentTaskOf(task) || {}).id || ''}
+      onGoToParent={() => goToTask(parentTaskOf(task))}
+      noAutoFocus={jumpedKey === task.key}
     />
   );
 
@@ -2061,7 +2217,8 @@ export default function GtdView() {
               <i className="fas fa-stream" />
             </button>
           )}
-          {pendingRefile.length > 0 && (
+          {/* (2.18) el botón Refile solo en la sección Inbox */}
+          {view.id === 'inbox' && pendingRefile.length > 0 && (
             <button
               className="gtd-main__sync gtd-main__refile"
               onClick={doRefile}
@@ -2507,7 +2664,9 @@ export default function GtdView() {
                     <button
                       type="button"
                       className="gtd-section__toggle"
-                      onClick={() => (item.toggle === 'refs' ? setRefsOpen : setDoneOpen)((o) => !o)}
+                      onClick={() =>
+                        (item.toggle === 'refs' ? setRefsOpen : setDoneOpen)((o) => !o)
+                      }
                       aria-expanded={!item.collapsed}
                       data-testid={`${item.testId}-toggle`}
                     >
@@ -2564,6 +2723,7 @@ export default function GtdView() {
                 isSelected={selKey === item.task.key}
                 depth={item.depth || 0}
                 parentTitle={parentTitleOf(item.task)}
+                onGoParent={() => goToTask(parentTaskOf(item.task))}
               />
             )
           )}

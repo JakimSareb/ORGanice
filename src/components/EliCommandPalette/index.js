@@ -91,6 +91,34 @@ const gtdCommand = (history, pathname, cmd) => {
   }
 };
 
+// (2.18) Fechas de un encabezado para dar contexto (programada / límite)
+const headerDates = (h) => {
+  const out = [];
+  (h.get('planningItems') || List()).forEach((pi) => {
+    const type = pi.get('type');
+    if (type !== 'SCHEDULED' && type !== 'DEADLINE') return;
+    const ts = pi.get('timestamp');
+    if (!ts || !ts.get('year')) return;
+    const d = `${Number(ts.get('day'))}/${Number(ts.get('month'))}/${ts.get('year')}`;
+    out.push(type === 'SCHEDULED' ? `empieza ${d}` : `vence ${d}`);
+  });
+  return out.join(' · ');
+};
+
+// (2.18) Una línea de las notas donde sale lo buscado (solo si sale en las notas)
+export const notesLineFor = (notes, query) => {
+  const words = normalize(query || '')
+    .split(/\s+/)
+    .filter((w) => w.length > 1);
+  if (!notes || !words.length) return null;
+  const line = notes
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l && !/^:[A-Z_]+:/.test(l) && words.some((w) => normalize(l).includes(w)));
+  if (!line) return null;
+  return line.length > 120 ? `${line.slice(0, 117)}…` : line;
+};
+
 const KIND_LABEL = {
   action: 'Acción',
   file: 'Fichero',
@@ -109,6 +137,11 @@ export default function EliCommandPalette() {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [remoteFiles, setRemoteFiles] = useState([]);
+  // (2.18) «Archivados»: también las terminadas (DONE, CANCELLED…) y lo archivado (*_archive)
+  const [showArch, setShowArch] = useState(() => getShowArchived());
+  const [rev, setRev] = useState(0);
+  // (2.18) Varios encabezados con el mismo título: se elige en una lista con más contexto
+  const [picker, setPicker] = useState(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
@@ -158,15 +191,28 @@ export default function EliCommandPalette() {
     if (!open) return;
     setQuery('');
     setActive(0);
+    setPicker(null);
+    setShowArch(getShowArchived());
     setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
     const client = store.getState().syncBackend.get('client');
     let alive = true;
     listAllOrgFiles(client).then((paths) => alive && setRemoteFiles(paths));
-    if (getShowArchived()) dispatch(eliLoadArchivedFiles());
+    if (getShowArchived()) {
+      Promise.resolve(dispatch(eliLoadArchivedFiles())).then(() => alive && setRev((r) => r + 1));
+    }
     return () => {
       alive = false;
     };
   }, [open, store]);
+
+  const toggleArchived = () => {
+    const v = !showArch;
+    setShowArch(v);
+    setShowArchived(v);
+    setPicker(null);
+    if (v) Promise.resolve(dispatch(eliLoadArchivedFiles())).then(() => setRev((r) => r + 1));
+    setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
+  };
 
   // Todo lo que se puede buscar (se calcula al abrir la paleta)
   const index = useMemo(() => {
@@ -460,13 +506,17 @@ export default function EliCommandPalette() {
       );
 
     // (2.16) Lo archivado (*.org_archive) solo con «Archivadas» encendido
-    const showArchived = getShowArchived();
+    // (2.18) …y también las tareas terminadas (DONE, CANCELLED…)
+    const showArchived = showArch;
     act(
       'archived',
-      showArchived ? 'Archivadas: ocultar lo archivado' : 'Archivadas: mostrar lo archivado',
+      showArchived
+        ? 'Archivados: ocultar lo terminado y lo archivado'
+        : 'Archivados: mostrar lo terminado y lo archivado',
       'fas fa-archive',
       () => {
         setShowArchived(!showArchived);
+        setShowArch(!showArchived);
         if (!showArchived) dispatch(eliLoadArchivedFiles());
       },
       '',
@@ -501,25 +551,55 @@ export default function EliCommandPalette() {
 
     // Encabezados, proyectos y etiquetas de los ficheros cargados
     const tags = new Map();
+    const seen = new Set();
     loaded.forEach((p) => {
       const headers = files.getIn([p, 'headers']);
       if (!headers) return;
+      const archivedFile = isArchiveFile(p);
+      // (2.18) estados terminados del fichero (DONE, CANCELLED…)
+      const doneKw = new Set(
+        (files.getIn([p, 'todoKeywordSets']) || List())
+          .flatMap((set) => set.get('completedKeywords') || List())
+          .toArray()
+      );
+      const stack = []; // títulos de los antepasados
       headers.forEach((h) => {
+        const level = h.get('nestingLevel');
+        while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
         const title = displayTitle(h.getIn(['titleLine', 'rawTitle']) || '');
+        const ancestors = stack.map((x) => x.title);
+        stack.push({ level, title });
         if (!title.trim()) return;
         const keyword = h.getIn(['titleLine', 'todoKeyword']) || '';
+        const isDone = !!keyword && doneKw.has(keyword);
+        if (isDone && !showArchived) return;
         const htags = (h.getIn(['titleLine', 'tags']) || List()).toArray().filter(Boolean);
         htags.forEach((t) => tags.set(t, (tags.get(t) || 0) + 1));
         const id = h.get('id');
+        // (2.18) sin duplicados exactos (el mismo encabezado del mismo fichero)
+        const uid = `h:${p}::${id}`;
+        if (seen.has(uid)) return;
+        seen.add(uid);
         add({
           rid: `h:${p}::${title}`,
+          uid,
           kind: 'head',
           label: title,
           keyword,
-          sub: shortPath(p),
+          sub: archivedFile ? `Archivada · ${shortPath(p)}` : shortPath(p),
           tags: htags,
-          icon: keyword ? 'far fa-check-square' : 'fas fa-angle-right',
+          icon: archivedFile
+            ? 'fas fa-archive'
+            : keyword
+            ? 'far fa-check-square'
+            : 'fas fa-angle-right',
           path: p,
+          headerId: id,
+          ancestors,
+          dates: headerDates(h),
+          notes: h.get('rawDescription') || '',
+          archived: archivedFile,
+          isDone,
           run: () => goToHeader(p, id, title),
           search: `${title} ${htags.join(' ')}`,
         });
@@ -551,7 +631,8 @@ export default function EliCommandPalette() {
       );
     return items;
     // goToFile/goToHeader solo usan dispatch/history (estables)
-  }, [open, remoteFiles, location.pathname, store, dispatch, history]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, remoteFiles, location.pathname, store, dispatch, history, showArch, rev]);
 
   // Ir a un fichero (cargándolo si hace falta)
   function goToFile(path) {
@@ -569,7 +650,11 @@ export default function EliCommandPalette() {
       headers = store.getState().org.present.getIn(['files', path, 'headers']);
     }
     let headerId = id;
-    if (headers && !headers.some((h) => h.get('id') === id)) {
+    // (2.18) el id debe ser de ESTE fichero y seguir siendo ese encabezado (al releer un fichero
+    // los ids cambian y uno viejo podía señalar otro encabezado); si no, se busca por título
+    const titleOf = (h) => displayTitle(h.getIn(['titleLine', 'rawTitle']) || '');
+    const byId = headers && headers.find((h) => h.get('id') === id);
+    if (headers && (!byId || titleOf(byId) !== title)) {
       const found = headers.find(
         (h) => displayTitle(h.getIn(['titleLine', 'rawTitle']) || '') === title
       );
@@ -655,26 +740,42 @@ export default function EliCommandPalette() {
       setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
       return;
     }
+    // (2.18) Varios encabezados distintos con el mismo título: primero se elige cuál
+    if (item.kind === 'head' && !picker) {
+      const same = index.filter(
+        (i) => i.kind === 'head' && i.label === item.label && i.uid !== item.uid
+      );
+      if (same.length) {
+        setPicker({ title: item.label, items: [item, ...same], query: query.trim() });
+        setActive(0);
+        return;
+      }
+    }
     writeRecent([item.rid, ...readRecent().filter((r) => r !== item.rid)].slice(0, 8));
     close();
     setTimeout(() => item.run && item.run(), 0);
   };
 
+  const shown = picker ? picker.items : results;
   const onKeyDown = (e) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       e.stopPropagation();
-      if (!results.length) return;
+      if (!shown.length) return;
       const d = e.key === 'ArrowDown' ? 1 : -1;
-      setActive((a) => (a + d + results.length) % results.length);
+      setActive((a) => (a + d + shown.length) % shown.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      choose(results[active]);
+      choose(shown[active]);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      close();
+      // (2.18) desde la lista de «¿cuál?», Esc vuelve a los resultados
+      if (picker) {
+        setPicker(null);
+        setActive(0);
+      } else close();
     } else {
       e.stopPropagation();
     }
@@ -694,46 +795,105 @@ export default function EliCommandPalette() {
           <input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPicker(null);
+            }}
             onKeyDown={onKeyDown}
             placeholder="Buscar ficheros, tareas, etiquetas o acciones…  (> acciones · # etiquetas · / ficheros)"
             data-testid="eli-palette-input"
             autoComplete="off"
             spellCheck={false}
           />
+          <button
+            type="button"
+            className={'eli-palette__arch' + (showArch ? ' is-on' : '')}
+            onClick={toggleArchived}
+            aria-pressed={showArch}
+            title={
+              showArch
+                ? 'Se ven también las tareas terminadas y lo archivado (pulsa para ocultarlo)'
+                : 'Mostrar también las tareas terminadas (DONE, CANCELLED) y lo archivado'
+            }
+            data-testid="eli-palette-archived"
+          >
+            <i className="fas fa-archive" /> Archivados
+          </button>
           <button type="button" className="eli-palette__close" onClick={close} title="Cerrar (Esc)">
             <i className="fas fa-times" />
           </button>
         </div>
-        {!query.trim() && results.length > 0 && (
+        {!picker && !query.trim() && results.length > 0 && (
           <div className="eli-palette__hint">{results[0].recent ? 'Recientes' : 'Acciones'}</div>
         )}
+        {picker && (
+          <div className="eli-palette__hint" data-testid="eli-palette-picker">
+            Hay {picker.items.length} «{picker.title}»: ¿cuál? (Esc vuelve)
+          </div>
+        )}
         <ul className="eli-palette__list" ref={listRef} data-testid="eli-palette-results">
-          {results.map((item, i) => (
-            <li
-              key={item.rid}
-              className={'eli-palette__item' + (i === active ? ' is-active' : '')}
-              onMouseMove={() => i !== active && setActive(i)}
-              onClick={() => choose(item)}
-              data-testid="eli-palette-item"
-              data-kind={item.kind}
-            >
-              <i className={`${item.icon} eli-palette__icon`} />
-              <span className="eli-palette__main">
-                <span className="eli-palette__label">
-                  {item.keyword && <span className="eli-palette__kw">{item.keyword}</span>}
-                  {item.label}
+          {picker &&
+            picker.items.map((item, i) => {
+              const noteLine = notesLineFor(item.notes, picker.query);
+              return (
+                <li
+                  key={item.uid}
+                  className={
+                    'eli-palette__item eli-palette__item--pick' + (i === active ? ' is-active' : '')
+                  }
+                  onMouseMove={() => i !== active && setActive(i)}
+                  onClick={() => choose(item)}
+                  data-testid="eli-palette-pick"
+                >
+                  <i className={`${item.icon} eli-palette__icon`} />
+                  <span className="eli-palette__main">
+                    <span className="eli-palette__label">
+                      {item.keyword && <span className="eli-palette__kw">{item.keyword}</span>}
+                      {item.label}
+                    </span>
+                    <span className="eli-palette__sub">
+                      {item.archived ? 'Archivada · ' : ''}
+                      {shortPath(item.path)}
+                      {item.ancestors && item.ancestors.length > 0 && (
+                        <> · {item.ancestors.join(' › ')}</>
+                      )}
+                      {item.dates && <> · {item.dates}</>}
+                    </span>
+                    {noteLine && (
+                      <span className="eli-palette__sub eli-palette__note">{noteLine}</span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          {!picker &&
+            results.map((item, i) => (
+              <li
+                key={item.uid || item.rid}
+                className={'eli-palette__item' + (i === active ? ' is-active' : '')}
+                onMouseMove={() => i !== active && setActive(i)}
+                onClick={() => choose(item)}
+                data-testid="eli-palette-item"
+                data-kind={item.kind}
+              >
+                <i className={`${item.icon} eli-palette__icon`} />
+                <span className="eli-palette__main">
+                  <span className="eli-palette__label">
+                    {item.keyword && <span className="eli-palette__kw">{item.keyword}</span>}
+                    {item.label}
+                  </span>
+                  {item.sub && <span className="eli-palette__sub">{item.sub}</span>}
                 </span>
-                {item.sub && <span className="eli-palette__sub">{item.sub}</span>}
-              </span>
-              {item.shortcut ? (
-                <kbd className="eli-palette__kbd">{item.shortcut}</kbd>
-              ) : (
-                <span className="eli-palette__kind">{KIND_LABEL[item.kind]}</span>
-              )}
-            </li>
-          ))}
-          {results.length === 0 && <li className="eli-palette__empty">Sin resultados</li>}
+                {item.shortcut ? (
+                  <kbd className="eli-palette__kbd">{item.shortcut}</kbd>
+                ) : (
+                  <span className="eli-palette__kind">{KIND_LABEL[item.kind]}</span>
+                )}
+              </li>
+            ))}
+          {!picker && results.length === 0 && (
+            <li className="eli-palette__empty">Sin resultados</li>
+          )}
         </ul>
         <div className="eli-palette__foot">
           <span>

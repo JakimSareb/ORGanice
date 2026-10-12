@@ -1,6 +1,6 @@
 import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
 import { getPriority } from '../../../../lib/eli_priority';
-import { openPrintPreview, openUploadDialog } from '../../../EliTools';
+import { openPrintPreview, openUploadDialog, openRawEditor } from '../../../EliTools';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task_state';
 import { showMessage } from '../../../../lib/eli_prompt';
@@ -54,6 +54,7 @@ class Header extends PureComponent {
       'handleShowTagsModal',
       'handleShowPropertyListEditorModal',
       'handleNarrow',
+      'handleEditPlain',
       'handleWiden',
       'handleAddNewHeader',
       'handleRest',
@@ -352,6 +353,14 @@ class Header extends PureComponent {
 
   handleWiden() {
     this.props.org.widenHeader();
+  }
+
+  // ORG Mode para Eli (2.18): «Editar como texto plano»: reduce al encabezado (narrow) y abre el
+  // editor de texto plano solo con él y sus subencabezados
+  handleEditPlain() {
+    const id = this.props.header.get('id');
+    this.props.org.narrowHeader(id);
+    openRawEditor(id);
   }
 
   handleAddNewHeader() {
@@ -687,6 +696,7 @@ class Header extends PureComponent {
                   onTagsClick={this.handleShowTagsModal}
                   onPropertiesClick={this.handleShowPropertyListEditorModal}
                   onNarrow={this.handleNarrow}
+                  onEditPlain={this.handleEditPlain}
                   onWiden={this.handleWiden}
                   onAddNewHeader={this.handleAddNewHeader}
                   onDeadlineClick={this.handleDeadlineClick}

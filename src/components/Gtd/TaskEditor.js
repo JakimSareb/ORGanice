@@ -127,6 +127,10 @@ export default function TaskEditor({
   replacesRow = false,
   onAttachFiles,
   onDeleteFile,
+  parentOptions = [],
+  parentTaskId = '',
+  onGoToParent,
+  noAutoFocus = false,
 }) {
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
@@ -155,12 +159,21 @@ export default function TaskEditor({
   );
   // ORG Mode para Eli: convertir la tarea en proyecto ('project') o el proyecto en tarea ('task')
   const [convert, setConvert] = useState('');
+  // (2.18) «Subtarea de»: id de la tarea madre ('' = ninguna)
+  // (los ids de los encabezados son números; el desplegable trabaja con texto)
+  const [parent, setParent] = useState(parentTaskId ? String(parentTaskId) : '');
   const titleRef = useRef(null);
   const notesRef = useRef(null);
   const encrypted = /-----BEGIN PGP MESSAGE-----/.test(task.description || '');
 
   useEffect(() => {
+    // (2.18) al llegar desde «↳ tarea madre» no se pone el cursor en el título: así Alt+← vuelve
+    if (noAutoFocus) {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      return;
+    }
     if (titleRef.current) titleRef.current.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Clic sobre "[ ]" dentro del cuadro de notas: marcar/desmarcar (como en la vista de hoja)
@@ -212,6 +225,7 @@ export default function TaskEditor({
     sRepeat,
     dRepeat,
     project,
+    parent,
   };
   const latest = useRef(current);
   latest.current = current;
@@ -220,12 +234,12 @@ export default function TaskEditor({
   if (baseline.current === null)
     baseline.current = isNew ? { ...current, title: '', area: '' } : { ...current };
   const propsRef = useRef({ onSave, task, encrypted });
-  propsRef.current = { onSave, task, encrypted };
+  propsRef.current = { onSave, task, encrypted, parentOptions };
 
   const commit = () => {
     const c = latest.current;
     const b = baseline.current;
-    const { task: t, onSave: save, encrypted: enc } = propsRef.current;
+    const { task: t, onSave: save, encrypted: enc, parentOptions: pOpts } = propsRef.current;
     const changes = {};
     if (c.title.trim() && c.title !== b.title) changes.rawTitle = c.title.trim();
     if (c.star !== b.star) changes.priority = c.star ? 'A' : t.priority === 'A' ? null : t.priority;
@@ -242,8 +256,17 @@ export default function TaskEditor({
       finalTags.join(' ') !== baseTags.join(' ')
     ) {
       // Inbox = etiqueta @inbox: al sacarla de Inbox se quita; al llevarla a Inbox (fuera del
-      // fichero de entrada) se pone
-      changes.tags = tagsForList(t, targetList, finalTags);
+      // fichero de entrada) se pone. (2.18) Solo al cambiar de lista y solo sobre las etiquetas
+      // que ya tenía: las puestas a mano ahora no se quitan nunca.
+      const listChanged = c.list !== b.list || c.convert !== b.convert;
+      if (listChanged) {
+        const added = finalTags.filter((x) => !baseTags.includes(x));
+        const kept = finalTags.filter((x) => baseTags.includes(x));
+        const moved = tagsForList(t, targetList, kept);
+        changes.tags = Array.from(new Set([...moved, ...added]));
+      } else {
+        changes.tags = finalTags;
+      }
     }
     if (c.area !== b.area) changes.area = c.area.trim() || null;
     if (c.energy !== b.energy) changes.energy = c.energy || null;
@@ -256,8 +279,19 @@ export default function TaskEditor({
     if (c.list !== b.list) changes.list = c.list;
     if (c.convert && c.convert !== b.convert) changes.list = targetList;
     const projectChanged = c.project !== b.project;
+    // (2.18) tarea ⇄ subtarea (no a la vez que se cambia de proyecto o se convierte)
+    if (c.parent !== b.parent && !projectChanged && !c.convert) {
+      const opt = (pOpts || []).find((o) => String(o.id) === c.parent);
+      changes.parentTaskId = c.parent ? (opt ? opt.id : null) : null;
+      if (c.parent && !opt) delete changes.parentTaskId;
+    }
     if (!Object.keys(changes).length && !projectChanged) return;
-    baseline.current = { ...c, tagInput: '' };
+    // (si «Subtarea de» no se ha aplicado, se queda como pendiente para la próxima vez)
+    baseline.current = {
+      ...c,
+      tagInput: '',
+      parent: changes.parentTaskId !== undefined || c.parent === b.parent ? c.parent : b.parent,
+    };
     save(changes, projectChanged ? c.project : undefined);
   };
 
@@ -846,6 +880,43 @@ export default function TaskEditor({
             )}
           </select>
         </label>
+        {/* (2.18) Subtarea de otra tarea abierta del mismo proyecto o fichero */}
+        {!isProject && !isNew && (parentOptions.length > 0 || parentTaskId) && (
+          <label className={'gtd-ed__field' + (parent ? ' has-value' : '')} title="Subtarea de">
+            <i className="fas fa-level-up-alt fa-rotate-90" aria-hidden="true" />
+            <select
+              value={parent}
+              onChange={(e) => setParent(e.target.value)}
+              data-testid="gtd-editor-parent"
+              aria-label="Subtarea de"
+            >
+              <option value="">Subtarea de: — ninguna —</option>
+              {parentTaskId && !parentOptions.some((o) => o.id === parentTaskId) && (
+                <option value={String(parentTaskId)}>Subtarea de: (su madre actual)</option>
+              )}
+              {parentOptions.map((o) => (
+                <option key={o.id} value={String(o.id)}>
+                  Subtarea de: {o.title}
+                </option>
+              ))}
+            </select>
+            {parentTaskId && parent === String(parentTaskId) && onGoToParent && (
+              <button
+                type="button"
+                className="gtd-btn gtd-btn--link gtd-ed__go-parent"
+                onClick={(e) => {
+                  e.preventDefault();
+                  commit();
+                  onGoToParent();
+                }}
+                title="Ir a la tarea madre (Alt+← vuelve)"
+                data-testid="gtd-editor-go-parent"
+              >
+                <i className="fas fa-external-link-alt" />
+              </button>
+            )}
+          </label>
+        )}
         <label className={'gtd-ed__field' + (area ? ' has-value' : '')} title="Área">
           <i className="far fa-folder" aria-hidden="true" />
           <input

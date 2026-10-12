@@ -193,6 +193,8 @@ const inlineMarkUpToRawText = (part) => {
   );
 };
 
+const cookieNum = (n) => (n === null || n === undefined || Number.isNaN(n) ? '' : `${n}`);
+
 export const attributedStringToRawText = (parts) => {
   if (!parts) {
     return '';
@@ -215,10 +217,13 @@ export const attributedStringToRawText = (parts) => {
           text = linkPartToRawText(part);
           break;
         case 'fraction-cookie':
-          text = `[${part.getIn(['fraction', 0]) || ''}/${part.getIn(['fraction', 1]) || ''}]`;
+          // ORG Mode para Eli (2.18): un 0 se escribe (antes «[0/3]» salía como «[/3]»)
+          text = `[${cookieNum(part.getIn(['fraction', 0]))}/${cookieNum(
+            part.getIn(['fraction', 1])
+          )}]`;
           break;
         case 'percentage-cookie':
-          text = `[${part.get('percentage') || ''}%]`;
+          text = `[${cookieNum(part.get('percentage'))}%]`;
           break;
         case 'table':
           text = tablePartToRawText(part);

@@ -277,6 +277,7 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
         logIntoDrawer,
         timestamp: new Date(),
         dirtying: true,
+        eliEnsureCookie: true,
       });
     }
   }
@@ -299,10 +300,16 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
     });
   }
 
+  // 5) ORG Mode para Eli (2.18): hacerla subtarea de otra tarea del mismo fichero, o sacarla
+  if (changes.parentTaskId !== undefined) inner.push(parentAction(task, changes.parentTaskId));
+
   if (!inner.length) return;
   const newKeyword = inner.find((a) => a.type === 'SET_TODO_STATE');
   // (2.17) al darle estado a una tarea de inbox.org, pasa a tasks.org en el mismo paso
-  const refileTo = move ? null : refileTargetFor(getState, task, newKeyword && newKeyword.newTodoState);
+  const refileTo =
+    move || changes.parentTaskId !== undefined
+      ? null
+      : refileTargetFor(getState, task, newKeyword && newKeyword.newTodoState);
   if (refileTo && !missingKeyword(getState, refileTo, [newKeyword.newTodoState])) {
     inner.push({
       type: 'REFILE_SUBTREE',
@@ -486,6 +493,41 @@ export const gtdCloseProject = (project, state, openTasks = []) => (dispatch, ge
 export const gtdDeleteTask = (task) => (dispatch) => {
   dispatch(inFile(task.path, { type: 'REMOVE_HEADER', headerId: task.id, dirtying: true }));
   syncFile(dispatch, task.path);
+};
+
+// (2.18) Tarea ⇄ subtarea (en el mismo fichero): parentId = id de la nueva madre; null = sacarla
+// un nivel (queda justo debajo de su antigua madre). Se lleva sus subtareas.
+const parentAction = (task, parentId) =>
+  parentId
+    ? { type: 'ELI_MAKE_SUBTASK_OF', headerId: task.id, parentId, dirtying: true }
+    : { type: 'ELI_PROMOTE_SUBTASK', headerId: task.id, dirtying: true };
+
+export const gtdSetParent = (task, parentId) => (dispatch, getState) => {
+  if (!getState().org.present.getIn(['files', task.path, 'headers'])) return;
+  dispatch(inFile(task.path, [parentAction(task, parentId)]));
+  syncFile(dispatch, task.path);
+};
+
+// ¿Puede `parent` ser la madre de `task`? Tarea con estado (no proyecto ni terminada), del mismo
+// fichero y del mismo proyecto, y que no sea ella misma ni una de sus subtareas.
+export const canBeParentOf = (parent, task, allTasks = [], byKey = null) => {
+  if (!parent || !task || parent.key === task.key) return false;
+  if (parent.path !== task.path || !parent.keyword || parent.isProject || parent.isDone) {
+    return false;
+  }
+  const projId = (t) => (t.project ? t.project.id : null);
+  if (projId(parent) !== projId(task)) return false;
+  // ¿Es descendiente de task? (subiendo por parentId)
+  // (byKey: Map «fichero::id» → tarea ya hecho, para no rehacerlo con cada candidata)
+  const index =
+    byKey ||
+    new Map(allTasks.filter((t) => t.path === task.path).map((t) => [`${t.path}::${t.id}`, t]));
+  let cur = parent;
+  while (cur && cur.parentId) {
+    if (cur.parentId === task.id) return false;
+    cur = index.get(`${cur.path}::${cur.parentId}`);
+  }
+  return true;
 };
 
 // Mover (refile) a un proyecto, o fuera de él (al nivel superior del mismo fichero)

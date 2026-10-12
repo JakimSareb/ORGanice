@@ -25,14 +25,14 @@ Selecciona este encabezado. A la vista están solo los iconos de cada día; el r
 | Icono          | Qué hace                                                                                                      |
 |----------------+---------------------------------------------------------------------------------------------------------------|
 | Estrella       | Pone o quita la prioridad [#A]                                                                                 |
-| Casilla        | Termina la tarea (DONE). Con mayúsculas pulsada, la cancela (CANCELLED). Gris si no es una tarea o ya terminó |
 | Lápiz          | Editar el título. Con el tabulador pasas a la descripción, las etiquetas y las fechas                          |
 | Lápiz en recuadro | Editar la descripción (el texto de debajo)                                                                  |
 | Calendarios    | Fecha límite (DEADLINE) y fecha programada (SCHEDULED)                                                         |
 | Más            | Nuevo encabezado debajo (mantenlo pulsado para duplicar el actual)                                             |
+| Etiquetas      | Poner o quitar etiquetas                                                                                       |
 | Mover          | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                      |
 | Reloj de arena | Solo se ve con el reloj en marcha: tócalo para pararlo                                                         |
-| ⋯              | Etiquetas, nota, reloj, tiempo registrado, *reducir a este encabezado (narrow)* (o «Ver todo» si ya lo está), propiedades, adjuntar, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
+| ⋯              | *Marcar como hecha* (DONE) y *Cancelar la tarea* (solo en tareas abiertas), *editar como texto plano* (solo este encabezado con sus subencabezados), nota, reloj, tiempo registrado, *reducir a este encabezado (narrow)* (o «Ver todo» si ya lo está), propiedades, adjuntar, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
 
 ** El editor de título
 Selecciona este encabezado y toca el lápiz.
@@ -84,9 +84,9 @@ Los estados salen de la línea «#+TODO:» del fichero. Si un fichero no la tien
 El contador [1/5] de este encabezado se actualiza solo.
 *** DONE Leer la bienvenida
 CLOSED: [%HOY-1 18:30%]
-*** NEXT [#A] Probar la casilla de la barra de iconos
-Selecciona la tarea y toca la casilla que hay al lado de la estrella.
-*** TODO Cancelar esta tarea con mayúsculas + casilla
+*** NEXT [#A] Marcar como hecha desde el menú ⋯
+Selecciona la tarea, toca *⋯* y elige «Marcar como hecha».
+*** TODO Cancelar esta tarea desde el menú ⋯
 *** WAITING Respuesta de la gestoría
 *** MAYBE Aprender a tocar el ukelele
 
@@ -108,6 +108,12 @@ Sale en «Vencidas» de la agenda.
 ** TODO Regar las plantas
 SCHEDULED: <%HOY+1% +3d>
 Se repite cada 3 días: al terminarla, la fecha avanza sola y la tarea vuelve a TODO.
+** TODO Limpieza semanal [1/3]
+SCHEDULED: <%HOY+2% +1w>
+Al terminar una tarea que se repite, sus casillas vuelven a quedar sin marcar (y el contador a cero), como en Emacs:
+- [X] Barrer
+- [ ] Fregar
+- [ ] Sacar la basura
 ** TODO Caminar 30 minutos
 SCHEDULED: <%HOY% .+1d>
 :PROPERTIES:
@@ -183,6 +189,9 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 - *Ordenar arrastrando*: las tareas de un proyecto se ordenan arrastrando su asa ⋮⋮ (a la izquierda de la fila). Se ordena el propio fichero, así que el orden se ve igual en todas las listas, en Documentos y en Emacs. Dentro de un proyecto las fechas no cambian el orden, salvo las tareas cuya fecha (programada o límite) ya ha llegado, que van primero.
 - En las listas normales (Next, Todo…) el orden sigue siendo por fechas; ahí las tareas de un proyecto no tienen asa (se ordenan en su proyecto), pero las *sueltas* (sin proyecto) sí: se colocan entre las demás sueltas de su mismo fichero.
 - *Subtareas*: una tarea con subencabezados con estado muestra sus subtareas justo debajo, con sangría y una línea a la izquierda (no en Focus, Scheduled, Deadline ni Logbook, que van por fechas). Si la tarea de la que cuelgan no está en esa lista, la fila dice «de qué tarea es». Se reordenan arrastrando su asa ⋮⋮, solo entre sus hermanas.
+- *Tarea ⇄ subtarea*: en el editor, el campo «Subtarea de» (junto a Proyecto) la cuelga de otra tarea abierta del mismo proyecto o fichero (con sus propias subtareas); «— ninguna —» la saca y la deja justo debajo de la que era su tarea. En la lista, con una tarea seleccionada (↑ ↓), *Tab* la hace subtarea de la de encima y *Mayús+Tab* la saca un nivel (no en Focus, Scheduled, Deadline ni Logbook, que van por fechas). La tarea madre lleva el contador de Org en el título (=Pintar salón [1/6]=), que en la lista se ve como una pastilla discreta «1/6».
+- «↳ Tarea madre» en la fila de una subtarea es un enlace: lleva a esa tarea y abre su editor (si no está en la lista que ves, va a su lista o proyecto). *Alt+←* vuelve a donde estabas (dentro de un campo de texto, solo con el cursor al principio). En el editor, el botón junto a «Subtarea de» hace lo mismo.
+- Etiquetas heredadas: una subtarea hereda las etiquetas de su tarea y de su proyecto (en gris y cursiva en la fila) y sale también en las secciones filtradas por esas etiquetas (salvo en Inbox, que solo mira las propias).
 - *Notas del proyecto*: las notas de un proyecto salen bajo su cabecera, en un bloque plegable (se recuerda).
 - *Dentro de un proyecto*, las tareas van separadas por estado, como en Nirvana: *Next*, *Todo*, *Waiting*, *Programadas* (empiezan más adelante), *Someday* y, al final y plegadas, *Terminadas* y *Referencias* (los encabezados sin estado del proyecto, con un contador discreto; tocarlos los abre en su fichero). Arrastrar una tarea de una sección a otra le cambia el estado (a Programadas te pide la fecha; a Terminadas la termina) y la deja donde la sueltas.
 
@@ -342,6 +351,8 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador): en
 - Vacía, muestra lo último que usaste.
 - Prefijos opcionales para buscar solo un tipo: *>* acciones, *#* etiquetas, */* ficheros. Al elegir una etiqueta se buscan los encabezados que la llevan (puedes seguir escribiendo para afinar).
 - Cada acción muestra su atajo de teclado, si lo tiene.
+- Si hay varios encabezados con el mismo título, al elegir uno sale antes una lista para escoger cuál, con su fichero, sus encabezados madre, sus fechas y la línea de sus notas donde aparece lo que buscas. Esc vuelve a los resultados.
+- Por defecto no salen las tareas terminadas (DONE, CANCELLED) ni lo archivado. El botón *Archivados* (junto al cuadro) lo muestra todo, con las archivadas marcadas; se recuerda.
 
 * Atajos de teclado
 ** En Documentos

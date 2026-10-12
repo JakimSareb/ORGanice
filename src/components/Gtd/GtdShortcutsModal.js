@@ -105,6 +105,19 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
                     <kbd>Esc</kbd>
                     <span>cerrar / cancelar</span>
                   </div>
+                  {/* (2.18) tarea ⇄ subtarea y volver de la tarea madre */}
+                  <div className="gtd-keys__row">
+                    <kbd>Tab</kbd>
+                    <span>hacer subtarea de la de encima (tarea seleccionada)</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Mayús Tab</kbd>
+                    <span>sacar la subtarea un nivel</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Alt ←</kbd>
+                    <span>volver de la tarea madre</span>
+                  </div>
                 </>
               )}
             </section>

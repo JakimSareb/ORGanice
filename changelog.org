@@ -3,6 +3,23 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 2.18 (octubre de 2026)
+** Vista GTD
+- *Tarea ⇄ subtarea*: en el editor, campo «Subtarea de» (junto a Proyecto) con las tareas abiertas del mismo proyecto o fichero; «— ninguna —» la saca y la deja justo debajo de su antigua tarea. En la lista, con una tarea seleccionada: *Tab* la hace subtarea de la de encima y *Mayús+Tab* la saca un nivel. Se lleva sus subtareas.
+- «↳ Tarea madre» es un enlace: lleva a ella y abre su editor (si no está en la lista que ves, va a su lista o proyecto). *Alt+←* vuelve a donde estabas.
+- Contador de Org en el título de las tareas con subtareas (=Pintar salón [1/6]=): se añade solo al darle su primera subtarea y en la lista se ve como una pastilla discreta «1/6».
+- Las secciones que se filtran por etiqueta muestran también las subtareas que la *heredan* de su tarea o proyecto (Inbox, no). Las etiquetas heredadas se ven en gris y cursiva.
+- El botón *Refile* solo aparece en la sección Inbox.
+** Búsqueda (Ctrl+K)
+- Sin resultados repetidos. Si hay varios encabezados con el mismo título, primero se elige cuál en una lista con su fichero, sus encabezados madre, sus fechas y la línea de las notas donde sale lo buscado.
+- Por defecto no salen las tareas terminadas (DONE, CANCELLED) ni lo archivado; el botón *Archivados* lo muestra todo, marcado.
+- Arreglo: elegir un resultado ya no puede llevar a otro encabezado (se comprueba que sigue siendo el mismo).
+** Documentos
+- Menú de cada encabezado: *Etiquetas* pasa a la fila de botones; «Marcar como hecha» (y «Cancelar la tarea») pasan al ⋯; nueva opción *Editar como texto plano*, que reduce al encabezado y lo abre (con sus subencabezados) en el editor de texto plano.
+- Tareas repetitivas: al terminarlas, las casillas de sus notas vuelven a =[ ]= y sus contadores a cero (=[0/3]=, =[0%]=), como en Emacs.
+** Arreglos
+- Vista GTD: una etiqueta puesta a mano en una tarea (p. ej. de Inbox) ya no se borra al guardar.
+
 * 2.17 (octubre de 2026)
 ** Vista GTD
 - Editor de una tarea: *Deshacer* y *Rehacer* junto al botón «Aa». Al cerrarlo, la tarea queda marcada y centrada en la lista.

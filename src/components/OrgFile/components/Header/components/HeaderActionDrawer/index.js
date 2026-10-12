@@ -112,6 +112,7 @@ export default class HeaderActionDrawer extends PureComponent {
       onClockTotals,
       onCopyLink,
       onNarrow,
+      onEditPlain,
       onWiden,
       isNarrowed,
     } = this.props;
@@ -135,21 +136,6 @@ export default class HeaderActionDrawer extends PureComponent {
         onClick: onTogglePriority,
         testId: 'eli-priority',
         title: isPriorityA ? 'Quitar la prioridad [#A]' : 'Marcar con prioridad [#A]',
-      },
-      // Casilla de tarea: gris si no es tarea o ya está terminada; si está activa, clic → DONE
-      // y mayúsculas + clic → CANCELLED
-      onCompleteTask && {
-        className: `far ${
-          taskState === 'done' ? 'fa-check-square' : 'fa-square'
-        } fa-lg eli-drawer-task${taskState === 'active' ? ' is-active' : ' is-inactive'}`,
-        onClick: (e) => taskState === 'active' && onCompleteTask(!!(e && e.shiftKey)),
-        testId: 'eli-complete-task',
-        title:
-          taskState === 'active'
-            ? 'Terminar la tarea (DONE); con mayúsculas pulsada, cancelarla (CANCELLED)'
-            : taskState === 'done'
-            ? 'Tarea terminada'
-            : 'No es una tarea',
       },
       {
         className: 'fas fa-pencil-alt fa-lg',
@@ -183,6 +169,13 @@ export default class HeaderActionDrawer extends PureComponent {
         testId: 'header-action-plus',
         title: 'Nuevo encabezado debajo (mantén pulsado para duplicar el actual)',
       },
+      // (2.18) Etiquetas, a la vista (antes en «⋯»)
+      {
+        className: 'fas fa-tags fa-lg',
+        onClick: onTagsClick,
+        testId: 'drawer-action-tags',
+        title: 'Etiquetas',
+      },
       {
         className: 'fas fa-file-export fa-lg',
         onClick: onRefileHeader,
@@ -200,11 +193,27 @@ export default class HeaderActionDrawer extends PureComponent {
     ].filter(Boolean);
 
     const more = [
-      {
-        icon: 'fas fa-tags',
-        label: 'Etiquetas',
-        onClick: onTagsClick,
-        testId: 'drawer-action-tags',
+      // (2.18) «Marcar como hecha» (antes, casilla a la vista): DONE; o CANCELLED
+      onCompleteTask &&
+        taskState === 'active' && {
+          icon: 'far fa-check-square',
+          label: 'Marcar como hecha',
+          onClick: () => onCompleteTask(false),
+          testId: 'eli-complete-task',
+        },
+      onCompleteTask &&
+        taskState === 'active' && {
+          icon: 'far fa-window-close',
+          label: 'Cancelar la tarea (CANCELLED)',
+          onClick: () => onCompleteTask(true),
+          testId: 'eli-cancel-task',
+        },
+      // (2.18) editar solo este encabezado (y sus subencabezados) como texto plano
+      onEditPlain && {
+        icon: 'fas fa-code',
+        label: 'Editar como texto plano',
+        onClick: onEditPlain,
+        testId: 'eli-header-edit-plain',
       },
       {
         icon: 'far fa-sticky-note',

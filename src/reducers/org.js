@@ -225,6 +225,57 @@ const updateCookiesOfParentOfHeaderWithId = (file, headerId) => {
   return updateCookiesOfHeaderWithId(file, parentHeaderId);
 };
 
+// ORG Mode para Eli (2.18): al darle a una tarea (con estado, no PROJECT) su primera subtarea con
+// estado, se le añade el contador de Org al título («Pintar salón [0/1]») si no tenía ninguno
+export const eliEnsureCookieOnHeader = (file, headerId) => {
+  if (!headerId) return file;
+  const headers = file.get('headers');
+  const headerIndex = indexOfHeaderWithId(headers, headerId);
+  if (headerIndex === -1 || headerIndex === undefined) return file;
+  const header = headers.get(headerIndex);
+  const keyword = header.getIn(['titleLine', 'todoKeyword']);
+  if (!keyword || keyword === 'PROJECT') return file;
+  const title = header.getIn(['titleLine', 'title']) || List();
+  const hasCookie = title.some((p) =>
+    ['fraction-cookie', 'percentage-cookie'].includes(p.get('type'))
+  );
+  if (hasCookie) return updateCookiesOfHeaderWithId(file, headerId);
+  const level = header.get('nestingLevel');
+  let hasTaskChild = false;
+  for (let i = headerIndex + 1; i < headers.size; i++) {
+    const h = headers.get(i);
+    if (h.get('nestingLevel') <= level) break;
+    if (h.get('nestingLevel') === level + 1 && h.getIn(['titleLine', 'todoKeyword'])) {
+      hasTaskChild = true;
+      break;
+    }
+  }
+  if (!hasTaskChild) return file;
+  const raw = `${(header.getIn(['titleLine', 'rawTitle']) || '').trimEnd()} [0/0]`;
+  file = file
+    .setIn(['headers', headerIndex, 'titleLine', 'rawTitle'], raw)
+    .setIn(['headers', headerIndex, 'titleLine', 'title'], fromJS(parseMarkupAndCookies(raw)));
+  return updateCookiesOfHeaderWithId(file, headerId);
+};
+
+// (2.18) Si a la antigua madre ya no le queda ninguna subtarea con estado, su contador «[0/0]»
+// sobra: se quita (solo al mover con «Subtarea de» / Tab / Mayús+Tab)
+const eliDropEmptyCookie = (file, headerId) => {
+  if (!headerId) return file;
+  const headers = file.get('headers');
+  const headerIndex = indexOfHeaderWithId(headers, headerId);
+  if (headerIndex < 0) return file;
+  const raw = headers.getIn([headerIndex, 'titleLine', 'rawTitle']) || '';
+  if (!/\s*\[0\/0\]\s*$/.test(raw)) return file;
+  const newRaw = raw.replace(/\s*\[0\/0\]\s*$/, '');
+  return file
+    .setIn(['headers', headerIndex, 'titleLine', 'rawTitle'], newRaw)
+    .setIn(['headers', headerIndex, 'titleLine', 'title'], fromJS(parseMarkupAndCookies(newRaw)));
+};
+
+const eliEnsureCookieOnParentOf = (file, headerId) =>
+  eliEnsureCookieOnHeader(file, parentIdOfHeaderWithId(file.get('headers'), headerId));
+
 const advanceTodoState = (state, action) => {
   const { headerId, logIntoDrawer, timestamp } = action;
   const existingHeaderId = headerId || state.get('selectedHeaderId');
@@ -334,6 +385,10 @@ const setTodoState = (state, action) => {
   state = eliDropPriorityWhenDone(state, headerIndex, newTodoState);
 
   state = updateCookiesOfParentOfHeaderWithId(state, existingHeaderId);
+  // (2.18) solo desde la vista GTD (en el editor de siempre los títulos no cambian solos)
+  if (action.eliEnsureCookie && !currentTodoState && newTodoState) {
+    state = eliEnsureCookieOnParentOf(state, existingHeaderId);
+  }
 
   return state;
 };
@@ -619,6 +674,52 @@ const eliMoveSubtreeNextTo = (state, action) => {
   if (previousParentId) state = updateCookiesOfHeaderWithId(state, previousParentId);
   state = updateCookiesOfParentOfHeaderWithId(state, headerId);
   return state;
+};
+
+// ORG Mode para Eli (2.18): convertir una tarea en subtarea de otra del mismo fichero (pasa a ser
+// su última hija, con sus propias subtareas) y sacarla un nivel (queda justo debajo de su antigua
+// madre). La madre recibe el contador [n/m] si no lo tenía.
+const eliMakeSubtaskOf = (state, action) => {
+  let headers = state.get('headers');
+  const { headerId, parentId } = action;
+  if (!headerId || !parentId || headerId === parentId) return state;
+  const sourceIndex = indexOfHeaderWithId(headers, headerId);
+  const parentIndex = indexOfHeaderWithId(headers, parentId);
+  if (sourceIndex < 0 || parentIndex < 0) return state;
+  const size = 1 + subheadersOfHeaderWithId(headers, headerId).size;
+  // No dentro de sí misma ni de una de sus subtareas
+  if (parentIndex >= sourceIndex && parentIndex < sourceIndex + size) return state;
+  if (parentIdOfHeaderWithId(headers, headerId) === parentId) return state;
+  const previousParentId = parentIdOfHeaderWithId(headers, headerId);
+  const delta =
+    headers.getIn([parentIndex, 'nestingLevel']) + 1 - headers.getIn([sourceIndex, 'nestingLevel']);
+  const tree = headers
+    .slice(sourceIndex, sourceIndex + size)
+    .map((h) => h.set('nestingLevel', Math.max(1, h.get('nestingLevel') + delta)));
+  headers = headers.splice(sourceIndex, size);
+  const at =
+    indexOfHeaderWithId(headers, parentId) + 1 + subheadersOfHeaderWithId(headers, parentId).size;
+  headers = headers.splice(at, 0, ...tree.toArray());
+  state = state.set('headers', headers);
+  if (previousParentId) {
+    state = eliDropEmptyCookie(
+      updateCookiesOfHeaderWithId(state, previousParentId),
+      previousParentId
+    );
+  }
+  state = eliEnsureCookieOnHeader(state, parentId);
+  return openDirectParent(state, headerId);
+};
+
+const eliPromoteSubtask = (state, action) => {
+  const parentId = parentIdOfHeaderWithId(state.get('headers'), action.headerId);
+  if (!parentId) return state;
+  state = eliMoveSubtreeNextTo(state, {
+    headerId: action.headerId,
+    targetId: parentId,
+    position: 'after',
+  });
+  return eliDropEmptyCookie(state, parentId);
 };
 
 const moveHeaderLeft = (state, action) => {
@@ -2243,6 +2344,10 @@ const reducer = (state, action) => {
       return inFile(moveHeaderToPosition);
     case 'ELI_MOVE_SUBTREE_NEXT_TO':
       return inFile(eliMoveSubtreeNextTo);
+    case 'ELI_MAKE_SUBTASK_OF':
+      return inFile(eliMakeSubtaskOf);
+    case 'ELI_PROMOTE_SUBTASK':
+      return inFile(eliPromoteSubtask);
     case 'MOVE_HEADER_LEFT':
       return inFile(moveHeaderLeft);
     case 'MOVE_HEADER_RIGHT':
@@ -2444,6 +2549,53 @@ export const determineAffectedFiles = (state, action) => {
   }
 };
 
+// ORG Mode para Eli (2.18): casillas (- [x], + [x], 1. [x], [-]) → [ ] y contadores [2/3] → [0/3],
+// [66%] → [0%] en las notas de la tarea. Se edita el texto tal cual (sin reescribir el resto: ni
+// sangrías, ni tablas), solo en las líneas de lista y fuera de los bloques #+BEGIN_…/#+END_…
+const ELI_ITEM_RE = /^(\s*(?:[-+]|\s\*|\d+[.)])\s+(?:\[@\d+\]\s+)?)\[[Xx-]\]/;
+const ELI_ITEM_LINE_RE = /^\s*(?:[-+]|\s\*|\d+[.)])\s/;
+const eliZeroCookies = (line) =>
+  line.replace(/\[(\d*)\/(\d+)\]/g, '[0/$2]').replace(/\[\d+%\]/g, '[0%]');
+export const eliResetCheckboxesText = (text) => {
+  let inBlock = false;
+  const lines = (text || '').split('\n');
+  const out = lines.map((line, i) => {
+    if (/^\s*#\+begin_/i.test(line)) inBlock = true;
+    if (inBlock) {
+      if (/^\s*#\+end_/i.test(line)) inBlock = false;
+      return line;
+    }
+    if (ELI_ITEM_LINE_RE.test(line)) return eliZeroCookies(line.replace(ELI_ITEM_RE, '$1[ ]'));
+    // contadores sueltos en una línea que no es de lista (el que encabeza la lista)
+    // (solo si la línea siguiente empieza una lista)
+    if (
+      /\[\d*\/\d+\]|\[\d+%\]/.test(line) &&
+      !/\[\[/.test(line) &&
+      ELI_ITEM_LINE_RE.test(lines[i + 1] || '')
+    ) {
+      return eliZeroCookies(line);
+    }
+    return line;
+  });
+  return out.join('\n');
+};
+
+const eliResetCheckboxesOfHeader = (state, headerIndex) => {
+  const raw = state.getIn(['headers', headerIndex, 'rawDescription']) || '';
+  if (!/\[[Xx-]\]|\[\d*\/\d+\]|\[\d+%\]/.test(raw)) return state;
+  const next = eliResetCheckboxesText(raw);
+  if (next === raw) return state;
+  const description = fromJS(parseRawText(next));
+  state = state
+    .setIn(['headers', headerIndex, 'rawDescription'], next)
+    .setIn(['headers', headerIndex, 'description'], description)
+    .updateIn(['headers', headerIndex, 'planningItems'], (items) =>
+      updatePlanningItems(items, 'TIMESTAMP_DESCRIPTION', description)
+    );
+  // el contador del propio título (si cuenta casillas) vuelve a cero también
+  return updateCookiesOfHeaderWithId(state, state.getIn(['headers', headerIndex, 'id']));
+};
+
 /**
  * Updates Headlines with the next todoKeyword `newTodoState`. Also
  * reschedules planning items with repeaters if applicable.
@@ -2620,6 +2772,9 @@ function updatePlanningItemsWithRepeaters({
     ['headers', headerIndex, 'titleLine', 'todoKeyword'],
     currentTodoSet.get('keywords').first()
   );
+  // ORG Mode para Eli (2.18): como org-reset-checkbox-state-subtree en Emacs, las casillas de las
+  // notas de la tarea vuelven a estar sin marcar y sus contadores a cero
+  state = eliResetCheckboxesOfHeader(state, headerIndex);
   if (!noLogRepeatEnabledP({ state, headerIndex })) {
     const lastRepeatTimestamp = timestampForDate(timestamp, {
       isActive: false,

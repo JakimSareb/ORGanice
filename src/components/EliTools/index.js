@@ -52,7 +52,9 @@ export const openUploadDialog = (detail) =>
   window.dispatchEvent(new CustomEvent('eli:upload', { detail }));
 export const openMoonPhases = () => window.dispatchEvent(new CustomEvent('eli:moon'));
 export const openFavorites = () => window.dispatchEvent(new CustomEvent('eli:favorites'));
-export const openRawEditor = () => window.dispatchEvent(new CustomEvent('eli:raw-edit'));
+// (2.18) con headerId: solo ese encabezado y sus subencabezados (como en modo narrow)
+export const openRawEditor = (headerId = null) =>
+  window.dispatchEvent(new CustomEvent('eli:raw-edit', { detail: { headerId } }));
 export const openPrintPreview = (headerId = null) =>
   window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId } }));
 
@@ -1122,11 +1124,11 @@ export default function EliTools() {
   }, [usable, file]);
 
   useEffect(() => {
-    const onRaw = () => {
+    const onRaw = (e) => {
       if (!usable) return;
       const headers = file.get('headers');
       const linesBeforeHeadings = file.get('linesBeforeHeadings') || List();
-      const narrowedId = file.get('narrowedHeaderId');
+      const narrowedId = (e && e.detail && e.detail.headerId) || file.get('narrowedHeaderId');
       const index = narrowedId ? headers.findIndex((h) => h.get('id') === narrowedId) : -1;
       if (index >= 0) {
         // Modo narrow: solo el encabezado enfocado y sus subencabezados

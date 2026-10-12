@@ -128,6 +128,15 @@ nil: solo los de `organice-agenda-files'."
       org-startup-with-inline-images t
       org-image-actual-width '(600))
 
+;; (2.18) Como la app: contadores [n/m] contando solo las subtareas directas, y al terminar una
+;; tarea que se repite sus casillas vuelven a [ ] (y sus contadores a cero)
+(setq org-hierarchical-todo-statistics t
+      org-checkbox-hierarchical-statistics t)
+(defun organice-reset-checkboxes-on-repeat ()
+  "Al repetirse una tarea, desmarcar sus casillas (como la app 2.18)."
+  (org-reset-checkbox-state-subtree))
+(add-hook 'org-todo-repeat-hook #'organice-reset-checkboxes-on-repeat)
+
 ;; Hábitos (:STYLE: habit), con el mismo gráfico que la agenda de la app
 (setq org-habit-graph-column 50
       org-habit-preceding-days 21

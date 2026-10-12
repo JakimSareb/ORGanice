@@ -140,9 +140,18 @@ const hasRepeater = (header) =>
 export const PRIORITY_RE = /^\s*\[#([A-Z0-9])\]\s*/;
 
 // Título "limpio" (sin prioridad) y sin enlaces en bruto: [[url][texto]] → texto
+// (2.18) Contador de Org en el título: «[1/6]» o «[66%]» (se ve aparte, como pastilla)
+// (solo el del final del título, que es donde lo pone la app y Emacs)
+export const COOKIE_RE = /\s*\[(\d*\/\d*|\d*%)\]\s*$/;
+export const cookieOf = (rawTitle) => {
+  const m = COOKIE_RE.exec(rawTitle || '');
+  return m && m[1] !== '/' && m[1] !== '%' ? m[1] : null;
+};
+
 export const displayTitle = (rawTitle) =>
   (rawTitle || '')
     .replace(PRIORITY_RE, '')
+    .replace(COOKIE_RE, '')
     .replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, '$2')
     .replace(/\[\[([^\]]+)\]\]/g, '$1')
     .trim();
@@ -212,6 +221,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         isDone: !!keyword && done.has(keyword),
         rawTitle,
         title: displayTitle(rawTitle),
+        cookie: cookieOf(rawTitle),
         priority: pm ? pm[1] : null,
         ownTags,
         tags: Array.from(new Set([...inheritedTags, ...ownTags])),
@@ -684,7 +694,9 @@ export const archivableDone = (tasks, onlyPaths = null) => {
   const byPath = {};
   // (2.17) solo los ficheros elegidos en Ajustes (vacío: todos)
   const allowed = onlyPaths && onlyPaths.length ? new Set(onlyPaths) : null;
-  tasks.filter((t) => !allowed || allowed.has(t.path)).forEach((t) => (byPath[t.path] = byPath[t.path] || []).push(t));
+  tasks
+    .filter((t) => !allowed || allowed.has(t.path))
+    .forEach((t) => (byPath[t.path] = byPath[t.path] || []).push(t));
   Object.values(byPath).forEach((list) => {
     const sorted = [...list].sort((a, b) => a.index - b.index);
     sorted.forEach((t, i) => {
