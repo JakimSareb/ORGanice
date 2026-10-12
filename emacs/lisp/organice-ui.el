@@ -208,8 +208,12 @@
 (with-eval-after-load 'org-agenda
   (define-key org-agenda-mode-map (kbd "<f12>") #'organice-toggle-mode))
 
-;; Al arrancar: la vista Focus, como la app al abrir la vista GTD (comenta la línea si no lo quieres)
-(add-hook 'emacs-startup-hook (lambda () (when (file-directory-p organice-directory)
+;; Al arrancar: la vista Focus, como la app al abrir la vista GTD
+(defcustom organice-start-in-gtd t
+  "t: al arrancar Emacs se abre la vista Focus. nil: se deja tu pantalla de inicio."
+  :type 'boolean :group 'organice)
+(add-hook 'emacs-startup-hook (lambda () (when (and organice-start-in-gtd
+                                                    (file-directory-p organice-directory))
                                            (organice-gtd-focus))))
 
 (provide 'organice-ui)

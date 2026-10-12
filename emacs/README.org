@@ -251,6 +251,13 @@ Todo está en módulos independientes. Lo más sencillo:
 4. Revisa lo que puede chocar con tu configuración: =org-todo-keywords=, =org-tag-alist=,
    =org-agenda-custom-commands= (se añaden las de la tecla =g=), =org-capture-templates= y los
    atajos =C-c g=, =C-c k=, =C-c s=, =C-c e=, =F12=, =F5=, =s-k= y =s-b=… de Org.
+5. Ajustes útiles antes de los =require= (todos opcionales):
+   #+begin_src emacs-lisp
+   (setq organice-directory-override "~/org/") ; carpeta de tus ficheros (nil: buscar la de Dropbox)
+   (setq organice-archive-in-subfolder t)      ; archivar en archive/<fichero>_archive
+   (setq organice-default-theme nil)           ; no cambiar tu tema al arrancar
+   (setq organice-start-in-gtd nil)            ; no abrir Focus al arrancar
+   #+end_src
 
 * Qué no está (o es distinto)
 - La vista previa de adjuntos del editor de GTD: en Emacs, las imágenes se ven en el propio texto
