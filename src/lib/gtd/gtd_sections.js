@@ -27,6 +27,8 @@ export const SECTION_DEFS = [
   { id: 'projects', kind: 'projects', label: 'Proyectos', icon: 'fas fa-project-diagram' },
   { id: 'reference', kind: 'list', label: 'Reference', icon: 'far fa-file-alt' },
   { id: 'logbook', kind: 'view', label: 'Logbook', icon: 'fas fa-check' },
+  // (3.0) Papelera, como Nirvana
+  { id: 'trash', kind: 'view', label: 'Papelera', icon: 'fas fa-trash' },
 ];
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);
 
@@ -89,6 +91,7 @@ export const DEFAULT_SECTIONS = {
   },
   reference: { ...base, ...listTicks, noStateLeaf: true },
   logbook: { ...base, habits: true, future: true, futurePriority: true, parked: true },
+  trash: { ...base, habits: true, future: true, futurePriority: true, parked: true },
 };
 
 const toArr = (v) =>

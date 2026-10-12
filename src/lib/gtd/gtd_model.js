@@ -40,6 +40,7 @@ export const LISTS = [
 export const EXTRA_LISTS = [
   { id: 'reference', label: 'Reference', icon: 'far fa-file-alt' },
   { id: 'logbook', label: 'Logbook', icon: 'fas fa-check' },
+  { id: 'trash', label: 'Papelera', icon: 'fas fa-trash' },
 ];
 
 export const KEYWORD_FOR_LIST = {
@@ -118,6 +119,19 @@ const laterDate = (a, b) => (!a ? b || null : !b ? a : a > b ? a : b);
 // (PROJECT con SCHEDULED a futuro). Sus tareas no salen en las listas hasta que despiertan.
 export const SLEEP_TAG = 'sleep';
 export const hasSleepTag = (tags) => (tags || []).some((t) => t.toLowerCase() === SLEEP_TAG);
+// (3.0) Papelera (como Nirvana): la etiqueta :trash: (se hereda: lo que cuelga de algo tirado a la
+// papelera también está en ella). «Vaciar papelera» borra esos encabezados de verdad.
+export const TRASH_TAG = 'trash';
+export const hasTrashTag = (tags) => (tags || []).some((t) => t.toLowerCase() === TRASH_TAG);
+// (3.0) Grupo «Hecho» de cada lista (como Nirvana): una tarea terminada desde la vista GTD lleva la
+// propiedad DONE_IN con la lista en la que estaba («next», «next focus»…) hasta la «Limpieza» (c),
+// que se la quita y la pasa al Logbook. Las terminadas sin DONE_IN están ya en el Logbook.
+export const DONE_IN_PROPERTY = 'DONE_IN';
+export const doneInLists = (task) =>
+  String((task && task.doneIn) || '')
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .filter(Boolean);
 export const isSleeping = (task) => hasSleepTag(task.tags);
 const isFutureDate = (d, today) => !!d && startOfDay(d) > startOfDay(today);
 // Tarea (no proyecto) aparcada: dentro de algo dormido o de un proyecto que aún no empieza
@@ -225,6 +239,9 @@ const buildFileTasks = (file, path, isInboxFile) => {
         priority: pm ? pm[1] : null,
         ownTags,
         tags: Array.from(new Set([...inheritedTags, ...ownTags])),
+        isTrashed: hasTrashTag(inheritedTags) || hasTrashTag(ownTags),
+        ownTrash: hasTrashTag(ownTags),
+        parentTrashed: hasTrashTag(inheritedTags),
         area,
         ownArea,
         energy: propertyValue(header, 'ENERGY'),
@@ -236,6 +253,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         scheduledRepeat: planningRepeat(header, 'SCHEDULED'),
         deadlineRepeat: planningRepeat(header, 'DEADLINE'),
         closed: planningDate(header, 'CLOSED'),
+        doneIn: propertyValue(header, DONE_IN_PROPERTY),
         project: parent ? parent.project : null,
         // (2.15) encabezado padre (para reordenar solo entre hermanas)
         parentId: parent ? headers.getIn([parent.index, 'id']) : null,
@@ -350,7 +368,8 @@ const isScheduledView = (t, today) => {
 // Lista a la que pertenece una tarea (una sola; Focus es aparte): la primera (en el orden de
 // Ajustes) cuyas reglas cumple. Si sus ticks la ocultan: 'parked', 'habit' o 'scheduled'.
 export const listOf = (task, today = new Date()) => {
-  if (task.isDone) return 'logbook';
+  if (task.isTrashed) return 'trash';
+  if (task.isDone) return task.doneIn ? 'done' : 'logbook';
   if (task.isProject) return 'project';
   const cfg = getGtdConfig();
   for (const id of exclusiveOrder(cfg)) {
@@ -387,7 +406,15 @@ export const autoPriorityKey = (task, today = new Date()) =>
 // Focus: ★ [#A] o fecha (programada o límite) de hoy o vencida, o sus reglas extra; sin hábitos,
 // sin proyectos aparcados ni programadas a futuro sin prioridad (por defecto)
 export const isFocus = (task, today = new Date()) => {
-  if (task.isDone || task.isProject) return false;
+  if (task.isDone || task.isTrashed) return false;
+  // (3.0) Un proyecto con ★ también sale en Focus (como fila de proyecto), si está activo
+  if (task.isProject) {
+    return (
+      getGtdConfig().sections.focus.star !== false &&
+      task.priority === 'A' &&
+      projectState(task, today) === 'active'
+    );
+  }
   const s = getGtdConfig().sections.focus;
   const t0 = startOfDay(today);
   const base =
@@ -441,7 +468,26 @@ const byDateThenTitle = (a, b) => {
 // Tareas de una vista (lista, proyecto) con los filtros aplicados
 export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
   let out;
-  if (view.type === 'project') {
+  if (view.id === 'trash') {
+    // (3.0) Papelera: lo que se tiró (lo de debajo va con ello), en el orden del fichero
+    out = tasks.filter((t) => t.ownTrash && !t.parentTrashed);
+    return out.filter((t) => matchesFilters(t, filters));
+  }
+  tasks = tasks.filter((t) => !t.isTrashed);
+  if (view.id === 'tag') {
+    // (3.0) Vista de una etiqueta (menú lateral → Etiquetas): lo abierto que la lleva, de todas
+    // las listas y de los proyectos activos
+    const s = getGtdConfig().sections.next;
+    out = tasks.filter(
+      (t) =>
+        !t.isDone &&
+        (t.tags || []).includes(view.tag) &&
+        (t.isProject
+          ? projectState(t, today) === 'active'
+          : !!t.keyword || hasInboxTag(t) || listOf(t, today) === 'inbox') &&
+        !(!t.isProject && hiddenBy(t, s, today))
+    );
+  } else if (view.type === 'project') {
     const projectTask = tasks.find((t) => t.key === view.key);
     if (!projectTask) return [];
     const s = getGtdConfig().sections.projects;
@@ -484,7 +530,10 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
   } else {
     out = tasks.filter((t) => listOf(t, today) === view.id);
   }
-  out = out.filter((t) => matchesFilters(t, filters));
+  // (3.0) Como Nirvana: Inbox se ve entero aunque haya un área elegida (para vaciarlo)
+  out = out.filter((t) =>
+    matchesFilters(t, view.id === 'inbox' ? { ...filters, area: '*' } : filters)
+  );
   if (view.id === 'logbook') {
     return out.sort((a, b) => (b.closed || 0) - (a.closed || 0)).slice(0, 300);
   }
@@ -545,7 +594,8 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
         t.project &&
         t.project.id === projectTask.id &&
         t.keyword &&
-        !t.isProject
+        !t.isProject &&
+        !t.isTrashed
     )
     .filter((t) => {
       if (t.isDone) return true;
@@ -569,6 +619,7 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
       (t) =>
         t.path === projectTask.path &&
         !t.keyword &&
+        !t.isTrashed &&
         t.project &&
         t.project.id === projectTask.id &&
         t.id !== projectTask.id
@@ -623,7 +674,7 @@ export const isGroupableList = (id) => GROUPABLE_LISTS.includes(id) || isCustomI
 
 export const projectsOf = (tasks, filters = {}) =>
   tasks
-    .filter((t) => t.isProject && !t.isDone)
+    .filter((t) => t.isProject && !t.isDone && !t.isTrashed)
     .filter(
       (t) =>
         !filters.area ||
@@ -726,7 +777,8 @@ export const projectsOverview = (tasks, filters = {}, today = new Date()) => {
         t.project.id === p.id &&
         t.keyword &&
         !t.isDone &&
-        !t.isProject
+        !t.isProject &&
+        !t.isTrashed
     );
     const next = actions.find((t) => t.keyword === 'NEXT') || actions[0] || null;
     const state = projectState(p, today);
@@ -792,4 +844,79 @@ export const nestSubtasks = (items, skip = null) => {
   });
   flush();
   return out;
+};
+
+// (3.0) Grupo «Hecho» de una vista: las terminadas desde ella que aún no han pasado al Logbook
+// (propiedad DONE_IN; ver arriba), las últimas primero
+export const doneForView = (tasks, view, filters = {}) => {
+  if (!view || view.type === 'project' || !view.id) return [];
+  if (['logbook', 'trash', 'projects', 'scheduled', 'deadline', 'tag'].includes(view.id)) return [];
+  return tasks
+    .filter((t) => t.isDone && !t.isTrashed && t.doneIn && doneInLists(t).includes(view.id))
+    .filter((t) => matchesFilters(t, filters))
+    .sort((a, b) => (b.closed || 0) - (a.closed || 0));
+};
+// Todas las que están en algún grupo «Hecho» (lo que se lleva la «Limpieza»)
+export const doneWaitingCleanup = (tasks) => tasks.filter((t) => t.isDone && !!t.doneIn);
+
+// (3.0) Lista en la que está una tarea (para DONE_IN): su lista y, si tiene ★, también «focus»
+export const doneInValueFor = (task, today = new Date()) => {
+  const out = [];
+  const l = listOf(task, today);
+  if (l && !['logbook', 'done', 'trash', 'parked', 'habit', 'scheduled', 'project'].includes(l)) {
+    out.push(l);
+  }
+  if (isFocus(task, today)) out.push('focus');
+  if (!out.length) out.push(task.project ? 'next' : l === 'scheduled' ? 'later' : 'next');
+  return out.join(' ');
+};
+
+// (3.0) Fecha límite como en Nirvana: «Atrasada», «Vence hoy», «Mañana», «en 3 días»…
+// level: 'overdue' | 'today' | 'soon' (≤ 7 días) | 'later'
+export const dueInfo = (deadline, today = new Date()) => {
+  if (!deadline) return null;
+  const d = startOfDay(deadline);
+  const t0 = startOfDay(today);
+  const days = Math.round((d - t0) / 86400000);
+  if (days < 0) return { level: 'overdue', text: 'Atrasada', days };
+  if (days === 0) return { level: 'today', text: 'Vence hoy', days };
+  if (days === 1) return { level: 'soon', text: 'Mañana', days };
+  if (days <= 7) return { level: 'soon', text: `en ${days} días`, days };
+  return {
+    level: 'later',
+    text: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+    days,
+  };
+};
+
+// (3.0) Ordenar la lista por fecha límite (tecla d): las que vencen antes, primero
+export const sortByDue = (list) => {
+  const far = 8.64e15;
+  return [...list].sort((a, b) => (a.deadline || far) - (b.deadline || far));
+};
+
+// (3.0) Copiar la lista como Markdown (⌘C / Ctrl+C sin texto seleccionado), como Nirvana
+const ymd = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
+    2,
+    '0'
+  )}`;
+export const tasksToMarkdown = (title, list) => {
+  const lines = list.map((t) => {
+    let line = `- [${t.isDone ? 'x' : ' '}] ${t.title || '(sin título)'}`;
+    if (t.project && !t.isProject) line += ` (${t.project.title})`;
+    if (t.deadline) line += ` (due: ${ymd(t.deadline)})`;
+    if (t.scheduled) line += ` (start: ${ymd(t.scheduled)})`;
+    return line;
+  });
+  return title ? [`## ${title}`, '', ...lines].join('\n') : lines.join('\n');
+};
+
+// (3.0) Tiempo total de varias tareas (menú contextual con varias seleccionadas)
+export const totalEffort = (list) => {
+  const m = list.reduce((acc, t) => acc + (effortMinutes(t.effort) || 0), 0);
+  if (!m) return '';
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return h ? `${h} h${mm ? ` ${mm} min` : ''}` : `${mm} min`;
 };

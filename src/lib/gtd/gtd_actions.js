@@ -7,7 +7,16 @@ import { createRawDescriptionText, generateTitleLine } from '../export_org';
 import { timestampForDate } from '../timestamps';
 import generateId from '../id_generator';
 import { sync, setDirty, archiveSubtree } from '../../actions/org';
-import { keywordForList, PRIORITY_RE, parseRepeat } from './gtd_model';
+import {
+  keywordForList,
+  PRIORITY_RE,
+  parseRepeat,
+  doneInLists,
+  doneInValueFor,
+  doneWaitingCleanup,
+  tagsForList,
+  TRASH_TAG,
+} from './gtd_model';
 import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
 import { fileDisplayName } from '../eli_app_name';
@@ -174,9 +183,11 @@ export const isNoopMove = (getState, path, headerId, targetId, position) => {
  * changes: { rawTitle, notes, list, priority, tags, area, energy, effort, scheduled, deadline,
  *            moveNextTo: { targetId, position: 'before' | 'after' } }
  */
-export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
+// (3.0) Las acciones de guardar una tarea, sin despacharlas (para poder juntar varias tareas en
+// un solo paso de Deshacer). Devuelve { path, inner, refileTo } o null.
+const buildSaveTask = (getState, task, changes) => {
   const header = headerOf(getState, task.path, task.id);
-  if (!header) return;
+  if (!header) return null;
   const dontIndent = getState().base.get('eliIndentOnExport') !== true;
   const logIntoDrawer = getState().base.get('shouldLogIntoDrawer');
   const inner = [];
@@ -219,6 +230,20 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
       'propertyListItems',
       setProperty(h.get('propertyListItems'), EFFORT_PROPERTY, changes.effort)
     );
+  }
+  // (3.0) DONE_IN (grupo «Hecho» de su lista): se pone al terminarla desde GTD y se quita al
+  // reabrirla, al llevarla a otra lista o con la «Limpieza»
+  let doneIn = changes.doneIn;
+  if (
+    doneIn === undefined &&
+    task.doneIn &&
+    changes.list !== undefined &&
+    !['done', 'cancelled'].includes(changes.list)
+  ) {
+    doneIn = null;
+  }
+  if (doneIn !== undefined && (doneIn || null) !== (task.doneIn || null)) {
+    h = h.set('propertyListItems', setProperty(h.get('propertyListItems'), 'DONE_IN', doneIn));
   }
   if (h !== header) {
     inner.push({
@@ -303,7 +328,7 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   // 5) ORG Mode para Eli (2.18): hacerla subtarea de otra tarea del mismo fichero, o sacarla
   if (changes.parentTaskId !== undefined) inner.push(parentAction(task, changes.parentTaskId));
 
-  if (!inner.length) return;
+  if (!inner.length) return null;
   const newKeyword = inner.find((a) => a.type === 'SET_TODO_STATE');
   // (2.17) al darle estado a una tarea de inbox.org, pasa a tasks.org en el mismo paso
   const refileTo =
@@ -324,10 +349,53 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
     inner.some((a) => a.type === 'UPDATE_HEADER_TITLE') ? task.keyword : null,
     newKeyword ? newKeyword.newTodoState : null,
   ];
-  if (missingKeyword(getState, task.path, needed)) return;
-  dispatch(inFile(task.path, inner));
-  syncFile(dispatch, task.path);
-  if (inner.some((a) => a.type === 'REFILE_SUBTREE')) syncFile(dispatch, refileTo);
+  if (missingKeyword(getState, task.path, needed)) return null;
+  return {
+    path: task.path,
+    inner,
+    refileTo: inner.some((a) => a.type === 'REFILE_SUBTREE') ? refileTo : null,
+  };
+};
+
+export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
+  const r = buildSaveTask(getState, task, changes);
+  if (!r) return;
+  dispatch(inFile(r.path, r.inner));
+  syncFile(dispatch, r.path);
+  if (r.refileTo) syncFile(dispatch, r.refileTo);
+};
+
+// (3.0) Varias tareas a la vez (selección múltiple, Limpieza, Papelera…): un solo paso de
+// Deshacer. entries: [[task, changes], …]. Las de un mismo fichero van juntas.
+export const gtdSaveMany = (entries) => (dispatch, getState) => {
+  const actions = [];
+  const paths = new Set();
+  entries.forEach(([task, changes]) => {
+    // cada una se calcula sobre el estado ya cambiado por las anteriores
+    const r = buildSaveTask(getState, task, changes);
+    if (!r) return;
+    const a = inFile(r.path, r.inner);
+    actions.push(a);
+    paths.add(r.path);
+    if (r.refileTo) paths.add(r.refileTo);
+  });
+  if (!actions.length) return 0;
+  dispatch({ type: 'ELI_BATCH', actions, dirtying: true });
+  paths.forEach((p) => syncFile(dispatch, p));
+  return actions.length;
+};
+
+// (3.0) Acciones sueltas (borrar, copiar…) sobre varios ficheros en un solo paso de Deshacer
+const batchInFiles = (dispatch, byPath) => {
+  const paths = Object.keys(byPath).filter((p) => byPath[p].length);
+  if (!paths.length) return 0;
+  dispatch({
+    type: 'ELI_BATCH',
+    actions: paths.map((p) => inFile(p, byPath[p])),
+    dirtying: true,
+  });
+  paths.forEach((p) => syncFile(dispatch, p));
+  return paths.reduce((n, p) => n + byPath[p].length, 0);
 };
 
 // (2.17) Botón «Refile»: pasa al fichero de tareas todas las tareas con estado que siguen en el
@@ -362,8 +430,107 @@ export const gtdRefileInbox = (tasks) => (dispatch, getState) => {
 export const gtdMoveNextTo = (task, targetId, position) => (dispatch) =>
   dispatch(gtdSaveTask(task, { moveNextTo: { targetId, position } }));
 
-export const gtdToggleDone = (task) => (dispatch) =>
-  dispatch(gtdSaveTask(task, { list: task.isDone ? 'later' : 'done' }));
+// (3.0) Terminar: va al grupo «Hecho» de su lista (DONE_IN) hasta la «Limpieza» (salvo que en
+// Ajustes se pida pasarlas al Logbook al momento). Reabrir: vuelve a la lista en la que estaba.
+export const LS_AUTO_COLLECT = 'eliGtdAutoCollect';
+export const autoCollect = () => {
+  try {
+    return window.localStorage.getItem(LS_AUTO_COLLECT) === 'true';
+  } catch (e) {
+    return false;
+  }
+};
+export const doneChangesFor = (task, opts = {}) => {
+  if (task.isDone) {
+    const back = doneInLists(task).find((l) => l !== 'focus') || 'later';
+    const list = ['inbox', 'next', 'later', 'waiting', 'someday', 'reference'].includes(back)
+      ? back
+      : keywordForList(back).has
+      ? back
+      : 'later';
+    const changes = { list, doneIn: null, tags: tagsForList(task, list) };
+    if (doneInLists(task).includes('focus')) changes.priority = 'A';
+    return changes;
+  }
+  return {
+    list: opts.cancel ? 'cancelled' : 'done',
+    doneIn: autoCollect() ? null : doneInValueFor(task, new Date()),
+  };
+};
+export const gtdToggleDone = (task, opts) => (dispatch) =>
+  dispatch(gtdSaveTask(task, doneChangesFor(task, opts)));
+
+// (3.0) Limpieza (tecla c): las terminadas de los grupos «Hecho» pasan al Logbook
+export const gtdCleanup = (tasks) => (dispatch) =>
+  dispatch(gtdSaveMany(doneWaitingCleanup(tasks).map((t) => [t, { doneIn: null }])));
+
+// (3.0) Papelera: tirar (etiqueta :trash:), sacar (se le quita) y vaciar (se borran de verdad)
+const withoutTrash = (tags) => (tags || []).filter((t) => t.toLowerCase() !== TRASH_TAG);
+export const gtdTrash = (tasks) => (dispatch) =>
+  dispatch(
+    gtdSaveMany(
+      tasks
+        .filter((t) => !t.isTrashed)
+        .map((t) => [t, { tags: [...withoutTrash(t.ownTags), TRASH_TAG] }])
+    )
+  );
+export const untrashChanges = (task) => ({ tags: withoutTrash(task.ownTags) });
+export const gtdEmptyTrash = (tasks) => (dispatch) => {
+  const byPath = {};
+  tasks
+    .filter((t) => t.ownTrash && !t.parentTrashed)
+    .forEach((t) =>
+      (byPath[t.path] = byPath[t.path] || []).push({
+        type: 'REMOVE_HEADER',
+        headerId: t.id,
+        dirtying: true,
+      })
+    );
+  return batchInFiles(dispatch, byPath);
+};
+
+// (3.0) «Hacer una copia…»: una copia exacta justo debajo (con sus subencabezados)
+export const gtdDuplicate = (tasks) => (dispatch) => {
+  const byPath = {};
+  tasks.forEach((t) =>
+    (byPath[t.path] = byPath[t.path] || []).push({
+      type: 'DUPLICATE_HEADER',
+      headerId: t.id,
+      dirtying: true,
+    })
+  );
+  return batchInFiles(dispatch, byPath);
+};
+
+// (3.0) Gestor de etiquetas (tecla g): renombrar o quitar una etiqueta en todas las tareas, y
+// renombrar un área (propiedad AREA)
+export const gtdRenameTag = (tasks, from, to) => (dispatch) => {
+  const name = String(to || '')
+    .trim()
+    .replace(/[\s:]+/g, '');
+  return dispatch(
+    gtdSaveMany(
+      tasks
+        .filter((t) => (t.ownTags || []).includes(from))
+        .map((t) => [
+          t,
+          {
+            tags: Array.from(
+              new Set((t.ownTags || []).map((x) => (x === from ? name : x)).filter(Boolean))
+            ),
+          },
+        ])
+    )
+  );
+};
+export const gtdRenameArea = (tasks, from, to) => (dispatch) =>
+  dispatch(
+    gtdSaveMany(
+      tasks
+        .filter((t) => t.ownArea === from)
+        .map((t) => [t, { area: String(to || '').trim() || null }])
+    )
+  );
 
 export const gtdToggleStar = (task) => (dispatch) =>
   dispatch(gtdSaveTask(task, { priority: task.priority === 'A' ? null : 'A' }));

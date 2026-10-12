@@ -3,6 +3,34 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.0 (octubre de 2026) — versión de prueba: la vista GTD como Nirvana
+La 2.18 queda guardada en la rama =v2.18-estable= por si hay que volver atrás. Documentos no cambia.
+** Moverse por la lista como en Nirvana
+- *Clic* selecciona una tarea; *doble clic* (o Intro) la edita. *Ctrl/⌘+clic* añade o quita de la selección; los *puntos ⋮⋮* de la izquierda seleccionan con un lazo (pulsa y arrastra arriba o abajo). En el móvil, tocar sigue editando.
+- *Arrastrar* cualquier tarea (o las seleccionadas): a una lista, proyecto, Focus, Logbook o Papelera del menú lateral, o dentro de la lista para cambiar el orden (ya no hace falta el asa).
+- *Clic derecho* (o el ▾ del final de la fila): Editar, Focus ★, Completar, *Mover a*, *Convertir en* (acción, proyecto, referencia), *Etiquetas*, *Tiempo*, *Energía*, *Fecha límite*, *Hacer una copia*, Copiar como Markdown, Abrir en su fichero y Papelera. Con varias seleccionadas, arriba el total de tiempo.
+- *Mayús+clic* en una tarea: elemento nuevo justo encima.
+** Hecho, Limpieza, Logbook y Papelera
+- Al completar una tarea va al grupo *Hecho* al final de su lista (se pliega tocándolo). La *Limpieza* (tecla c, o el botón de arriba) lo pasa todo al Logbook. Se guarda en la tarea como =:DONE_IN: next= hasta la Limpieza. En el ⋯ se puede pedir que pasen al Logbook al momento.
+- *Papelera* (tecla 0): Supr/⌫, deslizar a la izquierda o arrastrar a la Papelera ya no borra: tira la tarea (etiqueta =:trash:=). Desde la Papelera se saca (menú o arrastrándola a una lista) o se *vacía*.
+** Crear
+- Botón *Nuevo elemento* (n; Mayús+n arriba) y *Entrada rápida* (Mayús+E la muestra; e pone el cursor): Intro añade abajo, Mayús+Intro arriba; =#etiqueta=, =#due mañana= (hoy, un día de la semana, «1 agosto», «20/10»…), =#focus= o =#star=, =#next=, =#someday=, =#project=.
+- Editor: *Intro* (en el título) o *Mayús+Intro* (en cualquier campo) guardan; *Esc* cancela.
+** Ver
+- Barra de *filtros* siempre a la vista (etiquetas, energía, tiempo, con fecha): clic = solo ese; Ctrl/⌘+clic = añadir.
+- *Etiquetas* al final del menú lateral: cada una abre lo que la lleva en todas las listas. *Gestionar etiquetas* (tecla g): renombrar o quitar en todas las tareas, etiquetas nuevas y áreas.
+- ⋯ de la cabecera: vista unificada / agrupar por proyecto (Focus: también por estado), *ordenar por fecha límite* (tecla d), *notas* completas, parciales u ocultas (con las casillas marcables desde la lista), Entrada rápida y más.
+- Fecha límite como Nirvana: «Vence hoy» y «Atrasada» en rojo; las que aún no han llegado, más transparentes («Mañana», «en 3 días»…).
+- Un *proyecto con ★* sale en Focus; al pulsarlo, se abre.
+- Inbox se ve entero aunque haya un área elegida. Mayús+1…9 elige el área (el número sale en el selector).
+- ⌘C / Ctrl+C (sin texto seleccionado) copia la lista, o las seleccionadas, como Markdown; ⌘A / Ctrl+A las selecciona todas.
+** Atajos que cambian
+- *c* = Limpieza (capturar con plantilla pasa a *t*); *g* = gestionar etiquetas (a Documentos: *Mayús+g* o el conmutador de arriba); *9* = Logbook; *0* = Papelera; *d* = ordenar por fecha límite; *Tab* sin tarea seleccionada = buscador.
+** Arreglos
+- Editor de tarea: las etiquetas ya no se salen de su sitio en Chrome y Edge.
+** Emacs
+- =C-c g k= tira a la Papelera (con prefijo, la saca), =C-c g K= la vacía, =C-c g c= hace la Limpieza; lo que está en la Papelera no sale en las listas.
+
 * 2.18 (octubre de 2026)
 ** Vista GTD
 - *Tarea ⇄ subtarea*: en el editor, campo «Subtarea de» (junto a Proyecto) con las tareas abiertas del mismo proyecto o fichero; «— ninguna —» la saca y la deja justo debajo de su antigua tarea. En la lista, con una tarea seleccionada: *Tab* la hace subtarea de la de encima y *Mayús+Tab* la saca un nivel. Se lleva sus subtareas.

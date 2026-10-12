@@ -62,7 +62,7 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 *** Deslízame hacia la izquierda para borrarme
 
 ** La barra superior y los botones de abajo
-- *Documentos | GTD*: arriba a la izquierda, el conmutador entre los dos modos de la app. *Documentos* son tus ficheros y el explorador; *GTD*, la vista de tareas. Un toque en cualquier parte del conmutador (o la tecla g) cambia de modo, y cada modo recuerda dónde lo dejaste: al volver a Documentos se abre el último fichero, con el mismo encabezado seleccionado (y en narrow si lo estaba). La línea de color bajo la barra dice en qué modo estás. En el móvil, el modo activo lleva su nombre y el otro solo el icono.
+- *Documentos | GTD*: arriba a la izquierda, el conmutador entre los dos modos de la app. *Documentos* son tus ficheros y el explorador; *GTD*, la vista de tareas. Un toque en cualquier parte del conmutador (o la tecla g en Documentos; Mayús+g en GTD) cambia de modo, y cada modo recuerda dónde lo dejaste: al volver a Documentos se abre el último fichero, con el mismo encabezado seleccionado (y en narrow si lo estaba). La línea de color bajo la barra dice en qué modo estás. En el móvil, el modo activo lleva su nombre y el otro solo el icono.
 - Junto al conmutador, *‹* sube a la carpeta del fichero (o a la carpeta de arriba en el explorador).
 - A la derecha, a la vista: *← →* (atrás y adelante, como en el navegador: vuelven a la vista, fichero o carpeta anterior; también Alt+← / Alt+→, o ⌘[ / ⌘] en el Mac), *sincronizar* (en Documentos, el fichero abierto; en GTD, sus ficheros y avisa de lo que hace; tecla s; normalmente es automático), la *lupa* (paleta de comandos, Ctrl+Espacio; dentro de un documento, en su lugar va el botón de *ficheros principales*), *deshacer* y *⋯*. El calendario está en *⋯*.
 - En *⋯*: buscar en el fichero (tecla b), rehacer, reducir al encabezado seleccionado (narrow), *contraer todas las cabeceras* y *expandir todas las cabeceras*, mover con flechas (tecla m), editar como texto plano, PDF, ficheros principales (tecla f), dos columnas, *calendario*, *calculadora*, fases de la Luna, novedades y ajustes.
@@ -135,7 +135,24 @@ Tecla *a* o el botón del calendario (abajo, en el centro).
 - Al tocar una tarea, se abre su fichero reducido (narrow) a esa tarea, con todo desplegado, aunque esté en otro fichero.
 
 * La vista GTD (estilo Nirvana)
-*GTD* en el conmutador de arriba a la izquierda, o tecla *g* (la misma tecla vuelve a Documentos). Necesitas haber iniciado sesión: trabaja con tus ficheros de la agenda, no con este manual.
+*GTD* en el conmutador de arriba a la izquierda, o tecla *g* (para volver a Documentos: el conmutador o *Mayús+g*; en GTD, la g abre «Gestionar etiquetas», como Nirvana). Necesitas haber iniciado sesión: trabaja con tus ficheros de la agenda, no con este manual.
+
+** Cómo se usa (como Nirvana)
+Desde la versión 3.0 la vista GTD se maneja como Nirvana:
+- *Clic* en una tarea la selecciona; *doble clic* (o Intro) la abre para editarla. En el móvil, tocarla la abre.
+- *Ctrl+clic* (⌘ en el Mac) añade o quita tareas de la selección. Los *puntos ⋮⋮* de la izquierda de cada fila seleccionan con un *lazo*: pulsa en ellos y arrastra hacia arriba o abajo.
+- *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección).
+- *Clic derecho* en una tarea (o el ▾ del final de la fila) abre su menú: Editar, Focus ★, Completar, Mover a, Convertir en (acción, proyecto o referencia), Etiquetas, Tiempo, Energía, Fecha límite, Hacer una copia, Copiar como Markdown, Abrir en su fichero y Papelera. Con varias seleccionadas, el menú actúa sobre todas y arriba dice cuánto tiempo suman.
+- *Mayús+clic* en una tarea crea un elemento nuevo justo encima de ella.
+- *Completar*: la casilla de la izquierda. La tarea pasa al grupo *Hecho*, al final de su lista (tócalo para plegarlo). La *Limpieza* (tecla c o el botón «Limpieza» de arriba) pasa todo lo hecho al Logbook. Mientras está en «Hecho», la tarea lleva la propiedad =DONE_IN= con su lista. En el ⋯ de arriba puedes pedir que pasen al Logbook al momento.
+- *Papelera*: Supr o ⌫, deslizar a la izquierda o arrastrar a «Papelera» no borra: la tira a la papelera (etiqueta =:trash:=; se puede deshacer). Desde la Papelera, el menú la saca (o arrástrala a una lista); «Vaciar papelera» la borra para siempre.
+- *Nuevo elemento* (arriba, o la tecla n) abre el editor de una tarea nueva en la lista que ves. *Entrada rápida* (Mayús+E la muestra u oculta; e pone el cursor): escribe y pulsa Intro (se añade abajo; con Mayús+Intro, arriba). Admite =#etiqueta=, =#due mañana= (también hoy, un día de la semana, «1 agosto», «20/10» o «2026-12-01»), =#focus= o =#star=, =#next=, =#someday= y =#project=. Por ejemplo: =Comprar la compra #@recados #star #due viernes=.
+- En el editor: *Intro* en el título o *Mayús+Intro* en cualquier campo guardan; *Esc* cancela.
+- *Filtros*: bajo el título, las etiquetas y atributos (energía, tiempo, con fecha) de la lista. Clic = solo ese; Ctrl/⌘+clic = añadir otro (tienen que cumplirse todos).
+- *Etiquetas* (al final del menú lateral): cada una muestra lo que la lleva en todas las listas y proyectos activos. La rueda (o la tecla g) abre *Gestionar etiquetas*: renombrar o quitar una etiqueta en todas las tareas, crear etiquetas nuevas y renombrar áreas.
+- El *⋯* de arriba: vista unificada o agrupada por proyecto (en Focus, también por estado), ordenar por fecha límite (tecla d), notas completas, parciales u ocultas bajo cada tarea (completas: con las casillas marcables), Entrada rápida, plantillas de captura (t) y más.
+- La fecha límite se ve como en Nirvana: «Vence hoy» y «Atrasada» en rojo; las que aún no han llegado, más transparentes («Mañana», «en 3 días», o la fecha).
+- *⌘C / Ctrl+C* (sin texto seleccionado) copia la lista, o las tareas seleccionadas, como Markdown (para pegar en otra app). *⌘A / Ctrl+A* selecciona todas.
 
 ** Las listas del menú lateral
 En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de arriba (se queda fijo aunque bajes por la lista).
@@ -143,7 +160,7 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 | Lista      | Qué muestra                                                                          |
 |------------+--------------------------------------------------------------------------------------|
 | Agenda     | Abre la agenda                                                                       |
-| Focus      | Tareas con ★ [#A] o con fecha de hoy o vencida (sin hábitos)                         |
+| Focus      | Tareas y proyectos con ★ [#A], o tareas con fecha de hoy o vencida (sin hábitos)     |
 | Inbox      | Etiqueta @inbox, o encabezados sin estado de inbox.org                                |
 | Next       | NEXT                                                                                 |
 | Todo       | TODO                                                                                 |
@@ -154,7 +171,9 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 | Todos los proyectos | Resumen de todos los proyectos (ver «Proyectos dormidos y programados»)       |
 | Proyectos  | Cada PROJECT activo, con sus acciones                                                |
 | Reference  | Encabezados sin estado ni tareas debajo                                              |
-| Logbook    | Terminadas, por secciones: esta semana, la pasada, el mes pasado, este año y anteriores. «Archivar todas» (o «Archivar» en cada sección) las manda a su fichero _archive |
+| Logbook    | Terminadas que ya han pasado la Limpieza, por secciones: esta semana, la pasada, el mes pasado, este año y anteriores. «Archivar todas» (en el ⋯) o «Archivar» en cada sección las manda a su fichero _archive |
+| Papelera   | Lo tirado a la papelera (etiqueta :trash:). «Vaciar papelera» lo borra                |
+| Etiquetas  | Al final del menú: lo abierto que lleva esa etiqueta, de todas las listas           |
 
 ** Reglas de las fechas
 - Una tarea programada para más adelante solo se ve en Scheduled (aunque tenga fecha límite): no sale en Next, Todo, Focus, Deadline ni en su proyecto. Cuando llega el día, vuelve a su lista.
@@ -164,31 +183,29 @@ Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en
 - Cuando llega la fecha programada o la fecha límite, la tarea recibe ★ [#A] automáticamente (una sola vez; si se la quitas, no vuelve a ponerse). Los hábitos no.
 
 ** Añadir, editar y organizar
-- Escribe en «Añadir» y pulsa Intro: se crea y se abre su editor. Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org (los ficheros se eligen en Ajustes → Vista GTD → «Ficheros de la vista GTD»). Las que se crean sin plantilla llevan su fecha de creación, en una línea =:Created: [2026-10-03 Sat 19:55]=. La tarea recién creada se queda arriba del todo en la lista que estás viendo (hasta que cambies de lista).
+- Las tareas nuevas van a tasks.org; las de Inbox, a inbox.org (los ficheros se eligen en Ajustes → Vista GTD → «Ficheros de la vista GTD»). Las que se crean sin plantilla llevan su fecha de creación, en una línea =:Created: [2026-10-03 Sat 19:55]=. La tarea recién creada se queda arriba del todo en la lista que estás viendo (hasta que cambies de lista).
 - O pulsa la tecla *n* (como en Nirvana): se abre el editor de una tarea nueva, sin título y ya con lo de la lista en la que estás (su estado, la ★ en Focus, «empieza» mañana en Scheduled, el proyecto si estás dentro de uno, el área elegida…). Escribe el título y pulsa Intro. Si lo cierras sin título, no se crea nada. Con *i*, *x*, *w*, *s*, *y*, *f* y *l* se crea directamente en Inbox, Next, Waiting, Scheduled, Someday, Focus o Reference (ver «Atajos de teclado»).
-- *Plantillas de captura* en la vista GTD: la tecla *c* o el botón ⊞ de arriba muestran tus plantillas; al elegir una se abre el editor de tarea nueva con lo que trae la plantilla (estado, título, etiquetas, propiedades, notas), para completarla y guardarla en el fichero y encabezado de la plantilla.
-- El editor de una tarea recién creada no se cierra al tocar fuera (se agita para recordártelo): *Guardar* (o Intro en el título, o Esc) la guarda y *Cancelar* la borra, como si no la hubieras creado.
+- *Plantillas de captura* en la vista GTD: la tecla *t* o el ⋯ de arriba muestran tus plantillas; al elegir una se abre el editor de tarea nueva con lo que trae la plantilla (estado, título, etiquetas, propiedades, notas), para completarla y guardarla en el fichero y encabezado de la plantilla.
+- El editor de una tarea recién creada no se cierra al tocar fuera (se agita para recordártelo): *Guardar* (o Intro en el título, o Mayús+Intro) la guarda y *Cancelar* (o Esc) la borra, como si no la hubieras creado.
 - Al editar una tarea, el editor ocupa su sitio en la lista.
-- Toca una tarea para editarla (como en Nirvana): a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza; ver «Programar y repetir»), lista o estado (también Done, Cancelled y «No task», que quita el estado), proyecto («Suelta» = sin proyecto) y área. Abajo: el fichero donde está la tarea (en pequeño), Abrir, Adjuntar (también en las tareas nuevas), Archivar, Borrar, *Cancelar* (descarta los cambios) y *Guardar*. *Deshacer* y *Rehacer* están junto al botón «Aa», encima de las notas.
+- Doble clic en una tarea (o tocarla en el móvil) la abre para editarla: a la izquierda la ★, el título, las etiquetas (el triángulo muestra tus contextos) y las notas, con casillas y enlaces que se pueden tocar; a la derecha tiempo, energía, fecha límite (vence), fecha programada (empieza; ver «Programar y repetir»), lista o estado (también Done, Cancelled y «No task», que quita el estado), proyecto («Suelta» = sin proyecto) y área. Abajo: el fichero donde está la tarea (en pequeño), Abrir, Adjuntar (también en las tareas nuevas), Archivar, Papelera, *Cancelar* (descarta los cambios) y *Guardar*. *Deshacer* y *Rehacer* están junto al botón «Aa», encima de las notas.
 - Al cerrar el editor, la tarea queda *marcada y centrada* en la lista. «Abrir» la muestra en su fichero con los subencabezados plegados (solo títulos); al volver a GTD sigue marcada.
 - *Programar y repetir* (como en Nirvana): el campo de la fecha programada muestra «Programada › fecha · repetición». Al tocarlo se abre un menú con la fecha de inicio (y atajos: hoy, mañana, el lunes, en una semana, en un mes), *Repetir…*, *Quitar la repetición* y *Quitar la fecha*. En *Repetir…* eliges diaria, semanal, mensual o anual, cada cuántos días/semanas/meses/años, la próxima fecha (con las siguientes de muestra) y desde cuándo se cuenta: la fecha prevista (+1w), la fecha prevista saltando las ya pasadas (++1w) o el día en que la terminas (.+1w). «Añadir también la fecha límite» pone DEADLINE el mismo día con la misma repetición. Se guarda como en Emacs: SCHEDULED: <2026-10-05 Mon +1w>. Al cambiar la fecha, la repetición se conserva.
 - Puedes desplazar la lista con el editor abierto: solo se cierra con un toque fuera (sin arrastrar).
-- En las tareas que ya existían, al tocar fuera del editor, en otra tarea, con Esc o con Intro en el título, lo cambiado también se guarda (y *Cancelar* descarta los cambios). Si te equivocas, *Deshacer*.
-- *Desliza* una tarea hacia la derecha para marcarla como hecha, o hacia la izquierda para borrarla (pide confirmación). Con el ratón, el gesto es en horizontal dentro de la fila; si sales de la fila, pasa a arrastrar. Se desactiva en Ajustes → «Deslizar en la vista GTD».
-- *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina.
+- En las tareas que ya existían, al tocar fuera del editor, en otra tarea o con Intro en el título, lo cambiado también se guarda (*Cancelar* o Esc descartan los cambios). Si te equivocas, *Deshacer*.
+- *Desliza* una tarea hacia la derecha para marcarla como hecha, o hacia la izquierda para tirarla a la Papelera. Con el ratón, el gesto es en horizontal dentro de la fila; si sales de la fila, pasa a arrastrar. Se desactiva en Ajustes → «Deslizar en la vista GTD».
+- *Arrastra* una tarea a una lista o a un proyecto del menú (con el ratón; en el móvil, déjala pulsada un momento y arrastra). A Scheduled o Deadline te pide la fecha; a Focus le pone la ★; a Logbook la termina (sin pasar por «Hecho»); a la Papelera la tira.
 - Deshacer y rehacer arriba a la derecha.
 - *Logbook*: el botón *Archivadas* muestra también, al final, las tareas de los ficheros _archive (junto a cada fichero o en su subcarpeta archive); tocarlas abre su fichero. Se recuerda. Tiene su propio buscador («Buscar en las terminadas…»), que busca solo entre las terminadas (título, notas, etiquetas y área). En sus filas no hay casilla ni ★: para cambiar algo, toca la tarea y se abre su editor.
-- *Archivar las terminadas*: en Logbook, «Archivar todas» archiva de una vez todas las terminadas (de los ficheros que elijas en Ajustes → «Ficheros de la vista GTD»; ninguno marcado: de todos), con sus subencabezados, como org-archive-subtree de Emacs, en el fichero _archive de cada fichero (o en su subcarpeta archive, según Ajustes). Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
+- *Archivar las terminadas*: en Logbook, «Archivar todas» (en el ⋯ de arriba) archiva de una vez todas las terminadas (de los ficheros que elijas en Ajustes → «Ficheros de la vista GTD»; ninguno marcado: de todos), con sus subencabezados, como org-archive-subtree de Emacs, en el fichero _archive de cada fichero (o en su subcarpeta archive, según Ajustes). Cada sección tiene también su botón «Archivar». Las terminadas que tienen alguna subtarea abierta no se archivan (se avisa).
 - *De la entrada a las tareas*: una tarea de primer nivel de inbox.org sin estado se queda en inbox.org. En cuanto le das un estado (Next, Todo…) pasa sola al fichero de tareas (tasks.org). Si algo con estado se quedó en la entrada (p. ej. desde Emacs), aparece arriba el botón *Refile* con su número: lo pasa todo de una vez. Se puede desactivar en Ajustes.
 - *Terminar desde el editor*: la casilla redonda a la izquierda del título la termina (DONE); con Mayúsculas pulsada, la cancela (CANCELLED); otra vez, la reabre. El editor no se cierra: se queda en gris con «Terminada» (al cerrarlo, la tarea pasa al Logbook). La ★ está debajo, junto a las etiquetas.
 - *Notas*: al pulsar Intro en una línea que empieza por «- », «+ », «- [ ] » o «1. », la siguiente empieza igual (casilla vacía, número siguiente); Intro en un elemento vacío termina la lista. Pegar un documento (PDF, Word…) lo adjunta, igual que una imagen.
-- *Con el teclado*: ↓ selecciona la primera tarea y ↑ la última; sigue con las flechas. Intro la abre; Supr o Retroceso la borran (pregunta: Intro confirma, Esc cancela); ← salta al menú lateral, donde ↑ ↓ cambian de sección (se ve al momento) y → vuelve a la lista. En el buscador, *Esc* borra lo escrito (con el buscador vacío, sale de él) y *Tab* salta a la primera tarea de la lista.
-- *Plantillas de captura*: la pastilla «+ Capturar», a la derecha de «Añadir», o la tecla c.
-- *Filtrar*: contextos, energía, tiempo y «con fecha» están plegados tras este botón. Los filtros activos se ven como etiquetas; tócalas para quitarlos.
-- *Agrupar por proyecto*: el botón de las rayas (arriba, junto a deshacer) muestra la lista con un separador por proyecto y sus tareas debajo; las tareas sin proyecto van arriba del todo. Se recuerda. Toca el nombre de un proyecto para abrirlo. (En Scheduled, Deadline y Logbook no, porque ya van por fechas.)
-- *Ordenar arrastrando*: las tareas de un proyecto se ordenan arrastrando su asa ⋮⋮ (a la izquierda de la fila). Se ordena el propio fichero, así que el orden se ve igual en todas las listas, en Documentos y en Emacs. Dentro de un proyecto las fechas no cambian el orden, salvo las tareas cuya fecha (programada o límite) ya ha llegado, que van primero.
-- En las listas normales (Next, Todo…) el orden sigue siendo por fechas; ahí las tareas de un proyecto no tienen asa (se ordenan en su proyecto), pero las *sueltas* (sin proyecto) sí: se colocan entre las demás sueltas de su mismo fichero.
-- *Subtareas*: una tarea con subencabezados con estado muestra sus subtareas justo debajo, con sangría y una línea a la izquierda (no en Focus, Scheduled, Deadline ni Logbook, que van por fechas). Si la tarea de la que cuelgan no está en esa lista, la fila dice «de qué tarea es». Se reordenan arrastrando su asa ⋮⋮, solo entre sus hermanas.
+- *Con el teclado*: ↓ selecciona la primera tarea y ↑ la última; sigue con las flechas (con Mayús, amplías la selección). Intro la abre; Supr o Retroceso la mandan a la Papelera (en la Papelera, la borran, con confirmación); ← salta al menú lateral, donde ↑ ↓ cambian de sección (se ve al momento) y → vuelve a la lista. En el buscador, *Esc* borra lo escrito (con el buscador vacío, sale de él) y *Tab* salta a la primera tarea de la lista.
+- *Agrupar por proyecto* (en el ⋯ de arriba) muestra la lista con un separador por proyecto y sus tareas debajo; las tareas sin proyecto van arriba del todo. Se recuerda. Toca el nombre de un proyecto para abrirlo. (En Scheduled, Deadline y Logbook no, porque ya van por fechas.)
+- *Ordenar arrastrando*: las tareas de un proyecto se ordenan arrastrándolas. Se ordena el propio fichero, así que el orden se ve igual en todas las listas, en Documentos y en Emacs. Dentro de un proyecto las fechas no cambian el orden, salvo las tareas cuya fecha (programada o límite) ya ha llegado, que van primero.
+- En las listas normales (Next, Todo…) el orden sigue siendo por fechas; ahí las tareas de un proyecto no se reordenan (se ordenan en su proyecto), pero las *sueltas* (sin proyecto) sí: se colocan entre las demás sueltas de su mismo fichero.
+- *Subtareas*: una tarea con subencabezados con estado muestra sus subtareas justo debajo, con sangría y una línea a la izquierda (no en Focus, Scheduled, Deadline ni Logbook, que van por fechas). Si la tarea de la que cuelgan no está en esa lista, la fila dice «de qué tarea es». Se reordenan arrastrándolas, solo entre sus hermanas.
 - *Tarea ⇄ subtarea*: en el editor, el campo «Subtarea de» (junto a Proyecto) la cuelga de otra tarea abierta del mismo proyecto o fichero (con sus propias subtareas); «— ninguna —» la saca y la deja justo debajo de la que era su tarea. En la lista, con una tarea seleccionada (↑ ↓), *Tab* la hace subtarea de la de encima y *Mayús+Tab* la saca un nivel (no en Focus, Scheduled, Deadline ni Logbook, que van por fechas). La tarea madre lleva el contador de Org en el título (=Pintar salón [1/6]=), que en la lista se ve como una pastilla discreta «1/6».
 - «↳ Tarea madre» en la fila de una subtarea es un enlace: lleva a esa tarea y abre su editor (si no está en la lista que ves, va a su lista o proyecto). *Alt+←* vuelve a donde estabas (dentro de un campo de texto, solo con el cursor al principio). En el editor, el botón junto a «Subtarea de» hace lo mismo.
 - Etiquetas heredadas: una subtarea hereda las etiquetas de su tarea y de su proyecto (en gris y cursiva en la fila) y sale también en las secciones filtradas por esas etiquetas (salvo en Inbox, que solo mira las propias).
@@ -291,7 +308,7 @@ Toca una celda para escribir en ella, en su sitio. Intro guarda y baja a la celd
 ** Y este archivar
 
 * Capturar ideas rápido
-- Tecla *c* y después la letra de la plantilla (por ejemplo, i para Inbox). En la vista GTD, la tecla c (o el botón ⊞) abre el editor de tarea nueva con la plantilla elegida.
+- Tecla *c* y después la letra de la plantilla (por ejemplo, i para Inbox). En la vista GTD, la tecla t (o el ⋯ de arriba) abre el editor de tarea nueva con la plantilla elegida.
 - En la ventana de captura: *Aceptar* (o tocar fuera, o Esc) la guarda; *Cancelar* (en rojo) la descarta y se pierde lo escrito.
 - Las plantillas se configuran en Ajustes → Plantillas de captura. La «ruta de encabezado» es opcional: sin ella, lo capturado va al principio o al final del fichero; si pones una que no existe, se guarda igualmente al principio o al final y la app te avisa.
 - Captura rápida desde el iPhone o un marcador del navegador: ver el README del proyecto.
@@ -375,26 +392,33 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador): en
 | m            | Mover el encabezado                                 |
 Todos se pueden cambiar en Ajustes → Atajos de teclado.
 ** En la vista GTD (como Nirvana)
-Solo con teclas sueltas, y nunca mientras escribes ni con el editor de una tarea abierto. La tecla *k* (o *?*), o el botón del teclado de arriba, muestran esta lista en una ventana, con el botón «Configurar».
+Solo con teclas sueltas, y nunca mientras escribes ni con el editor de una tarea abierto. La tecla *k* (o *?*), o el ⋯ de arriba, muestran esta lista en una ventana, con el botón «Configurar».
 | Tecla     | Acción                                                        |
 |-----------+---------------------------------------------------------------|
-| n         | Tarea nueva en esta lista (Mayús+n: arriba de la lista)       |
+| n         | Elemento nuevo en esta lista (Mayús+n: arriba de la lista)    |
 | i x w y   | Tarea nueva en Inbox, Next, Waiting, Someday                  |
 | s         | Tarea nueva programada (Scheduled; empieza mañana)            |
 | f         | Tarea nueva en Focus (★)                                      |
 | p / l     | Proyecto nuevo / referencia nueva                             |
-| c         | Capturar con una plantilla                                    |
-| 1 … 9, 0  | Inbox, Next, Todo, Waiting, Scheduled, Someday, Focus, Todos los proyectos, Reference; 0 Logbook |
+| e / Mayús+e | Al cursor de la Entrada rápida / mostrarla u ocultarla      |
+| t         | Capturar con una plantilla                                    |
+| 1 … 8     | Inbox, Next, Todo, Waiting, Scheduled, Someday, Focus, Todos los proyectos |
+| 9 / 0     | Logbook / Papelera                                            |
 | [ ]       | Lista anterior / siguiente                                    |
-| Mayús+0 / Mayús+9 | Todas las áreas / sin área                            |
+| Mayús+1 … 9 / Mayús+0 | Área 1 … 9 / todas las áreas                      |
 | Mayús+[ ] | Área anterior / siguiente                                     |
-| /         | Buscar                                                        |
-| r         | Sincronizar                                                   |
-| a         | Agenda                                                        |
-| Mayús+c   | Limpiar: archivar las terminadas (pide confirmación)          |
+| / o Tab   | Buscar                                                        |
+| c         | Limpieza: lo hecho pasa al Logbook                            |
+| d         | Ordenar por fecha límite (otra vez: el orden de siempre)      |
+| g         | Gestionar etiquetas                                           |
+| Mayús+g   | Ir a Documentos                                               |
+| r / a     | Sincronizar / agenda                                          |
 | , / h     | Ajustes / manual                                              |
-| k o ?     | Ventana de atajos (también en el ⋯ de arriba)                 |
-| ↑ ↓ / Intro / Supr | Recorrer la lista / abrir / borrar (con confirmación) |
+| k o ?     | Ventana de atajos                                             |
+| ↑ ↓ / Mayús+↑ ↓ | Recorrer la lista / ampliar la selección                |
+| Intro / Supr | Editar / a la Papelera                                     |
+| ⌘C Ctrl+C / ⌘A Ctrl+A | Copiar como Markdown / seleccionar todas           |
+| Esc       | Quitar la selección (en el editor: cancelar)                  |
 | ← / →     | Al menú lateral (↑ ↓ cambian de sección) / a la lista          |
 Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
 * Calculadora

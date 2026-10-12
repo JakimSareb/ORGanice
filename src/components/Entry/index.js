@@ -29,8 +29,13 @@ import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
 import { installFormatHotkeys } from '../EliFormatBar';
 import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
-import { notWhileTyping, matchesBinding, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
-import { calculateActionedKeybindings } from '../../lib/keybindings';
+import {
+  notWhileTyping,
+  matchesBinding,
+  shouldIgnoreOrganiceHotkey,
+  gtdMatchesBinding,
+} from '../../lib/eli_hotkeys';
+import { calculateActionedKeybindings, calculateGtdKeybindings } from '../../lib/keybindings';
 
 import * as syncBackendActions from '../../actions/sync_backend';
 import * as orgActions from '../../actions/org';
@@ -96,6 +101,9 @@ class Entry extends PureComponent {
       calculateActionedKeybindings(this.props.customKeybindings || IMap())
     );
     if (!matchesBinding(event, bindings.openGtd)) return;
+    // (3.0) si la tecla es de la vista GTD (p. ej. g = gestionar etiquetas, como Nirvana), es suya
+    const gtd = calculateGtdKeybindings(this.props.customKeybindings || IMap());
+    if (gtd.some((b) => gtdMatchesBinding(event, b.binding))) return;
     event.preventDefault();
     this.openDocs();
   });

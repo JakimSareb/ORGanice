@@ -191,12 +191,14 @@ export default function GtdSectionsSettings() {
     if (def.kind === 'agenda') {
       return <div className="eli-gtdsec__note">La agenda solo se puede mostrar u ocultar.</div>;
     }
-    if (id === 'logbook') {
+    if (id === 'logbook' || id === 'trash') {
       return (
         <div className="eli-gtdsec__options">
           {nameField}
           <div className="eli-gtdsec__note">
-            Las tareas terminadas (DONE, CANCELLED y demás estados de cierre).
+            {id === 'trash'
+              ? 'Lo que se tira a la papelera (etiqueta :trash:). «Vaciar papelera» lo borra.'
+              : 'Las tareas terminadas (DONE, CANCELLED y demás estados de cierre) que ya han pasado por la «Limpieza».'}
           </div>
         </div>
       );

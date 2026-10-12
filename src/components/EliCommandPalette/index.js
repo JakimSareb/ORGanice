@@ -326,6 +326,14 @@ export default function EliCommandPalette() {
       key('syncFile')
     );
     act(
+      'gtd-cleanup',
+      'Limpieza: lo hecho al Logbook',
+      'fas fa-broom',
+      () => gtdCommand(history, pathname, { cleanup: true }),
+      '',
+      'limpiar hechas done gtd nirvana'
+    );
+    act(
       'archive-done',
       'Archivar tareas terminadas (Logbook)',
       'fas fa-archive',

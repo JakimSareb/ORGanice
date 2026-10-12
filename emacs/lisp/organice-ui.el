@@ -195,6 +195,10 @@
     (define-key m "R" #'organice-review-finished-attachments)
     (define-key m "C" #'organice-calendar)
     (define-key m "b" #'organice-sidebar)
+    ;; (3.0) Papelera y Limpieza, como la app (Nirvana)
+    (define-key m "k" #'organice-trash)
+    (define-key m "c" #'organice-cleanup)
+    (define-key m "K" #'organice-empty-trash)
     m)
   "Atajos de la vista GTD (C-c g …).")
 

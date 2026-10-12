@@ -167,9 +167,15 @@ grupo por proyecto (necesita org-super-agenda)."
         (and (plist-get plist :no-state-leaf) (not (organice--kw))
              (not (organice--has-task-children-p)) (not (organice--parent-has-keyword-p))))))
 
+(defun organice--trashed-p ()
+  "(3.0) En la Papelera: con la etiqueta :trash: (propia o heredada), como en la app."
+  (member "trash" (mapcar #'downcase (org-get-tags))))
+
 (defun organice-list-of ()
   "Lista a la que pertenece el encabezado del punto (como la app)."
-  (cond ((organice--done-p) 'logbook)
+  (cond ((organice--trashed-p) 'trash)
+        ((and (organice--done-p) (org-entry-get (point) "DONE_IN")) 'done)
+        ((organice--done-p) 'logbook)
         ((organice--project-p) 'project)
         (t (catch 'found
              (dolist (id organice-list-order)
@@ -211,9 +217,12 @@ grupo por proyecto (necesita org-super-agenda)."
 ;;;; Funciones para saltar encabezados en la agenda --------------------------------------------
 
 (defun organice--skip-unless (pred)
-  "Para `org-agenda-skip-function': salta el encabezado si PRED no se cumple."
+  "Para `org-agenda-skip-function': salta el encabezado si PRED no se cumple.
+(3.0) Lo que está en la Papelera (:trash:) no sale nunca."
   (let ((next (save-excursion (or (outline-next-heading) (point-max)))))
-    (if (save-excursion (org-back-to-heading t) (funcall pred)) nil next)))
+    (if (save-excursion (org-back-to-heading t)
+                        (and (not (organice--trashed-p)) (funcall pred)))
+        nil next)))
 
 (defun organice-skip-unless-list (id)
   (organice--skip-unless (lambda () (eq (organice-list-of) id))))
@@ -547,6 +556,37 @@ llegado, que van primero."
   (let ((m (org-get-at-bol 'org-hd-marker)))
     (when m (with-current-buffer (marker-buffer m)
               (org-with-wide-buffer (goto-char m) (organice--priority))))))
+
+(defun organice-trash (&optional restore)
+  "(3.0) Manda el encabezado del punto a la Papelera (:trash:), como la app; con prefijo, lo saca."
+  (interactive "P")
+  (org-toggle-tag "trash" (if restore 'off 'on)))
+
+(defun organice-cleanup ()
+  "(3.0) Limpieza (como la tecla c de la app): las terminadas de los grupos «Hecho» (propiedad
+DONE_IN) pasan al Logbook (se les quita DONE_IN) en los ficheros de la agenda."
+  (interactive)
+  (let ((n 0))
+    (org-map-entries (lambda () (when (org-entry-get (point) "DONE_IN")
+                                  (org-entry-delete (point) "DONE_IN")
+                                  (setq n (1+ n))))
+                     nil 'agenda)
+    (message "%d hechas pasadas al Logbook" n)))
+
+(defun organice-empty-trash ()
+  "(3.0) Vacía la Papelera: borra los encabezados con :trash: de los ficheros de la agenda."
+  (interactive)
+  (when (yes-or-no-p "¿Borrar para siempre lo que hay en la Papelera? ")
+    (let ((n 0))
+      (dolist (f (org-agenda-files))
+        (with-current-buffer (find-file-noselect f)
+          (org-with-wide-buffer
+           (goto-char (point-max))
+           (while (re-search-backward org-heading-regexp nil t)
+             (when (member "trash" (mapcar #'downcase (org-get-tags nil t)))
+               (org-cut-subtree)
+               (setq n (1+ n)))))))
+      (message "%d borrados" n))))
 
 (defun organice-set-sleep (&optional wake)
   "Duerme (:sleep:) o despierta (con prefijo) el proyecto del punto."

@@ -273,7 +273,8 @@ describe('acciones GTD sobre los ficheros', () => {
     let text = textOf(store.state(), GTD);
     expect(text).toMatch(/\*\*\* DONE Mover muebles\n +CLOSED: \[/);
     const done = byTitle(tasksOf(store.state()), 'Mover muebles');
-    expect(listOf(done, TODAY)).toBe('logbook');
+    // (3.0) primero en el grupo «Hecho» de su lista; la Limpieza la pasa al Logbook
+    expect(listOf(done, TODAY)).toBe('done');
     store.dispatch(gtdToggleDone(done));
     text = textOf(store.state(), GTD);
     expect(text).toMatch(/\*\*\* TODO Mover muebles\n/);

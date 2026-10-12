@@ -131,6 +131,7 @@ export default function TaskEditor({
   parentTaskId = '',
   onGoToParent,
   noAutoFocus = false,
+  inTrash = false,
 }) {
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
@@ -399,8 +400,20 @@ export default function TaskEditor({
     onClose();
   };
 
+  // (3.0) Como Nirvana: Intro (en el título) o Mayús+Intro (en cualquier campo) guardan; Esc
+  // cancela (descarta lo cambiado; una tarea nueva no se crea)
+  const cancelEditor = () => {
+    cancelledRef.current = true;
+    if (onCancelNew) onCancelNew();
+    else onClose();
+  };
   const onKeyDown = (e) => {
-    if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelEditor();
+    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+      if (e.nativeEvent && e.nativeEvent.isComposing) return;
       e.preventDefault();
       e.stopPropagation();
       closeEditor();
@@ -578,7 +591,7 @@ export default function TaskEditor({
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+              if ((e.key === 'Enter' && !e.shiftKey) || e.key === ',' || e.key === ' ') {
                 e.preventDefault();
                 e.stopPropagation();
                 addTag(tagInput);
@@ -990,20 +1003,17 @@ export default function TaskEditor({
             type="button"
             className="gtd-btn gtd-btn--link gtd-btn--danger"
             onClick={onDelete}
-            title="Borrar la tarea"
+            title={inTrash ? 'Borrar para siempre' : 'A la Papelera'}
+            data-testid="gtd-editor-trash"
           >
-            <i className="fas fa-trash" /> Borrar
+            <i className="fas fa-trash" /> {inTrash ? 'Borrar' : 'Papelera'}
           </button>
         )}
         <span className="gtd-spacer" />
         <button
           type="button"
           className="gtd-btn gtd-btn--cancel"
-          onClick={() => {
-            cancelledRef.current = true;
-            if (onCancelNew) onCancelNew();
-            else onClose();
-          }}
+          onClick={cancelEditor}
           title={
             onCancelNew ? 'Descartar la tarea nueva (se borra)' : 'Descartar los cambios y cerrar'
           }

@@ -35,10 +35,16 @@ import {
   keywordForList,
   PRIORITY_RE,
   listOf,
+  doneForView,
+  doneWaitingCleanup,
+  dueInfo,
+  sortByDue,
+  tasksToMarkdown,
+  totalEffort,
+  hasTrashTag,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
-  gtdToggleDone,
   gtdToggleStar,
   gtdAddTask,
   createdLine,
@@ -52,7 +58,24 @@ import {
   tasksFileForRefile,
   gtdSetParent,
   canBeParentOf,
+  gtdSaveMany,
+  gtdCleanup,
+  gtdTrash,
+  gtdEmptyTrash,
+  gtdDuplicate,
+  untrashChanges,
+  doneChangesFor,
+  autoCollect,
+  LS_AUTO_COLLECT,
+  gtdRenameTag,
+  gtdRenameArea,
 } from '../../lib/gtd/gtd_actions';
+import { parseRapidEntry } from '../../lib/gtd/gtd_rapid';
+import GtdMenu from './GtdMenu';
+import GtdTagManager from './GtdTagManager';
+import useRowDrag, { useLasso } from './useRowDrag';
+import { toggleCheckboxLine } from './TaskEditor';
+import { openDocuments } from '../../lib/eli_mode';
 import { ActionCreators } from 'redux-undo';
 import {
   loadFileQuietly,
@@ -75,17 +98,16 @@ import Drawer from '../UI/Drawer';
 import AgendaModal from '../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../EliErrorBoundary';
 import { fileLinkTarget, resolveDropboxPath, openInNewTab } from '../../lib/eli_media';
-import { showMessage, askDate, askConfirm, askCloseProject } from '../../lib/eli_prompt';
+import { showMessage, askDate, askConfirm, askCloseProject, askText } from '../../lib/eli_prompt';
 import {
   defaultTags,
+  defaultTagsLine,
   allowedValuesFromConfigLines,
   DEFAULT_ENERGY,
   DEFAULT_EFFORT,
 } from '../../lib/eli_todo_defaults';
 import { openUploadDialog } from '../EliTools';
 import { confirmAndDeleteAttachment } from '../../lib/eli_attachments';
-import useTaskDrag from './useTaskDrag';
-import useReorderDrag from './useReorderDrag';
 import {
   setGtdConfig,
   isSectionShown,
@@ -102,7 +124,7 @@ import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
-import { pushModalPage, setDisappearingLoadingMessage } from '../../actions/base';
+import { pushModalPage, setDisappearingLoadingMessage, setEliSetting } from '../../actions/base';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -185,91 +207,135 @@ export const tasksFileOf = (templates, loadedPaths, inboxPaths) => {
 
 const fmtDate = (d) => (d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '');
 
+// (3.0) Notas bajo la fila (como Nirvana: completas, parciales u ocultas). Sin la línea :Created:
+// ni cajones (:LOGBOOK: …); las casillas «- [ ]» se pueden marcar desde la lista.
+const NOTE_CHECK_RE = /^(\s*(?:[-+*]|\d+[.)])\s+\[)([ xX-])(\])(.*)$/;
+export const notesLinesOf = (text) => {
+  const out = [];
+  let inDrawer = false;
+  (text || '').split('\n').forEach((line, index) => {
+    if (/^\s*:[A-Za-z_]+:\s*$/.test(line)) {
+      inDrawer = !/^\s*:END:\s*$/i.test(line);
+      return;
+    }
+    if (inDrawer || /^\s*:Created:/i.test(line) || /^\s*-----BEGIN PGP/.test(line)) return;
+    if (!line.trim() && !out.length) return;
+    const m = NOTE_CHECK_RE.exec(line);
+    out.push(
+      m
+        ? { index, check: true, checked: m[2] !== ' ', text: m[4].trim() }
+        : { index, text: line.replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, '$2') }
+    );
+  });
+  while (out.length && !out[out.length - 1].text.trim() && !out[out.length - 1].check) out.pop();
+  return out;
+};
+
 function TaskRow({
   task,
-  open,
-  onToggleOpen,
-  dispatch,
   today,
   showProject,
   onPointerDown,
+  onRowClick,
+  onRowDoubleClick,
+  onContextMenu,
+  onMenuButton,
+  onDotsDown,
+  onToggleDone,
+  onToggleStar,
+  onToggleCheck,
   isDragging,
   hideActions = false,
   reorderSection = null,
-  onReorderStart = null,
-  isReordering = false,
   isSelected = false,
   archivedFrom = null,
   depth = 0,
   parentTitle = null,
   onGoParent = null,
+  notesMode = 'none',
 }) {
-  const due = task.deadline;
-  const overdue = due && due < today;
+  const due = dueInfo(task.deadline, today);
+  const isProjectRow = !!task.isProject;
+  const notes = notesMode !== 'none' && !isProjectRow ? notesLinesOf(task.description) : [];
+  const shownNotes = notesMode === 'partial' ? notes.filter((l) => l.text.trim()).slice(0, 2) : notes;
   return (
     <div
       className={
         'gtd-task' +
-        (open ? ' is-open' : '') +
         (task.isDone ? ' is-done' : '') +
         (isDragging ? ' is-dragging' : '') +
-        (isReordering ? ' is-reordering' : '') +
         (isSelected ? ' is-selected' : '') +
-        (depth ? ` is-sub is-sub-${Math.min(depth, 3)}` : '') +
-        (onReorderStart ? ' has-handle' : '')
+        (isProjectRow ? ' is-project-row' : '') +
+        (depth ? ` is-sub is-sub-${Math.min(depth, 3)}` : '')
       }
       data-testid="gtd-task"
       data-reorder-slot=""
       data-reorder-key={task.key}
       data-reorder-section={reorderSection || 'list'}
     >
-      <div className="gtd-task__row" onClick={onToggleOpen} onPointerDown={onPointerDown}>
-        {/* ORG Mode para Eli (2.15): asa para reordenar arrastrando */}
-        {onReorderStart && (
-          <button
-            type="button"
-            className="gtd-task__handle"
-            onPointerDown={onReorderStart}
+      <div
+        className="gtd-task__row"
+        onClick={onRowClick}
+        onDoubleClick={onRowDoubleClick}
+        onPointerDown={onPointerDown}
+        onContextMenu={onContextMenu}
+      >
+        {/* (3.0) los puntos de la izquierda: seleccionar (con lazo), como en Nirvana */}
+        {onDotsDown && (
+          <span
+            className="gtd-task__dots"
+            onPointerDown={onDotsDown}
             onClick={(e) => e.stopPropagation()}
-            title="Arrastra para cambiar el orden"
-            aria-label="Cambiar el orden"
-            data-testid="gtd-reorder-handle"
+            onDoubleClick={(e) => e.stopPropagation()}
+            title="Seleccionar (arrastra para seleccionar varias)"
+            data-testid="gtd-task-dots"
           >
             <i className="fas fa-grip-vertical" />
-          </button>
+          </span>
         )}
-        {/* ORG Mode para Eli: en el Logbook no se reabre ni se pone ★ desde la fila (se edita
-            abriendo la tarea) */}
         {!hideActions && (
           <>
-            <button
-              className={'gtd-check' + (task.isDone ? ' is-on' : '')}
-              onClick={(e) => {
-                e.stopPropagation();
-                dispatch(gtdToggleDone(task));
-              }}
-              title={task.isDone ? 'Reabrir' : 'Completar'}
-              data-testid="gtd-check"
-            >
-              {task.isDone ? <i className="fas fa-check" /> : null}
-            </button>
             <button
               className={'gtd-star' + (task.priority === 'A' ? ' is-on' : '')}
               onClick={(e) => {
                 e.stopPropagation();
-                dispatch(gtdToggleStar(task));
+                onToggleStar && onToggleStar();
               }}
+              onDoubleClick={(e) => e.stopPropagation()}
               title="Focus (★ [#A])"
               data-testid="gtd-star"
             >
               <i className={task.priority === 'A' ? 'fas fa-star' : 'far fa-star'} />
             </button>
+            {isProjectRow ? (
+              <span className="gtd-task__project-icon" title="Proyecto">
+                <i className="fas fa-project-diagram" />
+              </span>
+            ) : (
+              <button
+                className={
+                  'gtd-check' +
+                  (task.isDone ? ' is-on' : '') +
+                  (task.keyword === 'CANCELLED' ? ' is-cancelled' : '')
+                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleDone && onToggleDone(e);
+                }}
+                onDoubleClick={(e) => e.stopPropagation()}
+                title={task.isDone ? 'Reabrir' : 'Completar (Mayús: cancelar)'}
+                data-testid="gtd-check"
+              >
+                {task.isDone ? (
+                  <i className={task.keyword === 'CANCELLED' ? 'fas fa-times' : 'fas fa-check'} />
+                ) : null}
+              </button>
+            )}
           </>
         )}
         <div className="gtd-task__main">
           <div className="gtd-task__title">
             {task.title || '(sin título)'}
-            {/* (2.18) contador de subtareas del título ([1/6]) como pastilla discreta */}
             {task.cookie && (
               <span
                 className="gtd-task__cookie"
@@ -279,102 +345,147 @@ function TaskRow({
                 {task.cookie}
               </span>
             )}
-          </div>
-          <div className="gtd-task__meta">
-            {archivedFrom && (
-              <span className="gtd-meta" title="Archivada en">
-                <i className="fas fa-archive" /> {archivedFrom.replace(/^\//, '')}
-              </span>
-            )}
-            {parentTitle && !depth && (
-              <span className="gtd-meta gtd-meta--parent" title="Subtarea de">
-                <i className="fas fa-level-up-alt fa-rotate-90" />{' '}
-                {onGoParent ? (
-                  // (2.18) enlace: lleva a la tarea madre (Alt+← vuelve)
-                  <button
-                    type="button"
-                    className="gtd-meta--parent-link"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onGoParent();
-                    }}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    title="Ir a la tarea madre (Alt+← vuelve)"
-                    data-testid="gtd-parent-link"
-                  >
-                    {parentTitle}
-                  </button>
-                ) : (
-                  parentTitle
-                )}
-              </span>
-            )}
-            {showProject && task.project && (
-              <span className="gtd-meta gtd-meta--project">
-                <i className="fas fa-project-diagram" /> {task.project.title}
-              </span>
-            )}
-            {task.area && <span className="gtd-meta gtd-meta--area">{task.area}</span>}
-            {task.tags
-              .filter((t) => t.toLowerCase() !== 'sleep')
-              .map((t) => {
-                // (2.18) las heredadas (de la madre o del proyecto) en gris y cursiva
-                const inherited = !(task.ownTags || []).includes(t);
-                return (
-                  <span
-                    key={t}
-                    className={'gtd-meta gtd-meta--tag' + (inherited ? ' is-inherited' : '')}
-                    title={inherited ? 'Heredada' : undefined}
-                  >
-                    {t}
+            {(archivedFrom || (parentTitle && !depth) || (showProject && task.project) || task.area) && (
+              <span className="gtd-task__meta">
+                {archivedFrom && (
+                  <span className="gtd-meta" title="Archivada en">
+                    <i className="fas fa-archive" /> {archivedFrom.replace(/^\//, '')}
                   </span>
-                );
-              })}
-            {task.energy && (
-              <span className="gtd-meta" title="Energía">
-                <i className="fas fa-bolt" /> {task.energy}
-              </span>
-            )}
-            {task.effort && (
-              <span className="gtd-meta" title="Tiempo">
-                <i className="far fa-clock" /> {task.effort}
-              </span>
-            )}
-            {task.description.trim() && (
-              <i className="far fa-sticky-note gtd-meta" title="Tiene notas" />
-            )}
-            {task.attachmentCount > 0 && (
-              <span
-                className="gtd-meta gtd-meta--attach"
-                title={
-                  task.attachmentCount === 1
-                    ? 'Tiene 1 archivo adjunto'
-                    : `Tiene ${task.attachmentCount} archivos adjuntos`
-                }
-                data-testid="gtd-task-attach"
-              >
-                <i className="fas fa-paperclip" />
-                {task.attachmentCount > 1 ? ` ${task.attachmentCount}` : ''}
+                )}
+                {parentTitle && !depth && (
+                  <span className="gtd-meta gtd-meta--parent" title="Subtarea de">
+                    <i className="fas fa-level-up-alt fa-rotate-90" />{' '}
+                    {onGoParent ? (
+                      <button
+                        type="button"
+                        className="gtd-meta--parent-link"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onGoParent();
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        title="Ir a la tarea madre (Alt+← vuelve)"
+                        data-testid="gtd-parent-link"
+                      >
+                        {parentTitle}
+                      </button>
+                    ) : (
+                      parentTitle
+                    )}
+                  </span>
+                )}
+                {showProject && task.project && (
+                  <span className="gtd-meta gtd-meta--project">
+                    <i className="fas fa-project-diagram" /> {task.project.title}
+                  </span>
+                )}
+                {task.area && <span className="gtd-meta gtd-meta--area">{task.area}</span>}
               </span>
             )}
           </div>
+          {shownNotes.length > 0 && (
+            <div
+              className={'gtd-task__notes' + (notesMode === 'partial' ? ' is-partial' : '')}
+              data-testid="gtd-task-notes"
+            >
+              {shownNotes.map((l) =>
+                l.check && notesMode === 'full' ? (
+                  <label
+                    key={l.index}
+                    className={'gtd-task__note-check' + (l.checked ? ' is-done' : '')}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={l.checked}
+                      onChange={() => onToggleCheck && onToggleCheck(l.index)}
+                    />
+                    <span>{l.text}</span>
+                  </label>
+                ) : (
+                  <div key={l.index} className="gtd-task__note-line">
+                    {l.check ? `${l.checked ? '☑' : '☐'} ${l.text}` : l.text || ' '}
+                  </div>
+                )
+              )}
+            </div>
+          )}
         </div>
-        <div className="gtd-task__dates">
+        <div className="gtd-task__right">
+          {task.tags
+            .filter((t) => !['sleep', 'trash'].includes(t.toLowerCase()))
+            .map((t) => {
+              const inherited = !(task.ownTags || []).includes(t);
+              return (
+                <span
+                  key={t}
+                  className={'gtd-meta gtd-meta--tag' + (inherited ? ' is-inherited' : '')}
+                  title={inherited ? 'Heredada' : undefined}
+                >
+                  {t}
+                </span>
+              );
+            })}
+          {task.energy && (
+            <span className="gtd-meta gtd-meta--energy" title="Energía">
+              <i className="fas fa-bolt" /> {task.energy}
+            </span>
+          )}
+          {task.effort && (
+            <span className="gtd-meta gtd-meta--effort" title="Tiempo">
+              <i className="far fa-clock" /> {task.effort}
+            </span>
+          )}
+          {notesMode === 'none' && task.description.trim() && notesLinesOf(task.description).length > 0 && (
+            <i className="far fa-sticky-note gtd-meta" title="Tiene notas" />
+          )}
+          {task.attachmentCount > 0 && (
+            <span
+              className="gtd-meta gtd-meta--attach"
+              title={
+                task.attachmentCount === 1
+                  ? 'Tiene 1 archivo adjunto'
+                  : `Tiene ${task.attachmentCount} archivos adjuntos`
+              }
+              data-testid="gtd-task-attach"
+            >
+              <i className="fas fa-paperclip" />
+              {task.attachmentCount > 1 ? ` ${task.attachmentCount}` : ''}
+            </span>
+          )}
           {task.scheduled && task.scheduled > today && (
             <span className="gtd-date" title="Empieza">
               <i className="far fa-calendar-alt" /> {fmtDate(task.scheduled)}
             </span>
           )}
-          {due && (
+          {due && !task.isDone && (
             <span
-              className={'gtd-date gtd-date--due' + (overdue ? ' is-overdue' : '')}
-              title="Vence"
+              className={`gtd-date gtd-date--due is-${due.level}`}
+              title={`Vence el ${fmtDate(task.deadline)}`}
+              data-testid="gtd-due"
             >
-              <i className="fas fa-flag" /> {fmtDate(due)}
+              <i className="fas fa-flag" /> {due.text}
             </span>
           )}
           {task.isDone && task.closed && <span className="gtd-date">{fmtDate(task.closed)}</span>}
         </div>
+        {onMenuButton && (
+          <button
+            type="button"
+            className="gtd-task__caret"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMenuButton(e);
+            }}
+            onDoubleClick={(e) => e.stopPropagation()}
+            title="Menú"
+            aria-label="Menú de la tarea"
+            data-testid="gtd-task-menu"
+          >
+            <i className="fas fa-caret-down" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -399,7 +510,6 @@ export default function GtdView() {
   const [view, setView] = useState(() => readLS(LS_VIEW, { id: 'focus' }));
   const [area, setArea] = useState(() => readLS(LS_AREA, '*'));
   const [filters, setFilters] = useState({ tags: [], energy: null, time: null, dated: false });
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const activeFilterCount =
     filters.tags.length +
     (filters.energy ? 1 : 0) +
@@ -413,7 +523,6 @@ export default function GtdView() {
   const [projGroupsOpen, setProjGroupsOpen] = useState({});
   // ORG Mode para Eli (2.15): agrupar las listas por proyecto (se recuerda) y, en un proyecto,
   // la sección de terminadas plegada
-  const [groupByProj, setGroupByProj] = useState(() => readLS(LS_GROUP, false) === true);
   const [doneOpen, setDoneOpen] = useState(false);
   const [refsOpen, setRefsOpen] = useState(false);
   // (2.17) notas del proyecto, bajo su cabecera (plegables; se recuerda si se pliegan)
@@ -422,7 +531,28 @@ export default function GtdView() {
   );
   const [openKey, setOpenKey] = useState(null);
   // (2.16) tarea seleccionada con el teclado (↑ ↓; Intro la abre, Supr la borra)
-  const [selKey, setSelKey] = useState(null);
+  const [selKey, setCursor] = useState(null);
+  // (3.0) selección (varias tareas, como Nirvana: clic, Ctrl/⌘+clic, lazo con los puntos ⋮⋮)
+  const [sel, setSel] = useState([]);
+  const setSelKey = useCallback((k) => {
+    setCursor(k);
+    setSel(k ? [k] : []);
+  }, []);
+  const [menu, setMenu] = useState(null);
+  const [showTagManager, setShowTagManager] = useState(false);
+  // (3.0) Entrada rápida (Mayús+E), notas bajo las filas, orden por fecha límite (d), vista de
+  // la lista (unificada, por proyecto o por estado) y grupo «Hecho» abierto o plegado
+  const [rapidOn, setRapidOn] = useState(() => readLS('eliGtdRapid', false) === true);
+  const [rapidText, setRapidText] = useState('');
+  const [notesMode, setNotesMode] = useState(() => readLS('eliGtdNotes', 'none'));
+  const [sortDue, setSortDue] = useState(() => readLS('eliGtdSortDue', false) === true);
+  const [groupMode, setGroupMode] = useState(() =>
+    readLS('eliGtdGroup', readLS(LS_GROUP, false) === true ? 'project' : 'none')
+  );
+  const [doneGroupOpen, setDoneGroupOpen] = useState(() => readLS('eliGtdDoneOpen', true) !== false);
+  const [tagsOpen, setTagsOpen] = useState(() => readLS('eliGtdTagsOpen', true) !== false);
+  const [autoCollectOn, setAutoCollectOn] = useState(() => autoCollect());
+  const lastPointer = useRef('mouse');
   // ORG Mode para Eli: tarea recién creada con su editor abierto: no se cierra al tocar fuera
   // (hay que Guardar o Cancelar; Cancelar la borra)
   const [newKey, setNewKey] = useState(null);
@@ -570,13 +700,15 @@ export default function GtdView() {
           ...visible.filter((t) => !t.isHabit && t.repeats),
           ...visible.filter((t) => t.isHabit),
         ]
+      : sortDue && !['scheduled', 'deadline', 'logbook'].includes(view.id)
+      ? sortByDue(visible)
       : visible;
     if (freshKeys.length) {
       const fresh = freshKeys.map((k) => list.find((t) => t.key === k)).filter(Boolean);
       if (fresh.length) list = [...fresh, ...list.filter((t) => !freshKeys.includes(t.key))];
     }
     return list;
-  }, [visible, splitHabits, freshKeys]);
+  }, [visible, splitHabits, freshKeys, sortDue, view.id]);
   const sectionStarts = useMemo(() => {
     const out = {};
     if (splitHabits) {
@@ -601,7 +733,9 @@ export default function GtdView() {
   // secciones de estado (como Nirvana); en las listas, opcionalmente agrupado por proyecto.
   const isProjectView = view.type === 'project';
   const canGroup = !isProjectView && isGroupableList(view.id);
-  const grouped = canGroup && groupByProj;
+  const grouped = canGroup && groupMode === 'project';
+  const groupedByStatus =
+    !isProjectView && (view.id === 'focus' || view.id === 'tag') && groupMode === 'status';
   const canReorderLoose = !isProjectView && isGroupableList(view.id);
   const projSections = useMemo(
     () =>
@@ -609,9 +743,29 @@ export default function GtdView() {
     [isProjectView, tasks, view.key, area, text, filters, today]
   );
   const onReorderDropRef = useRef(null);
-  const { startReorder, reordering: reorderingKey, dropSection } = useReorderDrag({
-    onDrop: (task, pos) => onReorderDropRef.current && onReorderDropRef.current(task, pos),
+  const rowDragRef = useRef({});
+  const {
+    onPointerDown,
+    dragging,
+    dropTarget,
+    dropSection,
+    clickSuppressed,
+  } = useRowDrag({
+    onDrop: (list, id) => rowDragRef.current.onDrop(list, id),
+    onReorder: (task, pos) => onReorderDropRef.current && onReorderDropRef.current(task, pos),
+    onStart: () => rowDragRef.current.onStart(),
+    canSwipe: (task) => rowDragRef.current.canSwipe(task),
+    onSwipe: (task, dir) => rowDragRef.current.onSwipe(task, dir),
+    dragSet: (task) => rowDragRef.current.dragSet(task),
+    canReorder: (task) => rowDragRef.current.canReorder(task),
   });
+  const reorderingKey = dragging && dragging.length === 1 ? dragging[0] : null;
+  // (3.0) grupo «Hecho» de esta lista (terminadas aún sin pasar al Logbook)
+  const doneList = useMemo(
+    () => doneForView(tasks, view, { area, text, ...filters }),
+    [tasks, view, area, text, filters]
+  );
+  const cleanupCount = useMemo(() => doneWaitingCleanup(tasks).length, [tasks]);
   const buildDeps = useMemo(
     () => ({}),
     // eslint-disable-next-line
@@ -619,6 +773,9 @@ export default function GtdView() {
       isProjectView,
       projSections,
       grouped,
+      groupedByStatus,
+      doneList,
+      doneGroupOpen,
       rendered,
       sectionStarts,
       today,
@@ -643,7 +800,7 @@ export default function GtdView() {
   };
   const items = useMemo(() => {
     // (2.17) subtareas bajo su tarea (no en las vistas ordenadas por fecha)
-    const byDate = ['focus', 'scheduled', 'deadline', 'logbook'].includes(view.id);
+    const byDate = ['focus', 'scheduled', 'deadline', 'logbook', 'trash', 'tag'].includes(view.id);
     const out = nestSubtasks(buildItems(), byDate ? () => true : null);
     if (openKey) {
       const at = out.findIndex((i) => i.kind === 'task' && i.task.key === openKey);
@@ -667,7 +824,60 @@ export default function GtdView() {
     // eslint-disable-next-line
   }, [buildDeps, openKey, tasks, view.id]);
   function buildItems() {
+    const out = buildMainItems();
+    // (3.0) Grupo «Hecho» al final (como Nirvana): las terminadas desde esta lista hasta la
+    // Limpieza (c). Se pliega tocando «Hecho».
+    if (doneList.length) {
+      out.push({
+        kind: 'header',
+        id: 'done-group',
+        section: 'done-group',
+        label: 'Hecho',
+        icon: 'fas fa-check',
+        count: doneList.length,
+        collapsible: true,
+        collapsed: !doneGroupOpen,
+        toggle: 'doneGroup',
+        testId: 'gtd-done-group',
+      });
+      if (doneGroupOpen) {
+        doneList.forEach((t) =>
+          out.push({ kind: 'task', task: t, section: 'done-group', reorderable: false })
+        );
+      }
+    }
+    return out;
+  }
+  function buildMainItems() {
     const out = [];
+    if (groupedByStatus) {
+      // (3.0) Focus agrupado por estado (como Nirvana): Next, Todo, Waiting…, y los proyectos
+      const order = ['inbox', 'next', 'later', 'waiting', 'scheduled', 'someday', 'reference'];
+      const label = (id) =>
+        id === 'project' ? 'Proyectos' : sectionLabel(id, gtdCfg) || id;
+      const groups = {};
+      rendered.forEach((t) => {
+        const l = t.isProject ? 'project' : listOf(t, today) || 'later';
+        const id = order.includes(l) || l === 'project' ? l : 'later';
+        (groups[id] = groups[id] || []).push(t);
+      });
+      [...order, 'project'].forEach((id) => {
+        if (!groups[id]) return;
+        out.push({
+          kind: 'header',
+          id: `st-${id}`,
+          section: `st:${id}`,
+          label: label(id),
+          icon: id === 'project' ? 'fas fa-project-diagram' : (sectionDef(id, gtdCfg) || {}).icon,
+          count: groups[id].length,
+          testId: 'gtd-group-status',
+        });
+        groups[id].forEach((t) =>
+          out.push({ kind: 'task', task: t, section: `st:${id}`, reorderable: false })
+        );
+      });
+      return out;
+    }
     if (isProjectView && projSections) {
       projSections.forEach((sec) => {
         const isDone = sec.id === 'done';
@@ -798,11 +1008,6 @@ export default function GtdView() {
       .slice(0, 300);
   }, [isLogbook, showArchived, files, area, text, filters, logSearch]);
 
-  // ORG Mode para Eli (2.11): terminadas o canceladas (sin archivar) que tienen adjuntos
-  const doneWithAttachments = useMemo(
-    () => (isLogbook ? tasks.filter((t) => t.isDone && t.attachmentCount > 0).length : 0),
-    [isLogbook, tasks]
-  );
   const archivableBySection = useMemo(() => {
     const out = {};
     archivable.ok.forEach((t) => {
@@ -941,12 +1146,6 @@ export default function GtdView() {
     if (view.type === 'project' && tasks.length && !projectTask) selectView({ id: 'focus' });
   }, [view, tasks, projectTask, selectView]);
 
-  const toggleTag = (t) =>
-    setFilters((f) => ({
-      ...f,
-      tags: f.tags.includes(t) ? f.tags.filter((x) => x !== t) : [...f.tags, t],
-    }));
-
   // Abrir en su fichero con la vista reducida (narrow) a la tarea o proyecto
   // (2.16) con dos columnas, pregunta si abrirla aquí o en la otra (Ctrl/⌘+clic: en la otra)
   const openInFile = (task, event) =>
@@ -963,54 +1162,6 @@ export default function GtdView() {
       { path: task.path, index: task.index, title: task.rawTitle },
       event
     );
-
-  const addTask = () => {
-    const title = newTitle.trim();
-    if (!title) return;
-    const isInbox = view.id === 'inbox';
-    let target;
-    let list = view.id;
-    if (view.type === 'project' && projectTask) {
-      target = { path: projectTask.path, parentId: projectTask.id };
-      list = 'next';
-    } else {
-      target = { path: (isInbox && inboxFile) || tasksFile };
-      if (view.id === 'focus') list = 'next';
-      if (view.id === 'scheduled' || view.id === 'logbook' || view.id === 'deadline')
-        list = 'later';
-    }
-    // (2.16) sección propia: su primer estado (o TODO) y su primera etiqueta
-    const customSec = isCustomId(view.id) ? gtdCfg.sections[view.id] : null;
-    if (customSec) list = 'later';
-    const scheduled = view.id === 'scheduled' ? new Date(today.getTime() + 86400000) : null;
-    const newId = dispatch(
-      gtdAddTask(target, {
-        title,
-        list: list === 'focus' ? 'next' : list,
-        ...(customSec && customSec.states.length ? { keyword: customSec.states[0] } : {}),
-        area: area !== '*' && area !== '-' ? area : null,
-        priority: view.id === 'focus' ? 'A' : null,
-        created: true,
-        scheduled,
-        deadline: view.id === 'deadline' ? today : null,
-        // Si Inbox no va a su fichero de entrada, se marca con @inbox para que se vea en Inbox
-        tags:
-          isInbox && !inboxPaths.includes(target.path)
-            ? Array.from(new Set([...filters.tags, inboxTag()]))
-            : customSec && customSec.tags.length
-            ? Array.from(new Set([...filters.tags, customSec.tags[0]]))
-            : filters.tags,
-      })
-    );
-    setNewTitle('');
-    // ORG Mode para Eli: la tarea nueva se abre en el editor para completar sus datos
-    if (newId) {
-      const key = `${target.path}::${newId}`;
-      setFreshKeys((k) => [key, ...k.filter((x) => x !== key)]);
-      setOpenKey(key);
-      setNewKey(key);
-    }
-  };
 
   // ORG Mode para Eli: «+» de Proyectos abre el editor con un proyecto nuevo; se crea al guardar
   const addProject = () => {
@@ -1048,7 +1199,7 @@ export default function GtdView() {
   const [draft, setDraft] = useState(null);
   const day = (n) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + n);
   const areaPreset = area !== '*' && area !== '-' ? area : '';
-  const draftFor = (kind, { top = false } = {}) => {
+  const draftFor = (kind, { top = false, before = null } = {}) => {
     let list = kind;
     if (kind === 'current') {
       if (isProjectView) list = 'next';
@@ -1058,6 +1209,7 @@ export default function GtdView() {
     const d = {
       rev: Date.now(),
       top,
+      before,
       list,
       keyword: undefined,
       priority: null,
@@ -1095,6 +1247,12 @@ export default function GtdView() {
       d.target = { path: projectTask.path, parentId: projectTask.id };
     } else {
       d.projectKey = '';
+    }
+    // (3.0) encima de otra tarea: con ella (mismo fichero, mismo encabezado y mismo proyecto)
+    if (before && !before.isProject) {
+      d.target = { path: before.path, parentId: before.parentId || null };
+      d.projectKey = before.project ? `${before.project.path}::${before.project.id}` : '';
+      if (before.project && before.parentId !== before.project.id) d.projectKey = '';
     }
     return d;
   };
@@ -1192,8 +1350,8 @@ export default function GtdView() {
       project: proj ? { path: proj.path, id: proj.id, title: proj.title } : null,
     };
   };
-  const createFromDraft = (changes, projectKey) => {
-    const d = draft;
+  const createFromDraft = (changes, projectKey, fromRapid = null) => {
+    const d = fromRapid || draft;
     if (!d) return;
     const title = (changes.rawTitle !== undefined ? changes.rawTitle : d.title || '').trim();
     if (!title) return;
@@ -1243,8 +1401,16 @@ export default function GtdView() {
       const t = created();
       if (t) dispatch(gtdSaveTask(t, rest));
     }
+    // (3.0) Mayús+clic en una tarea: el elemento nuevo va justo encima de ella (si es su hermana)
+    if (d.before) {
+      const t = created();
+      const b = d.before;
+      if (t && b.path === target.path && (b.parentId || null) === (target.parentId || null)) {
+        dispatch(gtdSaveTask(t, { moveNextTo: { targetId: b.id, position: 'before' } }));
+      }
+    }
     // 3) «arriba de la lista»: delante de la primera tarea que se ve de su mismo fichero
-    if (d.top) {
+    if (d.top && !d.before) {
       // …entre sus hermanas (mismo padre): si no, pasaría a otro encabezado o proyecto
       const parentId = target.parentId || null;
       const first = items.find(
@@ -1259,7 +1425,51 @@ export default function GtdView() {
         dispatch(gtdSaveTask(t, { moveNextTo: { targetId: first.task.id, position: 'before' } }));
       }
     }
-    setFreshKeys((k) => [key, ...k.filter((x) => x !== key)]);
+    // la recién creada se ve arriba (con la Entrada rápida, solo con Mayús+Intro; si no, abajo)
+    if (!fromRapid || d.top) setFreshKeys((k) => [key, ...k.filter((x) => x !== key)]);
+  };
+  // (3.0) Entrada rápida (como Nirvana): Intro añade al final de la lista, Mayús+Intro arriba;
+  // «#etiqueta», «#due fecha», «#focus»/«#star», «#next»/«#someday», «#project»
+  const addRapid = (top) => {
+    const r = parseRapidEntry(rapidText, today);
+    if (!r.title) return;
+    if (r.badDate) {
+      showMessage('Entrada rápida', `No entiendo la fecha «${r.badDate}».`);
+      return;
+    }
+    if (r.project) {
+      if (!tasksFile) return;
+      const newId = dispatch(
+        gtdAddTask(
+          { path: tasksFile },
+          {
+            title: r.title,
+            list: 'project',
+            area: areaPreset || null,
+            priority: r.focus ? 'A' : null,
+            tags: Array.from(new Set([...filters.tags, ...r.tags])),
+            deadline: r.deadline,
+          }
+        )
+      );
+      if (newId) setRapidText('');
+      return;
+    }
+    const kind = r.list && !isProjectView ? r.list : 'current';
+    const d = draftFor(view.id === 'projects' && kind === 'current' ? 'next' : kind, { top });
+    if (!d) return;
+    const rapid = {
+      ...d,
+      title: r.title,
+      tags: Array.from(new Set([...d.tags, ...r.tags])),
+      priority: r.focus ? 'A' : d.priority,
+      deadline: r.deadline || d.deadline,
+    };
+    if (r.list && isProjectView) {
+      rapid.list = r.list;
+    }
+    createFromDraft({}, undefined, rapid);
+    setRapidText('');
   };
   const renderDraftEditor = () => (
     <div className="gtd-new-project gtd-new-task" data-testid="gtd-new-task">
@@ -1317,6 +1527,7 @@ export default function GtdView() {
     }
   };
 
+  // (3.0) Borrar de verdad (con confirmación): solo desde la Papelera
   const deleteTask = async (task) => {
     const headers = files.getIn([task.path, 'headers']);
     if (await confirmRemoveHeader(headers, task.id)) {
@@ -1327,54 +1538,137 @@ export default function GtdView() {
     }
     return false;
   };
+  // (3.0) A la Papelera (como Nirvana: sin preguntar; se puede deshacer o sacarla de ella)
+  const trashTasks = (list) => {
+    const todo = list.filter((t) => t && !t.isTrashed);
+    if (!todo.length) return;
+    setOpenKey(null);
+    const n = dispatch(gtdTrash(todo));
+    if (n)
+      dispatch(
+        setDisappearingLoadingMessage(
+          n === 1 ? 'A la Papelera (Deshacer la saca)' : `${n} a la Papelera`,
+          2500
+        )
+      );
+  };
+  const emptyTrash = async () => {
+    const list = tasksForView(tasks, { id: 'trash' }, {}, today);
+    if (!list.length) return;
+    const ok = await askConfirm({
+      title: 'Vaciar la papelera',
+      message: `¿Borrar para siempre ${
+        list.length === 1 ? '1 elemento' : `${list.length} elementos`
+      } (con lo que tengan debajo)?`,
+      okLabel: 'Vaciar papelera',
+    });
+    if (!ok) return;
+    setSelKey(null);
+    dispatch(gtdEmptyTrash(tasks));
+  };
+  const cleanupNow = () => {
+    const n = dispatch(gtdCleanup(tasks));
+    dispatch(
+      setDisappearingLoadingMessage(
+        n
+          ? `${n === 1 ? '1 hecha pasada' : `${n} hechas pasadas`} al Logbook`
+          : 'No hay nada hecho que limpiar',
+        2500
+      )
+    );
+  };
+  const toggleDone = (task, e) => {
+    if (task.isProject) {
+      closeProject(task);
+      return;
+    }
+    dispatch(gtdSaveMany([[task, doneChangesFor(task, { cancel: !!(e && e.shiftKey) })]]));
+  };
 
-  // Arrastrar una tarea a una lista o proyecto del menú lateral
-  const applyDrop = async (task, dropId) => {
+  // (3.0) Llevar tareas (una o varias) a una lista, proyecto, Focus, Logbook o Papelera: al
+  // arrastrarlas al menú lateral o con «Mover a» del menú. dropId: 'list:next', 'project:<key>'…
+  const applyDrop = async (taskOrList, dropId) => {
     setSideOpen(false);
+    const list = (Array.isArray(taskOrList) ? taskOrList : [taskOrList]).filter(Boolean);
+    if (!list.length) return;
     const [kind, ...rest] = dropId.split(':');
     const id = rest.join(':');
-    if (kind === 'project') {
-      const project = allProjects.find((p) => p.key === id);
-      if (!project || project.key === task.key) return;
-      if (!task.keyword) {
-        dispatch(gtdSaveTask(task, { list: 'next', tags: tagsForList(task, 'next') }));
-      }
-      dispatch(gtdMoveToProject(task, { path: project.path, id: project.id }));
+    const untrash = (t, changes) =>
+      t.ownTrash ? { ...changes, tags: (changes.tags || t.ownTags).filter((x) => !hasTrashTag([x])) } : changes;
+    if (kind === 'project' || kind === 'loose') {
+      const project = kind === 'project' ? allProjects.find((p) => p.key === id) : null;
+      if (kind === 'project' && !project) return;
+      const entries = [];
+      list.forEach((task) => {
+        if (project && project.key === task.key) return;
+        let changes = {};
+        if (!task.keyword || task.isDone) {
+          changes = { list: 'next', tags: tagsForList(task, 'next') };
+        }
+        changes = untrash(task, changes);
+        if (Object.keys(changes).length) entries.push([task, changes]);
+      });
+      if (entries.length) dispatch(gtdSaveMany(entries));
+      list.forEach((task) => {
+        if (project && project.key === task.key) return;
+        const fresh = buildTasks(
+          IMap({ [task.path]: store.getState().org.present.getIn(['files', task.path]) }),
+          inboxPaths
+        ).find((t) => t.id === task.id);
+        dispatch(
+          gtdMoveToProject(fresh || task, project ? { path: project.path, id: project.id } : null)
+        );
+      });
       return;
     }
     const day = (n) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + n);
-    if (id === 'focus') {
-      dispatch(gtdSaveTask(task, { priority: 'A' }));
+    let entries = [];
+    if (id === 'trash') {
+      trashTasks(list);
+      return;
+    } else if (id === 'focus') {
+      entries = list.map((t) => [t, untrash(t, { priority: 'A' })]);
     } else if (id === 'scheduled' || id === 'deadline') {
       const isScheduled = id === 'scheduled';
+      const first = list[0];
       const date = await askDate({
         title: isScheduled ? 'Programar (Scheduled)' : 'Fecha límite (Deadline)',
-        message: `«${task.title}»`,
-        value: isScheduled ? task.scheduled || day(1) : task.deadline || day(0),
+        message: list.length > 1 ? `${list.length} elementos` : `«${first.title}»`,
+        value: isScheduled ? first.scheduled || day(1) : first.deadline || day(0),
       });
       if (!date) return;
-      const changes = isScheduled ? { scheduled: date } : { deadline: date };
-      if (!task.keyword) {
-        changes.list = 'later';
-        changes.tags = tagsForList(task, 'later');
-      }
-      dispatch(gtdSaveTask(task, changes));
+      entries = list.map((task) => {
+        const changes = isScheduled ? { scheduled: date } : { deadline: date };
+        if (!task.keyword || task.isDone) {
+          changes.list = 'later';
+          changes.tags = tagsForList(task, 'later');
+        }
+        return [task, untrash(task, changes)];
+      });
     } else if (id === 'logbook') {
-      dispatch(gtdSaveTask(task, { list: 'done' }));
+      entries = list.map((t) => [t, t.isDone ? { doneIn: null } : { list: 'done', doneIn: null }]);
     } else if (isCustomId(id)) {
-      // (2.16) sección propia: su primer estado y su primera etiqueta (si tiene)
       const sec = gtdCfg.sections[id];
       if (!sec) return;
-      const changes = {};
-      if (sec.states.length && task.keyword !== sec.states[0]) changes.keyword = sec.states[0];
-      else if (!task.keyword && !sec.states.length) changes.keyword = 'TODO';
-      if (sec.tags.length && !(task.ownTags || []).includes(sec.tags[0])) {
-        changes.tags = [...(task.ownTags || []), sec.tags[0]];
-      }
-      if (Object.keys(changes).length) dispatch(gtdSaveTask(task, changes));
+      entries = list.map((task) => {
+        const changes = {};
+        if (sec.states.length && task.keyword !== sec.states[0]) changes.keyword = sec.states[0];
+        else if ((!task.keyword || task.isDone) && !sec.states.length) changes.keyword = 'TODO';
+        if (sec.tags.length && !(task.ownTags || []).includes(sec.tags[0])) {
+          changes.tags = [...(task.ownTags || []), sec.tags[0]];
+        }
+        return [task, untrash(task, changes)];
+      });
     } else {
-      dispatch(gtdSaveTask(task, { list: id, tags: tagsForList(task, id) }));
+      entries = list.map((task) => {
+        const changes = { list: id, tags: tagsForList(task, id) };
+        // Sale de Scheduled: sin fecha de inicio futura (como Nirvana al moverla a una lista)
+        if (task.scheduled && task.scheduled > today) changes.scheduled = null;
+        return [task, untrash(task, changes)];
+      });
     }
+    entries = entries.filter(([, c]) => Object.keys(c).length);
+    if (entries.length) dispatch(gtdSaveMany(entries));
   };
   // ORG Mode para Eli (2.15): soltar una tarea reordenada. En un proyecto, si se suelta en otra
   // sección, cambia de estado; y en todo caso se coloca junto a la tarea de al lado en el fichero.
@@ -1475,20 +1769,30 @@ export default function GtdView() {
     dispatch(gtdSaveTask(task, { moveNextTo: move }));
   };
 
-  const { onPointerDown, dragging, dropTarget, clickSuppressed } = useTaskDrag({
+  // (3.0) Arrastrar filas (ver useRowDrag): qué se arrastra, si se puede reordenar y deslizar
+  const selectedTasks = () => {
+    const byKey = new Map(items.filter((i) => i.kind === 'task').map((i) => [i.task.key, i.task]));
+    return sel.map((k) => byKey.get(k) || tasksByKey.get(k)).filter(Boolean);
+  };
+  rowDragRef.current = {
     onDrop: applyDrop,
-    canSwipe: (task) => !noSwipeGtd && !task.isDone && view.id !== 'logbook',
-    onSwipe: (task, dir) => {
-      if (dir === 'right') dispatch(gtdToggleDone(task));
-      else deleteTask(task);
-    },
     onStart: () => {
       setOpenKey(null);
-      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
-        setSideOpen(true);
-      }
+      setMenu(null);
+      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
     },
-  });
+    canSwipe: (task) => !noSwipeGtd && !task.isDone && !task.isProject && view.id !== 'logbook',
+    onSwipe: (task, dir) => {
+      if (dir === 'right') toggleDone(task);
+      else if (view.id === 'trash') deleteTask(task);
+      else trashTasks([task]);
+    },
+    dragSet: (task) => (sel.includes(task.key) && sel.length > 1 ? selectedTasks() : [task]),
+    canReorder: (task) => {
+      const it = items.find((i) => i.kind === 'task' && i.task.key === task.key);
+      return !!(it && it.reorderable);
+    },
+  };
   const dropProps = (dropId) => ({
     'data-drop': dropId,
     className: dropTarget === dropId ? ' is-drop' : '',
@@ -1537,12 +1841,9 @@ export default function GtdView() {
     if (cmd.shortcuts) setShowShortcuts(true);
     if (cmd.newProject) addProject();
     if (cmd.sync) syncAll();
-    if (cmd.focusAdd) {
-      setTimeout(() => {
-        const el = document.querySelector('[data-testid="gtd-add"]');
-        if (el) el.focus();
-      }, 50);
-    }
+    if (cmd.focusAdd) setTimeout(() => openDraft('inbox'), 50);
+    if (cmd.cleanup) cleanupNow();
+    if (cmd.emptyTrash) emptyTrash();
   };
   useEffect(() => {
     const onCmd = (e) => gtdCmdRef.current(e.detail);
@@ -1591,25 +1892,40 @@ export default function GtdView() {
   const goList = (id) => {
     if (id === 'projects' || isSectionShown(id, gtdCfg)) selectView({ id });
   };
-  const cleanup = () => {
-    const { ok } = archivableDone(tasks, gtdCfg.files.archive);
-    if (!ok.length) {
-      showMessage('Limpiar', 'No hay tareas terminadas para archivar.');
-      return;
+  const toggleRapid = (focusIt) => {
+    const v = focusIt ? true : !rapidOn;
+    setRapidOn(v);
+    writeLS('eliGtdRapid', v);
+    if (v) {
+      setTimeout(() => {
+        const el = document.querySelector('[data-testid="gtd-rapid"]');
+        if (el) el.focus();
+      }, 50);
+    } else if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
     }
-    archiveTasks(ok);
+  };
+  const toggleSortDue = () => {
+    const v = !sortDue;
+    setSortDue(v);
+    writeLS('eliGtdSortDue', v);
+    dispatch(
+      setDisappearingLoadingMessage(v ? 'Ordenado por fecha límite' : 'Orden de siempre', 1500)
+    );
   };
   const gtdActions = {
     gtdNew: () => openDraft('current'),
     gtdNewTop: () => openDraft('current', { top: true }),
     gtdNewInbox: () => openDraft('inbox'),
-    gtdNewNext: () => openDraft('next'),
-    gtdNewWaiting: () => openDraft('waiting'),
-    gtdNewScheduled: () => openDraft('scheduled'),
-    gtdNewSomeday: () => openDraft('someday'),
+    gtdNewNext: () => openDraft(view.id === 'reference' ? 'reference' : 'next'),
+    gtdNewWaiting: () => openDraft(view.id === 'reference' ? 'reference' : 'waiting'),
+    gtdNewScheduled: () => openDraft(view.id === 'reference' ? 'reference' : 'scheduled'),
+    gtdNewSomeday: () => openDraft(view.id === 'reference' ? 'reference' : 'someday'),
     gtdNewFocus: () => openDraft('focus'),
     gtdNewProject: () => addProject(),
     gtdNewReference: () => openDraft('reference'),
+    gtdRapidFocus: () => toggleRapid(true),
+    gtdRapidToggle: () => toggleRapid(false),
     gtdCapture: () => captureWithTemplate(),
     gtdGoInbox: () => goList('inbox'),
     gtdGoNext: () => goList('next'),
@@ -1621,26 +1937,30 @@ export default function GtdView() {
     gtdGoProjects: () => goList('projects'),
     gtdGoReference: () => goList('reference'),
     gtdGoLogbook: () => goList('logbook'),
+    gtdGoTrash: () => goList('trash'),
     gtdPrevList: () => stepList(-1),
     gtdNextList: () => stepList(1),
     gtdAreaAll: () => selectArea('*'),
     gtdAreaNext: () => stepArea(1),
     gtdAreaPrev: () => stepArea(-1),
-    gtdAreaNone: () => selectArea('-'),
-    gtdSearch: () => {
-      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
-      setTimeout(() => {
-        const el = document.querySelector('[data-testid="gtd-search"]');
-        if (el) el.focus();
-      }, 50);
-    },
+    gtdSearch: () => focusSearch(),
     gtdSync: () => syncAll(),
     gtdAgenda: () => setShowAgenda(true),
-    gtdCleanup: () => cleanup(),
+    gtdCleanup: () => cleanupNow(),
+    gtdSortDue: () => toggleSortDue(),
+    gtdTags: () => setShowTagManager(true),
+    gtdDocs: () => openDocuments(),
     gtdSettings: () => history.push('/settings'),
     gtdManual: () => history.push('/sample'),
     gtdShortcuts: () => setShowShortcuts(true),
     gtdShortcuts2: () => setShowShortcuts(true),
+  };
+  const focusSearch = () => {
+    if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
+    setTimeout(() => {
+      const el = document.querySelector('[data-testid="gtd-search"]');
+      if (el) el.focus();
+    }, 50);
   };
   // (2.18) Ir a otra tarea (la madre de una subtarea): se selecciona y se abre su editor; si no
   // está en la lista que se ve, se va a su proyecto o a su lista. Alt+← vuelve a donde se estaba.
@@ -1693,22 +2013,70 @@ export default function GtdView() {
   // (2.16) Recorrer la lista con el teclado: ↓ empieza por la primera tarea, ↑ por la última;
   // Intro abre la seleccionada; Supr o Retroceso la borran (con confirmación: Intro confirma);
   // ← vuelve al menú lateral; Esc quita la selección
+  // (3.0) Teclado en la lista, como Nirvana: ↑ ↓ recorren (Mayús amplía la selección), Intro
+  // edita, Supr/⌫ manda a la Papelera, Esc quita la selección, Tab va al buscador (con una tarea
+  // seleccionada la hace subtarea), ⌘/Ctrl+C copia la lista como Markdown, ⌘/Ctrl+A todas.
+  const copyMarkdown = (list, title) => {
+    const md = tasksToMarkdown(title, list);
+    const done = () =>
+      dispatch(
+        setDisappearingLoadingMessage(
+          list.length === 1 ? 'Copiada como Markdown' : `${list.length} copiadas como Markdown`,
+          2000
+        )
+      );
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(done, () => null);
+        return;
+      }
+    } catch (e) {}
+    const ta = document.createElement('textarea');
+    ta.value = md;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      done();
+    } catch (e) {}
+    ta.remove();
+  };
   const listKey = (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return false;
     const t = e.target;
     if (t && t.closest && t.closest('.gtd-side')) return false;
     const rows = items.filter((i) => i.kind === 'task' && !i.isRef).map((i) => i.task);
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
+      const k = (e.key || '').toLowerCase();
+      if (k === 'c') {
+        const txt = window.getSelection && String(window.getSelection() || '');
+        if (txt) return false; // texto seleccionado: la copia normal del navegador
+        e.preventDefault();
+        const chosen = sel.length ? rows.filter((r) => sel.includes(r.key)) : null;
+        if (chosen && chosen.length) copyMarkdown(chosen, null);
+        else copyMarkdown(rows.filter((r) => !r.isDone), title);
+        return true;
+      }
+      if (k === 'a' && rows.length) {
+        e.preventDefault();
+        setSel(rows.map((r) => r.key));
+        setCursor(rows[0].key);
+        return true;
+      }
+      return false;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return false;
     const idx = selKey ? rows.findIndex((x) => x.key === selKey) : -1;
-    const select = (task) => {
-      setSelKey(task ? task.key : null);
-      if (!task) return;
+    const scrollTo = (task) =>
       setTimeout(() => {
         const el = document.querySelector(`[data-reorder-key="${CSS.escape(task.key)}"]`);
         if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
       }, 0);
+    const select = (task) => {
+      setSelKey(task ? task.key : null);
+      if (task) scrollTo(task);
     };
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      if (e.shiftKey || !rows.length) return false;
+      if (!rows.length) return false;
       e.preventDefault();
       const down = e.key === 'ArrowDown';
       const next =
@@ -1717,7 +2085,13 @@ export default function GtdView() {
             ? 0
             : rows.length - 1
           : Math.max(0, Math.min(rows.length - 1, idx + (down ? 1 : -1)));
-      select(rows[next]);
+      if (e.shiftKey && idx >= 0) {
+        // ampliar la selección
+        const key = rows[next].key;
+        setCursor(key);
+        setSel((cur) => (cur.includes(key) ? cur : [...cur, key]));
+        scrollTo(rows[next]);
+      } else select(rows[next]);
       return true;
     }
     if (e.key === 'ArrowLeft' && !e.shiftKey) {
@@ -1728,13 +2102,23 @@ export default function GtdView() {
       on.focus();
       return true;
     }
+    if (e.key === 'Tab' && (idx < 0 || (t && t.closest && t.closest('button, a, select')))) {
+      if (e.shiftKey) return false;
+      e.preventDefault();
+      focusSearch();
+      return true;
+    }
+    if (e.key === 'Escape' && (sel.length || selKey)) {
+      setSelKey(null);
+      return true;
+    }
     if (idx < 0) return false;
     const task = rows[idx];
-    // (2.18) Tab / Mayús+Tab: solo con el foco en la lista (no en un botón o un campo) y no en
-    // las vistas ordenadas por fecha (ahí la de encima puede no tener nada que ver)
     if (e.key === 'Tab') {
-      if (t && t.closest && t.closest('button, a, select, input, textarea')) return false;
-      if (['focus', 'scheduled', 'deadline', 'logbook'].includes(view.id)) return false;
+      if (['focus', 'scheduled', 'deadline', 'logbook', 'trash', 'tag'].includes(view.id)) {
+        e.preventDefault();
+        return true;
+      }
       e.preventDefault();
       indentSelected(task, rows, idx, e.shiftKey);
       return true;
@@ -1742,17 +2126,27 @@ export default function GtdView() {
     if (e.key === 'Enter') {
       if (t && t.closest && t.closest('button, a, select')) return false;
       e.preventDefault();
-      setOpenKey(task.key);
+      if (task.isProject && !isProjectView) selectView({ type: 'project', key: task.key });
+      else setOpenKey(task.key);
       return true;
     }
     if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
-      const after = rows[idx + 1] || rows[idx - 1] || null;
-      deleteTask(task).then((deleted) => deleted && select(after));
-      return true;
-    }
-    if (e.key === 'Escape') {
-      setSelKey(null);
+      const chosen = rows.filter((r) => sel.includes(r.key));
+      const list = chosen.length ? chosen : [task];
+      const after =
+        rows.slice(idx + 1).find((r) => !list.includes(r)) ||
+        rows
+          .slice(0, idx)
+          .reverse()
+          .find((r) => !list.includes(r)) ||
+        null;
+      if (view.id === 'trash') {
+        deleteTask(task).then((deleted) => deleted && select(after));
+      } else {
+        trashTasks(list);
+        select(after);
+      }
       return true;
     }
     return false;
@@ -1791,7 +2185,8 @@ export default function GtdView() {
     if (['Shift', 'Control', 'Alt', 'Meta', 'AltGraph'].includes(e.key)) return;
     if (isEditable(e.target) || isEditable(document.activeElement)) return;
     if (shouldIgnoreOrganiceHotkey(e, null)) return;
-    if (showAgenda || showShortcuts || draft || newProject || openKey) return;
+    if (showAgenda || showShortcuts || showTagManager || menu || draft || newProject || openKey)
+      return;
     if (
       document.querySelector(
         '.eli-cal__overlay, .eli-calc__overlay, .drawer, [data-testid="drawer"]'
@@ -1799,6 +2194,15 @@ export default function GtdView() {
     )
       return;
     if (listKey(e)) return;
+    // (3.0) Mayús+1…9: ir al área 1…9 (como Nirvana)
+    if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && /^Digit[1-9]$/.test(e.code || '')) {
+      const a = areas[Number(e.code.slice(5)) - 1];
+      if (a) {
+        e.preventDefault();
+        selectArea(a);
+        return;
+      }
+    }
     const hit = gtdBindings.find((b) => gtdMatchesBinding(e, b.binding));
     if (!hit || !gtdActions[hit.action]) return;
     e.preventDefault();
@@ -1844,6 +2248,373 @@ export default function GtdView() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // (3.0) Clic en una fila, como Nirvana: con el ratón, clic = seleccionar (Ctrl/⌘ añade o quita;
+  // Mayús+clic = elemento nuevo encima) y doble clic = editar; con el dedo, tocar = editar.
+  const rowClick = (item) => (e) => {
+    if (clickSuppressed()) return;
+    const task = item.task;
+    if (newKey && openKey === newKey) {
+      window.dispatchEvent(new CustomEvent('eli:gtd-attention'));
+      return;
+    }
+    if (e.shiftKey && !item.isRef && view.id !== 'logbook' && view.id !== 'trash') {
+      openDraft('current', { before: task });
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      setCursor(task.key);
+      setSel((cur) => (cur.includes(task.key) ? cur.filter((k) => k !== task.key) : [...cur, task.key]));
+      return;
+    }
+    if (lastPointer.current !== 'mouse') {
+      rowOpen(item, e);
+      return;
+    }
+    setSelKey(task.key);
+  };
+  const rowOpen = (item, e) => {
+    const task = item.task;
+    if (item.isRef) {
+      openInFile(task, e);
+      return;
+    }
+    if (task.isProject && !isProjectView) {
+      selectView({ type: 'project', key: task.key });
+      return;
+    }
+    setSelKey(task.key);
+    setOpenKey(task.key);
+  };
+  const lassoBase = useRef([]);
+  const lassoAt = useRef(0);
+  const { startLasso } = useLasso({
+    onSelect: (keys, additive, toggle) => {
+      lassoAt.current = Date.now();
+      if (toggle) {
+        const k = keys[0];
+        setCursor(k);
+        setSel((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
+        return;
+      }
+      setSel(Array.from(new Set([...(additive ? lassoBase.current : []), ...keys])));
+      if (keys.length) setCursor(keys[keys.length - 1]);
+    },
+  });
+  const dotsDown = (task) => (e) => {
+    lassoBase.current = sel;
+    setOpenKey(null);
+    startLasso(task.key)(e);
+  };
+
+  // Menú de una tarea (o de las seleccionadas): clic derecho o ▾
+  const listTargets = () => {
+    const out = [];
+    gtdCfg.order.forEach((id) => {
+      if (!isSectionShown(id, gtdCfg)) return;
+      if (['agenda', 'projects', 'logbook', 'trash', 'deadline'].includes(id)) return;
+      const def = [...LISTS, ...EXTRA_LISTS].find((l) => l.id === id) || sectionDef(id, gtdCfg);
+      if (def) out.push({ id, label: sectionLabel(id, gtdCfg), icon: def.icon });
+    });
+    return out;
+  };
+  const openTaskMenu = (task, e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const inSel = sel.includes(task.key);
+    const list = inSel && sel.length > 1 ? selectedTasks() : [task];
+    if (!inSel) setSelKey(task.key);
+    else setCursor(task.key);
+    const rect = e && e.currentTarget && e.type === 'click' ? e.currentTarget.getBoundingClientRect() : null;
+    setMenu({
+      x: rect ? rect.right - 220 : e.clientX,
+      y: rect ? rect.bottom + 2 : e.clientY,
+      items: taskMenuItems(list),
+      header:
+        list.length > 1
+          ? `${list.length} seleccionadas${totalEffort(list) ? ` · ${totalEffort(list)}` : ''}`
+          : null,
+      testId: 'gtd-task-menu-popup',
+    });
+  };
+  const taskMenuItems = (list) => {
+    const single = list.length === 1 ? list[0] : null;
+    const save = (fn) => () => dispatch(gtdSaveMany(list.map((t) => [t, fn(t)])));
+    if (view.id === 'trash') {
+      return [
+        {
+          label: 'Sacar de la papelera a…',
+          icon: 'fas fa-undo',
+          sub: listTargets().map((l) => ({
+            label: l.label,
+            icon: l.icon,
+            onClick: () => applyDrop(list, `list:${l.id}`),
+          })),
+        },
+        {
+          label: 'Sacar de la papelera (como estaba)',
+          icon: 'fas fa-reply',
+          onClick: save((t) => untrashChanges(t)),
+        },
+        { sep: true },
+        {
+          label: 'Borrar para siempre…',
+          icon: 'fas fa-times',
+          danger: true,
+          disabled: !single,
+          onClick: () => single && deleteTask(single),
+        },
+      ];
+    }
+    const allStar = list.every((t) => t.priority === 'A');
+    const allDone = list.every((t) => t.isDone);
+    const effortSub = [
+      ...effortOptions.map((v) => ({
+        label: v,
+        checked: list.every((t) => t.effort === v),
+        onClick: save(() => ({ effort: v })),
+      })),
+      { sep: true },
+      { label: 'Quitar', icon: 'fas fa-times', onClick: save(() => ({ effort: null })) },
+    ];
+    const energySub = [
+      ...energyOptions.map((v) => ({
+        label: v,
+        checked: list.every((t) => t.energy === v),
+        onClick: save(() => ({ energy: v })),
+      })),
+      { sep: true },
+      { label: 'Quitar', icon: 'fas fa-times', onClick: save(() => ({ energy: null })) },
+    ];
+    const tagNames = Array.from(new Set([...contextTags, ...allTags])).filter(
+      (t) => !hasTrashTag([t]) && t.toLowerCase() !== 'sleep'
+    );
+    const tagSub = [
+      ...tagNames.map((tag) => {
+        const all = list.every((t) => (t.ownTags || []).includes(tag));
+        return {
+          label: tag,
+          checked: all,
+          onClick: save((t) => ({
+            tags: all
+              ? (t.ownTags || []).filter((x) => x !== tag)
+              : Array.from(new Set([...(t.ownTags || []), tag])),
+          })),
+        };
+      }),
+      { sep: true },
+      {
+        label: 'Etiqueta nueva…',
+        icon: 'fas fa-plus',
+        onClick: async () => {
+          const tag = await askText({ title: 'Etiqueta nueva', placeholder: '@contexto' });
+          const name = String(tag || '').trim().replace(/[\s:]+/g, '');
+          if (name) save((t) => ({ tags: Array.from(new Set([...(t.ownTags || []), name])) }))();
+        },
+      },
+    ];
+    const moveSub = [
+      ...listTargets().map((l) => ({
+        label: l.label,
+        icon: l.icon,
+        onClick: () => applyDrop(list, `list:${l.id}`),
+      })),
+      { sep: true },
+      ...projectGroups.active
+        .filter((p) => !list.some((t) => t.key === p.key))
+        .map((p) => ({
+          label: p.title,
+          icon: 'fas fa-project-diagram',
+          onClick: () => applyDrop(list, `project:${p.key}`),
+        })),
+      ...(list.some((t) => t.project && !t.isProject)
+        ? [
+            {
+              label: 'Fuera del proyecto (suelta)',
+              icon: 'far fa-circle',
+              onClick: () => applyDrop(list.filter((t) => t.project), 'loose:'),
+            },
+          ]
+        : []),
+    ];
+    const convertSub = [
+      {
+        label: 'Acción',
+        icon: 'far fa-check-square',
+        disabled: list.every((t) => t.keyword && !t.isProject),
+        onClick: save((t) => ({
+          list: t.isProject ? 'later' : 'next',
+          tags: tagsForList(t, t.isProject ? 'later' : 'next'),
+        })),
+      },
+      {
+        label: 'Proyecto',
+        icon: 'fas fa-project-diagram',
+        disabled: list.every((t) => t.isProject),
+        onClick: save((t) => ({ list: 'project', tags: tagsForList(t, 'next') })),
+      },
+      {
+        label: 'Referencia',
+        icon: 'far fa-file-alt',
+        onClick: save((t) => ({ list: 'reference', tags: tagsForList(t, 'reference') })),
+      },
+    ];
+    const day = (n) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + n);
+    return [
+      ...(single
+        ? [
+            {
+              label: single.isProject && !isProjectView ? 'Abrir el proyecto' : 'Editar',
+              icon: 'fas fa-pen',
+              hint: 'doble clic',
+              onClick: () => rowOpen({ task: single }, null),
+            },
+          ]
+        : []),
+      {
+        label: allStar ? 'Quitar de Focus' : 'Focus ★',
+        icon: allStar ? 'far fa-star' : 'fas fa-star',
+        onClick: save(() => ({ priority: allStar ? null : 'A' })),
+      },
+      ...(list.some((t) => t.isProject)
+        ? []
+        : [
+            {
+              label: allDone ? 'Reabrir' : 'Completar',
+              icon: allDone ? 'fas fa-undo' : 'fas fa-check',
+              onClick: () =>
+                dispatch(gtdSaveMany(list.map((t) => [t, doneChangesFor(t)]))),
+            },
+          ]),
+      { sep: true },
+      { label: 'Mover a', icon: 'fas fa-share', sub: moveSub, testId: 'gtd-menu-move' },
+      { label: 'Convertir en', icon: 'fas fa-exchange-alt', sub: convertSub },
+      { label: 'Etiquetas', icon: 'fas fa-tag', sub: tagSub },
+      { label: 'Tiempo', icon: 'far fa-clock', sub: effortSub },
+      { label: 'Energía', icon: 'fas fa-bolt', sub: energySub },
+      {
+        label: 'Fecha límite…',
+        icon: 'fas fa-flag',
+        onClick: async () => {
+          const date = await askDate({
+            title: 'Fecha límite (Deadline)',
+            message: single ? `«${single.title}»` : `${list.length} elementos`,
+            value: (single && single.deadline) || day(0),
+          });
+          if (date) save(() => ({ deadline: date }))();
+        },
+      },
+      ...(list.some((t) => t.deadline)
+        ? [{ label: 'Quitar la fecha límite', icon: 'fas fa-times', onClick: save(() => ({ deadline: null })) }]
+        : []),
+      { sep: true },
+      {
+        label: 'Hacer una copia',
+        icon: 'far fa-copy',
+        onClick: () => dispatch(gtdDuplicate(list)),
+      },
+      {
+        label: 'Copiar como Markdown',
+        icon: 'far fa-clipboard',
+        hint: '⌘C',
+        onClick: () => copyMarkdown(list, null),
+      },
+      ...(single
+        ? [
+            {
+              label: 'Abrir en su fichero',
+              icon: 'fas fa-external-link-alt',
+              onClick: () => openInFile(single, null),
+            },
+          ]
+        : []),
+      { sep: true },
+      {
+        label: 'Papelera',
+        icon: 'fas fa-trash',
+        hint: 'Supr',
+        danger: true,
+        onClick: () => trashTasks(list),
+        testId: 'gtd-menu-trash',
+      },
+    ];
+  };
+
+  // Menú ⋯ de la cabecera: opciones de la vista (como Nirvana) y lo que se usa menos
+  const viewMenuItems = () => {
+    const setGroup = (g) => {
+      setGroupMode(g);
+      writeLS('eliGtdGroup', g);
+    };
+    const setNotes = (m) => {
+      setNotesMode(m);
+      writeLS('eliGtdNotes', m);
+    };
+    const out = [];
+    if (canGroup || view.id === 'focus' || view.id === 'tag') {
+      out.push(
+        { label: 'Vista unificada', checked: groupMode === 'none' || (!canGroup && groupMode === 'project'), onClick: () => setGroup('none') },
+        ...(canGroup
+          ? [{ label: 'Agrupar por proyecto', checked: groupMode === 'project', onClick: () => setGroup('project'), testId: 'gtd-group-project-opt' }]
+          : []),
+        ...(view.id === 'focus' || view.id === 'tag'
+          ? [{ label: 'Agrupar por estado', checked: groupMode === 'status', onClick: () => setGroup('status') }]
+          : []),
+        { sep: true }
+      );
+    }
+    out.push(
+      { label: 'Ordenar por fecha límite', checked: sortDue, hint: 'd', onClick: toggleSortDue },
+      {
+        label: 'Notas',
+        icon: 'far fa-sticky-note',
+        sub: [
+          { label: 'Completas', checked: notesMode === 'full', onClick: () => setNotes('full') },
+          { label: 'Parciales', checked: notesMode === 'partial', onClick: () => setNotes('partial') },
+          { label: 'Ocultas', checked: notesMode === 'none', onClick: () => setNotes('none') },
+        ],
+      },
+      { label: 'Entrada rápida', checked: rapidOn, hint: 'Mayús E', onClick: () => toggleRapid(false) },
+      {
+        label: 'Pasar las hechas al Logbook al momento',
+        checked: autoCollectOn,
+        onClick: () => {
+          const v = !autoCollectOn;
+          setAutoCollectOn(v);
+          try {
+            window.localStorage.setItem(LS_AUTO_COLLECT, v ? 'true' : 'false');
+          } catch (e) {}
+        },
+      },
+      { sep: true },
+      { label: 'Capturar con una plantilla', icon: 'fas fa-plus-square', hint: 't', onClick: captureWithTemplate },
+      { label: 'Gestionar etiquetas', icon: 'fas fa-tags', hint: 'g', onClick: () => setShowTagManager(true) },
+      { label: 'Copiar la lista como Markdown', icon: 'far fa-clipboard', hint: '⌘C', onClick: () => copyMarkdown(items.filter((i) => i.kind === 'task' && !i.task.isDone).map((i) => i.task), title) }
+    );
+    if (view.id === 'logbook') {
+      out.push(
+        { sep: true },
+        {
+          label: `Archivar todas las terminadas (${archivable.ok.length})`,
+          icon: 'fas fa-archive',
+          disabled: !archivable.ok.length,
+          onClick: () => archiveTasks(archivable.ok),
+          testId: 'gtd-archive-all',
+        },
+        {
+          label: 'Revisar los adjuntos de las terminadas…',
+          icon: 'fas fa-paperclip',
+          onClick: () => dispatch(eliReviewFinishedAttachments()),
+        }
+      );
+    }
+    out.push(
+      { sep: true },
+      { label: 'Atajos de teclado', icon: 'far fa-keyboard', hint: 'k', onClick: () => setShowShortcuts(true) },
+      { label: 'Agenda', icon: 'fas fa-calendar-alt', hint: 'a', onClick: () => setShowAgenda(true) },
+      { label: 'Sincronizar', icon: 'fas fa-sync-alt', hint: 'r', onClick: syncAll }
+    );
+    return out;
+  };
+
   const renderEditor = (task) => (
     <TaskEditor
       key={task.key + task.header.hashCode() + ':' + editorRev}
@@ -1881,7 +2652,8 @@ export default function GtdView() {
       canUndo={canUndo}
       canRedo={canRedo}
       onOpen={(e) => openInFile(task, e)}
-      onDelete={() => deleteTask(task)}
+      onDelete={() => (task.isTrashed ? deleteTask(task) : trashTasks([task]))}
+      inTrash={!!task.isTrashed}
       onArchive={() => {
         setOpenKey(null);
         dispatch(gtdArchiveTask(task));
@@ -1983,6 +2755,8 @@ export default function GtdView() {
         : 'Proyecto'
       : view.id === 'projects'
       ? 'Todos los proyectos'
+      : view.id === 'tag'
+      ? view.tag
       : sectionLabel(view.id, gtdCfg);
 
   const renderListItem = (l) => (
@@ -2002,7 +2776,7 @@ export default function GtdView() {
     >
       <i className={l.icon + ' gtd-side__icon'} />
       <span className="gtd-side__label">{l.label}</span>
-      {counts[l.id] > 0 && l.id !== 'logbook' && (
+      {counts[l.id] > 0 && l.id !== 'logbook' && l.id !== 'trash' && (
         <span className="gtd-side__count">{counts[l.id]}</span>
       )}
     </button>
@@ -2115,7 +2889,95 @@ export default function GtdView() {
   };
 
   const loading = pendingLoads;
-  const showAddRow = view.id !== 'logbook' && view.id !== 'reference' && view.id !== 'projects';
+  const isTrash = view.id === 'trash';
+  // (3.0) «Nuevo elemento» y Entrada rápida: en las listas donde se crean cosas
+  const canCreate = !['logbook', 'trash', 'projects'].includes(view.id);
+  // Etiquetas del menú lateral (como Nirvana): las que llevan las tareas abiertas
+  const sideTags = (() => {
+    const n = {};
+    tasks.forEach((t) => {
+      if (t.isDone || t.isTrashed) return;
+      (t.ownTags || []).forEach((x) => {
+        if (['sleep', 'trash'].includes(x.toLowerCase())) return;
+        n[x] = (n[x] || 0) + 1;
+      });
+    });
+    return Object.keys(n)
+      .sort((a, b) => {
+        const ac = a.startsWith('@');
+        const bc = b.startsWith('@');
+        return ac !== bc ? (ac ? -1 : 1) : a.localeCompare(b);
+      })
+      .map((x) => ({ tag: x, n: n[x] }));
+  })();
+  // Filtros de la barra (como Nirvana): clic = solo ese; Ctrl/⌘+clic = añadir (todos a la vez: Y)
+  const filterChip = (kind, value, e) => {
+    const add = e && (e.ctrlKey || e.metaKey);
+    setFilters((f) => {
+      const empty = { tags: [], energy: null, time: null, dated: false };
+      const isOn =
+        kind === 'tag'
+          ? f.tags.includes(value)
+          : kind === 'energy'
+          ? f.energy === value
+          : kind === 'time'
+          ? f.time === value
+          : f.dated;
+      const count = f.tags.length + (f.energy ? 1 : 0) + (f.time ? 1 : 0) + (f.dated ? 1 : 0);
+      if (!add) {
+        if (isOn && count === 1) return empty;
+        const base = { ...empty };
+        if (kind === 'tag') base.tags = [value];
+        if (kind === 'energy') base.energy = value;
+        if (kind === 'time') base.time = value;
+        if (kind === 'dated') base.dated = true;
+        return base;
+      }
+      if (kind === 'tag')
+        return { ...f, tags: isOn ? f.tags.filter((x) => x !== value) : [...f.tags, value] };
+      if (kind === 'energy') return { ...f, energy: isOn ? null : value };
+      if (kind === 'time') return { ...f, time: isOn ? null : value };
+      return { ...f, dated: !f.dated };
+    });
+  };
+  const hasFacets =
+    facets.tags.length > 0 || facets.energy.length > 0 || facets.hasEffort || facets.hasDates;
+
+  const renderRow = (item) => (
+    <TaskRow
+      key={item.task.key}
+      task={item.task}
+      onRowClick={rowClick(item)}
+      onRowDoubleClick={() => {
+        if (clickSuppressed()) return;
+        rowOpen(item, null);
+      }}
+      onPointerDown={(e) => {
+        lastPointer.current = e.pointerType || 'mouse';
+        onPointerDown(item.task)(e);
+      }}
+      onContextMenu={(e) => openTaskMenu(item.task, e)}
+      onMenuButton={(e) => openTaskMenu(item.task, e)}
+      onDotsDown={item.isRef ? null : dotsDown(item.task)}
+      onToggleDone={(e) => toggleDone(item.task, e)}
+      onToggleStar={() => dispatch(gtdToggleStar(item.task))}
+      onToggleCheck={(index) =>
+        dispatch(
+          gtdSaveTask(item.task, { notes: toggleCheckboxLine(item.task.description, index) })
+        )
+      }
+      isDragging={!!dragging && dragging.includes(item.task.key)}
+      today={today}
+      showProject={!isProjectView && !(grouped && item.task.project)}
+      hideActions={isLogbook || isTrash || !!item.isRef}
+      reorderSection={item.section}
+      isSelected={sel.includes(item.task.key)}
+      depth={item.depth || 0}
+      parentTitle={parentTitleOf(item.task)}
+      onGoParent={() => goToTask(parentTaskOf(item.task))}
+      notesMode={notesMode}
+    />
+  );
 
   return (
     <div
@@ -2128,13 +2990,13 @@ export default function GtdView() {
             className="gtd-side__area"
             value={area}
             onChange={(e) => selectArea(e.target.value)}
-            title="Área"
+            title="Área (Mayús+número para cambiar)"
             data-testid="gtd-area"
           >
             <option value="*">Todas las áreas</option>
-            {areas.map((a) => (
+            {areas.map((a, i) => (
               <option key={a} value={a}>
-                {a}
+                {i < 9 ? `${a}   ⇧${i + 1}` : a}
               </option>
             ))}
             <option value="-">Sin área</option>
@@ -2146,7 +3008,6 @@ export default function GtdView() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
-              // (2.17) Esc: borra el texto; con el buscador ya vacío, fuera de él y de vuelta a la lista
               if (e.key === 'Escape') {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2157,7 +3018,6 @@ export default function GtdView() {
                   setSideOpen(false);
                 }
               }
-              // (2.17) Tab: salta a la primera tarea de la lista que se ve
               if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 const first = items.find((x) => x.kind === 'task');
                 if (first) {
@@ -2173,6 +3033,53 @@ export default function GtdView() {
           />
         </div>
         {sidebarBlocks()}
+        {sideTags.length > 0 && (
+          <div className="gtd-side__tags" data-testid="gtd-side-tags">
+            <button
+              type="button"
+              className="gtd-side__section gtd-side__section--toggle"
+              onClick={() => {
+                const v = !tagsOpen;
+                setTagsOpen(v);
+                writeLS('eliGtdTagsOpen', v);
+              }}
+              aria-expanded={tagsOpen}
+            >
+              <span>
+                <i className={tagsOpen ? 'fas fa-caret-down' : 'fas fa-caret-right'} /> Etiquetas
+              </span>
+              <span
+                className="gtd-side__add"
+                title="Gestionar etiquetas (g)"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTagManager(true);
+                }}
+              >
+                <i className="fas fa-cog" />
+              </span>
+            </button>
+            {tagsOpen &&
+              sideTags.map(({ tag, n }) => (
+                <button
+                  key={tag}
+                  className={
+                    'gtd-side__item gtd-side__item--tag' +
+                    (view.id === 'tag' && view.tag === tag ? ' is-on' : '')
+                  }
+                  onClick={(e) => {
+                    selectView({ id: 'tag', tag });
+                    afterSideClick(e);
+                  }}
+                  data-testid="gtd-side-tag"
+                >
+                  <i className="fas fa-tag gtd-side__icon" />
+                  <span className="gtd-side__label">{tag}</span>
+                  <span className="gtd-side__count">{n}</span>
+                </button>
+              ))}
+          </div>
+        )}
       </aside>
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
@@ -2190,34 +3097,46 @@ export default function GtdView() {
                 : visible.length}
             </span>
           </h1>
-          {/* (2.16) sin fila «Añadir» (Logbook, Reference, Todos los proyectos), capturar va aquí */}
-          {!showAddRow && (
+          {canCreate && (
             <button
-              className="gtd-main__sync"
-              onClick={() => captureWithTemplate()}
-              title="Capturar con una plantilla (c)"
-              aria-label="Capturar con una plantilla"
-              data-testid="gtd-capture"
+              className="gtd-main__new"
+              onClick={() => openDraft('current')}
+              title="Elemento nuevo (n; Mayús+n arriba)"
+              data-testid="gtd-new"
             >
-              <i className="fas fa-plus-square" />
+              <i className="fas fa-plus" /> <span>Nuevo elemento</span>
             </button>
           )}
-          {canGroup && (
+          {view.id === 'projects' && (
             <button
-              className={'gtd-main__sync gtd-main__group' + (groupByProj ? ' is-on' : '')}
-              onClick={() => {
-                const v = !groupByProj;
-                setGroupByProj(v);
-                writeLS(LS_GROUP, v);
-              }}
-              aria-pressed={groupByProj}
-              title={groupByProj ? 'Ver sin agrupar' : 'Agrupar por proyecto'}
-              data-testid="gtd-group-toggle"
+              className="gtd-main__new"
+              onClick={addProject}
+              title="Proyecto nuevo (p)"
+              data-testid="gtd-new-project"
             >
-              <i className="fas fa-stream" />
+              <i className="fas fa-plus" /> <span>Nuevo proyecto</span>
             </button>
           )}
-          {/* (2.18) el botón Refile solo en la sección Inbox */}
+          {cleanupCount > 0 && !isTrash && (
+            <button
+              className="gtd-main__cleanup"
+              onClick={cleanupNow}
+              title="Limpieza (c): lo hecho pasa al Logbook"
+              data-testid="gtd-cleanup"
+            >
+              <i className="fas fa-broom" /> <span>Limpieza</span>{' '}
+              <span className="gtd-main__badge">{cleanupCount}</span>
+            </button>
+          )}
+          {isTrash && visible.length > 0 && (
+            <button
+              className="gtd-main__cleanup is-danger"
+              onClick={emptyTrash}
+              data-testid="gtd-empty-trash"
+            >
+              <i className="fas fa-trash" /> <span>Vaciar papelera</span>
+            </button>
+          )}
           {view.id === 'inbox' && pendingRefile.length > 0 && (
             <button
               className="gtd-main__sync gtd-main__refile"
@@ -2241,11 +3160,15 @@ export default function GtdView() {
           </button>
           <button
             className="gtd-main__sync"
-            onClick={() => dispatch(gtdRedo())}
-            disabled={!canRedo}
-            title="Rehacer"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setMenu({ x: r.right - 260, y: r.bottom + 4, items: viewMenuItems(), testId: 'gtd-view-menu' });
+            }}
+            title="Opciones de la vista"
+            aria-label="Opciones de la vista"
+            data-testid="gtd-view-menu-button"
           >
-            <i className="fas fa-redo" />
+            <i className="fas fa-ellipsis-h" />
           </button>
         </header>
 
@@ -2325,6 +3248,7 @@ export default function GtdView() {
                       key={r.project.key}
                       className="gtd-overview__row"
                       onClick={() => selectView({ type: 'project', key: r.project.key })}
+                      onContextMenu={(e) => openTaskMenu(r.project, e)}
                       data-testid="gtd-overview-row"
                     >
                       <span className="gtd-overview__title">
@@ -2367,160 +3291,77 @@ export default function GtdView() {
           </div>
         )}
 
-        {showAddRow && (
-          <div className="gtd-add-row">
-            <div className="gtd-add">
-              <i className="fas fa-plus" />
-              <input
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addTask()}
-                placeholder={
-                  view.type === 'project'
-                    ? 'Añadir acción al proyecto'
-                    : view.id === 'inbox'
-                    ? 'Añadir a Inbox'
-                    : `Añadir a ${title}`
+        {/* (3.0) Entrada rápida (Mayús+E la muestra u oculta; e pone el cursor en ella) */}
+        {canCreate && rapidOn && (
+          <div className="gtd-rapid">
+            <i className="fas fa-plus" />
+            <input
+              value={rapidText}
+              onChange={(e) => setRapidText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (e.nativeEvent && e.nativeEvent.isComposing) return;
+                  e.preventDefault();
+                  addRapid(e.shiftKey);
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.blur();
                 }
-                data-testid="gtd-add"
-              />
-            </div>
-            {/* (2.16) plantillas de captura: a la vista, pero discreto */}
-            <button
-              type="button"
-              className="gtd-capture-pill"
-              onClick={() => captureWithTemplate()}
-              title="Capturar con una plantilla (tecla c)"
-              data-testid="gtd-capture"
-            >
-              <i className="fas fa-plus" /> Capturar
-            </button>
+              }}
+              placeholder="Entrada rápida: título #etiqueta #due mañana #star"
+              data-testid="gtd-rapid"
+            />
           </div>
         )}
 
-        {(facets.tags.length > 0 ||
-          facets.energy.length > 0 ||
-          facets.hasEffort ||
-          facets.hasDates) && (
-          <div className="gtd-filters" data-testid="gtd-filters">
-            {/* ORG Mode para Eli: los filtros van plegados tras «Filtrar»; fuera solo se ven los
-                que están activos */}
-            <div className="gtd-filters__bar">
+        {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
+        {hasFacets && view.id !== 'projects' && (
+          <div className="gtd-filterbar" data-testid="gtd-filters">
+            {facets.tags.map((t) => (
               <button
-                className={'gtd-chip gtd-filters__toggle' + (filtersOpen ? ' is-open' : '')}
-                onClick={() => setFiltersOpen(!filtersOpen)}
-                aria-expanded={filtersOpen}
-                data-testid="gtd-filters-toggle"
+                key={t}
+                className={'gtd-chip' + (filters.tags.includes(t) ? ' is-on' : '')}
+                onClick={(e) => filterChip('tag', t, e)}
+                title="Clic: solo esta · Ctrl/⌘+clic: añadir"
               >
-                <i className="fas fa-filter" /> Filtrar
-                {activeFilterCount > 0 && (
-                  <span className="gtd-filters__count">{activeFilterCount}</span>
-                )}
+                {t}
               </button>
-              {!filtersOpen &&
-                filters.tags.map((t) => (
-                  <button key={t} className="gtd-chip is-on" onClick={() => toggleTag(t)}>
-                    {t} ×
-                  </button>
-                ))}
-              {!filtersOpen && filters.energy && (
+            ))}
+            {facets.energy.map((en) => (
+              <button
+                key={'e' + en}
+                className={'gtd-chip gtd-chip--energy' + (filters.energy === en ? ' is-on' : '')}
+                onClick={(e) => filterChip('energy', en, e)}
+              >
+                <i className="fas fa-bolt" /> {en}
+              </button>
+            ))}
+            {facets.hasEffort &&
+              TIME_BUCKETS.map((tb) => (
                 <button
-                  className="gtd-chip gtd-chip--energy is-on"
-                  onClick={() => setFilters((f) => ({ ...f, energy: null }))}
+                  key={tb.id}
+                  className={'gtd-chip gtd-chip--time' + (filters.time === tb.id ? ' is-on' : '')}
+                  onClick={(e) => filterChip('time', tb.id, e)}
                 >
-                  <i className="fas fa-signal" /> {filters.energy} ×
+                  <i className="far fa-clock" /> {tb.label}
                 </button>
-              )}
-              {!filtersOpen && filters.time && (
-                <button
-                  className="gtd-chip gtd-chip--time is-on"
-                  onClick={() => setFilters((f) => ({ ...f, time: null }))}
-                >
-                  <i className="far fa-clock" />{' '}
-                  {(TIME_BUCKETS.find((x) => x.id === filters.time) || {}).label} ×
-                </button>
-              )}
-              {!filtersOpen && filters.dated && (
-                <button
-                  className="gtd-chip is-on"
-                  onClick={() => setFilters((f) => ({ ...f, dated: false }))}
-                >
-                  <i className="far fa-calendar-alt" /> Con fecha ×
-                </button>
-              )}
-              {activeFilterCount > 0 && (
-                <button
-                  className="gtd-chip gtd-chip--clear"
-                  onClick={() => setFilters({ tags: [], energy: null, time: null, dated: false })}
-                >
-                  Quitar filtros
-                </button>
-              )}
-            </div>
-            {filtersOpen && (
-              <div className="gtd-filters__panel" data-testid="gtd-filters-panel">
-                {facets.tags.length > 0 && (
-                  <div className="gtd-filters__group">
-                    <span className="gtd-filters__label">Contexto</span>
-                    {facets.tags.map((t) => (
-                      <button
-                        key={t}
-                        className={'gtd-chip' + (filters.tags.includes(t) ? ' is-on' : '')}
-                        onClick={() => toggleTag(t)}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {facets.energy.length > 0 && (
-                  <div className="gtd-filters__group">
-                    <span className="gtd-filters__label">Energía</span>
-                    {facets.energy.map((e) => (
-                      <button
-                        key={e}
-                        className={
-                          'gtd-chip gtd-chip--energy' + (filters.energy === e ? ' is-on' : '')
-                        }
-                        onClick={() =>
-                          setFilters((f) => ({ ...f, energy: f.energy === e ? null : e }))
-                        }
-                      >
-                        {e}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {facets.hasEffort && (
-                  <div className="gtd-filters__group">
-                    <span className="gtd-filters__label">Tiempo</span>
-                    {TIME_BUCKETS.map((tb) => (
-                      <button
-                        key={tb.id}
-                        className={
-                          'gtd-chip gtd-chip--time' + (filters.time === tb.id ? ' is-on' : '')
-                        }
-                        onClick={() =>
-                          setFilters((f) => ({ ...f, time: f.time === tb.id ? null : tb.id }))
-                        }
-                      >
-                        {tb.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {facets.hasDates && (
-                  <div className="gtd-filters__group">
-                    <span className="gtd-filters__label">Fecha</span>
-                    <button
-                      className={'gtd-chip' + (filters.dated ? ' is-on' : '')}
-                      onClick={() => setFilters((f) => ({ ...f, dated: !f.dated }))}
-                    >
-                      Con fecha
-                    </button>
-                  </div>
-                )}
-              </div>
+              ))}
+            {facets.hasDates && (
+              <button
+                className={'gtd-chip' + (filters.dated ? ' is-on' : '')}
+                onClick={(e) => filterChip('dated', true, e)}
+              >
+                <i className="fas fa-flag" /> Con fecha
+              </button>
+            )}
+            {activeFilterCount > 0 && (
+              <button
+                className="gtd-chip gtd-chip--clear"
+                onClick={() => setFilters({ tags: [], energy: null, time: null, dated: false })}
+              >
+                × Quitar
+              </button>
             )}
           </div>
         )}
@@ -2531,7 +3372,7 @@ export default function GtdView() {
             <input
               value={logText}
               onChange={(e) => setLogText(e.target.value)}
-              placeholder="Buscar en las terminadas…"
+              placeholder="Buscar en el Logbook…"
               data-testid="gtd-log-search"
             />
             {logText && (
@@ -2559,68 +3400,26 @@ export default function GtdView() {
             </button>
           </div>
         )}
-        {isLogbook && (
-          <div className="gtd-archive-bar" data-testid="gtd-archive-bar">
-            <span>
-              {archivable.ok.length === 1
-                ? '1 terminada sin archivar'
-                : `${archivable.ok.length} terminadas sin archivar`}
-              {logSearch ? ' (con esta búsqueda)' : ''}
-              {archivable.blocked.length > 0 && (
-                <span
-                  className="gtd-archive-bar__note"
-                  title="Tienen alguna subtarea sin terminar: no se archivan para no llevársela"
-                >
-                  {' '}
-                  · {archivable.blocked.length} con subtareas abiertas
-                </span>
-              )}
-            </span>
-            <button
-              type="button"
-              className="gtd-btn"
-              disabled={!archivable.ok.length}
-              onClick={() => archiveTasks(archivable.ok)}
-              data-testid="gtd-archive-all"
-            >
-              <i className="fas fa-archive" /> {logSearch ? 'Archivar estas' : 'Archivar todas'}
-            </button>
-          </div>
-        )}
-
-        {isLogbook && (
-          <div className="gtd-archive-bar gtd-attach-bar" data-testid="gtd-attach-bar">
-            <span>
-              <i className="fas fa-paperclip" />{' '}
-              {doneWithAttachments === 0
-                ? 'Adjuntos de terminadas y archivadas'
-                : doneWithAttachments === 1
-                ? '1 terminada con adjuntos'
-                : `${doneWithAttachments} terminadas con adjuntos`}
-            </span>
-            <button
-              type="button"
-              className="gtd-btn"
-              onClick={() => dispatch(eliReviewFinishedAttachments())}
-              data-testid="gtd-review-attachments"
-              title="Ver y borrar los adjuntos de las tareas terminadas, canceladas o archivadas"
-            >
-              <i className="fas fa-search" /> Revisar
-            </button>
-          </div>
-        )}
 
         <div
           className={'gtd-list' + (reorderingKey ? ' is-reordering' : '')}
           style={view.id === 'projects' ? { display: 'none' } : undefined}
           data-reorder-container=""
+          onClick={(e) => {
+            // clic en el hueco de la lista: quita la selección
+            if (e.target === e.currentTarget && Date.now() - lassoAt.current > 400) setSelKey(null);
+          }}
         >
           {loading && items.length === 0 && <div className="gtd-empty">Cargando ficheros…</div>}
           {!loading &&
             items.length === 0 &&
             !(isLogbook && showArchived && archivedTasks.length) && (
               <div className="gtd-empty">
-                {view.id === 'inbox' ? 'Inbox vacío. ¡Bien hecho!' : 'No hay nada aquí.'}
+                {view.id === 'inbox'
+                  ? 'Inbox vacío. ¡Bien hecho!'
+                  : isTrash
+                  ? 'La papelera está vacía.'
+                  : 'No hay nada aquí.'}
               </div>
             )}
           {items.map((item) =>
@@ -2653,6 +3452,7 @@ export default function GtdView() {
                   className={
                     'gtd-section gtd-section--group' +
                     (item.projectKey ? ' is-project' : '') +
+                    (item.section === 'done-group' ? ' is-done-group' : '') +
                     (reorderingKey && dropSection === item.section ? ' is-drop' : '')
                   }
                   data-reorder-slot=""
@@ -2664,9 +3464,13 @@ export default function GtdView() {
                     <button
                       type="button"
                       className="gtd-section__toggle"
-                      onClick={() =>
-                        (item.toggle === 'refs' ? setRefsOpen : setDoneOpen)((o) => !o)
-                      }
+                      onClick={() => {
+                        if (item.toggle === 'doneGroup') {
+                          const v = !doneGroupOpen;
+                          setDoneGroupOpen(v);
+                          writeLS('eliGtdDoneOpen', v);
+                        } else (item.toggle === 'refs' ? setRefsOpen : setDoneOpen)((o) => !o);
+                      }}
                       aria-expanded={!item.collapsed}
                       data-testid={`${item.testId}-toggle`}
                     >
@@ -2688,43 +3492,23 @@ export default function GtdView() {
                     </span>
                   )}
                   <span className="gtd-section__n">{item.count}</span>
+                  {item.section === 'done-group' && (
+                    <button
+                      type="button"
+                      className="gtd-section__action"
+                      onClick={cleanupNow}
+                      title="Limpieza (c): pasar lo hecho al Logbook"
+                      data-testid="gtd-done-cleanup"
+                    >
+                      <i className="fas fa-broom" /> Al Logbook
+                    </button>
+                  )}
                 </div>
               )
             ) : openKey === item.task.key ? (
               <React.Fragment key={item.task.key}>{renderEditor(item.task)}</React.Fragment>
             ) : (
-              <TaskRow
-                key={item.task.key}
-                task={item.task}
-                open={false}
-                onToggleOpen={(e) => {
-                  if (clickSuppressed()) return;
-                  // (2.17) una referencia (encabezado sin estado) se abre en su fichero
-                  if (item.isRef) {
-                    openInFile(item.task, e);
-                    return;
-                  }
-                  // con una tarea nueva a medio crear, primero hay que guardarla o cancelarla
-                  if (newKey && openKey === newKey) {
-                    window.dispatchEvent(new CustomEvent('eli:gtd-attention'));
-                    return;
-                  }
-                  setOpenKey(item.task.key);
-                }}
-                onPointerDown={onPointerDown(item.task)}
-                isDragging={dragging === item.task.key}
-                dispatch={dispatch}
-                today={today}
-                showProject={!isProjectView && !(grouped && item.task.project)}
-                hideActions={isLogbook || !!item.isRef}
-                reorderSection={item.section}
-                onReorderStart={item.reorderable ? startReorder(item.task) : null}
-                isReordering={reorderingKey === item.task.key}
-                isSelected={selKey === item.task.key}
-                depth={item.depth || 0}
-                parentTitle={parentTitleOf(item.task)}
-                onGoParent={() => goToTask(parentTaskOf(item.task))}
-              />
+              renderRow(item)
             )
           )}
           {isLogbook && showArchived && (
@@ -2739,13 +3523,13 @@ export default function GtdView() {
                 <TaskRow
                   key={t.key}
                   task={t}
-                  open={false}
-                  onToggleOpen={(e) => openInFile(t, e)}
+                  onRowClick={() => setSelKey(t.key)}
+                  onRowDoubleClick={(e) => openInFile(t, e)}
                   onPointerDown={() => {}}
-                  dispatch={dispatch}
                   today={today}
                   showProject
                   hideActions
+                  isSelected={sel.includes(t.key)}
                   archivedFrom={t.path}
                 />
               ))}
@@ -2753,6 +3537,38 @@ export default function GtdView() {
           )}
         </div>
       </main>
+      {menu && (
+        <GtdMenu
+          x={menu.x}
+          y={menu.y}
+          items={menu.items}
+          header={menu.header}
+          testId={menu.testId}
+          onClose={() => setMenu(null)}
+        />
+      )}
+      {showTagManager && (
+        <GtdTagManager
+          tasks={tasks}
+          areas={areas}
+          contextTags={contextTags}
+          onClose={() => setShowTagManager(false)}
+          onRenameTag={(from, to) => dispatch(gtdRenameTag(tasks, from, to))}
+          onDeleteTag={(tag) => dispatch(gtdRenameTag(tasks, tag, ''))}
+          onRenameArea={(from, to) => dispatch(gtdRenameArea(tasks, from, to))}
+          onAddDefaultTag={(tag) => {
+            const line = defaultTagsLine();
+            if (!defaultTags().includes(tag)) dispatch(setEliSetting('eliDefaultTagsLine', `${line} ${tag}`));
+          }}
+          onRemoveDefaultTag={(tag) => {
+            const line = defaultTagsLine()
+              .split(/\s+/)
+              .filter((x) => x.replace(/\(.*\)$/, '') !== tag)
+              .join(' ');
+            dispatch(setEliSetting('eliDefaultTagsLine', line));
+          }}
+        />
+      )}
       {showShortcuts && (
         <GtdShortcutsModal
           bindings={gtdBindings}

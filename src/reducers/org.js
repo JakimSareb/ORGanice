@@ -2502,6 +2502,14 @@ const reducer = (state, action) => {
 const rootOrgReducer = (state = Map(), action) => {
   // ORG Mode para Eli: aplicar una acción a otro fichero distinto del abierto (vista GTD).
   // Se cambia el fichero activo solo durante la acción y se restaura después.
+  // (3.0) Varias acciones (en uno o varios ficheros) en un solo paso de Deshacer
+  if (action.type === 'ELI_BATCH') {
+    let next = state;
+    (action.actions || []).forEach((inner) => {
+      next = rootOrgReducer(next, inner);
+    });
+    return next;
+  }
   if (action.type === 'ELI_IN_FILE') {
     if (!action.path || !state.getIn(['files', action.path, 'headers'])) return state;
     const previousPath = state.get('path');

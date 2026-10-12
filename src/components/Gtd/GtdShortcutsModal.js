@@ -6,7 +6,7 @@ import { Map as IMap } from 'immutable';
 
 import { calculateNamedKeybindings, keybindingLabel } from '../../lib/keybindings';
 
-const GROUPS = ['Crear', 'Navegación', 'Áreas', 'Más'];
+const GROUPS = ['Crear', 'Tareas', 'Navegación', 'Áreas', 'Más'];
 const selectCustomKeybindings = (s) => s.base.get('customKeybindings');
 
 // «shift+n» → «Mayús N», «ctrl+k» → «Ctrl K»
@@ -85,34 +85,88 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
               <h3>{g}</h3>
               {bindings
                 .filter((b) => b.group === g)
+                .filter((b) => b.binding)
                 .map((b) => (
                   <div key={b.action} className="gtd-keys__row">
                     <kbd>{prettyBinding(b.binding)}</kbd>
                     <span>{keybindingLabel(b.name)}</span>
                   </div>
                 ))}
+              {g === 'Áreas' && (
+                <div className="gtd-keys__row">
+                  <kbd>Mayús 1…9</kbd>
+                  <span>ir al área 1…9 (el número sale en el selector de áreas)</span>
+                </div>
+              )}
               {g === 'Más' && (
                 <>
                   <div className="gtd-keys__row">
-                    <kbd>G</kbd>
-                    <span>cambiar entre Documentos y GTD</span>
+                    <kbd>Tab</kbd>
+                    <span>al buscador (con una tarea seleccionada: hacerla subtarea)</span>
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>Ctrl Espacio</kbd>
                     <span>paleta de comandos</span>
                   </div>
+                </>
+              )}
+              {g === 'Tareas' && (
+                <>
+                  <div className="gtd-keys__row">
+                    <kbd>Clic</kbd>
+                    <span>seleccionar (Ctrl/⌘ clic: añadir a la selección)</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Doble clic</kbd>
+                    <span>editar (también Intro)</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Mayús Clic</kbd>
+                    <span>elemento nuevo encima de esa tarea</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>⋮⋮ y arrastrar</kbd>
+                    <span>seleccionar varias (lazo)</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Arrastrar</kbd>
+                    <span>mover a una lista o proyecto del menú, o cambiar el orden</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Clic derecho</kbd>
+                    <span>menú (también el ▾ del final de la fila)</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>↑ ↓</kbd>
+                    <span>recorrer la lista (Mayús: ampliar la selección)</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Supr ⌫</kbd>
+                    <span>a la Papelera</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Intro</kbd>
+                    <span>guardar (en el título)</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Mayús Intro</kbd>
+                    <span>guardar desde cualquier campo</span>
+                  </div>
                   <div className="gtd-keys__row">
                     <kbd>Esc</kbd>
-                    <span>cerrar / cancelar</span>
-                  </div>
-                  {/* (2.18) tarea ⇄ subtarea y volver de la tarea madre */}
-                  <div className="gtd-keys__row">
-                    <kbd>Tab</kbd>
-                    <span>hacer subtarea de la de encima (tarea seleccionada)</span>
+                    <span>cancelar / salir</span>
                   </div>
                   <div className="gtd-keys__row">
-                    <kbd>Mayús Tab</kbd>
-                    <span>sacar la subtarea un nivel</span>
+                    <kbd>⌘C Ctrl C</kbd>
+                    <span>copiar la lista (o la selección) como Markdown</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>⌘A Ctrl A</kbd>
+                    <span>seleccionar todas</span>
+                  </div>
+                  <div className="gtd-keys__row">
+                    <kbd>Tab / Mayús Tab</kbd>
+                    <span>hacer subtarea de la de encima / sacarla</span>
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>Alt ←</kbd>
