@@ -1,0 +1,51 @@
+/* ORG Mode para Eli (3.02): tablas Org vistas como tabla */
+.eli-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 4px 0;
+  -webkit-overflow-scrolling: touch;
+}
+.eli-table {
+  border-collapse: collapse;
+  font-size: 0.95em;
+  font-variant-numeric: tabular-nums;
+}
+.eli-table__cell {
+  border: 1px solid var(--base2);
+  padding: 3px 8px;
+  vertical-align: top;
+  white-space: pre-wrap;
+  min-width: 1.5em;
+}
+.eli-table tr.is-head .eli-table__cell {
+  font-weight: 600;
+  background: var(--base2);
+}
+.eli-table__sep td {
+  padding: 0;
+  height: 0;
+  border: 0;
+  border-top: 2px solid var(--base1);
+}
+.eli-table.is-editable .eli-table__cell {
+  cursor: text;
+  touch-action: manipulation;
+}
+.eli-table__cell.is-editing {
+  padding: 0;
+  background: var(--base2);
+}
+.eli-table__input {
+  box-sizing: border-box;
+  min-width: 4em;
+  width: 100%;
+  border: 0;
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+  background: var(--base3);
+  color: var(--base00);
+  font: inherit;
+  /* 16px: así el iPhone no amplía la página al escribir */
+  font-size: 16px;
+  padding: 2px 6px;
+}

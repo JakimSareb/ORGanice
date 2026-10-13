@@ -2389,16 +2389,54 @@
   }
 }
 
-/* (3.01) estrella: al pasar el ratón, sombreada en dorado (solo con ratón; la marcada no cambia) */
+/* (3.02) estrella: al pasar el ratón, SOLO el borde en dorado (sin rellenar; la marcada no cambia) */
 @media (hover: hover) {
   .gtd-star:not(.is-on):hover {
     color: #f2b24a;
     opacity: 1;
   }
   .gtd-star:not(.is-on):hover i {
-    font-weight: 900;
-    opacity: 0.55;
+    font-weight: 400;
   }
+}
+
+/* (3.02) plegar/desplegar subtareas */
+.gtd-fold {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 20px;
+  border: 0;
+  padding: 0;
+  margin: 0 -4px 0 -2px;
+  background: transparent;
+  color: var(--base1);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+  touch-action: manipulation;
+}
+.gtd-fold:hover {
+  color: var(--base00);
+}
+.gtd-fold.is-folded {
+  color: var(--blue);
+}
+@media (pointer: coarse) {
+  .gtd-fold {
+    flex-basis: 26px;
+    width: 26px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 15px;
+    margin: 0 -6px 0 -4px;
+  }
+}
+/* (3.02) dedo: un toque = seleccionar, dos = editar; sin zoom por doble toque de iOS
+   (la fila ya tiene touch-action: pan-y, que también lo evita y deja el deslizamiento) */
+.gtd-task__row button,
+.gtd-task__row label {
+  touch-action: manipulation;
 }
 /* (3.01) icono de notas (botón: ciclo de notas solo en esa fila) */
 .gtd-notes-btn {
@@ -2488,4 +2526,15 @@
 }
 .gtd-rapid__ac .gtd-menu__item.is-active {
   background: var(--base2);
+}
+
+/* (3.02) tablas Org en las notas (fila y editor) */
+.gtd-task__notes .eli-table-wrap {
+  margin: 2px 0 4px;
+}
+.gtd-task__notes .eli-table {
+  font-size: 0.9em;
+}
+.gtd-editor__tables {
+  margin: 6px 0 4px;
 }

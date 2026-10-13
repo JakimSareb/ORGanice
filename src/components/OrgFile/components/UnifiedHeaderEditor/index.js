@@ -18,6 +18,7 @@ import { todoKeywordSetForKeyword, timestampWithId, headerWithId } from '../../.
 import { titleTextHasPriorityA, toggledPriorityAText } from '../../../../lib/eli_priority';
 import { isMobileBrowser } from '../../../../lib/browser_utils';
 import EliFormatBar from '../../../EliFormatBar';
+import { InlineTextarea } from '../EliInlineEdit';
 
 // Header-editing popup types that use the unified editor
 export const UNIFIED_EDITOR_POPUP_TYPES = [
@@ -339,9 +340,59 @@ class UnifiedHeaderEditor extends PureComponent {
 
   // --- Render sub-editors ---
 
+  // (3.02) Edición en el sitio: solo el cuadro de texto, sin marco, donde está el título
+  renderInlineTitle() {
+    const { titleValue } = this.state;
+    const { selectedHeader, editRawValues } = this.props;
+    const kw =
+      !editRawValues && selectedHeader ? selectedHeader.getIn(['titleLine', 'todoKeyword']) : null;
+    return (
+      <div className="title-line__edit-container eli-inline-edit eli-inline-edit--title">
+        {kw ? <span className="todo-keyword eli-inline-edit__keyword">{kw}</span> : null}
+        <InlineTextarea
+          autoFocus
+          data-testid="titleLineInput"
+          ref={this.handleTitleTextareaRef}
+          value={titleValue}
+          onFocus={this.handleTitleTextareaFocus}
+          onChange={this.handleTitleChange}
+          enterKeyHint="done"
+          onKeyDown={(e) => {
+            // Intro guarda y sale (sin partir el título en dos líneas)
+            if (e.key === 'Enter' && !(e.nativeEvent && e.nativeEvent.isComposing)) {
+              e.preventDefault();
+              e.stopPropagation();
+              this.props.getPopupCloseAction('title-editor')(this.state.titleValue);
+            }
+          }}
+          onDone={this.props.onInlineDone}
+        />
+      </div>
+    );
+  }
+
+  renderInlineDescription() {
+    const { descriptionValue } = this.state;
+    return (
+      <div className="header-content__edit-container eli-inline-edit eli-inline-edit--desc">
+        <InlineTextarea
+          autoFocus
+          data-testid="description-textarea"
+          ref={this.handleDescriptionTextareaRef}
+          value={descriptionValue}
+          onChange={this.handleDescriptionChange}
+          onKeyDown={this.handleDescriptionKeyDown}
+          placeholder="Notas"
+          onDone={this.props.onInlineDone}
+        />
+      </div>
+    );
+  }
+
   renderTitleEditor() {
     const { editRawValues, selectedHeader, todoKeywordSets } = this.props;
     const { todoKeywordSet, titleValue } = this.state;
+    if (this.props.inline) return this.renderInlineTitle();
 
     return (
       <>
@@ -436,6 +487,7 @@ class UnifiedHeaderEditor extends PureComponent {
   renderDescriptionEditor() {
     const { editRawValues } = this.props;
     const { descriptionValue, editorDescriptionHeightValue } = this.state;
+    if (this.props.inline) return this.renderInlineDescription();
 
     return (
       <>
@@ -589,6 +641,8 @@ class UnifiedHeaderEditor extends PureComponent {
       onTogglePrepend,
       selectedHeader,
     } = this.props;
+
+    if (this.props.inline) return this.renderSubEditor();
 
     return (
       <div className="unified-header-editor" data-testid="unified-header-editor">

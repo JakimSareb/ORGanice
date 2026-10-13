@@ -16,6 +16,7 @@ import _ from 'lodash';
 
 import TitleLine from '../TitleLine';
 import HeaderContent from '../HeaderContent';
+import { InlineOr } from '../EliInlineEdit';
 
 import { headerWithId } from '../../../../lib/org_utils';
 import { interpolateColors, rgbaObject, rgbaString, readRgbaVariable } from '../../../../lib/color';
@@ -23,6 +24,7 @@ import { getCurrentTimestamp, millisDuration } from '../../../../lib/timestamps'
 import { Map } from 'immutable';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
+import { isDocLocked } from '../../../../lib/eli_doc_lock';
 
 // ORG Mode para Eli: dentro de un cuadro de texto no se desliza ni se arrastra el encabezado
 const eliIsEditableTarget = (el) =>
@@ -118,7 +120,7 @@ class Header extends PureComponent {
 
   handleDragStart(targetElement, dragX) {
     // ORG Mode para Eli: deslizar desactivado en Ajustes
-    if (this.props.shouldDisableActions || this.props.eliNoSwipe) {
+    if (this.props.shouldDisableActions || this.props.eliNoSwipe || isDocLocked()) {
       return;
     }
 
@@ -204,7 +206,10 @@ class Header extends PureComponent {
       target: event.target,
     };
 
-    this.props.onLongPressPointerStart(this.props.header.get('id'), event.clientX, event.clientY);
+    // (3.02) con el candado no se arrastra para reordenar
+    if (!isDocLocked()) {
+      this.props.onLongPressPointerStart(this.props.header.get('id'), event.clientX, event.clientY);
+    }
     this.addGlobalDragHandlers();
   }
 
@@ -237,7 +242,9 @@ class Header extends PureComponent {
       target: event.target,
     };
 
-    this.props.onLongPressPointerStart(this.props.header.get('id'), touch.clientX, touch.clientY);
+    if (!isDocLocked()) {
+      this.props.onLongPressPointerStart(this.props.header.get('id'), touch.clientX, touch.clientY);
+    }
     this.addGlobalDragHandlers();
 
     this.setState({
@@ -314,12 +321,12 @@ class Header extends PureComponent {
   handleHeaderClick(event) {
     const classList = event.target.classList;
     if (classList.contains('header') || classList.contains('header__bullet')) {
-      const { header, hasContent, isSelected, closeSubheadersRecursively } = this.props;
+      const { header, hasContent, closeSubheadersRecursively } = this.props;
 
-      if (hasContent && (!header.get('opened') || isSelected)) {
+      // (3.02) un toque = seleccionar Y plegar/desplegar
+      if (hasContent) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       }
-
       this.props.org.selectHeader(header.get('id'));
     }
   }
@@ -656,28 +663,32 @@ class Header extends PureComponent {
               <div style={{ marginLeft: -16, color }} className="header__bullet">
                 {bulletStyle === 'Fancy' ? '●' : '*'}
               </div>
-              <TitleLine
-                header={header}
-                color={color}
-                hasContent={hasContent}
-                isSelected={isSelected}
-                shouldDisableExplicitWidth={swipedDistance === 0}
-                shouldDisableActions={shouldDisableActions}
-                addition={clockDisplayString}
-                showDeadlineDisplay={showDeadlineDisplay}
-                headerDeadlineMap={headerDeadlineMap}
-                deadlineString={deadlineString}
-                isOverdue={isOverdue}
-              />
+              <InlineOr kind="title" headerId={header.get('id')}>
+                <TitleLine
+                  header={header}
+                  color={color}
+                  hasContent={hasContent}
+                  isSelected={isSelected}
+                  shouldDisableExplicitWidth={swipedDistance === 0}
+                  shouldDisableActions={shouldDisableActions}
+                  addition={clockDisplayString}
+                  showDeadlineDisplay={showDeadlineDisplay}
+                  headerDeadlineMap={headerDeadlineMap}
+                  deadlineString={deadlineString}
+                  isOverdue={isOverdue}
+                />
+              </InlineOr>
 
               {/* (3.01) Las acciones del encabezado seleccionado ya no salen aquí dentro: están en
                   la barra de abajo (EliDocBar, estilo Logseq) */}
 
-              <HeaderContent
-                header={header}
-                headerIndex={headerIndex}
-                shouldDisableActions={shouldDisableActions}
-              />
+              <InlineOr kind="desc" headerId={header.get('id')}>
+                <HeaderContent
+                  header={header}
+                  headerIndex={headerIndex}
+                  shouldDisableActions={shouldDisableActions}
+                />
+              </InlineOr>
             </div>
           );
         }}

@@ -1,3 +1,4 @@
+import EliDocLockButton from './EliDocLockButton';
 import { openRawEditor, openPrintPreview, openMoonPhases, openFavorites } from '../EliTools';
 import { openAcomodadores } from '../EliAcomodadores';
 import { openPalette } from '../../lib/eli_palette';
@@ -758,6 +759,9 @@ class HeaderBar extends PureComponent {
               />
             </>
           )}
+
+          {/* (3.02) candado de Documentos (modo lectura) */}
+          {isAuthenticated && inRealFile && <EliDocLockButton />}
 
           {/* ORG Mode para Eli: sincronizar, en los dos modos */}
           {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (

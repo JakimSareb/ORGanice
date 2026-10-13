@@ -276,3 +276,12 @@
 .eli-mode-fade .entry-container > :not(.header-bar) {
   animation: eli-mode-fade-in 0.18s ease-out;
 }
+
+/* (3.02) candado de Documentos */
+.eli-lock-btn {
+  opacity: 0.55;
+}
+.eli-lock-btn.is-active {
+  opacity: 1;
+  color: var(--orange, #cb4b16);
+}

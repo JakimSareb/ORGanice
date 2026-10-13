@@ -1,5 +1,6 @@
 import { parseFile, resetFileDisplay, setPath } from './org';
 import { STATIC_FILE_PREFIX } from '../lib/org_utils';
+import { isDocLocked, isCaptureActive } from '../lib/eli_doc_lock';
 
 import changelogContent from 'bundle-text:../../changelog.org';
 import sampleContent from 'bundle-text:../../sample.org';
@@ -226,11 +227,27 @@ export const clearModalStack = () => ({
   type: 'CLEAR_MODAL_STACK',
 });
 
-export const activatePopup = (popupType, data) => ({
-  type: 'ACTIVATE_POPUP',
-  popupType,
-  data,
-});
+// (3.02) Con el candado de Documentos puesto, nada entra en edición
+const ELI_EDITING_POPUPS = [
+  'title-editor',
+  'description-editor',
+  'tags-editor',
+  'property-list-editor',
+  'timestamp-editor',
+  'scheduled-editor',
+  'deadline-editor',
+  'note-editor',
+  'table-editor',
+  'refile',
+];
+export const activatePopup = (popupType, data) =>
+  isDocLocked() && !isCaptureActive() && ELI_EDITING_POPUPS.includes(popupType)
+    ? { type: 'ELI_DOC_LOCKED', popupType }
+    : {
+        type: 'ACTIVATE_POPUP',
+        popupType,
+        data,
+      };
 
 export const closePopup = () => ({
   type: 'CLOSE_POPUP',

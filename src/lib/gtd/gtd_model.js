@@ -862,6 +862,8 @@ export const nestSubtasks = (items, skip = null) => {
       const pk = parentKeyOf(i);
       const parent = pk && byKey.get(pk);
       if (parent && !parent.task.isProject && !i.task.isProject) {
+        // (3.02) como subtarea solo sale una cabecera CON palabra de acción
+        if (!i.task.keyword) return;
         if (!children.has(pk)) children.set(pk, []);
         children.get(pk).push(i);
       } else {
@@ -869,8 +871,9 @@ export const nestSubtasks = (items, skip = null) => {
       }
     });
     const emit = (i, depth) => {
-      out.push(depth ? { ...i, depth } : i);
-      (children.get(i.task.key) || []).forEach((c) => emit(c, depth + 1));
+      const kids = children.get(i.task.key) || [];
+      out.push(depth || kids.length ? { ...i, depth, hasKids: kids.length > 0 } : i);
+      kids.forEach((c) => emit(c, depth + 1));
     };
     roots.forEach((r) => emit(r, 0));
     run = [];

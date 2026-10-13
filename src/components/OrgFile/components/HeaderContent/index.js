@@ -15,6 +15,8 @@ import * as baseActions from '../../../../actions/base';
 
 import { eliInsertTodayInactive } from '../../../../lib/timestamps';
 import { createRawDescriptionText } from '../../../../lib/export_org';
+import { tableLinesAt, replaceTableAt } from '../../../../lib/eli_org_table';
+import { isDocLocked, subscribeDocLock } from '../../../../lib/eli_doc_lock';
 
 import AttributedString from '../AttributedString';
 
@@ -40,6 +42,8 @@ class HeaderContent extends PureComponent {
       'handleInsertTimestamp',
       'handlePlanningItemTimestampClick',
       'handlePropertyListEdit',
+      'eliTableLines',
+      'handleEliTableChange',
     ]);
 
     this.state = {
@@ -57,6 +61,43 @@ class HeaderContent extends PureComponent {
 
   componentDidMount() {
     this.storeContainerWidth();
+    // (3.02) candado de Documentos: las tablas pasan a solo lectura
+    this.unsubLock = subscribeDocLock(() => this.forceUpdate());
+  }
+
+  componentWillUnmount() {
+    if (this.unsubLock) this.unsubLock();
+  }
+
+  // (3.02) Posición de una tabla (de primer nivel) entre las tablas de la descripción
+  eliTableOrdinal(tableId) {
+    const parts = this.props.header.get('description');
+    if (!parts) return -1;
+    const tables = parts.filter((p) => p.get('type') === 'table');
+    return tables.findIndex((p) => p.get('id') === tableId);
+  }
+
+  // (3.02) Líneas de la tabla tal como están en el fichero (null si no es de primer nivel)
+  eliTableLines(tableId) {
+    const ord = this.eliTableOrdinal(tableId);
+    if (ord < 0) return null;
+    return tableLinesAt(this.props.header.get('rawDescription') || '', ord);
+  }
+
+  // (3.02) Guardar una tabla editada: se sustituye solo su bloque de líneas en las notas
+  handleEliTableChange(tableId, newLines) {
+    const { header } = this.props;
+    const ord = this.eliTableOrdinal(tableId);
+    if (ord < 0) return;
+    const raw = header.get('rawDescription') || '';
+    const nextRaw = replaceTableAt(raw, ord, newLines);
+    if (nextRaw === raw) return;
+    const full = createRawDescriptionText(
+      header.set('rawDescription', nextRaw),
+      false,
+      this.props.dontIndent
+    );
+    this.props.org.updateHeaderDescription(header.get('id'), full);
   }
 
   componentDidUpdate(prevProps) {
@@ -270,6 +311,9 @@ class HeaderContent extends PureComponent {
                 subPartDataAndHandlers={{
                   onTableSelect: shouldDisableActions ? undefined : this.handleTableSelect,
                   onTableCellEdit: shouldDisableActions ? undefined : this.handleTableCellEdit,
+                  eliTableLines: this.eliTableLines,
+                  onEliTableChange: shouldDisableActions ? undefined : this.handleEliTableChange,
+                  eliLocked: isDocLocked(),
                   onCheckboxClick: this.handleCheckboxClick,
                   onListItemSelect: this.handleListItemSelect,
                   onEnterListTitleEditMode: this.handleEnterListTitleEditMode,

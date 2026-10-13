@@ -3,6 +3,7 @@ import React, { PureComponent, Fragment } from 'react';
 import './stylesheet.css';
 
 import AttributedString from '../../../AttributedString';
+import EliOrgTable from '../../../../../EliOrgTable';
 
 import _ from 'lodash';
 import classNames from 'classnames';
@@ -380,6 +381,31 @@ export default class TablePart extends PureComponent {
     const { table } = this.props;
     const editable = this.canEdit();
     const handlers = this.props.subPartDataAndHandlers || {};
+    // (3.02) Tabla Org de verdad (una línea = una fila), leída del texto del fichero: se edita en
+    // su sitio y al guardar se reescribe alineada, sin tocar #+NAME, #+TBLFM ni los |---|
+    const lines = handlers.eliTableLines ? handlers.eliTableLines(table.get('id')) : null;
+    if (lines) {
+      const canWrite = !!handlers.onEliTableChange && !handlers.shouldDisableActions;
+      return (
+        <EliOrgTable
+          lines={lines}
+          editable={canWrite && !handlers.eliLocked}
+          onChange={(next) => handlers.onEliTableChange(table.get('id'), next)}
+          renderCell={(text) => (
+            <AttributedString
+              parts={fromJS(parseMarkupAndCookies(text, { excludeCookies: true }))}
+              subPartDataAndHandlers={{
+                ...handlers,
+                // las fechas de una celda se leen de nuevo (sin id guardado): no se abren aquí
+                onTimestampClick: undefined,
+                shouldDisableActions: true,
+              }}
+            />
+          )}
+          className="table-part__eli"
+        />
+      );
+    }
     // Sin edición en la celda (p. ej. vistas de solo lectura), tocar la tabla hace lo de siempre
     const legacyClick =
       !editable && handlers.onTableSelect

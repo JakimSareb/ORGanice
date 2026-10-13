@@ -1,4 +1,5 @@
 import { ActionCreators, ActionTypes } from 'redux-undo';
+import { isDocLocked } from '../lib/eli_doc_lock';
 import {
   offerToDeleteAttachments,
   attachmentsOfHeader,
@@ -441,10 +442,11 @@ export const setTodoState = (headerId, newTodoState, logIntoDrawer) => ({
   timestamp: new Date(),
 });
 
-export const enterEditMode = (editModeType) => ({
-  type: 'ENTER_EDIT_MODE',
-  editModeType,
-});
+// (3.02) con el candado de Documentos puesto no se entra en edición
+export const enterEditMode = (editModeType) =>
+  isDocLocked()
+    ? { type: 'ELI_DOC_LOCKED', editModeType }
+    : { type: 'ENTER_EDIT_MODE', editModeType };
 
 export const exitEditMode = () => ({
   type: 'EXIT_EDIT_MODE',
@@ -846,11 +848,14 @@ export const insertPendingCapture = () => async (dispatch, getState) => {
   dispatch(sync({ successMessage: 'Elemento capturado', path: targetPath }));
 };
 
-export const advanceCheckboxState = (listItemId) => ({
-  type: 'ADVANCE_CHECKBOX_STATE',
-  listItemId,
-  dirtying: true,
-});
+export const advanceCheckboxState = (listItemId) =>
+  isDocLocked()
+    ? { type: 'ELI_DOC_LOCKED' }
+    : {
+        type: 'ADVANCE_CHECKBOX_STATE',
+        listItemId,
+        dirtying: true,
+      };
 
 export const setSelectedListItemId = (listItemId) => (dispatch) => {
   dispatch({ type: 'SET_SELECTED_LIST_ITEM_ID', listItemId });

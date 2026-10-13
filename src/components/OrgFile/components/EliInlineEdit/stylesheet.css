@@ -1,0 +1,57 @@
+/* ORG Mode para Eli (3.02): edición en el sitio, sin caja: misma fuente, sin marco */
+.eli-inline-edit {
+  position: relative;
+}
+.eli-inline-edit--title {
+  margin-top: -18px;
+}
+.entry-container--large-font .eli-inline-edit--title {
+  margin-top: -24px;
+}
+.eli-inline-edit--title {
+  display: flex;
+  align-items: flex-start;
+}
+.eli-inline-edit__keyword {
+  flex: none;
+  margin-right: 5px;
+  padding-top: 1px;
+}
+.eli-inline-edit--desc {
+  margin: 2px 0 4px;
+}
+.eli-inline-textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 1.5em;
+  margin: 0;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 0 6px 6px 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--blue) 7%, transparent);
+  box-shadow: inset 2px 0 0 var(--blue);
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+  caret-color: var(--blue);
+}
+/* en el teléfono, 16px como mínimo para que el iPhone no amplíe la página al escribir */
+@media (pointer: coarse) {
+  .eli-inline-textarea {
+    font-size: max(16px, 1em);
+  }
+}
+.eli-inline-edit--desc .eli-inline-textarea {
+  min-height: 3em;
+}
+/* (3.02) tocar dos veces no amplía la página (iOS) */
+.title-line,
+.header__bullet {
+  touch-action: manipulation;
+}

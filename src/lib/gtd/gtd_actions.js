@@ -438,6 +438,58 @@ export const gtdRefileInbox = (tasks) => (dispatch, getState) => {
   return todo.length;
 };
 
+// (3.02) Reordenar arrastrando: colocar la tarea antes o después de otra, aunque esté en otro
+// fichero o bajo otro encabezado (en otro fichero: se pasa allí y se coloca junto a ella, todo en
+// un solo paso de Deshacer). Devuelve false si no se puede (el fichero destino no conoce su estado).
+export const gtdPlaceNextTo = (task, target, position) => (dispatch, getState) => {
+  if (!task || !target || task.key === target.key) return false;
+  const pos = position === 'after' ? 'after' : 'before';
+  if (task.path === target.path) {
+    dispatch(gtdSaveTask(task, { moveNextTo: { targetId: target.id, position: pos } }));
+    return true;
+  }
+  const files = getState().org.present.get('files');
+  if (!files.getIn([task.path, 'headers']) || !files.getIn([target.path, 'headers'])) return false;
+  // el estado de la tarea y el de sus subtareas tienen que existir en el fichero de destino
+  const srcHeaders = files.getIn([task.path, 'headers']);
+  const at = srcHeaders.findIndex((h) => h.get('id') === task.id);
+  if (at < 0) return false;
+  const lvl = srcHeaders.getIn([at, 'nestingLevel']);
+  const kws = [];
+  for (let i = at; i < srcHeaders.size; i++) {
+    if (i > at && srcHeaders.getIn([i, 'nestingLevel']) <= lvl) break;
+    const k = srcHeaders.getIn([i, 'titleLine', 'todoKeyword']);
+    if (k && !kws.includes(k)) kws.push(k);
+  }
+  if (kws.length && missingKeyword(getState, target.path, kws)) return false;
+  dispatch({
+    type: 'ELI_BATCH',
+    actions: [
+      {
+        type: 'REFILE_SUBTREE',
+        sourcePath: task.path,
+        sourceHeaderId: task.id,
+        targetPath: target.path,
+        targetHeaderId: null,
+        dirtying: true,
+      },
+      inFile(target.path, [
+        {
+          type: 'ELI_MOVE_SUBTREE_NEXT_TO',
+          headerId: task.id,
+          targetId: target.id,
+          position: pos,
+          dirtying: true,
+        },
+      ]),
+    ],
+    dirtying: true,
+  });
+  syncFile(dispatch, task.path);
+  syncFile(dispatch, target.path);
+  return true;
+};
+
 // ORG Mode para Eli (2.15): reordenar: poner la tarea antes o después de otra del mismo fichero
 export const gtdMoveNextTo = (task, targetId, position) => (dispatch) =>
   dispatch(gtdSaveTask(task, { moveNextTo: { targetId, position } }));
@@ -772,7 +824,8 @@ export const assignProjectEntries = (tasks, project) => {
       t.project.id === project.id &&
       !t.projRefOwn;
     if (structural) return;
-    const inside = t.path === project.path && t.project && t.project.id === project.id && !t.projectExternal;
+    const inside =
+      t.path === project.path && t.project && t.project.id === project.id && !t.projectExternal;
     entries.push([t, { props: { [PROJECT_LINK_PROPERTY]: inside ? null : link } }]);
   });
   return entries;
@@ -786,6 +839,8 @@ export const gtdAssignProject = (tasks, project) => (dispatch) => {
 export const gtdUnassignProject = (tasks) => (dispatch) =>
   dispatch(
     gtdSaveMany(
-      tasks.filter((t) => t && t.projRefOwn).map((t) => [t, { props: { [PROJECT_LINK_PROPERTY]: null } }])
+      tasks
+        .filter((t) => t && t.projRefOwn)
+        .map((t) => [t, { props: { [PROJECT_LINK_PROPERTY]: null } }])
     )
   );

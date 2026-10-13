@@ -29,6 +29,8 @@ import SearchModal from './components/SearchModal';
 import ExternalLink from '../UI/ExternalLink';
 import Drawer from '../UI/Drawer/';
 import UnifiedHeaderEditor, { UNIFIED_EDITOR_POPUP_TYPES } from './components/UnifiedHeaderEditor';
+import { EliInlineEditContext, NOT_EDITING } from './components/EliInlineEdit';
+import { subscribeDocLock, isDocLocked, setCaptureActive } from '../../lib/eli_doc_lock';
 
 import * as baseActions from '../../actions/base';
 import * as syncBackendActions from '../../actions/sync_backend';
@@ -126,7 +128,7 @@ class OrgFile extends PureComponent {
     if (!this.eliHandlers || event.defaultPrevented) return;
     // (2.15) Escribiendo en una celda de una tabla, ningún atajo del documento (ni con Ctrl/Alt)
     const t = event.target;
-    if (t && t.closest && t.closest('.table-part__cell-input')) return;
+    if (t && t.closest && t.closest('.table-part__cell-input, .eli-table__input')) return;
     const bindings = _.fromPairs(calculateActionedKeybindings(this.props.customKeybindings));
     // Todos los atajos (los de organice y los propios) pasan por aquí: react-hotkeys se quedaba
     // a veces con teclas "pulsadas" y dejaba de responder (p. ej. «d» tras cerrar con Esc)
@@ -138,6 +140,14 @@ class OrgFile extends PureComponent {
   }
 
   componentDidMount() {
+    // (3.02) al poner el candado, lo que se esté escribiendo se guarda y se deja de editar
+    this.eliUnsubLock = subscribeDocLock((locked) => {
+      if (!locked) return;
+      const t = this.props.activePopupType;
+      if (UNIFIED_EDITOR_POPUP_TYPES.includes(t) || t === 'table-editor') {
+        this.handleActivePopupClose();
+      }
+    });
     document.addEventListener('keydown', this.handleEliKeyDown);
     window.addEventListener('blur', releaseStuckModifiers);
     const { staticFile, path } = this.props;
@@ -179,6 +189,8 @@ class OrgFile extends PureComponent {
   }
 
   componentWillUnmount() {
+    if (this.eliUnsubLock) this.eliUnsubLock();
+    setCaptureActive(false);
     document.removeEventListener('keydown', this.handleEliKeyDown);
     window.removeEventListener('blur', releaseStuckModifiers);
     const { staticFile } = this.props;
@@ -204,8 +216,34 @@ class OrgFile extends PureComponent {
   }
 
   componentDidUpdate(prevProps) {
+    setCaptureActive(!!this.state.captureMode);
     this.applyEliPendingNarrow();
     const { headers, pendingCapture, activePopupType, activePopupData } = this.props;
+    // (3.02) Edición en el sitio: si el encabezado no está a la vista (no se ha pintado el
+    // editor), plan B: la caja de edición de siempre
+    const editingKind = ['title-editor', 'description-editor'].includes(activePopupType);
+    // al terminar de editar en el sitio, el foco vuelve al documento (para los atajos: d, Intro…)
+    if (
+      !editingKind &&
+      ['title-editor', 'description-editor'].includes(prevProps.activePopupType) &&
+      this.container &&
+      (!document.activeElement || document.activeElement === document.body)
+    ) {
+      try {
+        this.container.focus({ preventScroll: true });
+      } catch (e) {}
+    }
+    if (!editingKind && this.state.eliInlineFallback) {
+      this.setState({ eliInlineFallback: false });
+    } else if (
+      editingKind &&
+      !this.state.captureMode &&
+      !this.state.eliInlineFallback &&
+      this.container &&
+      !this.container.querySelector('.eli-inline-edit')
+    ) {
+      this.setState({ eliInlineFallback: true });
+    }
     if (!!pendingCapture && !!headers && headers.size > 0) {
       this.props.org.insertPendingCapture();
     }
@@ -860,8 +898,10 @@ class OrgFile extends PureComponent {
     };
   }
 
-  checkPopupAndHeader(callback) {
+  checkPopupAndHeader(callback, { eliEdits = true } = {}) {
     return (event) => {
+      // (3.02) con el candado, los atajos que cambian el documento no hacen nada
+      if (eliEdits && isDocLocked()) return;
       if (
         this.props.selectedHeader &&
         !this.props.activePopupType &&
@@ -1103,13 +1143,84 @@ class OrgFile extends PureComponent {
       return headers.size === 0 && linesBeforeHeadings.size > 0;
     };
 
+    // (3.02) Editor del encabezado: en una ventana (lo de siempre) o en el sitio (inline)
+    const unifiedEditor = (inline) => (
+      <UnifiedHeaderEditor
+        inline={inline}
+        onInlineDone={this.handleActivePopupClose}
+        activePopupType={activePopupType}
+        activePopupData={activePopupData}
+        selectedHeader={
+          this.state.captureMode ? this.state.captureHeader : this.props.selectedHeader
+        }
+        headers={headers}
+        todoKeywordSets={this.props.todoKeywordSets}
+        editRawValues={this.state.editRawValues}
+        dontIndent={this.props.dontIndent}
+        editorDescriptionHeightValue={this.props.editorDescriptionHeightValue}
+        shouldDisableActions={shouldDisableActions}
+        setPopupCloseActionValuesAccessor={setPopupCloseActionValuesAccessor}
+        saveTitle={this.state.captureMode ? this.saveCaptureTitle : this.saveTitle}
+        handleTodoChange={this.handleTodoChange}
+        handleTagsChange={
+          this.state.captureMode ? this.handleCaptureTagsChange : this.handleTagsChange
+        }
+        handlePropertyListItemsChange={
+          this.state.captureMode
+            ? this.handleCapturePropertyListItemsChange
+            : this.handlePropertyListItemsChange
+        }
+        handleTimestampChange={
+          this.state.captureMode ? this.handleCaptureTimestampChange : this.handleTimestampChange
+        }
+        onCreatePlanningItem={this.state.captureMode ? this.handleCaptureCreatePlanningItem : null}
+        onRemovePlanningItem={this.state.captureMode ? this.handleCaptureRemovePlanningItem : null}
+        allTags={allTagsForEditor(headers, tagConfigLines)}
+        declaredTags={declaredTagsFromConfigLines(tagConfigLines)}
+        allOrgProperties={extractAllOrgProperties(headers)}
+        getPopupCloseAction={this.getPopupCloseAction}
+        onSwitch={() => {
+          this.getPopupSwitchAction(activePopupType)(
+            ...(this.state.popupCloseActionValuesAccessor
+              ? this.state.popupCloseActionValuesAccessor()
+              : [])
+          );
+        }}
+        setEditRawValues={(editRawValues) => this.setState({ editRawValues })}
+        restorePreferEditRawValues={() =>
+          this.setState({ editRawValues: this.props.preferEditRawValues })
+        }
+        captureMode={this.state.captureMode}
+        captureTemplate={this.state.captureTemplate}
+        captureShouldPrepend={this.state.captureShouldPrepend}
+        onAddNote={this.state.captureMode ? this.handleCaptureAddNote : null}
+        onCapture={this.handleCaptureFromEditor}
+        onCaptureCancel={this.handleCaptureCancel}
+        onCaptureAccept={this.handleActivePopupClose}
+        onTogglePrepend={() =>
+          this.setState({ captureShouldPrepend: !this.state.captureShouldPrepend })
+        }
+      />
+    );
+    // (3.02) Título y notas se editan en su sitio (sin caja), salvo en una captura
+    const inlineKind =
+      !this.state.captureMode && !this.state.eliInlineFallback && this.props.selectedHeader
+        ? activePopupType === 'title-editor'
+          ? 'title'
+          : activePopupType === 'description-editor'
+          ? 'desc'
+          : null
+        : null;
+    const inlineCtx = inlineKind
+      ? {
+          editing: { kind: inlineKind, headerId: this.props.selectedHeader.get('id') },
+          render: () => unifiedEditor(true),
+        }
+      : NOT_EDITING;
+
     return (
-      <>
-        <div
-          className="org-file-container"
-          tabIndex="-1"
-          ref={this.handleContainerRef}
-        >
+      <EliInlineEditContext.Provider value={inlineCtx}>
+        <div className="org-file-container" tabIndex="-1" ref={this.handleContainerRef}>
           {errorBox}
           {headers.size === 0 ? (
             <div className="org-file__parsing-error-message">
@@ -1172,79 +1283,18 @@ class OrgFile extends PureComponent {
             />
           )}
 
-          {activePopupType ? (
+          {activePopupType && !inlineKind ? (
             <Drawer
               onClose={this.handleActivePopupClose}
               maxSize={this.getPopupMaxSize(activePopupType)}
             >
-              {UNIFIED_EDITOR_POPUP_TYPES.includes(activePopupType) ? (
-                <UnifiedHeaderEditor
-                  activePopupType={activePopupType}
-                  activePopupData={activePopupData}
-                  selectedHeader={
-                    this.state.captureMode ? this.state.captureHeader : this.props.selectedHeader
-                  }
-                  headers={headers}
-                  todoKeywordSets={this.props.todoKeywordSets}
-                  editRawValues={this.state.editRawValues}
-                  dontIndent={this.props.dontIndent}
-                  editorDescriptionHeightValue={this.props.editorDescriptionHeightValue}
-                  shouldDisableActions={shouldDisableActions}
-                  setPopupCloseActionValuesAccessor={setPopupCloseActionValuesAccessor}
-                  saveTitle={this.state.captureMode ? this.saveCaptureTitle : this.saveTitle}
-                  handleTodoChange={this.handleTodoChange}
-                  handleTagsChange={
-                    this.state.captureMode ? this.handleCaptureTagsChange : this.handleTagsChange
-                  }
-                  handlePropertyListItemsChange={
-                    this.state.captureMode
-                      ? this.handleCapturePropertyListItemsChange
-                      : this.handlePropertyListItemsChange
-                  }
-                  handleTimestampChange={
-                    this.state.captureMode
-                      ? this.handleCaptureTimestampChange
-                      : this.handleTimestampChange
-                  }
-                  onCreatePlanningItem={
-                    this.state.captureMode ? this.handleCaptureCreatePlanningItem : null
-                  }
-                  onRemovePlanningItem={
-                    this.state.captureMode ? this.handleCaptureRemovePlanningItem : null
-                  }
-                  allTags={allTagsForEditor(headers, tagConfigLines)}
-                  declaredTags={declaredTagsFromConfigLines(tagConfigLines)}
-                  allOrgProperties={extractAllOrgProperties(headers)}
-                  getPopupCloseAction={this.getPopupCloseAction}
-                  onSwitch={() => {
-                    this.getPopupSwitchAction(activePopupType)(
-                      ...(this.state.popupCloseActionValuesAccessor
-                        ? this.state.popupCloseActionValuesAccessor()
-                        : [])
-                    );
-                  }}
-                  setEditRawValues={(editRawValues) => this.setState({ editRawValues })}
-                  restorePreferEditRawValues={() =>
-                    this.setState({ editRawValues: this.props.preferEditRawValues })
-                  }
-                  captureMode={this.state.captureMode}
-                  captureTemplate={this.state.captureTemplate}
-                  captureShouldPrepend={this.state.captureShouldPrepend}
-                  onAddNote={this.state.captureMode ? this.handleCaptureAddNote : null}
-                  onCapture={this.handleCaptureFromEditor}
-                  onCaptureCancel={this.handleCaptureCancel}
-                  onCaptureAccept={this.handleActivePopupClose}
-                  onTogglePrepend={() =>
-                    this.setState({ captureShouldPrepend: !this.state.captureShouldPrepend })
-                  }
-                />
-              ) : (
-                this.renderActivePopup(setPopupCloseActionValuesAccessor)
-              )}
+              {UNIFIED_EDITOR_POPUP_TYPES.includes(activePopupType)
+                ? unifiedEditor(false)
+                : this.renderActivePopup(setPopupCloseActionValuesAccessor)}
             </Drawer>
           ) : null}
         </div>
-      </>
+      </EliInlineEditContext.Provider>
     );
   }
 }

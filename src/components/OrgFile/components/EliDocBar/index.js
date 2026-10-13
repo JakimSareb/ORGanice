@@ -1,3 +1,9 @@
+// ORG Mode para Eli (3.02): es la ÚNICA barra de Documentos. En el ordenador no se desliza: los
+// iconos que no caben pasan solos al ⋯ (los últimos primero). En el teléfono es una píldora
+// flotante que se desliza a los lados, separada del borde de abajo (en el iPhone, deslizar abajo
+// del todo cambia de app). Los submenús (estado, Aa, fechas, enlace, adjuntos, ⋯) son un menú
+// vertical encima del botón. Con el candado (modo lectura) solo hay acciones que no editan, y
+// mientras se edita una tabla salen sus botones (filas y columnas).
 // ORG Mode para Eli (3.01): barra de acciones de Documentos, al estilo de Logseq. Una sola fila de
 // iconos (desplazable a los lados, siempre en el mismo orden) con todo a dos toques como mucho:
 //   ← → sangrar · ↑ ↓ mover · TODO (cicla; mantener = otro conjunto) · ★ · 📅 Fechas › · # ·
@@ -25,12 +31,24 @@ import { showMessage, askPick } from '../../../../lib/eli_prompt';
 import { getPriority } from '../../../../lib/eli_priority';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
-import { ORG_EMPHASIS, LIST_MARKERS } from '../../../../lib/eli_format';
+import { ORG_EMPHASIS } from '../../../../lib/eli_format';
 import { eliAssignHeaderToProject } from '../../../../lib/gtd/gtd_assign';
-import { openPrintPreview, openUploadDialog, openRawEditor, insertIntoField } from '../../../EliTools';
+import {
+  openPrintPreview,
+  openUploadDialog,
+  openRawEditor,
+  insertIntoField,
+} from '../../../EliTools';
 import { applyEmphasis, applyList } from '../../../EliFormatBar';
 
+import { subscribeActiveTable, getActiveTable } from '../../../../lib/eli_table_focus';
+import { useDocLock, toggleDocLock } from '../../../../lib/eli_doc_lock';
 import './stylesheet.css';
+
+const isCoarse = () =>
+  typeof window !== 'undefined' &&
+  !!window.matchMedia &&
+  window.matchMedia('(pointer: coarse)').matches;
 
 // Campo de texto que se está editando (título, descripción o nota)
 const TITLE_SEL = '.title-line__edit-container textarea';
@@ -74,7 +92,9 @@ const useLongPress = () => {
 export default function EliDocBar({ editing = false, commitEditing = null, hidden = false }) {
   const dispatch = useDispatch();
   const path = useSelector((s) => s.org.present.get('path'));
-  const file = useSelector((s) => s.org.present.getIn(['files', s.org.present.get('path')], IMap()));
+  const file = useSelector((s) =>
+    s.org.present.getIn(['files', s.org.present.get('path')], IMap())
+  );
   const headerId = file.get('selectedHeaderId');
   const headers = file.get('headers');
   const header = headerId && headers ? headers.find((h) => h.get('id') === headerId) : null;
@@ -86,8 +106,24 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   const [sub, setSub] = useState(null); // submenú abierto (id)
   const [bottom, setBottom] = useState(0);
   const press = useLongPress();
+  const locked = useDocLock();
+  const [table, setTable] = useState(getActiveTable());
+  useEffect(() => subscribeActiveTable(setTable), []);
+  const [coarse, setCoarse] = useState(isCoarse());
+  useEffect(() => {
+    if (!window.matchMedia) return undefined;
+    const mq = window.matchMedia('(pointer: coarse)');
+    const on = () => setCoarse(mq.matches);
+    if (mq.addEventListener) mq.addEventListener('change', on);
+    return () => mq.removeEventListener && mq.removeEventListener('change', on);
+  }, []);
+  // ordenador: cuántos botones caben (el resto va al ⋯)
+  const [fit, setFit] = useState(Infinity);
+  const rowRef = useRef(null);
+  const widths = useRef({});
+  const anchorRef = useRef(null);
 
-  const visible = !hidden && !!header;
+  const visible = !hidden && (!!header || !!table);
 
   // Encima del teclado (visualViewport): lo que tapa el teclado por abajo
   useLayoutEffect(() => {
@@ -140,7 +176,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   }, [visible, editing, dispatch]);
 
   // Al cambiar de encabezado o de modo, se cierra el submenú
-  useEffect(() => setSub(null), [headerId, editing]);
+  useEffect(() => setSub(null), [headerId, editing, locked, !!table]);
 
   const id = header ? header.get('id') : null;
   const org = (name, ...args) => dispatch(orgActions[name](...args));
@@ -168,20 +204,39 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
       .some((entry) => !entry.get('end'));
   const attachments = header && path ? attachmentsOfHeader(header, path) : [];
 
-  const nextKeywordSet = () => {
-    if (!todoKeywordSets || todoKeywordSets.size < 2) {
-      org('advanceTodoState', id, logIntoDrawer);
-      return;
-    }
-    const i = todoKeywordSets.findIndex((s) => (s.get('keywords') || []).includes(keyword));
-    const next = todoKeywordSets.get((i + 1) % todoKeywordSets.size);
-    const first = next && next.get('keywords').first();
-    if (first) org('setTodoState', id, first, logIntoDrawer);
+  // (3.02) estados del fichero (#+TODO / #+SEQ_TODO; sin línea, los de Ajustes), por conjunto
+  const todoMenu = () => {
+    const out = [];
+    const seen = new Set();
+    (todoKeywordSets || []).forEach((set, si) => {
+      const done = set.get('completedKeywords') || [];
+      (set.get('keywords') || []).forEach((kw) => {
+        if (!kw || seen.has(kw)) return;
+        seen.add(kw);
+        const isDone = done.includes(kw);
+        out.push({
+          id: `st-${kw}`,
+          label: kw,
+          icon: isDone ? 'far fa-check-square' : 'far fa-square',
+          current: kw === keyword,
+          group: si,
+          done: isDone,
+          onClick: () => kw !== keyword && org('setTodoState', id, kw, logIntoDrawer),
+        });
+      });
+    });
+    out.push({
+      id: 'st-none',
+      label: 'Sin estado',
+      icon: 'fas fa-minus',
+      current: !keyword,
+      group: 'none',
+      onClick: () => keyword && org('setTodoState', id, '', logIntoDrawer),
+    });
+    return out;
   };
   const planning = (type) => {
-    const idx = header
-      .get('planningItems', [])
-      .findIndex((p) => p.get('type') === type);
+    const idx = header.get('planningItems', []).findIndex((p) => p.get('type') === type);
     base('activatePopup', type === 'DEADLINE' ? 'deadline-editor' : 'scheduled-editor', {
       headerId: id,
       planningItemIndex: idx,
@@ -220,7 +275,9 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   };
   const attach = () => {
     const field = activeField();
-    const target = field ? { el: field, start: field.selectionStart, end: field.selectionEnd } : null;
+    const target = field
+      ? { el: field, start: field.selectionStart, end: field.selectionEnd }
+      : null;
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -293,37 +350,85 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   const subs = header
     ? {
         dates: [
-          { id: 'sched', icon: 'far fa-calendar-check', label: 'Programada', onClick: () => planning('SCHEDULED') },
-          { id: 'dead', icon: 'fas fa-calendar-check', label: 'Fecha límite', onClick: () => planning('DEADLINE') },
-          { id: 'insert', icon: 'far fa-calendar-plus', label: 'Insertar fecha', onClick: insertDate, text: true },
-          { id: 'repeat', icon: 'fas fa-redo-alt', label: 'Repetir…', onClick: () => planning('SCHEDULED') },
+          {
+            id: 'sched',
+            icon: 'far fa-calendar-check',
+            label: 'Programada',
+            onClick: () => planning('SCHEDULED'),
+          },
+          {
+            id: 'dead',
+            icon: 'fas fa-calendar-check',
+            label: 'Fecha límite',
+            onClick: () => planning('DEADLINE'),
+          },
+          {
+            id: 'insert',
+            icon: 'far fa-calendar-plus',
+            label: 'Insertar fecha',
+            onClick: insertDate,
+            text: true,
+          },
+          {
+            id: 'repeat',
+            icon: 'fas fa-redo-alt',
+            label: 'Repetir…',
+            onClick: () => planning('SCHEDULED'),
+          },
         ],
         format: [
           ...ORG_EMPHASIS.map((it) => ({
             id: `fmt-${it.id}`,
             icon: it.icon,
-            label: it.title,
+            label:
+              {
+                bold: 'Negrita',
+                italic: 'Cursiva',
+                underline: 'Subrayado',
+                strike: 'Tachado',
+                code: 'Código',
+                verbatim: 'Verbatim',
+              }[it.id] || it.title,
+            hint: `${it.marker}texto${it.marker}`,
             text: true,
             onClick: () => applyEmphasis(fieldNow(), it.marker),
           })),
+          { id: 'fmt-link', icon: 'fas fa-link', label: 'Enlace', text: true, onClick: insertLink },
           ...(isListField(fieldNow())
-            ? LIST_MARKERS.map((it) => ({
-                id: `list-${it.id}`,
-                icon: it.icon,
-                label: it.title,
+            ? [
+                ['dash', 'Lista', 'fas fa-list-ul'],
+                ['num', 'Lista numerada', 'fas fa-list-ol'],
+                ['check', 'Casilla', 'far fa-check-square'],
+              ].map(([kind, label, icon]) => ({
+                id: `list-${kind}`,
+                icon,
+                label,
                 text: true,
-                onClick: () => applyList(fieldNow(), it.id),
+                onClick: () => applyList(fieldNow(), kind),
               }))
             : []),
         ],
+        todo: todoMenu(),
         link: [
-          { id: 'link-insert', icon: 'fas fa-link', label: 'Insertar enlace', onClick: insertLink, text: true },
+          {
+            id: 'link-insert',
+            icon: 'fas fa-link',
+            label: 'Insertar enlace',
+            onClick: insertLink,
+            text: true,
+          },
           ...(path && !path.startsWith('/__')
             ? [{ id: 'link-copy', icon: 'far fa-copy', label: 'Copiar enlace', onClick: copyLink }]
             : []),
         ],
         attach: [
-          { id: 'att-add', icon: 'fas fa-paperclip', label: 'Adjuntar archivo', onClick: attach, text: true },
+          {
+            id: 'att-add',
+            icon: 'fas fa-paperclip',
+            label: 'Adjuntar archivo',
+            onClick: attach,
+            text: true,
+          },
           ...(attachments.length
             ? [
                 {
@@ -342,15 +447,30 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             label: hasClock ? 'Parar reloj' : 'Iniciar reloj',
             onClick: clockInOut,
           },
-          { id: 'clock-total', icon: 'far fa-clock', label: 'Tiempo registrado', onClick: clockReport },
-          { id: 'note', icon: 'far fa-sticky-note', label: 'Nota', onClick: () => base('activatePopup', 'note-editor') },
+          {
+            id: 'clock-total',
+            icon: 'far fa-clock',
+            label: 'Tiempo registrado',
+            onClick: clockReport,
+          },
+          {
+            id: 'note',
+            icon: 'far fa-sticky-note',
+            label: 'Nota',
+            onClick: () => base('activatePopup', 'note-editor'),
+          },
           {
             id: 'props',
             icon: 'fas fa-list',
             label: 'Propiedades',
             onClick: () => base('activatePopup', 'property-list-editor'),
           },
-          { id: 'refile', icon: 'fas fa-file-export', label: 'Mover (refile)', onClick: () => base('activatePopup', 'refile') },
+          {
+            id: 'refile',
+            icon: 'fas fa-file-export',
+            label: 'Mover (refile)',
+            onClick: () => base('activatePopup', 'refile'),
+          },
           ...(path && !path.startsWith('/__')
             ? [
                 {
@@ -361,8 +481,18 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
                 },
               ]
             : []),
-          { id: 'archive', icon: 'fas fa-archive', label: 'Archivar', onClick: () => org('archiveSubtree', id) },
-          { id: 'dup', icon: 'far fa-clone', label: 'Duplicar', onClick: () => org('duplicateHeader', id) },
+          {
+            id: 'archive',
+            icon: 'fas fa-archive',
+            label: 'Archivar',
+            onClick: () => org('archiveSubtree', id),
+          },
+          {
+            id: 'dup',
+            icon: 'far fa-clone',
+            label: 'Duplicar',
+            onClick: () => org('duplicateHeader', id),
+          },
           ...(st.kind === 'active'
             ? [
                 {
@@ -380,8 +510,18 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
               ]
             : []),
           narrowedId === id
-            ? { id: 'widen', icon: 'fas fa-expand', label: 'Ver todo (widen)', onClick: () => org('widenHeader') }
-            : { id: 'narrow', icon: 'fas fa-compress', label: 'Reducir (narrow)', onClick: () => org('narrowHeader', id) },
+            ? {
+                id: 'widen',
+                icon: 'fas fa-expand',
+                label: 'Ver todo (widen)',
+                onClick: () => org('widenHeader'),
+              }
+            : {
+                id: 'narrow',
+                icon: 'fas fa-compress',
+                label: 'Reducir (narrow)',
+                onClick: () => org('narrowHeader', id),
+              },
           {
             id: 'plain',
             icon: 'fas fa-code',
@@ -415,15 +555,24 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           onClick: () => org('moveHeaderRight', id),
           onLong: () => org('moveSubtreeRight', id),
         },
-        { id: 'up', icon: 'fas fa-arrow-up', title: 'Subir', onClick: () => org('moveHeaderUp', id) },
-        { id: 'down', icon: 'fas fa-arrow-down', title: 'Bajar', onClick: () => org('moveHeaderDown', id) },
+        {
+          id: 'up',
+          icon: 'fas fa-arrow-up',
+          title: 'Subir',
+          onClick: () => org('moveHeaderUp', id),
+        },
+        {
+          id: 'down',
+          icon: 'fas fa-arrow-down',
+          title: 'Bajar',
+          onClick: () => org('moveHeaderDown', id),
+        },
         {
           id: 'todo',
           label: keyword || 'TODO',
           dim: !keyword,
-          title: 'Estado: siguiente (mantener: otro conjunto de estados)',
-          onClick: () => org('advanceTodoState', id, logIntoDrawer),
-          onLong: nextKeywordSet,
+          title: 'Estado',
+          sub: 'todo',
         },
         {
           id: 'star',
@@ -433,8 +582,13 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           onClick: () => org('togglePriorityA', id),
         },
         { id: 'dates', icon: 'far fa-calendar-alt', title: 'Fechas', sub: 'dates' },
-        { id: 'tags', icon: 'fas fa-hashtag', title: 'Etiquetas', onClick: () => base('activatePopup', 'tags-editor') },
-        ...(editing ? [{ id: 'format', label: 'Aa', title: 'Formato y listas', sub: 'format' }] : []),
+        {
+          id: 'tags',
+          icon: 'fas fa-hashtag',
+          title: 'Etiquetas',
+          onClick: () => base('activatePopup', 'tags-editor'),
+        },
+        ...(editing ? [{ id: 'format', label: 'Aa', title: 'Formato', sub: 'format' }] : []),
         { id: 'link', icon: 'fas fa-link', title: 'Enlace', sub: 'link' },
         { id: 'attach', icon: 'fas fa-paperclip', title: 'Adjuntos', sub: 'attach' },
         {
@@ -448,7 +602,16 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
         { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
         { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
         ...(editing
-          ? [{ id: 'kbd', icon: 'fas fa-keyboard', badge: '↓', title: 'Ocultar el teclado', onClick: hideKeyboard, text: true }]
+          ? [
+              {
+                id: 'kbd',
+                icon: 'fas fa-keyboard',
+                badge: '↓',
+                title: 'Ocultar el teclado',
+                onClick: hideKeyboard,
+                text: true,
+              },
+            ]
           : []),
       ]
     : [];
@@ -495,15 +658,213 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     return () => document.removeEventListener('input', onInput, true);
   }, [editing]);
 
+  // (3.02) Con el candado (modo lectura): solo acciones que no editan
+  const lockedMain = header
+    ? [
+        ...(path && !path.startsWith('/__')
+          ? [{ id: 'link-copy', icon: 'far fa-copy', title: 'Copiar enlace', onClick: copyLink }]
+          : []),
+        narrowedId === id
+          ? {
+              id: 'widen',
+              icon: 'fas fa-expand',
+              title: 'Ver todo (widen)',
+              onClick: () => org('widenHeader'),
+            }
+          : {
+              id: 'narrow',
+              icon: 'fas fa-compress',
+              title: 'Reducir (narrow)',
+              onClick: () => org('narrowHeader', id),
+            },
+        {
+          id: 'clock-total',
+          icon: 'far fa-clock',
+          title: 'Tiempo registrado',
+          onClick: clockReport,
+        },
+        { id: 'mail', icon: 'fas fa-share', title: 'Correo', onClick: share },
+        { id: 'pdf', icon: 'fas fa-file-pdf', title: 'PDF', onClick: () => openPrintPreview(id) },
+        {
+          id: 'unlock',
+          icon: 'fas fa-lock',
+          on: true,
+          title: 'Quitar el candado (volver a editar)',
+          onClick: toggleDocLock,
+        },
+      ]
+    : [];
+  // (3.02) Editando una celda de tabla: filas y columnas
+  const tableMain = table
+    ? [
+        {
+          id: 'tbl-row-add',
+          icon: 'fas fa-plus',
+          badge: '═',
+          title: 'Añadir fila debajo',
+          onClick: () => table.addRow(),
+          text: true,
+        },
+        {
+          id: 'tbl-row-del',
+          icon: 'fas fa-minus',
+          badge: '═',
+          title: 'Borrar fila',
+          onClick: () => table.delRow(),
+          text: true,
+        },
+        {
+          id: 'tbl-col-add',
+          icon: 'fas fa-plus',
+          badge: '║',
+          title: 'Añadir columna a la derecha',
+          onClick: () => table.addCol(),
+          text: true,
+        },
+        {
+          id: 'tbl-col-del',
+          icon: 'fas fa-minus',
+          badge: '║',
+          title: 'Borrar columna',
+          onClick: () => table.delCol(),
+          text: true,
+        },
+        {
+          id: 'tbl-row-up',
+          icon: 'fas fa-arrow-up',
+          title: 'Subir fila (Alt+↑)',
+          onClick: () => table.moveRow(-1),
+          text: true,
+        },
+        {
+          id: 'tbl-row-down',
+          icon: 'fas fa-arrow-down',
+          title: 'Bajar fila (Alt+↓)',
+          onClick: () => table.moveRow(1),
+          text: true,
+        },
+        {
+          id: 'tbl-col-left',
+          icon: 'fas fa-arrow-left',
+          title: 'Columna a la izquierda (Alt+←)',
+          onClick: () => table.moveCol(-1),
+          text: true,
+        },
+        {
+          id: 'tbl-col-right',
+          icon: 'fas fa-arrow-right',
+          title: 'Columna a la derecha (Alt+→)',
+          onClick: () => table.moveCol(1),
+          text: true,
+        },
+        {
+          id: 'tbl-done',
+          icon: 'fas fa-check',
+          title: 'Terminar (guardar la tabla)',
+          onClick: () => table.done(),
+          text: true,
+        },
+      ]
+    : [];
+  const rowItems = table ? tableMain : locked ? lockedMain : main;
+  const mode = table ? 'table' : locked ? 'locked' : 'main';
+
+  // Ordenador: medir y mandar al ⋯ lo que no cabe (el ⋯ siempre se queda)
+  const canOverflow = !coarse && mode === 'main';
+  const ids = rowItems.map((b) => b.id).join(',');
+  useLayoutEffect(() => {
+    if (!canOverflow) {
+      if (fit !== Infinity) setFit(Infinity);
+      return undefined;
+    }
+    const row = rowRef.current;
+    if (!row) return undefined;
+    const measure = () => {
+      Array.from(row.children).forEach((el) => {
+        const bid = el.getAttribute('data-bid');
+        if (bid) widths.current[bid] = el.offsetWidth + 2;
+      });
+      // ancho disponible (no el de la barra: ésta se encoge a lo que lleva dentro)
+      const avail = Math.min(window.innerWidth - 24, 900) - 24;
+      const list = latestItems.current;
+      const moreW = widths.current.more || 44;
+      let used = moreW;
+      let n = 0;
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].id === 'more') {
+          n++;
+          continue;
+        }
+        const w = widths.current[list[i].id] || 44;
+        if (used + w > avail) break;
+        used += w;
+        n++;
+      }
+      const all = list.length;
+      const next = n >= all ? Infinity : n;
+      setFit((cur) => (cur === next ? cur : next));
+    };
+    measure();
+    // al cambiar el tamaño de la ventana (ResizeObserver sobre la página)
+    let ro = null;
+    if (window.ResizeObserver) {
+      ro = new window.ResizeObserver(() => measure());
+      ro.observe(document.documentElement);
+    } else {
+      window.addEventListener('resize', measure);
+    }
+    return () => {
+      if (ro) ro.disconnect();
+      else window.removeEventListener('resize', measure);
+    };
+  }, [canOverflow, ids, visible]); // eslint-disable-line
+  const latestItems = useRef(rowItems);
+  latestItems.current = rowItems;
+
+  // Menú abierto: se cierra al tocar fuera o con Esc
+  useEffect(() => {
+    if (!sub) return undefined;
+    const onDown = (e) => {
+      const t = e.target;
+      if (t && t.closest && t.closest('.eli-docbar-menu, .eli-docbar__btn.is-open')) return;
+      setSub(null);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault();
+        e.stopPropagation();
+        setSub(null);
+      }
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [sub]);
+
   if (!visible) return null;
 
   const keep = (e) => e.preventDefault(); // no quitar el foco (ni el teclado) al editar
+  const shown =
+    canOverflow && fit !== Infinity
+      ? rowItems.filter((b, i) => i < fit || b.id === 'more')
+      : rowItems;
+  const overflow =
+    canOverflow && fit !== Infinity ? rowItems.filter((b, i) => i >= fit && b.id !== 'more') : [];
+
+  const openSub = (subId, el) => {
+    anchorRef.current = el || null;
+    setSub((cur) => (cur === subId ? null : subId));
+  };
+
   const renderButton = (b) => {
     const handlers = b.sub
       ? {
           onClick: (e) => {
             e.stopPropagation();
-            setSub(b.sub);
+            openSub(b.sub, e.currentTarget);
           },
         }
       : press(run(b.onClick, { text: !!b.text }), b.onLong ? run(b.onLong) : null);
@@ -515,12 +876,16 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           'eli-docbar__btn' +
           (b.on ? ' is-on' : '') +
           (b.dim ? ' is-dim' : '') +
-          (b.label ? ' has-label' : '')
+          (b.label ? ' has-label' : '') +
+          (b.sub && sub === b.sub ? ' is-open' : '')
         }
         title={b.title}
         aria-label={b.title}
+        aria-haspopup={b.sub ? 'menu' : undefined}
+        aria-expanded={b.sub ? sub === b.sub : undefined}
         disabled={b.disabled}
         onMouseDown={keep}
+        data-bid={b.id}
         data-testid={`eli-docbar-${b.id}`}
         {...handlers}
       >
@@ -531,49 +896,106 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     );
   };
 
-  const subItems = sub ? subs[sub] || [] : null;
-  return (
+  // Submenú: lista vertical encima del botón (lo del ⋯ incluye lo que no cabe en la fila)
+  let menuItems = sub ? subs[sub] || [] : null;
+  if (sub === 'more' && overflow.length) {
+    menuItems = [
+      ...overflow.map((b) => ({
+        id: b.id,
+        icon: b.icon || (b.id === 'format' ? 'fas fa-font' : 'far fa-circle'),
+        label: b.title,
+        disabled: b.disabled,
+        openSub: b.sub || null,
+        onClick: b.onClick,
+        text: b.text,
+      })),
+      { id: 'sep-overflow', sep: true },
+      ...menuItems,
+    ];
+  }
+  const menuStyle = () => {
+    const el = anchorRef.current;
+    if (!el || !el.getBoundingClientRect) return {};
+    const r = el.getBoundingClientRect();
+    const w = Math.min(280, window.innerWidth - 16);
+    const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8));
+    return { left, width: w, bottom: window.innerHeight - r.top + 8 };
+  };
+  const renderMenu = () => (
     <div
-      className={'eli-docbar' + (editing ? ' is-editing' : '')}
-      style={{ bottom }}
-      data-testid="eli-docbar"
+      className="eli-docbar-menu"
+      role="menu"
+      style={menuStyle()}
+      data-testid={`eli-docbar-sub-${sub}`}
       onMouseDown={keep}
-      onPointerDownCapture={editing ? keep : undefined}
       onClick={(e) => e.stopPropagation()}
     >
-      {subItems ? (
-        <div className="eli-docbar__row eli-docbar__row--sub" data-testid={`eli-docbar-sub-${sub}`}>
-          <button
-            type="button"
-            className="eli-docbar__btn eli-docbar__back"
-            onMouseDown={keep}
-            onClick={(e) => {
-              e.stopPropagation();
-              setSub(null);
-            }}
-            title="Volver"
-            aria-label="Volver"
-            data-testid="eli-docbar-back"
-          >
-            <i className="fas fa-chevron-left" />
-          </button>
-          {subItems.map((c) => (
+      {menuItems.map((c, i) => {
+        if (c.sep) return <div key={c.id} className="eli-docbar-menu__sep" role="separator" />;
+        const prev = menuItems[i - 1];
+        const groupBreak = sub === 'todo' && prev && !prev.sep && prev.group !== c.group;
+        return (
+          <React.Fragment key={c.id}>
+            {groupBreak && <div className="eli-docbar-menu__sep" role="separator" />}
             <button
-              key={c.id}
               type="button"
-              className={'eli-docbar__chip' + (c.danger ? ' is-danger' : '')}
+              role="menuitem"
+              className={
+                'eli-docbar-menu__item' +
+                (c.danger ? ' is-danger' : '') +
+                (c.current ? ' is-current' : '') +
+                (c.done ? ' is-done' : '')
+              }
+              disabled={c.disabled}
               onMouseDown={keep}
-              onClick={run(c.onClick, { text: !!c.text })}
+              onClick={
+                c.openSub
+                  ? (e) => {
+                      e.stopPropagation();
+                      setSub(c.openSub);
+                    }
+                  : run(c.onClick, { text: !!c.text })
+              }
               data-testid={`eli-docbar-${c.id}`}
             >
-              <i className={c.icon} /> <span>{c.label}</span>
+              <i className={c.icon} />
+              <span className="eli-docbar-menu__label">{c.label}</span>
+              {c.hint && <span className="eli-docbar-menu__hint">{c.hint}</span>}
+              {c.current && <i className="fas fa-check eli-docbar-menu__mark" />}
+              {c.openSub && <i className="fas fa-chevron-right eli-docbar-menu__mark" />}
             </button>
-          ))}
-        </div>
-      ) : (
-        <div className="eli-docbar__row">{main.map(renderButton)}</div>
-      )}
+          </React.Fragment>
+        );
+      })}
     </div>
+  );
+
+  return (
+    <>
+      {menuItems && renderMenu()}
+      <div
+        className={
+          'eli-docbar' +
+          (editing ? ' is-editing' : '') +
+          (coarse ? ' is-touch' : ' is-desk') +
+          (bottom ? ' has-keyboard' : '') +
+          ` is-${mode}`
+        }
+        style={bottom ? { bottom: bottom + 6 } : undefined}
+        data-testid="eli-docbar"
+        onMouseDown={keep}
+        onPointerDownCapture={editing || table ? keep : undefined}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className={'eli-docbar__row' + (canOverflow ? ' is-fit' : '')}
+          ref={rowRef}
+          data-testid={`eli-docbar-row-${mode}`}
+        >
+          {shown.map(renderButton)}
+        </div>
+      </div>
+    </>
   );
 }
 

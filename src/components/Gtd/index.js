@@ -49,6 +49,7 @@ import {
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
+  gtdPlaceNextTo,
   gtdToggleStar,
   gtdAddTask,
   createdLine,
@@ -88,6 +89,7 @@ import {
 import GtdMenu from './GtdMenu';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
+import EliOrgTable from '../EliOrgTable';
 import { toggleCheckboxLine } from './TaskEditor';
 import { openDocuments } from '../../lib/eli_mode';
 import { ActionCreators } from 'redux-undo';
@@ -189,6 +191,11 @@ const writeLS = (k, v) => {
   } catch (e) {}
 };
 
+// (3.02) plegado de subtareas, recordado: por :ID: si lo tiene; si no, fichero + título
+const LS_FOLDED = 'eliGtdFolded';
+const foldIdOf = (t) =>
+  t.orgId ? `id:${String(t.orgId).toLowerCase()}` : `${t.path}::${t.title || ''}`;
+
 const norm = (p) => (!p ? null : p.startsWith('/') ? p : `/${p}`);
 
 // Ficheros que usa la vista: los de la agenda, los de arranque y los de las plantillas de captura
@@ -262,6 +269,24 @@ export const notesLinesOf = (text) => {
   return out;
 };
 
+// (3.02) Líneas de notas seguidas que forman una tabla Org → un solo elemento { table: [líneas] }
+const groupNoteTables = (lines) => {
+  const out = [];
+  lines.forEach((l) => {
+    const isRow = !l.check && /^\s*\|/.test(l.text || '');
+    const last = out[out.length - 1];
+    if (isRow && last && last.table && last.lastIndex === l.index - 1) {
+      last.table.push(l.text);
+      last.lastIndex = l.index;
+    } else if (isRow) {
+      out.push({ index: l.index, lastIndex: l.index, table: [l.text] });
+    } else {
+      out.push(l);
+    }
+  });
+  return out;
+};
+
 function TaskRow({
   task,
   today,
@@ -290,11 +315,15 @@ function TaskRow({
   showEffort = true,
   wrapTitle = true,
   badProject = false,
+  hasKids = false,
+  folded = false,
+  onToggleFold = null,
 }) {
   const due = dueInfo(task.deadline, today);
   const isProjectRow = !!task.isProject;
   const notes = notesMode !== 'none' && !isProjectRow ? notesLinesOf(task.description) : [];
-  const shownNotes = notesMode === 'partial' ? notes.filter((l) => l.text.trim()).slice(0, 2) : notes;
+  const shownNotes =
+    notesMode === 'partial' ? notes.filter((l) => l.text.trim()).slice(0, 2) : notes;
   return (
     <div
       className={
@@ -330,6 +359,25 @@ function TaskRow({
             <i className="fas fa-grip-vertical" />
           </span>
         )}
+        {/* (3.02) plegar/desplegar las subtareas */}
+        {hasKids && onToggleFold ? (
+          <button
+            type="button"
+            className={'gtd-fold' + (folded ? ' is-folded' : '')}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFold();
+            }}
+            onDoubleClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            title={folded ? 'Desplegar subtareas' : 'Plegar subtareas'}
+            aria-label={folded ? 'Desplegar subtareas' : 'Plegar subtareas'}
+            aria-expanded={!folded}
+            data-testid="gtd-fold"
+          >
+            <i className={folded ? 'fas fa-caret-right' : 'fas fa-caret-down'} />
+          </button>
+        ) : null}
         {!hideActions && (
           <>
             {isProjectRow ? (
@@ -456,8 +504,11 @@ function TaskRow({
               className={'gtd-task__notes' + (notesMode === 'partial' ? ' is-partial' : '')}
               data-testid="gtd-task-notes"
             >
-              {shownNotes.map((l) =>
-                l.check && notesMode === 'full' ? (
+              {groupNoteTables(shownNotes).map((l) =>
+                l.table ? (
+                  // (3.02) tablas Org vistas como tabla (solo lectura)
+                  <EliOrgTable key={`t${l.index}`} lines={l.table} testId="gtd-note-table" />
+                ) : l.check && notesMode === 'full' ? (
                   <label
                     key={l.index}
                     className={'gtd-task__note-check' + (l.checked ? ' is-done' : '')}
@@ -662,7 +713,9 @@ export default function GtdView() {
     // (3.01) por defecto «Acciones siguientes secuenciales» (en Next, la 1.ª de cada proyecto)
     readLS('eliGtdGroup', readLS(LS_GROUP, false) === true ? 'project' : 'sequential')
   );
-  const [doneGroupOpen, setDoneGroupOpen] = useState(() => readLS('eliGtdDoneOpen', true) !== false);
+  const [doneGroupOpen, setDoneGroupOpen] = useState(
+    () => readLS('eliGtdDoneOpen', true) !== false
+  );
   const [tagsOpen, setTagsOpen] = useState(() => readLS('eliGtdTagsOpen', true) !== false);
   // (3.01) etiquetas cuya vista muestra también las cabeceras sin tarea (gestor de etiquetas)
   const [headingTags, setHeadingTags] = useState(() => readLS('eliGtdTagHeadings', []));
@@ -873,13 +926,7 @@ export default function GtdView() {
   );
   const onReorderDropRef = useRef(null);
   const rowDragRef = useRef({});
-  const {
-    onPointerDown,
-    dragging,
-    dropTarget,
-    dropSection,
-    clickSuppressed,
-  } = useRowDrag({
+  const { onPointerDown, dragging, dropTarget, dropSection, clickSuppressed } = useRowDrag({
     onDrop: (list, id) => rowDragRef.current.onDrop(list, id),
     onReorder: (task, pos) => onReorderDropRef.current && onReorderDropRef.current(task, pos),
     onStart: () => rowDragRef.current.onStart(),
@@ -890,10 +937,13 @@ export default function GtdView() {
   });
   const reorderingKey = dragging && dragging.length === 1 ? dragging[0] : null;
   // (3.0) grupo «Hecho» de esta lista (terminadas aún sin pasar al Logbook)
-  const doneList = useMemo(
-    () => doneForView(tasks, view, { area, text, ...filters }),
-    [tasks, view, area, text, filters]
-  );
+  const doneList = useMemo(() => doneForView(tasks, view, { area, text, ...filters }), [
+    tasks,
+    view,
+    area,
+    text,
+    filters,
+  ]);
   const cleanupCount = useMemo(() => doneWaitingCleanup(tasks).length, [tasks]);
   const tagHeadings = useMemo(() => {
     if (view.id !== 'tag' || !headingTags.includes(view.tag)) return [];
@@ -934,6 +984,16 @@ export default function GtdView() {
   // (2.16) La tarea abierta en el editor no desaparece de la lista aunque deje de encajar en
   // ella (p. ej. al terminarla desde el editor): se queda en su sitio hasta cerrarla
   const stickyRef = useRef(null);
+  const [folded, setFolded] = useState(() => new Set(readLS(LS_FOLDED, [])));
+  const toggleFold = (task) =>
+    setFolded((s) => {
+      const id = foldIdOf(task);
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      writeLS(LS_FOLDED, [...n].slice(-500));
+      return n;
+    });
   const tasksByKey = useMemo(() => new Map(tasks.map((t) => [t.key, t])), [tasks]);
   // (2.18) Tarea madre (con estado, no proyecto) de una subtarea
   const parentTaskOf = (t) => {
@@ -947,7 +1007,28 @@ export default function GtdView() {
   const items = useMemo(() => {
     // (2.17) subtareas bajo su tarea (no en las vistas ordenadas por fecha)
     const byDate = ['focus', 'scheduled', 'deadline', 'logbook', 'trash', 'tag'].includes(view.id);
-    const out = nestSubtasks(buildItems(), byDate ? () => true : null);
+    const nested = nestSubtasks(buildItems(), byDate ? () => true : null);
+    // (3.02) subtareas plegadas (▸): se ocultan los descendientes de las tareas plegadas
+    const out = [];
+    let hideBelow = null;
+    nested.forEach((i) => {
+      if (i.kind !== 'task') {
+        hideBelow = null;
+        out.push(i);
+        return;
+      }
+      const d = i.depth || 0;
+      if (hideBelow !== null) {
+        if (d > hideBelow) return;
+        hideBelow = null;
+      }
+      if (i.hasKids && folded.has(foldIdOf(i.task))) {
+        out.push({ ...i, folded: true });
+        hideBelow = d;
+      } else {
+        out.push(i);
+      }
+    });
     if (openKey) {
       const at = out.findIndex((i) => i.kind === 'task' && i.task.key === openKey);
       if (at >= 0) {
@@ -968,7 +1049,7 @@ export default function GtdView() {
     }
     return out;
     // eslint-disable-next-line
-  }, [buildDeps, openKey, tasks, view.id]);
+  }, [buildDeps, openKey, tasks, view.id, folded]);
   function buildItems() {
     const out = buildMainItems();
     // (3.01) Vista de una etiqueta con «cabeceras sin tarea»: los encabezados sin estado que la
@@ -988,7 +1069,13 @@ export default function GtdView() {
       });
       if (headingsOpen) {
         tagHeadings.forEach((t) =>
-          out.push({ kind: 'task', task: t, section: 'tag-headings', reorderable: false, isRef: true })
+          out.push({
+            kind: 'task',
+            task: t,
+            section: 'tag-headings',
+            reorderable: false,
+            isRef: true,
+          })
         );
       }
     }
@@ -1020,8 +1107,7 @@ export default function GtdView() {
     if (groupedByStatus) {
       // (3.0) Focus agrupado por estado (como Nirvana): Next, Todo, Waiting…, y los proyectos
       const order = ['inbox', 'next', 'later', 'waiting', 'scheduled', 'someday', 'reference'];
-      const label = (id) =>
-        id === 'project' ? 'Proyectos' : sectionLabel(id, gtdCfg) || id;
+      const label = (id) => (id === 'project' ? 'Proyectos' : sectionLabel(id, gtdCfg) || id);
       const groups = {};
       rendered.forEach((t) => {
         const l = t.isProject ? 'project' : listOf(t, today) || 'later';
@@ -1567,7 +1653,10 @@ export default function GtdView() {
       if (p) {
         const orgId = p.orgId || newOrgId();
         if (!p.orgId) dispatch(gtdSaveTask(p, { props: { ID: orgId } }));
-        rest.props = { ...(rest.props || {}), [PROJECT_LINK_PROPERTY]: projectLinkFor(orgId, p.title) };
+        rest.props = {
+          ...(rest.props || {}),
+          [PROJECT_LINK_PROPERTY]: projectLinkFor(orgId, p.title),
+        };
       }
     }
     // (2.17) las notas escritas en el editor no pisan la fecha de creación
@@ -1590,7 +1679,9 @@ export default function GtdView() {
       const b = d.before || d.after;
       if (t && b.path === target.path && (b.parentId || null) === (target.parentId || null)) {
         dispatch(
-          gtdSaveTask(t, { moveNextTo: { targetId: b.id, position: d.before ? 'before' : 'after' } })
+          gtdSaveTask(t, {
+            moveNextTo: { targetId: b.id, position: d.before ? 'before' : 'after' },
+          })
         );
       }
     }
@@ -1777,11 +1868,20 @@ export default function GtdView() {
     // (3.01) proyecto con tareas de otros ficheros asignadas: qué hacer con ellas
     const extra = [];
     for (const p of todo.filter((t) => t.isProject)) {
-      const ext = tasks.filter((t) => t.projectExternal && t.projRefOwn && t.project && t.project.id === p.id && t.project.path === p.path);
+      const ext = tasks.filter(
+        (t) =>
+          t.projectExternal &&
+          t.projRefOwn &&
+          t.project &&
+          t.project.id === p.id &&
+          t.project.path === p.path
+      );
       if (!ext.length) continue;
       const what = await askChoice({
         title: 'Tareas de otros ficheros',
-        message: `Hay ${ext.length === 1 ? '1 tarea' : `${ext.length} tareas`} de otros ficheros asignadas a «${p.title}».`,
+        message: `Hay ${
+          ext.length === 1 ? '1 tarea' : `${ext.length} tareas`
+        } de otros ficheros asignadas a «${p.title}».`,
         choices: [
           { id: 'unassign', label: 'Quitar la asignación' },
           { id: 'move', label: 'Pasar a otro proyecto…' },
@@ -1789,7 +1889,8 @@ export default function GtdView() {
         ],
       });
       if (!what) return;
-      if (what === 'unassign') ext.forEach((t) => extra.push([t, { props: { [PROJECT_LINK_PROPERTY]: null } }]));
+      if (what === 'unassign')
+        ext.forEach((t) => extra.push([t, { props: { [PROJECT_LINK_PROPERTY]: null } }]));
       if (what === 'move') {
         const other = await pickProject(allProjects, {
           title: 'Pasar a otro proyecto',
@@ -1852,7 +1953,9 @@ export default function GtdView() {
     const [kind, ...rest] = dropId.split(':');
     const id = rest.join(':');
     const untrash = (t, changes) =>
-      t.ownTrash ? { ...changes, tags: (changes.tags || t.ownTags).filter((x) => !hasTrashTag([x])) } : changes;
+      t.ownTrash
+        ? { ...changes, tags: (changes.tags || t.ownTags).filter((x) => !hasTrashTag([x])) }
+        : changes;
     if (kind === 'project' || kind === 'loose') {
       const project = kind === 'project' ? allProjects.find((p) => p.key === id) : null;
       if (kind === 'project' && !project) return;
@@ -1992,6 +2095,50 @@ export default function GtdView() {
       if (Object.keys(changes).length) dispatch(gtdSaveTask(task, changes));
       return;
     }
+    // (3.02) Vista ordenada por fecha (d): al mover, se avisa y se pasa a orden manual
+    const toManual = () => {
+      if (!sortDue || ['scheduled', 'deadline', 'logbook'].includes(view.id)) return;
+      toggleSortDue();
+      dispatch(
+        setDisappearingLoadingMessage(
+          'Orden por fecha quitado: ahora la lista va en orden manual',
+          3500
+        )
+      );
+    };
+    // (3.02) Junto a la tarea de al lado aunque sea de otro fichero o encabezado, si no cambia
+    // nada más (proyecto, tarea madre, área ni etiquetas heredadas): así no rompe proyectos ni Next
+    const inherited = (t) =>
+      (t.tags || [])
+        .filter((x) => !(t.ownTags || []).includes(x))
+        .map((x) => x.toLowerCase())
+        .sort()
+        .join(':');
+    const safeNeighbor = (t) =>
+      t &&
+      !t.project &&
+      !t.isDone &&
+      !t.isProject &&
+      !task.project &&
+      !task.isProject &&
+      !t.projRef &&
+      !task.projRef &&
+      !!t.isInboxFile === !!task.isInboxFile &&
+      !parentTaskOf(t) &&
+      !parentTaskOf(task) &&
+      (t.area || '') === (task.area || '') &&
+      inherited(t) === inherited(task);
+    const nb = pos.beforeKey && rowTasks.find((t) => t.key === pos.beforeKey);
+    const na = pos.afterKey && rowTasks.find((t) => t.key === pos.afterKey);
+    const sameParent = (t) =>
+      t && t.path === task.path && (t.parentId || null) === (task.parentId || null);
+    if (!(sameParent(nb) || sameParent(na))) {
+      const near = safeNeighbor(nb) ? [nb, 'before'] : safeNeighbor(na) ? [na, 'after'] : null;
+      if (near) {
+        if (dispatch(gtdPlaceNextTo(task, near[0], near[1]))) toManual();
+        return;
+      }
+    }
     // Listas: solo las tareas sueltas, y solo entre sueltas de su mismo fichero
     let idx = pos.beforeKey
       ? keyIndex(pos.beforeKey)
@@ -2025,12 +2172,14 @@ export default function GtdView() {
     if (!move) {
       showMessage(
         'No se puede colocar ahí',
-        'Las tareas sueltas se ordenan entre las demás tareas sueltas de su mismo fichero y de ' +
-          'su mismo encabezado.'
+        'Ahí cambiaría de proyecto, de tarea madre, de área o de etiquetas heredadas, así que no ' +
+          'se ha movido. Las tareas se pueden ordenar entre las tareas sueltas de su mismo fichero ' +
+          'y encabezado, o junto a otra que tenga lo mismo.'
       );
       return;
     }
     dispatch(gtdSaveTask(task, { moveNextTo: move }));
+    toManual();
   };
 
   // (3.0) Arrastrar filas (ver useRowDrag): qué se arrastra, si se puede reordenar y deslizar
@@ -2182,7 +2331,9 @@ export default function GtdView() {
   const newBelowCursor = () => {
     const cur =
       selKey &&
-      items.find((i) => i.kind === 'task' && !i.isRef && i.task.key === selKey && i.section !== 'done-group');
+      items.find(
+        (i) => i.kind === 'task' && !i.isRef && i.task.key === selKey && i.section !== 'done-group'
+      );
     if (cur && !cur.task.isProject && !cur.task.isDone) openDraft('current', { after: cur.task });
     else openDraft('current', { top: true });
   };
@@ -2334,7 +2485,11 @@ export default function GtdView() {
         e.preventDefault();
         const chosen = sel.length ? rows.filter((r) => sel.includes(r.key)) : null;
         if (chosen && chosen.length) copyOrg(chosen, null);
-        else copyOrg(rows.filter((r) => !r.isDone), title);
+        else
+          copyOrg(
+            rows.filter((r) => !r.isDone),
+            title
+          );
         return true;
       }
       if (k === 'a' && rows.length) {
@@ -2556,15 +2711,26 @@ export default function GtdView() {
     anchorRef.current = task.key;
     if (e.ctrlKey || e.metaKey) {
       setCursor(task.key);
-      setSel((cur) => (cur.includes(task.key) ? cur.filter((k) => k !== task.key) : [...cur, task.key]));
+      setSel((cur) =>
+        cur.includes(task.key) ? cur.filter((k) => k !== task.key) : [...cur, task.key]
+      );
       return;
     }
+    // (3.02) con el dedo, igual que con el ratón: un toque = seleccionar, dos toques = editar
+    // (doble toque propio: iOS no siempre manda dblclick)
     if (lastPointer.current !== 'mouse') {
-      rowOpen(item, e);
-      return;
+      const now = Date.now();
+      const prev = lastTapRef.current;
+      lastTapRef.current = { key: task.key, at: now };
+      if (prev && prev.key === task.key && now - prev.at < 400) {
+        lastTapRef.current = null;
+        rowOpen(item, e);
+        return;
+      }
     }
     setSelKey(task.key);
   };
+  const lastTapRef = useRef(null);
   const rowOpen = (item, e) => {
     const task = item.task;
     if (item.isRef) {
@@ -2641,7 +2807,8 @@ export default function GtdView() {
     const list = inSel && sel.length > 1 ? selectedTasks() : [task];
     if (!inSel) setSelKey(task.key);
     else setCursor(task.key);
-    const rect = e && e.currentTarget && e.type === 'click' ? e.currentTarget.getBoundingClientRect() : null;
+    const rect =
+      e && e.currentTarget && e.type === 'click' ? e.currentTarget.getBoundingClientRect() : null;
     setMenu({
       x: rect ? rect.right - 220 : e.clientX,
       y: rect ? rect.bottom + 2 : e.clientY,
@@ -2663,7 +2830,13 @@ export default function GtdView() {
     });
     if (!project) return;
     const n = dispatch(gtdAssignProject(list, project));
-    if (n) dispatch(setDisappearingLoadingMessage(`Asignada${list.length === 1 ? '' : 's'} a «${project.title}»`, 2000));
+    if (n)
+      dispatch(
+        setDisappearingLoadingMessage(
+          `Asignada${list.length === 1 ? '' : 's'} a «${project.title}»`,
+          2000
+        )
+      );
   };
   const taskMenuItems = (list) => {
     const single = list.length === 1 ? list[0] : null;
@@ -2736,7 +2909,9 @@ export default function GtdView() {
         icon: 'fas fa-plus',
         onClick: async () => {
           const tag = await askText({ title: 'Etiqueta nueva', placeholder: '@contexto' });
-          const name = String(tag || '').trim().replace(/[\s:]+/g, '');
+          const name = String(tag || '')
+            .trim()
+            .replace(/[\s:]+/g, '');
           if (name) save((t) => ({ tags: Array.from(new Set([...(t.ownTags || []), name])) }))();
         },
       },
@@ -2760,7 +2935,11 @@ export default function GtdView() {
             {
               label: 'Fuera del proyecto (suelta)',
               icon: 'far fa-circle',
-              onClick: () => applyDrop(list.filter((t) => t.project), 'loose:'),
+              onClick: () =>
+                applyDrop(
+                  list.filter((t) => t.project),
+                  'loose:'
+                ),
             },
           ]
         : []),
@@ -2810,8 +2989,7 @@ export default function GtdView() {
             {
               label: allDone ? 'Reabrir' : 'Completar',
               icon: allDone ? 'fas fa-undo' : 'fas fa-check',
-              onClick: () =>
-                dispatch(gtdSaveMany(list.map((t) => [t, doneChangesFor(t)]))),
+              onClick: () => dispatch(gtdSaveMany(list.map((t) => [t, doneChangesFor(t)]))),
             },
           ]),
       { sep: true },
@@ -2820,7 +2998,9 @@ export default function GtdView() {
         ? []
         : [
             {
-              label: list.some((t) => t.badProject) ? 'Asignar a otro proyecto…' : 'Asignar a proyecto…',
+              label: list.some((t) => t.badProject)
+                ? 'Asignar a otro proyecto…'
+                : 'Asignar a proyecto…',
               icon: 'fas fa-link',
               onClick: () => assignToProject(list),
               testId: 'gtd-menu-assign',
@@ -2869,7 +3049,13 @@ export default function GtdView() {
         },
       },
       ...(list.some((t) => t.deadline)
-        ? [{ label: 'Quitar la fecha límite', icon: 'fas fa-times', onClick: save(() => ({ deadline: null })) }]
+        ? [
+            {
+              label: 'Quitar la fecha límite',
+              icon: 'fas fa-times',
+              onClick: save(() => ({ deadline: null })),
+            },
+          ]
         : []),
       { sep: true },
       {
@@ -2939,7 +3125,13 @@ export default function GtdView() {
         testId: 'gtd-opt-sequential',
       },
       ...(view.id === 'focus' || view.id === 'tag'
-        ? [{ label: 'Agrupar por estado', checked: groupMode === 'status', onClick: () => setGroup('status') }]
+        ? [
+            {
+              label: 'Agrupar por estado',
+              checked: groupMode === 'status',
+              onClick: () => setGroup('status'),
+            },
+          ]
         : []),
       { sep: true },
       { heading: 'Detalles' },
@@ -2955,7 +3147,11 @@ export default function GtdView() {
         checked: notesMode !== 'none',
         sub: [
           { label: 'Completas', checked: notesMode === 'full', onClick: () => setNotes('full') },
-          { label: 'Parciales', checked: notesMode === 'partial', onClick: () => setNotes('partial') },
+          {
+            label: 'Parciales',
+            checked: notesMode === 'partial',
+            onClick: () => setNotes('partial'),
+          },
           { label: 'Ocultas', checked: notesMode === 'none', onClick: () => setNotes('none') },
         ],
         testId: 'gtd-opt-notes',
@@ -2974,9 +3170,19 @@ export default function GtdView() {
       },
     ];
     out.push(
-      { label: 'Opciones de vista', icon: 'fas fa-sliders-h', sub: opts, testId: 'gtd-view-options' },
+      {
+        label: 'Opciones de vista',
+        icon: 'fas fa-sliders-h',
+        sub: opts,
+        testId: 'gtd-view-options',
+      },
       { label: 'Ordenar por fecha límite', checked: sortDue, hint: 'd', onClick: toggleSortDue },
-      { label: 'Entrada rápida', checked: rapidOn, hint: 'Mayús E', onClick: () => toggleRapid(false) },
+      {
+        label: 'Entrada rápida',
+        checked: rapidOn,
+        hint: 'Mayús E',
+        onClick: () => toggleRapid(false),
+      },
       {
         label: 'Pasar las hechas al Logbook al momento',
         checked: autoCollectOn,
@@ -2989,9 +3195,28 @@ export default function GtdView() {
         },
       },
       { sep: true },
-      { label: 'Capturar con una plantilla', icon: 'fas fa-plus-square', hint: 't', onClick: captureWithTemplate },
-      { label: 'Gestionar etiquetas', icon: 'fas fa-tags', hint: 'g', onClick: () => setShowTagManager(true) },
-      { label: 'Copiar la lista como ORG Mode', icon: 'far fa-clipboard', hint: '⌘C', onClick: () => copyOrg(items.filter((i) => i.kind === 'task' && !i.task.isDone).map((i) => i.task), title) }
+      {
+        label: 'Capturar con una plantilla',
+        icon: 'fas fa-plus-square',
+        hint: 't',
+        onClick: captureWithTemplate,
+      },
+      {
+        label: 'Gestionar etiquetas',
+        icon: 'fas fa-tags',
+        hint: 'g',
+        onClick: () => setShowTagManager(true),
+      },
+      {
+        label: 'Copiar la lista como ORG Mode',
+        icon: 'far fa-clipboard',
+        hint: '⌘C',
+        onClick: () =>
+          copyOrg(
+            items.filter((i) => i.kind === 'task' && !i.task.isDone).map((i) => i.task),
+            title
+          ),
+      }
     );
     if (view.id === 'logbook') {
       out.push(
@@ -3012,8 +3237,18 @@ export default function GtdView() {
     }
     out.push(
       { sep: true },
-      { label: 'Atajos de teclado', icon: 'far fa-keyboard', hint: 'k', onClick: () => setShowShortcuts(true) },
-      { label: 'Agenda', icon: 'fas fa-calendar-alt', hint: 'a', onClick: () => setShowAgenda(true) },
+      {
+        label: 'Atajos de teclado',
+        icon: 'far fa-keyboard',
+        hint: 'k',
+        onClick: () => setShowShortcuts(true),
+      },
+      {
+        label: 'Agenda',
+        icon: 'fas fa-calendar-alt',
+        hint: 'a',
+        onClick: () => setShowAgenda(true),
+      },
       { label: 'Sincronizar', icon: 'fas fa-sync-alt', hint: 'r', onClick: syncAll }
     );
     return out;
@@ -3335,7 +3570,8 @@ export default function GtdView() {
     setFilters((f) => {
       const empty = { ...EMPTY_FILTERS };
       if (kind === 'tag') {
-        if (f.notTags.includes(value)) return { ...f, notTags: f.notTags.filter((x) => x !== value) };
+        if (f.notTags.includes(value))
+          return { ...f, notTags: f.notTags.filter((x) => x !== value) };
         if (f.tags.includes(value)) {
           if (add) return { ...f, tags: f.tags.filter((x) => x !== value) };
           return { ...f, tags: f.tags.filter((x) => x !== value), notTags: [...f.notTags, value] };
@@ -3387,6 +3623,8 @@ export default function GtdView() {
       onRowClick={rowClick(item)}
       onRowDoubleClick={() => {
         if (clickSuppressed()) return;
+        // (3.02) con el dedo ya lo hace el doble toque propio
+        if (lastPointer.current !== 'mouse') return;
         rowOpen(item, null);
       }}
       onPointerDown={(e) => {
@@ -3410,6 +3648,9 @@ export default function GtdView() {
       reorderSection={item.section}
       isSelected={sel.includes(item.task.key)}
       depth={item.depth || 0}
+      hasKids={!!item.hasKids}
+      folded={!!item.folded}
+      onToggleFold={() => toggleFold(item.task)}
       parentTitle={parentTitleOf(item.task)}
       onGoParent={() => goToTask(parentTaskOf(item.task))}
       notesMode={notesOverride[item.task.key] || notesMode}
@@ -3611,7 +3852,12 @@ export default function GtdView() {
             className="gtd-main__sync"
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
-              setMenu({ x: r.right - 260, y: r.bottom + 4, items: viewMenuItems(), testId: 'gtd-view-menu' });
+              setMenu({
+                x: r.right - 260,
+                y: r.bottom + 4,
+                items: viewMenuItems(),
+                testId: 'gtd-view-menu',
+              });
             }}
             title="Opciones de la vista"
             aria-label="Opciones de la vista"
@@ -3759,7 +4005,9 @@ export default function GtdView() {
                 const open = acList.length > 0;
                 if (open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
                   e.preventDefault();
-                  setAcIndex((i) => (i + (e.key === 'ArrowDown' ? 1 : -1) + acList.length) % acList.length);
+                  setAcIndex(
+                    (i) => (i + (e.key === 'ArrowDown' ? 1 : -1) + acList.length) % acList.length
+                  );
                   return;
                 }
                 if (open && (e.key === 'Tab' || e.key === 'Enter') && !e.shiftKey) {
@@ -4077,7 +4325,8 @@ export default function GtdView() {
           onRenameArea={(from, to) => dispatch(gtdRenameArea(tasks, from, to))}
           onAddDefaultTag={(tag) => {
             const line = defaultTagsLine();
-            if (!defaultTags().includes(tag)) dispatch(setEliSetting('eliDefaultTagsLine', `${line} ${tag}`));
+            if (!defaultTags().includes(tag))
+              dispatch(setEliSetting('eliDefaultTagsLine', `${line} ${tag}`));
           }}
           headingTags={headingTags}
           onToggleHeadings={(tag) => {

@@ -3,6 +3,22 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.02 (octubre de 2026)
+** Vista GTD
+- *Plegar subtareas*: ▾/▸ a la izquierda de una tarea con subtareas; se recuerda.
+- Como subtareas solo salen las que tienen *palabra de acción*.
+- La ★ al pasar el ratón: solo el borde dorado (sin rellenar).
+- En el móvil, *un toque selecciona y dos toques editan* (como con el ratón).
+- *Arrastrar para ordenar* también junto a tareas de otro fichero o encabezado, si no cambia de proyecto, tarea madre, área ni etiquetas; con la lista ordenada por fecha, pasa a orden manual.
+- Las *tablas* de las notas se ven como tablas.
+** Documentos
+- *Un toque* selecciona y abre o cierra; *dos toques* editan el título *en su sitio* (sin ventana). Las notas (Ctrl+d) también.
+- *Candado* (arriba): modo solo lectura, recordado.
+- *Una sola barra*: píldora flotante separada del borde en el teléfono; en el ordenador sin desplazamiento (lo que no cabe, al ⋯). Los submenús se abren en vertical encima del botón.
+- *TODO* abre un menú con los estados del fichero y «Sin estado».
+- *Aa*: negrita, cursiva, subrayado, tachado, código, verbatim, enlace y listas.
+- *Tablas como en Logseq*: se ven como tabla y se editan en la celda (Tab, Intro, Alt+flechas); la barra trae filas y columnas. Al guardar se alinean como org-table-align, sin tocar #+NAME, #+TBLFM ni |---|.
+
 * 3.01 (octubre de 2026)
 La 3.0 queda como punto de partida estable.
 ** Vista GTD

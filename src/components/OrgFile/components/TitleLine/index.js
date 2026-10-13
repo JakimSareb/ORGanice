@@ -16,6 +16,7 @@ import { createIsTodoKeywordInDoneState } from '../../../../lib/org_utils';
 import { generateTitleLine } from '../../../../lib/export_org';
 import AttributedString from '../AttributedString';
 import { attachmentCountOfHeader } from '../../../../lib/eli_attachments';
+import { isDocLocked } from '../../../../lib/eli_doc_lock';
 
 class TitleLine extends PureComponent {
   constructor(props) {
@@ -62,26 +63,36 @@ class TitleLine extends PureComponent {
 
     if (!!onClick) {
       onClick();
-    } else if (
-      // (3.01) estilo Logseq: tocar un encabezado lo selecciona (sale la barra de abajo) y
-      // tocarlo otra vez ya seleccionado edita el título (plegar/desplegar: el punto •)
-      isSelected &&
-      !this.props.shouldDisableActions &&
-      !(
-        event &&
-        event.target &&
-        event.target.closest &&
-        event.target.closest('a, button, input, .timestamp, .todo-keyword, .eli-attach-indicator')
-      )
-    ) {
-      this.props.base.activatePopup('title-editor');
-    } else {
-      if (hasContent && (!header.get('opened') || isSelected)) {
+      return;
+    }
+    // (3.02) Un toque / clic = seleccionar Y plegar/desplegar; dos toques / doble clic = editar
+    // el título en su sitio (con el candado puesto, no). Sustituye a lo de la 3.01 (tocar el ya
+    // seleccionado = editar).
+    const onInner =
+      event &&
+      event.target &&
+      event.target.closest &&
+      event.target.closest('a, button, input, .timestamp, .todo-keyword, .eli-attach-indicator');
+    const now = Date.now();
+    const prev = this.lastTap;
+    this.lastTap = { at: now };
+    const isDouble = isSelected && prev && now - prev.at < 380;
+    if (isDouble) {
+      this.lastTap = null;
+      // el primer toque plegó/desplegó: se deja como estaba
+      if (prev.toggled) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       }
-
-      this.props.org.selectHeader(header.get('id'));
+      if (!this.props.shouldDisableActions && !onInner && !isDocLocked()) {
+        this.props.base.activatePopup('title-editor');
+      }
+      return;
     }
+    if (hasContent && !onInner) {
+      this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
+      this.lastTap.toggled = true;
+    }
+    this.props.org.selectHeader(header.get('id'));
   }
 
   handleTodoClick(event) {
@@ -93,7 +104,7 @@ class TitleLine extends PureComponent {
     } else {
       this.props.org.selectHeader(header.get('id'));
 
-      if (shouldTapTodoToAdvance) {
+      if (shouldTapTodoToAdvance && !isDocLocked()) {
         this.props.org.advanceTodoState(null, setShouldLogIntoDrawer);
       }
     }

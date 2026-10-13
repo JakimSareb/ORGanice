@@ -416,6 +416,9 @@ const updateHeaderTitle = (state, action) => {
 const updateHeaderDescription = (state, action) => {
   const headers = state.get('headers');
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
+  // (3.02) si el encabezado ya no existe (fichero vuelto a leer, deshecho…), no se toca nada:
+  // con -1, Immutable cambiaría el ÚLTIMO encabezado
+  if (headerIndex < 0) return state;
 
   return state.updateIn(['headers', headerIndex], (header) =>
     _updateHeaderFromDescription(header, action.newRawDescription)

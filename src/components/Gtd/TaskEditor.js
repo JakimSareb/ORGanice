@@ -6,6 +6,8 @@ import ScheduleField from './ScheduleField';
 import { fileLinkTarget } from '../../lib/eli_media';
 import { removeLinksToTarget, fileTargetsInText } from '../../lib/eli_attachments';
 import EliMedia from '../OrgFile/components/EliMedia';
+import EliOrgTable from '../EliOrgTable';
+import { tableBlocks, tableLinesAt, replaceTableAt } from '../../lib/eli_org_table';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -703,6 +705,21 @@ export default function TaskEditor({
           data-eli-orgpath={task.path}
           data-testid="gtd-editor-notes"
         />
+        {/* (3.02) tablas Org de las notas, vistas como tabla (se pueden editar en su sitio) */}
+        {!encrypted && tableBlocks(notes).length > 0 && (
+          <div className="gtd-editor__tables" data-testid="gtd-editor-tables">
+            {tableBlocks(notes).map((b, i) => (
+              <EliOrgTable
+                key={i}
+                lines={tableLinesAt(notes, i)}
+                editable
+                commitOnPointerDown
+                onChange={(next) => setNotes((n) => replaceTableAt(n, i, next))}
+                testId="gtd-editor-table"
+              />
+            ))}
+          </div>
+        )}
         {checkboxes.length > 0 && (
           <div className="gtd-checklist" data-testid="gtd-checklist">
             {checkboxes.map((c) => (

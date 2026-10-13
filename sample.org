@@ -14,36 +14,36 @@ Empieza tocando el encabezado «Lo básico» de aquí abajo.
 
 * Lo básico
 ** Abrir, cerrar y seleccionar
-- Toca un encabezado para seleccionarlo (y abrirlo, si está cerrado). Los que tienen «...» al final esconden contenido. Al seleccionarlo aparece *abajo de la pantalla* la barra de acciones (ver la sección siguiente).
-- Tócalo *otra vez* (ya seleccionado) para editar su título. Para abrirlo o cerrarlo, toca el punto (•) de la izquierda.
+- *Un toque* (o un clic) en un encabezado lo selecciona *y* lo abre o lo cierra. Los que tienen «...» al final esconden contenido. Al seleccionarlo aparece *abajo* la barra de acciones (ver la sección siguiente).
+- *Dos toques* (o doble clic) editan el título *en su sitio*, sin ventana: escribes donde está el texto. Intro, Esc o tocar fuera guardan.
+- *El candado* (arriba, junto a sincronizar): con él puesto el documento es de *solo lectura*; puedes tocar, abrir, cerrar y moverte, pero nada se edita sin querer. Se recuerda en este aparato.
 - Para quitar la selección (y la barra), toca en un hueco fuera de los encabezados, o el nombre del fichero en la barra superior.
 - Con el teclado: ↑ y ↓ recorren los encabezados; Intro abre o cierra el seleccionado.
 
 ** La barra de acciones (estilo Logseq)
-Selecciona este encabezado: abajo sale una sola fila de iconos, siempre en el mismo orden (si no caben, se desliza a los lados). Todo está a uno o dos toques. Mientras editas el título o la descripción, la misma barra sube encima del teclado.
+Selecciona este encabezado: abajo sale *una sola barra* flotante, siempre en el mismo orden. En el teléfono es una píldora separada del borde (se desliza a los lados); en el ordenador no se desliza: lo que no cabe pasa al ⋯. Mientras editas el título o la descripción, la misma barra sube encima del teclado. Con el candado puesto solo lleva acciones que no editan (copiar enlace, narrow, tiempo, correo, PDF, quitar el candado); mientras escribes en una tabla, lleva sus botones (filas y columnas).
 
 | Icono          | Qué hace                                                                                                      |
 |----------------+---------------------------------------------------------------------------------------------------------------|
 | ← →            | Sangrar hacia fuera o hacia dentro (solo el encabezado; mantenlo pulsado: con sus subencabezados)             |
 | ↑ ↓            | Subir o bajar el encabezado (con sus subencabezados)                                                           |
-| TODO           | Cambia el estado (NEXT → TODO → … → DONE); mantenlo pulsado para pasar a otro conjunto de estados             |
+| TODO           | Menú con los estados del fichero (de su línea #+TODO, por conjuntos) y «Sin estado»; el actual va marcado      |
 | ★              | Pone o quita la prioridad [#A]                                                                                 |
 | 📅 Fechas      | Programada (SCHEDULED), fecha límite (DEADLINE), insertar la fecha de hoy y repetir                            |
 | #              | Etiquetas                                                                                                      |
-| Aa             | Solo editando: formato (negrita, cursiva…) y marcadores de lista                                               |
+| Aa             | Solo editando: negrita, cursiva, subrayado, tachado, código, verbatim, enlace y listas                         |
 | 🔗 Enlace      | Insertar un enlace o copiar el enlace a este encabezado                                                        |
 | 📎             | Adjuntar un archivo o borrar adjuntos                                                                          |
 | ＋             | Encabezado nuevo debajo (mantenlo pulsado para duplicar el actual)                                             |
 | ⋯              | Reloj, tiempo registrado, nota, propiedades, mover (refile), *asignar a proyecto*, archivar, duplicar, hecha o cancelada, reducir (narrow) o ver todo, texto plano, correo, PDF y borrar |
 | ↶ ↷            | Deshacer y rehacer                                                                                             |
 | ⌨↓             | Solo editando: oculta el teclado                                                                               |
-Los submenús (Fechas, Aa, Enlace, 📎, ⋯) cambian la barra por una fila de botones con su nombre; *‹* vuelve. Mientras escribes en el título o la descripción, *«/»* (al principio o tras un espacio) abre un buscador con todas las acciones. Si usas una acción del encabezado con el editor abierto, primero se guarda lo escrito. Mientras hay un encabezado seleccionado, los botones redondos de abajo (paleta, agenda, capturar) se ocultan.
+Los submenús (estado, Fechas, Aa, Enlace, 📎, ⋯) se abren *encima del botón*, en vertical; tocar fuera o Esc los cierra. Mientras escribes en el título o la descripción, *«/»* (al principio o tras un espacio) abre un buscador con todas las acciones. Si usas una acción del encabezado con el editor abierto, primero se guarda lo escrito. Mientras hay un encabezado seleccionado, los botones redondos de abajo (paleta, agenda, capturar) se ocultan.
 
-** El editor de título
-Toca este encabezado dos veces (la primera lo selecciona; la segunda abre el editor).
-- La *estrella* del principio pone o quita [#A].
-- Los botones de estados (NEXT, TODO, …, DONE, CANCELLED) cambian el estado.
-- Para sangrar o mover el encabezado, las flechas de la barra de abajo.
+** Editar en su sitio
+Toca este encabezado dos veces: el título se edita ahí mismo, con la misma letra. Ctrl+d (o tu atajo de «editar descripción») edita el texto de debajo, también en su sitio.
+- Intro (en el título), Esc o tocar fuera guardan.
+- La ★, el estado, las fechas y el resto: en la barra de abajo.
 - Con el *tabulador* saltas al siguiente editor: título → descripción → etiquetas → fecha límite → fecha programada (mayúsculas + tabulador, al revés).
 - Tocando otra vez el lápiz de la barra inferior pasas a «Editar título completo», con el texto tal cual (estado, prioridad y etiquetas incluidos).
 - «+ Insertar fecha», debajo de los editores, escribe la fecha de hoy como fecha inactiva, p. ej. [%HOY%].
@@ -144,9 +144,10 @@ Tecla *a* o el botón del calendario (abajo, en el centro).
 
 ** Cómo se usa (como Nirvana)
 Desde la versión 3.0 la vista GTD se maneja como Nirvana (en cada fila: la casilla de hecho y, a su derecha, la ★, que se sombrea en dorado al pasar el ratón):
-- *Clic* en una tarea la selecciona; *doble clic* (o Intro) la abre para editarla. En el móvil, tocarla la abre.
+- *Clic* en una tarea la selecciona; *doble clic* (o Intro) la abre para editarla. En el móvil igual: *un toque selecciona, dos toques editan*.
+- Una tarea con subtareas lleva *▾* a la izquierda: tócalo para plegarlas (▸) o desplegarlas; se recuerda. Como subtareas solo salen las que tienen palabra de acción (TODO, NEXT…).
 - *Ctrl+clic* (⌘ en el Mac) añade o quita tareas de la selección. Los *puntos ⋮⋮* de la izquierda de cada fila seleccionan con un *lazo*: pulsa en ellos y arrastra hacia arriba o abajo.
-- *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección).
+- *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección); puede ir junto a una tarea de otro fichero o encabezado si así no cambia de proyecto, tarea madre, área ni etiquetas (si no, avisa y no se mueve). Si la lista estaba ordenada por fecha, pasa a orden manual.
 - *Clic derecho* en una tarea (o el ▾ del final de la fila) abre su menú: Editar, Focus ★, Completar, Mover a, *Asignar a proyecto…* (y *Quitar del proyecto*), Convertir en, Etiquetas, Tiempo, Energía, *Programar…*, Fecha límite, Hacer una copia, Copiar como ORG Mode, Abrir en su fichero y Papelera. Con varias seleccionadas, el menú actúa sobre todas y arriba dice cuánto tiempo suman.
 - *Mayús+clic* en una tarea selecciona todas las que hay desde la última elegida hasta ella.
 - Un clic fuera de las tareas (en el hueco de abajo, la cabecera o el menú lateral) quita la selección.
@@ -302,7 +303,7 @@ Toca una casilla para marcarla. El contador del título se actualiza solo.
 |--------+------------|
 | Lunes  |          5 |
 | Martes |          7 |
-Toca una celda para escribir en ella, en su sitio. Intro guarda y baja a la celda de abajo; Tab y Mayús+Tab pasan a la siguiente o a la anterior (como en Emacs, y entonces lo que escribas sustituye el contenido); Esc cancela; tocar fuera guarda. El botón de la tabla, a su derecha, abre el editor de tablas para añadir, borrar o mover filas y columnas.
+Se ve como una tabla. Toca una celda para escribir en ella. *Tab* pasa a la siguiente (en la última, crea una fila, como en Emacs) y Mayús+Tab a la anterior; *Intro* baja (Mayús+Intro sube); *Alt+flechas* mueven la fila o la columna; Esc cancela; tocar fuera guarda. Mientras escribes, la barra de abajo trae *añadir y borrar filas y columnas*, moverlas y terminar. Al guardar, la tabla queda alineada como con org-table-align y no se tocan #+NAME, #+TBLFM ni las rayas |---|. En la vista GTD, las tablas de las notas también se ven como tablas (y se editan en el editor de la tarea).
 
 * Enlaces, adjuntos e imágenes
 - Enlace a una web: [[https://orgmode.org][Org Mode]].

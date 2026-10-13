@@ -153,9 +153,11 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
               </span>
             );
           case 'table':
+            // (3.02) clave por posición: al guardar una celda se vuelve a leer la descripción
+            // (con ids nuevos) y la tabla no debe perder la celda que se está editando
             return (
               <TablePart
-                key={part.get('id')}
+                key={`table-${parts.slice(0, index).filter((p) => p.get('type') === 'table').size}`}
                 table={part}
                 descriptionItemIndex={index}
                 subPartDataAndHandlers={subPartDataAndHandlers}
