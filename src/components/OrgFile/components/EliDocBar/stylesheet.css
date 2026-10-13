@@ -1,0 +1,123 @@
+/* ORG Mode para Eli (3.01): barra de acciones de Documentos (estilo Logseq) */
+.eli-docbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2800; /* por encima del editor (cajón, 3); por debajo del calendario (2900) */
+  background: var(--base3);
+  border-top: 1px solid var(--base2);
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.eli-docbar.is-editing {
+  padding-bottom: 0;
+}
+.eli-docbar__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 4px 6px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.eli-docbar__row::-webkit-scrollbar {
+  display: none;
+}
+.eli-docbar__btn {
+  flex: 0 0 auto;
+  min-width: 42px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--base00);
+  font-size: 17px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  touch-action: manipulation;
+}
+.eli-docbar__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+@media (hover: hover) {
+  .eli-docbar__btn:not(:disabled):hover {
+    background: var(--base2);
+  }
+}
+.eli-docbar__btn:active {
+  background: var(--base2);
+}
+.eli-docbar__btn.is-on {
+  color: #f2b24a;
+}
+.eli-docbar__btn.has-label {
+  padding: 0 8px;
+}
+.eli-docbar__label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.eli-docbar__btn.is-dim .eli-docbar__label {
+  opacity: 0.45;
+}
+.eli-docbar__badge {
+  font-size: 11px;
+  margin-left: 1px;
+}
+.eli-docbar__back {
+  color: var(--blue);
+}
+.eli-docbar__chip {
+  flex: 0 0 auto;
+  height: 34px;
+  border: 1px solid var(--base2);
+  border-radius: 17px;
+  background: var(--base3);
+  color: var(--base00);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.eli-docbar__chip i {
+  color: var(--blue);
+}
+@media (hover: hover) {
+  .eli-docbar__chip:hover {
+    background: var(--base2);
+  }
+}
+.eli-docbar__chip.is-danger,
+.eli-docbar__chip.is-danger i {
+  color: var(--red);
+}
+
+/* margen abajo para que la barra no tape lo último */
+body.eli-docbar-on .org-file-container {
+  padding-bottom: 72px;
+}
+body.eli-docbar-editing .drawer-inner-container {
+  padding-bottom: 64px;
+}
+/* (3.01) mientras haya un encabezado seleccionado, los botones redondos de abajo (buscar, agenda,
+   capturar) se ocultan; vuelven al quitar la selección */
+body.eli-docbar-on .action-drawer-container {
+  display: none;
+}

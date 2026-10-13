@@ -21,6 +21,7 @@ import './stylesheet.css';
 
 import HeaderList from './components/HeaderList';
 import ActionDrawer from './components/ActionDrawer';
+import EliDocBar from './components/EliDocBar';
 import SyncConfirmationModal from './components/SyncConfirmationModal';
 import TableEditorModal from './components/TableEditorModal';
 import AgendaModal from './components/AgendaModal';
@@ -1104,7 +1105,11 @@ class OrgFile extends PureComponent {
 
     return (
       <>
-        <div className="org-file-container" tabIndex="-1" ref={this.handleContainerRef}>
+        <div
+          className="org-file-container"
+          tabIndex="-1"
+          ref={this.handleContainerRef}
+        >
           {errorBox}
           {headers.size === 0 ? (
             <div className="org-file__parsing-error-message">
@@ -1151,6 +1156,22 @@ class OrgFile extends PureComponent {
             />
           )}
 
+          {/* (3.01) barra de acciones del encabezado seleccionado (estilo Logseq) */}
+          {!shouldDisableActions && (
+            <EliDocBar
+              editing={
+                !this.state.captureMode &&
+                ['title-editor', 'description-editor', 'note-editor'].includes(activePopupType)
+              }
+              hidden={
+                this.state.captureMode ||
+                (!!activePopupType &&
+                  !['title-editor', 'description-editor', 'note-editor'].includes(activePopupType))
+              }
+              commitEditing={this.handleActivePopupClose}
+            />
+          )}
+
           {activePopupType ? (
             <Drawer
               onClose={this.handleActivePopupClose}
@@ -1172,20 +1193,6 @@ class OrgFile extends PureComponent {
                   setPopupCloseActionValuesAccessor={setPopupCloseActionValuesAccessor}
                   saveTitle={this.state.captureMode ? this.saveCaptureTitle : this.saveTitle}
                   handleTodoChange={this.handleTodoChange}
-                  onMoveSubtree={
-                    this.state.captureMode || !this.props.selectedHeader
-                      ? null
-                      : (direction) => {
-                          const id = this.props.selectedHeader.get('id');
-                          const org = this.props.org;
-                          // Solo el encabezado, sin arrastrar sus subencabezados
-                          const level = this.props.selectedHeader.get('nestingLevel');
-                          if (direction === 'left') {
-                            if (level > 1) org.moveHeaderLeft(id);
-                          } else if (direction === 'right') org.moveHeaderRight(id);
-                          else org.eliMoveHeaderLine(id, direction);
-                        }
-                  }
                   handleTagsChange={
                     this.state.captureMode ? this.handleCaptureTagsChange : this.handleTagsChange
                   }

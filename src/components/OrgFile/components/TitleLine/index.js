@@ -57,11 +57,24 @@ class TitleLine extends PureComponent {
     return generateTitleLine(header.toJS(), false);
   }
 
-  handleTitleClick() {
+  handleTitleClick(event) {
     const { header, hasContent, isSelected, onClick, closeSubheadersRecursively } = this.props;
 
     if (!!onClick) {
       onClick();
+    } else if (
+      // (3.01) estilo Logseq: tocar un encabezado lo selecciona (sale la barra de abajo) y
+      // tocarlo otra vez ya seleccionado edita el título (plegar/desplegar: el punto •)
+      isSelected &&
+      !this.props.shouldDisableActions &&
+      !(
+        event &&
+        event.target &&
+        event.target.closest &&
+        event.target.closest('a, button, input, .timestamp, .todo-keyword, .eli-attach-indicator')
+      )
+    ) {
+      this.props.base.activatePopup('title-editor');
     } else {
       if (hasContent && (!header.get('opened') || isSelected)) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);

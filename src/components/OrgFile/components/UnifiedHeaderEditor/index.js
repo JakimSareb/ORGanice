@@ -403,56 +403,13 @@ class UnifiedHeaderEditor extends PureComponent {
                 Siguiente conjunto
               </button>
             ) : null}
-            {/* ORG Mode para Eli: subir/bajar de nivel el encabezado (con sus subencabezados) */}
-            {this.props.onMoveSubtree && (
-              <div className="eli-title-indent">
-                {[
-                  [
-                    'up',
-                    'fa-arrow-up',
-                    'Subir el encabezado una línea (sin sus subencabezados)',
-                    'eli-title-up',
-                  ],
-                  [
-                    'down',
-                    'fa-arrow-down',
-                    'Bajar el encabezado una línea (sin sus subencabezados)',
-                    'eli-title-down',
-                  ],
-                  [
-                    'left',
-                    'fa-arrow-left',
-                    'Subir de nivel (hacia fuera), solo el encabezado',
-                    'eli-title-outdent',
-                  ],
-                  [
-                    'right',
-                    'fa-arrow-right',
-                    'Bajar de nivel (hacia dentro), solo el encabezado',
-                    'eli-title-indent',
-                  ],
-                ].map(([direction, icon, title, testId]) => (
-                  <button
-                    key={direction}
-                    type="button"
-                    className="eli-title-indent__btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      this.props.onMoveSubtree(direction);
-                    }}
-                    title={title}
-                    data-testid={testId}
-                  >
-                    <i className={`fas ${icon}`} />
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* (3.01) sangrar y subir/bajar: en la barra de abajo (EliDocBar) */}
           </div>
         }
 
         <div className="title-line__edit-container">
-          <EliFormatBar getField={() => this.titleTextarea} />
+          {/* (3.01) el formato «Aa» está en la barra de abajo; en una captura (sin barra), aquí */}
+          {this.props.captureMode && <EliFormatBar getField={() => this.titleTextarea} />}
           <textarea
             autoFocus
             className="textarea drag-handle"
@@ -487,10 +444,12 @@ class UnifiedHeaderEditor extends PureComponent {
         </h2>
 
         <div className="header-content__edit-container">
-          <EliFormatBar
-            getField={() => this.descriptionTextarea}
-            getListField={() => this.descriptionTextarea}
-          />
+          {this.props.captureMode && (
+            <EliFormatBar
+              getField={() => this.descriptionTextarea}
+              getListField={() => this.descriptionTextarea}
+            />
+          )}
           <textarea
             autoFocus
             className="textarea drag-handle"

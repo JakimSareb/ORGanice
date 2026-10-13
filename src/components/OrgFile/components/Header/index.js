@@ -1,16 +1,10 @@
-import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
-import { getPriority } from '../../../../lib/eli_priority';
-import { openPrintPreview, openUploadDialog, openRawEditor } from '../../../EliTools';
+import { openUploadDialog, openRawEditor } from '../../../EliTools';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
-import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task_state';
-import { showMessage } from '../../../../lib/eli_prompt';
-import { storeHeadingLink } from '../../../../lib/eli_org_links';
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
 import { Motion, spring } from 'react-motion';
-import { UnmountClosed as Collapse } from 'react-collapse';
 
 import * as orgActions from '../../../../actions/org';
 import * as baseActions from '../../../../actions/base';
@@ -22,7 +16,6 @@ import _ from 'lodash';
 
 import TitleLine from '../TitleLine';
 import HeaderContent from '../HeaderContent';
-import HeaderActionDrawer from './components/HeaderActionDrawer';
 
 import { headerWithId } from '../../../../lib/org_utils';
 import { interpolateColors, rgbaObject, rgbaString, readRgbaVariable } from '../../../../lib/color';
@@ -30,7 +23,6 @@ import { getCurrentTimestamp, millisDuration } from '../../../../lib/timestamps'
 import { Map } from 'immutable';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
-import { eliAssignHeaderToProject } from '../../../../lib/gtd/gtd_assign';
 
 // ORG Mode para Eli: dentro de un cuadro de texto no se desliza ni se arrastra el encabezado
 const eliIsEditableTarget = (el) =>
@@ -482,7 +474,6 @@ class Header extends PureComponent {
       isSelected,
       bulletStyle,
       narrowedHeader,
-      isNarrowed,
       shouldDisableActions,
       showClockDisplay,
       showDeadlineDisplay,
@@ -547,12 +538,6 @@ class Header extends PureComponent {
       'header--reorder-drop-after':
         this.props.isReorderDropTarget && this.props.reorderDropPosition === 'after',
     });
-
-    const logBookEntries = header
-      .get('logBookEntries')
-      .filter((entry) => entry.get('raw') === undefined);
-    const hasActiveClock =
-      logBookEntries.size !== 0 && logBookEntries.filter((entry) => !entry.get('end')).size !== 0;
 
     return (
       <Motion style={style} onRest={this.handleRest}>
@@ -685,103 +670,8 @@ class Header extends PureComponent {
                 isOverdue={isOverdue}
               />
 
-              <Collapse
-                isOpened={isSelected && !shouldDisableActions}
-                springConfig={{ stiffness: 300 }}
-                style={{ marginRight: rightSwipeActionContainerStyle.width }}
-              >
-                <HeaderActionDrawer
-                  onTitleClick={this.handleShowTitleModal}
-                  onDescriptionClick={this.handleShowDescriptionModal}
-                  isNarrowed={isNarrowed}
-                  onTagsClick={this.handleShowTagsModal}
-                  onPropertiesClick={this.handleShowPropertyListEditorModal}
-                  onNarrow={this.handleNarrow}
-                  onEditPlain={this.handleEditPlain}
-                  onWiden={this.handleWiden}
-                  onAddNewHeader={this.handleAddNewHeader}
-                  onDeadlineClick={this.handleDeadlineClick}
-                  onClockInOutClick={this.handleClockInOutClick}
-                  onScheduledClick={this.handleScheduledClick}
-                  hasActiveClock={hasActiveClock}
-                  onShareHeader={this.handleShareHeaderClick}
-                  onRefileHeader={this.handleRefileHeaderRequest}
-                  onAddNote={this.handleAddNoteClick}
-                  onAttachFiles={this.handleAttachFiles}
-                  onDeleteAttachments={
-                    attachmentsOfHeader(header, this.props.path).length
-                      ? () => this.props.org.eliDeleteHeaderAttachments(header.get('id'))
-                      : null
-                  }
-                  onExportPdf={() => openPrintPreview(header.get('id'))}
-                  onRemoveHeader={() => {
-                    const id = header.get('id');
-                    const headersBefore = this.props.headers;
-                    confirmRemoveHeader(headersBefore, id).then((ok) => {
-                      if (!ok) return;
-                      this.props.org.selectNextSiblingHeader(id);
-                      this.props.org.removeHeader(id);
-                      this.props.org.eliOfferDeleteAttachments(headersBefore, id);
-                    });
-                  }}
-                  onTogglePriority={() => this.props.org.togglePriorityA(header.get('id'))}
-                  isPriorityA={getPriority(header) === 'A'}
-                  taskState={taskStateOf(header, this.props.todoKeywordSets).kind}
-                  onCompleteTask={(cancel) => {
-                    const st = taskStateOf(header, this.props.todoKeywordSets);
-                    if (st.kind !== 'active') return;
-                    this.props.org.setTodoState(
-                      header.get('id'),
-                      cancel ? st.cancelKeyword : st.doneKeyword,
-                      this.props.shouldLogIntoDrawer
-                    );
-                  }}
-                  onCopyLink={
-                    this.props.path && !this.props.path.startsWith('/__')
-                      ? async () => {
-                          const text = storeHeadingLink(
-                            this.props.path,
-                            header.getIn(['titleLine', 'rawTitle'])
-                          );
-                          let copied = false;
-                          try {
-                            await navigator.clipboard.writeText(text);
-                            copied = true;
-                          } catch (e) {}
-                          showMessage(
-                            copied ? 'Enlace copiado' : 'Enlace',
-                            (copied
-                              ? 'Pégalo donde quieras. '
-                              : 'No se ha podido copiar; cópialo a mano:\n\n') +
-                              `${text}\n\nCon el botón de enlace del editor se inserta con la ruta correcta desde cualquier fichero.`
-                          );
-                        }
-                      : null
-                  }
-                  onClockTotals={() => {
-                    const t = clockTotals(this.props.headers, header.get('id'));
-                    if (!t) return;
-                    const title = (header.getIn(['titleLine', 'rawTitle']) || '').trim();
-                    showMessage(
-                      'Tiempo registrado',
-                      `«${title}»\n\nTotal: ${formatMillis(t.total)}` +
-                        (t.subheaders
-                          ? `\n(este encabezado: ${formatMillis(
-                              t.own
-                            )}; subencabezados: ${formatMillis(t.total - t.own)})`
-                          : '') +
-                        (t.running ? '\n\nIncluye un reloj en marcha.' : '')
-                    );
-                  }}
-                  onArchive={() => this.props.org.archiveSubtree(header.get('id'))}
-                  onAssignProject={
-                    this.props.path && !this.props.path.startsWith('/__')
-                      ? () => this.props.assignProject(this.props.path, header.get('id'))
-                      : null
-                  }
-                  onDuplicateHeader={this.handleDuplicateHeader}
-                />
-              </Collapse>
+              {/* (3.01) Las acciones del encabezado seleccionado ya no salen aquí dentro: están en
+                  la barra de abajo (EliDocBar, estilo Logseq) */}
 
               <HeaderContent
                 header={header}
@@ -821,8 +711,6 @@ const mapStateToProps = (state, ownProps) => {
 const mapDispatchToProps = (dispatch) => ({
   org: bindActionCreators(orgActions, dispatch),
   base: bindActionCreators(baseActions, dispatch),
-  // (3.01) «Asignar a proyecto…» (tareas y referencias de otros ficheros)
-  assignProject: (path, headerId) => dispatch(eliAssignHeaderToProject(path, headerId)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Header);
