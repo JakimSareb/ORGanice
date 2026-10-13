@@ -76,3 +76,16 @@
   top: auto;
   bottom: calc(100% + 6px);
 }
+
+/* (3.03) submenús: «›» a la derecha y «‹ Volver» arriba */
+.eli-more__chev {
+  margin-left: auto;
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+.eli-more__back {
+  font-weight: 600;
+  border-bottom: 1px solid var(--base2);
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 4px;
+}

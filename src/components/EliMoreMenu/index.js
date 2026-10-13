@@ -5,7 +5,8 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import './stylesheet.css';
 
 /**
- * items: [{ icon, label, onClick, testId, disabled, danger, keepOpen }] (los falsos se ignoran)
+ * items: [{ icon, label, onClick, testId, disabled, danger, keepOpen, items }] (los falsos se
+ * ignoran). (3.03) Con `items`, el elemento abre un submenú vertical (con «‹» para volver).
  * align: 'right' | 'left'
  */
 export default ({
@@ -17,7 +18,12 @@ export default ({
   title = 'Más opciones',
   keepFocus = false,
 }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpenRaw] = useState(false);
+  const [stack, setStack] = useState([]); // submenús abiertos (índices)
+  const setOpen = (v) => {
+    setOpenRaw(v);
+    setStack([]);
+  };
   const [up, setUp] = useState(false);
   const ref = useRef(null);
   const menuRef = useRef(null);
@@ -34,6 +40,16 @@ export default ({
     if (r.bottom > window.innerHeight - 8) setUp(true);
   }, [open, up]);
   const visible = (items || []).filter(Boolean);
+  // lo que se ve: el menú principal o el submenú abierto
+  let level = { label: null, items: visible };
+  const trail = [];
+  stack.forEach((key) => {
+    const it = level.items.find((x) => (x.testId || x.label) === key);
+    if (it && it.items) {
+      trail.push(it);
+      level = { label: it.label, icon: it.icon, items: it.items.filter(Boolean) };
+    }
+  });
 
   useEffect(() => {
     if (!open) return undefined;
@@ -82,7 +98,22 @@ export default ({
           role="menu"
           data-testid={`${testId}-menu`}
         >
-          {visible.map((item, i) => (
+          {trail.length > 0 && (
+            <button
+              type="button"
+              className="eli-more__item eli-more__back"
+              data-testid={`${testId}-back`}
+              onMouseDown={keep}
+              onClick={(e) => {
+                e.stopPropagation();
+                setStack((st) => st.slice(0, -1));
+              }}
+            >
+              <i className="fas fa-chevron-left" aria-hidden="true" />
+              <span>{level.label}</span>
+            </button>
+          )}
+          {level.items.map((item, i) => (
             <button
               key={item.testId || item.label || i}
               type="button"
@@ -96,14 +127,23 @@ export default ({
               data-testid={item.testId}
               title={item.title || item.label}
               onMouseDown={keep}
+              aria-haspopup={item.items ? 'menu' : undefined}
               onClick={(e) => {
                 e.stopPropagation();
+                if (item.items) {
+                  const key = item.testId || item.label;
+                  setStack((st) => [...st, key]);
+                  return;
+                }
                 if (!item.keepOpen) setOpen(false);
                 if (item.onClick) item.onClick(e);
               }}
             >
               <i className={item.icon} aria-hidden="true" />
               <span>{item.label}</span>
+              {item.items && (
+                <i className="fas fa-chevron-right eli-more__chev" aria-hidden="true" />
+              )}
             </button>
           ))}
         </div>

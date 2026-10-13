@@ -185,10 +185,10 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   const commit = () => {
     if (editing && commitEditing) commitEditing();
   };
-  const run = (fn, { text = false } = {}) => (e) => {
+  const run = (fn, { text = false, keepOpen = false } = {}) => (e) => {
     if (e && e.stopPropagation) e.stopPropagation();
     if (!text) commit();
-    setSub(null);
+    if (!keepOpen) setSub(null);
     fn(e);
   };
 
@@ -235,8 +235,21 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     });
     return out;
   };
+  const planningIdx = (type) =>
+    header ? header.get('planningItems', []).findIndex((p) => p.get('type') === type) : -1;
+  const planDate = (type) => {
+    const i = planningIdx(type);
+    if (i === -1) return '';
+    const t = header.getIn(['planningItems', i, 'timestamp']);
+    return t ? `${t.get('day')}/${t.get('month')}` : '';
+  };
   const planning = (type) => {
-    const idx = header.get('planningItems', []).findIndex((p) => p.get('type') === type);
+    let idx = planningIdx(type);
+    // (3.03) sin fecha todavía: se pone hoy y se abre ya para cambiarla (sin el paso «Añadir»)
+    if (idx === -1) {
+      idx = (header.get('planningItems') || []).size || 0;
+      org('addNewPlanningItem', id, type);
+    }
     base('activatePopup', type === 'DEADLINE' ? 'deadline-editor' : 'scheduled-editor', {
       headerId: id,
       planningItemIndex: idx,
@@ -259,6 +272,11 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     org('openHeader', id);
     base('activatePopup', 'description-editor');
     setTimeout(() => insertLinkInto(activeField(), insertIntoField), 120);
+  };
+  // (3.03) Editar las notas (descripción) en el sitio
+  const editNotes = () => {
+    org('openHeader', id);
+    base('activatePopup', 'description-editor');
   };
   const copyLink = async () => {
     const text = storeHeadingLink(path, header.getIn(['titleLine', 'rawTitle']));
@@ -354,12 +372,14 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             id: 'sched',
             icon: 'far fa-calendar-check',
             label: 'Programada',
+            hint: planDate('SCHEDULED'),
             onClick: () => planning('SCHEDULED'),
           },
           {
             id: 'dead',
             icon: 'fas fa-calendar-check',
             label: 'Fecha límite',
+            hint: planDate('DEADLINE'),
             onClick: () => planning('DEADLINE'),
           },
           {
@@ -375,6 +395,29 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             label: 'Repetir…',
             onClick: () => planning('SCHEDULED'),
           },
+          ...(planningIdx('SCHEDULED') !== -1 || planningIdx('DEADLINE') !== -1
+            ? [{ id: 'sep-dates', sep: true }]
+            : []),
+          ...(planningIdx('SCHEDULED') !== -1
+            ? [
+                {
+                  id: 'sched-del',
+                  icon: 'far fa-calendar-times',
+                  label: 'Quitar la fecha programada',
+                  onClick: () => org('removePlanningItem', id, planningIdx('SCHEDULED')),
+                },
+              ]
+            : []),
+          ...(planningIdx('DEADLINE') !== -1
+            ? [
+                {
+                  id: 'dead-del',
+                  icon: 'fas fa-calendar-times',
+                  label: 'Quitar la fecha límite',
+                  onClick: () => org('removePlanningItem', id, planningIdx('DEADLINE')),
+                },
+              ]
+            : []),
         ],
         format: [
           ...ORG_EMPHASIS.map((it) => ({
@@ -409,55 +452,21 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             : []),
         ],
         todo: todoMenu(),
-        link: [
+        // (3.03) Editar: título, notas y lo demás del encabezado (todo con el estilo nuevo)
+        edit: [
           {
-            id: 'link-insert',
-            icon: 'fas fa-link',
-            label: 'Insertar enlace',
-            onClick: insertLink,
-            text: true,
-          },
-          ...(path && !path.startsWith('/__')
-            ? [{ id: 'link-copy', icon: 'far fa-copy', label: 'Copiar enlace', onClick: copyLink }]
-            : []),
-        ],
-        attach: [
-          {
-            id: 'att-add',
-            icon: 'fas fa-paperclip',
-            label: 'Adjuntar archivo',
-            onClick: attach,
-            text: true,
-          },
-          ...(attachments.length
-            ? [
-                {
-                  id: 'att-del',
-                  icon: 'fas fa-trash-alt',
-                  label: 'Borrar adjuntos…',
-                  onClick: () => org('eliDeleteHeaderAttachments', id),
-                },
-              ]
-            : []),
-        ],
-        more: [
-          {
-            id: 'clock',
-            icon: hasClock ? 'fas fa-hourglass-end' : 'fas fa-hourglass-start',
-            label: hasClock ? 'Parar reloj' : 'Iniciar reloj',
-            onClick: clockInOut,
+            id: 'edit-title',
+            icon: 'fas fa-pencil-alt',
+            label: 'Editar título',
+            hint: 'Intro',
+            onClick: () => base('activatePopup', 'title-editor'),
           },
           {
-            id: 'clock-total',
-            icon: 'far fa-clock',
-            label: 'Tiempo registrado',
-            onClick: clockReport,
-          },
-          {
-            id: 'note',
-            icon: 'far fa-sticky-note',
-            label: 'Nota',
-            onClick: () => base('activatePopup', 'note-editor'),
+            id: 'edit-notes',
+            icon: 'far fa-edit',
+            label: 'Editar notas',
+            hint: 'd',
+            onClick: editNotes,
           },
           {
             id: 'props',
@@ -466,9 +475,72 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             onClick: () => base('activatePopup', 'property-list-editor'),
           },
           {
+            id: 'note',
+            icon: 'far fa-sticky-note',
+            label: 'Añadir nota al registro',
+            onClick: () => base('activatePopup', 'note-editor'),
+          },
+          {
+            id: 'plain',
+            icon: 'fas fa-code',
+            label: 'Texto plano (este encabezado)',
+            onClick: () => {
+              org('narrowHeader', id);
+              openRawEditor(id);
+            },
+          },
+        ],
+        // (3.03) Mover: el menú se queda abierto para mover varias veces seguidas
+        move: [
+          {
+            id: 'outdent',
+            icon: 'fas fa-arrow-left',
+            label: 'Sangrar hacia fuera',
+            disabled: level <= 1,
+            keepOpen: true,
+            onClick: () => level > 1 && org('moveHeaderLeft', id),
+          },
+          {
+            id: 'indent',
+            icon: 'fas fa-arrow-right',
+            label: 'Sangrar hacia dentro',
+            keepOpen: true,
+            onClick: () => org('moveHeaderRight', id),
+          },
+          {
+            id: 'outdent-tree',
+            icon: 'fas fa-angle-double-left',
+            label: 'Sangrar fuera con subencabezados',
+            disabled: level <= 1,
+            keepOpen: true,
+            onClick: () => level > 1 && org('moveSubtreeLeft', id),
+          },
+          {
+            id: 'indent-tree',
+            icon: 'fas fa-angle-double-right',
+            label: 'Sangrar dentro con subencabezados',
+            keepOpen: true,
+            onClick: () => org('moveSubtreeRight', id),
+          },
+          {
+            id: 'up',
+            icon: 'fas fa-arrow-up',
+            label: 'Subir',
+            keepOpen: true,
+            onClick: () => org('moveHeaderUp', id),
+          },
+          {
+            id: 'down',
+            icon: 'fas fa-arrow-down',
+            label: 'Bajar',
+            keepOpen: true,
+            onClick: () => org('moveHeaderDown', id),
+          },
+          { id: 'sep-move', sep: true },
+          {
             id: 'refile',
             icon: 'fas fa-file-export',
-            label: 'Mover (refile)',
+            label: 'Mover a otro sitio (refile)…',
             onClick: () => base('activatePopup', 'refile'),
           },
           ...(path && !path.startsWith('/__')
@@ -487,11 +559,66 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             label: 'Archivar',
             onClick: () => org('archiveSubtree', id),
           },
+        ],
+        // (3.03) Insertar: enlace, archivo adjunto y fecha (en el texto que se edita o en las notas)
+        insert: [
           {
-            id: 'dup',
-            icon: 'far fa-clone',
-            label: 'Duplicar',
-            onClick: () => org('duplicateHeader', id),
+            id: 'link-insert',
+            icon: 'fas fa-link',
+            label: 'Enlace…',
+            onClick: insertLink,
+            text: true,
+          },
+          {
+            id: 'att-add',
+            icon: 'fas fa-paperclip',
+            label: 'Adjuntar archivo…',
+            onClick: attach,
+            text: true,
+          },
+          {
+            id: 'insert',
+            icon: 'far fa-calendar-plus',
+            label: 'Fecha de hoy',
+            onClick: insertDate,
+            text: true,
+          },
+          ...(attachments.length
+            ? [
+                {
+                  id: 'att-del',
+                  icon: 'fas fa-trash-alt',
+                  label: 'Borrar adjuntos…',
+                  onClick: () => org('eliDeleteHeaderAttachments', id),
+                },
+              ]
+            : []),
+        ],
+        // (3.03) Compartir y exportar este encabezado
+        share: [
+          ...(path && !path.startsWith('/__')
+            ? [{ id: 'link-copy', icon: 'far fa-copy', label: 'Copiar enlace', onClick: copyLink }]
+            : []),
+          { id: 'mail', icon: 'fas fa-share', label: 'Compartir / correo', onClick: share },
+          {
+            id: 'pdf',
+            icon: 'fas fa-file-pdf',
+            label: 'PDF / imprimir',
+            onClick: () => openPrintPreview(id),
+          },
+        ],
+        more: [
+          {
+            id: 'clock',
+            icon: hasClock ? 'fas fa-hourglass-end' : 'fas fa-hourglass-start',
+            label: hasClock ? 'Parar reloj' : 'Iniciar reloj',
+            onClick: clockInOut,
+          },
+          {
+            id: 'clock-total',
+            icon: 'far fa-clock',
+            label: 'Tiempo registrado',
+            onClick: clockReport,
           },
           ...(st.kind === 'active'
             ? [
@@ -523,50 +650,22 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
                 onClick: () => org('narrowHeader', id),
               },
           {
-            id: 'plain',
-            icon: 'fas fa-code',
-            label: 'Texto plano',
-            onClick: () => {
-              org('narrowHeader', id);
-              openRawEditor(id);
-            },
+            id: 'dup',
+            icon: 'far fa-clone',
+            label: 'Duplicar',
+            onClick: () => org('duplicateHeader', id),
           },
-          { id: 'mail', icon: 'fas fa-share', label: 'Correo', onClick: share },
-          { id: 'pdf', icon: 'fas fa-file-pdf', label: 'PDF', onClick: () => openPrintPreview(id) },
+          { id: 'sep-more', sep: true },
           { id: 'delete', icon: 'fas fa-trash', label: 'Borrar', onClick: remove, danger: true },
         ],
       }
     : {};
 
-  // Fila principal (orden fijo)
+  // Fila principal (orden fijo). (3.03) Menos iconos: lo que no es de cada momento va en
+  // submenús verticales (Editar, Mover, Insertar, Compartir, Más).
   const main = header
     ? [
-        {
-          id: 'outdent',
-          icon: 'fas fa-arrow-left',
-          title: 'Sangrar hacia fuera (mantener: con sus subencabezados)',
-          onClick: () => level > 1 && org('moveHeaderLeft', id),
-          onLong: () => level > 1 && org('moveSubtreeLeft', id),
-        },
-        {
-          id: 'indent',
-          icon: 'fas fa-arrow-right',
-          title: 'Sangrar hacia dentro (mantener: con sus subencabezados)',
-          onClick: () => org('moveHeaderRight', id),
-          onLong: () => org('moveSubtreeRight', id),
-        },
-        {
-          id: 'up',
-          icon: 'fas fa-arrow-up',
-          title: 'Subir',
-          onClick: () => org('moveHeaderUp', id),
-        },
-        {
-          id: 'down',
-          icon: 'fas fa-arrow-down',
-          title: 'Bajar',
-          onClick: () => org('moveHeaderDown', id),
-        },
+        { id: 'edit', icon: 'fas fa-pencil-alt', title: 'Editar', sub: 'edit' },
         {
           id: 'todo',
           label: keyword || 'TODO',
@@ -588,9 +687,9 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           title: 'Etiquetas',
           onClick: () => base('activatePopup', 'tags-editor'),
         },
+        { id: 'move', icon: 'fas fa-arrows-alt', title: 'Mover', sub: 'move' },
         ...(editing ? [{ id: 'format', label: 'Aa', title: 'Formato', sub: 'format' }] : []),
-        { id: 'link', icon: 'fas fa-link', title: 'Enlace', sub: 'link' },
-        { id: 'attach', icon: 'fas fa-paperclip', title: 'Adjuntos', sub: 'attach' },
+        { id: 'insert', icon: 'fas fa-paperclip', title: 'Insertar', sub: 'insert' },
         {
           id: 'new',
           icon: 'fas fa-plus',
@@ -598,6 +697,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           onClick: () => org('addHeaderAndEdit', id),
           onLong: () => org('duplicateHeader', id),
         },
+        { id: 'share', icon: 'fas fa-share-alt', title: 'Compartir y exportar', sub: 'share' },
         { id: 'more', icon: 'fas fa-ellipsis-h', title: 'Más', sub: 'more' },
         { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
         { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
@@ -631,7 +731,10 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
       const { main: m, subs: s } = latest.current;
       const all = [];
       m.forEach((b) => {
-        if (b.sub) (s[b.sub] || []).forEach((x) => all.push({ ...x, group: b.title }));
+        if (b.sub)
+          (s[b.sub] || [])
+            .filter((x) => !x.sep && !x.disabled)
+            .forEach((x) => all.push({ ...x, group: b.title }));
         else if (b.id !== 'kbd' && !b.disabled) all.push({ ...b, label: b.title });
       });
       const chosen = await askPick({
@@ -821,6 +924,18 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   const latestItems = useRef(rowItems);
   latestItems.current = rowItems;
 
+  // (3.03) Tecla m (o «Mover» en la paleta): abre el menú Mover de la barra
+  useEffect(() => {
+    if (!visible || locked || table) return undefined;
+    const onMove = () => {
+      const btn = document.querySelector('.eli-docbar__btn[data-bid="move"]');
+      anchorRef.current = btn || null;
+      setSub((cur) => (cur === 'move' ? null : 'move'));
+    };
+    window.addEventListener('eli:move-menu', onMove);
+    return () => window.removeEventListener('eli:move-menu', onMove);
+  }, [visible, locked, table]);
+
   // Menú abierto: se cierra al tocar fuera o con Esc
   useEffect(() => {
     if (!sub) return undefined;
@@ -914,7 +1029,9 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     ];
   }
   const menuStyle = () => {
-    const el = anchorRef.current;
+    let el = anchorRef.current;
+    // abierto con el teclado (tecla m) o el botón está en el ⋯: encima de la barra
+    if (!el || !el.isConnected) el = rowRef.current;
     if (!el || !el.getBoundingClientRect) return {};
     const r = el.getBoundingClientRect();
     const w = Math.min(280, window.innerWidth - 16);
@@ -954,7 +1071,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
                       e.stopPropagation();
                       setSub(c.openSub);
                     }
-                  : run(c.onClick, { text: !!c.text })
+                  : run(c.onClick, { text: !!c.text, keepOpen: !!c.keepOpen })
               }
               data-testid={`eli-docbar-${c.id}`}
             >
@@ -1001,17 +1118,15 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
 
 // Para pruebas: lo que tiene que estar en la barra, en orden
 export const DOCBAR_ORDER = [
-  'outdent',
-  'indent',
-  'up',
-  'down',
+  'edit',
   'todo',
   'star',
   'dates',
   'tags',
-  'link',
-  'attach',
+  'move',
+  'insert',
   'new',
+  'share',
   'more',
   'undo',
   'redo',

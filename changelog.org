@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.03 (octubre de 2026)
+** Documentos
+- *Editar notas* (y el título) desde la barra flotante: botón ✎ Editar, con propiedades, nota al registro y texto plano.
+- Barra con *menos iconos*: Mover (sangrar, subir, bajar, refile, proyecto, archivar; se queda abierto para repetir), Insertar (enlace, adjunto, fecha) y Compartir (enlace, correo, PDF) son menús verticales.
+- Fechas: si no hay, se pone hoy y se abre ya para cambiarla; la fecha se ve en el menú y se puede quitar desde él.
+- Las ventanas de fechas, etiquetas, propiedades y nota ya *no traen la fila de iconos antigua*: solo lo suyo y *Listo*.
+- Arriba, lo del documento entero agrupado en el ⋯: Vista, Fichero, Exportar (PDF, compartir, copiar el texto) y Herramientas.
+- *Una sola lupa*, arriba (se quita la de abajo); se pone naranja con un reloj en marcha.
+** Acomodadores
+- *＋ antes* / *＋ después*: añadir a la tabla del mes la semana del mes anterior o del siguiente (y quitar la primera o la última).
+
 * 3.02 (octubre de 2026)
 ** Vista GTD
 - *Plegar subtareas*: ▾/▸ a la izquierda de una tarea con subtareas; se recuerda.

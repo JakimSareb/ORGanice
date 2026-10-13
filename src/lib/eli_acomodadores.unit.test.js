@@ -100,7 +100,9 @@ describe('3.01: acomodadores', () => {
     expect(row('Luis Mas').veces).toBe(1);
     expect(row('Juan Pérez').veces).toBe(1); // agosto ya estaba en la base
     expect(a.months.every((m) => m.month === 7 || m.sumado)).toBe(true);
-    expect(r.text).toMatch(/\*\* 2026, Octubre\n:PROPERTIES:\n:SUMADO: 2026-10-13\n:END:\n\| Semana/);
+    expect(r.text).toMatch(
+      /\*\* 2026, Octubre\n:PROPERTIES:\n:SUMADO: 2026-10-13\n:END:\n\| Semana/
+    );
     // volver a guardar octubre cambiando un nombre: solo la diferencia
     const r2 = saveMonth(
       r.text,
@@ -127,5 +129,34 @@ describe('3.01: acomodadores', () => {
     const t = saveConfig(FILE, { semanas: 4, dias: ['mar', 'dom'] });
     const a = parseAcom(t, TODAY);
     expect(a.config).toMatchObject({ semanas: 4, dias: ['mar', 'dom'] });
+  });
+});
+
+describe('(3.03) semanas de otros meses', () => {
+  const { addWeek, removeWeek, emptyMonth } = require('./eli_acomodadores');
+  const config = { semanas: 5, dias: ['jue', 'sab'] };
+  test('semana de antes (mes anterior) y de después (mes siguiente)', () => {
+    let rows = emptyMonth(2026, 8, config); // septiembre 2026: lunes 7, 14, 21, 28
+    expect(rows[0].semana).toBe('7-Sep');
+    rows = addWeek(rows, 'before', { year: 2026, month: 8 }, config);
+    expect(rows[0].semana).toBe('31-Ago');
+    expect(rows[0].dia).toBe('Jue-3-Sep');
+    rows = addWeek(rows, 'before', { year: 2026, month: 8 }, config);
+    expect(rows[0].semana).toBe('24-Ago');
+    expect(rows[0].dia).toBe('Jue-27-Ago');
+    rows = addWeek(rows, 'after', { year: 2026, month: 8 }, config);
+    expect(rows[rows.length - 1].semana).toBe('5-Oct');
+    expect(rows[rows.length - 1].dia).toBe('Sab-10-Oct');
+    rows = removeWeek(rows, 'first');
+    expect(rows[0].semana).toBe('31-Ago');
+    rows = removeWeek(rows, 'last');
+    expect(rows[rows.length - 1].semana).toBe('28-Sep');
+  });
+  test('cambio de año', () => {
+    let rows = emptyMonth(2027, 0, config);
+    rows = addWeek(rows, 'before', { year: 2027, month: 0 }, config);
+    expect(rows[0].semana).toBe('28-Dic');
+    rows = addWeek(rows, 'before', { year: 2027, month: 0 }, config);
+    expect(rows[0].semana).toBe('21-Dic');
   });
 });

@@ -105,3 +105,36 @@
 .capture-header-bar__controls .btn + .btn {
   margin-left: 8px;
 }
+
+/* (3.03) Ventanas del encabezado (fechas, etiquetas, propiedades, nota) con el estilo de la barra
+   flotante: sin la fila de iconos antigua; un botón «Listo» arriba a la derecha */
+.unified-header-editor.eli-sheet {
+  position: relative;
+  padding-top: 4px;
+}
+.eli-sheet-done {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid color-mix(in srgb, var(--base1) 22%, transparent);
+  border-radius: 999px;
+  background: var(--base2);
+  color: var(--base01);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.eli-sheet-done:hover {
+  background: var(--blue);
+  color: var(--base3);
+}
+.unified-header-editor.eli-sheet .drawer-modal__title,
+.unified-header-editor.eli-sheet .timestamp-editor__title {
+  padding-right: 96px;
+}

@@ -8,6 +8,9 @@ import { installNavHistory, canGoBack, canGoForward } from '../../lib/eli_nav_hi
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
+import { exportOrg } from '../../lib/export_org';
+import { shareContent } from '../../lib/share_utils';
+import { showMessage } from '../../lib/eli_prompt';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
@@ -582,15 +585,46 @@ class HeaderBar extends PureComponent {
       const inRealFile = inFile && !isStaticFile(path);
       const { narrowedHeaderId, selectedHeaderId } = this.props;
 
-      // ORG Mode para Eli: a la vista solo lo de cada día; el resto en «⋯»
+      // ORG Mode para Eli: a la vista solo lo de cada día; el resto en «⋯».
+      // (3.03) Lo que afecta al documento entero, agrupado en submenús verticales: Vista, Fichero,
+      // Exportar y Herramientas. Lo de cada encabezado está en la barra flotante (EliDocBar).
+      // Buscar: una sola lupa, arriba (la paleta; desde ella, «Buscar en el fichero»).
+      const tools = [
+        {
+          icon: 'far fa-calendar-alt',
+          label: 'Calendario',
+          onClick: openCalendar,
+          testId: 'eli-calendar-menu',
+        },
+        {
+          icon: 'fas fa-calculator',
+          label: 'Calculadora',
+          onClick: () => openCalculator(),
+          testId: 'eli-calculator-menu',
+        },
+        {
+          icon: 'fas fa-users',
+          label: 'Turnos de acomodadores',
+          onClick: openAcomodadores,
+          testId: 'eli-acomodadores',
+        },
+        {
+          icon: 'fas fa-moon',
+          label: 'Fases de la Luna',
+          onClick: openMoonPhases,
+          testId: 'eli-moon',
+        },
+        // (2.16) en la vista GTD, la ventana de atajos va aquí (antes, un botón en la lista)
+        inGtd && {
+          icon: 'far fa-keyboard',
+          label: 'Atajos de teclado (k)',
+          onClick: () =>
+            window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { shortcuts: true } })),
+          testId: 'gtd-shortcuts-btn',
+        },
+      ];
       const moreItems = isAuthenticated
         ? [
-            inRealFile && {
-              icon: 'fas fa-search',
-              label: 'Buscar en el fichero',
-              onClick: () => this.props.base.activatePopup('search'),
-              testId: 'eli-search',
-            },
             inFile && {
               icon: 'fas fa-redo',
               label: 'Rehacer',
@@ -598,90 +632,104 @@ class HeaderBar extends PureComponent {
               disabled: !isRedoEnabled,
               testId: 'eli-redo',
             },
-            inRealFile &&
-              !narrowedHeaderId && {
-                icon: 'fas fa-compress',
-                label: 'Reducir al encabezado (narrow)',
-                onClick: () => selectedHeaderId && this.props.org.narrowHeader(selectedHeaderId),
-                disabled: !selectedHeaderId,
-                title: selectedHeaderId
-                  ? 'Mostrar solo el encabezado seleccionado'
-                  : 'Selecciona primero un encabezado',
-                testId: 'eli-narrow',
+            inRealFile && {
+              icon: 'far fa-eye',
+              label: 'Vista',
+              testId: 'eli-menu-view',
+              items: [
+                {
+                  icon: 'fas fa-angle-double-up',
+                  label: 'Contraer todas las cabeceras',
+                  onClick: () => this.props.org.eliSetAllHeadersOpened(false),
+                  testId: 'eli-collapse-all',
+                },
+                {
+                  icon: 'fas fa-angle-double-down',
+                  label: 'Expandir todas las cabeceras',
+                  onClick: () => this.props.org.eliSetAllHeadersOpened(true),
+                  testId: 'eli-expand-all',
+                },
+                !narrowedHeaderId && {
+                  icon: 'fas fa-compress',
+                  label: 'Reducir al encabezado (narrow)',
+                  onClick: () => selectedHeaderId && this.props.org.narrowHeader(selectedHeaderId),
+                  disabled: !selectedHeaderId,
+                  title: selectedHeaderId
+                    ? 'Mostrar solo el encabezado seleccionado'
+                    : 'Selecciona primero un encabezado',
+                  testId: 'eli-narrow',
+                },
+                this.canOpenSplitView() && {
+                  icon: 'fas fa-columns',
+                  label: 'Dos columnas',
+                  onClick: () => this.openSplitView(),
+                  testId: 'eli-split-open',
+                },
+              ],
+            },
+            !inRealFile &&
+              this.canOpenSplitView() && {
+                icon: 'fas fa-columns',
+                label: 'Dos columnas',
+                onClick: () => this.openSplitView(),
+                testId: 'eli-split-open',
               },
-            inRealFile && {
-              icon: 'fas fa-angle-double-up',
-              label: 'Contraer todas las cabeceras',
-              onClick: () => this.props.org.eliSetAllHeadersOpened(false),
-              testId: 'eli-collapse-all',
+            {
+              icon: 'far fa-folder-open',
+              label: 'Fichero',
+              testId: 'eli-menu-file',
+              items: [
+                // (en un documento ya está el botón de arriba)
+                !inFile && {
+                  icon: 'far fa-copy',
+                  label: 'Ficheros principales',
+                  onClick: openFavorites,
+                  testId: 'eli-favorites-menu',
+                },
+                {
+                  icon: 'far fa-folder-open',
+                  label: 'Explorador de ficheros',
+                  onClick: () => this.props.history.push('/files'),
+                  testId: 'eli-files-menu',
+                },
+                inRealFile && {
+                  icon: 'fas fa-align-left',
+                  label: 'Editar como texto plano',
+                  onClick: openRawEditor,
+                  testId: 'eli-raw-edit',
+                },
+              ],
             },
             inRealFile && {
-              icon: 'fas fa-angle-double-down',
-              label: 'Expandir todas las cabeceras',
-              onClick: () => this.props.org.eliSetAllHeadersOpened(true),
-              testId: 'eli-expand-all',
-            },
-            inRealFile && {
-              icon: 'fas fa-arrows-alt',
-              label: 'Mover (flechas)',
-              onClick: () => window.dispatchEvent(new CustomEvent('eli:move-menu')),
-              testId: 'eli-move-arrows',
-            },
-            inRealFile && {
-              icon: 'fas fa-align-left',
-              label: 'Editar como texto plano',
-              onClick: openRawEditor,
-              testId: 'eli-raw-edit',
-            },
-            inRealFile && {
-              icon: 'fas fa-file-pdf',
-              label: 'Exportar a PDF',
-              onClick: () => openPrintPreview(null),
-              testId: 'eli-print-file',
+              icon: 'fas fa-file-export',
+              label: 'Exportar',
+              testId: 'eli-menu-export',
+              items: [
+                {
+                  icon: 'fas fa-file-pdf',
+                  label: 'Exportar a PDF',
+                  onClick: () => openPrintPreview(null),
+                  testId: 'eli-print-file',
+                },
+                {
+                  icon: 'fas fa-share',
+                  label: 'Compartir / correo',
+                  onClick: () => this.props.eliExportFile('share'),
+                  testId: 'eli-share-file',
+                },
+                {
+                  icon: 'far fa-clipboard',
+                  label: 'Copiar el texto Org',
+                  onClick: () => this.props.eliExportFile('copy'),
+                  testId: 'eli-copy-file',
+                },
+              ],
             },
             {
-              icon: 'far fa-copy',
-              label: 'Ficheros principales',
-              onClick: openFavorites,
-              testId: 'eli-favorites-menu',
-            },
-            this.canOpenSplitView() && {
-              icon: 'fas fa-columns',
-              label: 'Dos columnas',
-              onClick: () => this.openSplitView(),
-              testId: 'eli-split-open',
-            },
-            {
-              icon: 'far fa-calendar-alt',
-              label: 'Calendario',
-              onClick: openCalendar,
-              testId: 'eli-calendar-menu',
-            },
-            // (2.16) en la vista GTD, la ventana de atajos va aquí (antes, un botón en la lista)
-            inGtd && {
-              icon: 'far fa-keyboard',
-              label: 'Atajos de teclado (k)',
-              onClick: () =>
-                window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { shortcuts: true } })),
-              testId: 'gtd-shortcuts-btn',
-            },
-            {
-              icon: 'fas fa-calculator',
-              label: 'Calculadora',
-              onClick: () => openCalculator(),
-              testId: 'eli-calculator-menu',
-            },
-            {
-              icon: 'fas fa-users',
-              label: 'Turnos de acomodadores',
-              onClick: openAcomodadores,
-              testId: 'eli-acomodadores',
-            },
-            {
-              icon: 'fas fa-moon',
-              label: 'Fases de la Luna',
-              onClick: openMoonPhases,
-              testId: 'eli-moon',
+              icon: 'fas fa-toolbox',
+              label: 'Herramientas',
+              testId: 'eli-menu-tools',
+              items: tools,
             },
             {
               icon: 'fas fa-gift',
@@ -788,11 +836,17 @@ class HeaderBar extends PureComponent {
               role="button"
             />
           )}
-          {isAuthenticated && !inFile && (
+          {isAuthenticated && (
             <i
-              className="fas fa-search header-bar__actions__item"
+              className={
+                'fas fa-search header-bar__actions__item' +
+                (this.props.activeClocks ? ' eli-search-clock' : '')
+              }
               onClick={openPalette}
-              title="Paleta de comandos: buscar o hacer cualquier cosa (Ctrl+Espacio)"
+              title={
+                'Buscar: ficheros, tareas, etiquetas o acciones (Ctrl+Espacio)' +
+                (this.props.activeClocks ? ' · hay un reloj en marcha' : '')
+              }
               data-testid="eli-palette-btn"
               role="button"
             />
@@ -895,6 +949,11 @@ const mapStateToProps = (state) => {
     online: state.base.get('online') !== false,
     dirtyCount: (state.org.present.get('files') || List()).filter((f) => f.get('isDirty')).size,
     loadedPaths: loadedPathsOf(state.org.present.get('files')),
+    // (3.03) la lupa de arriba se pone naranja si hay un reloj en marcha (antes, la de abajo)
+    activeClocks: (state.org.present.get('files') || List()).reduce(
+      (n, f) => n + (typeof f.get('activeClocks') === 'number' ? f.get('activeClocks') : 0),
+      0
+    ),
   };
 };
 
@@ -903,6 +962,31 @@ const mapDispatchToProps = (dispatch) => {
     base: bindActionCreators(baseActions, dispatch),
     org: bindActionCreators(orgActions, dispatch),
     undo: bindActionCreators(undoActions, dispatch),
+    // (3.03) Exportar el fichero abierto: compartir (correo…) o copiar su texto Org
+    eliExportFile: (how) =>
+      dispatch((_d, getState) => {
+        const st = getState();
+        const p = st.org.present.get('path');
+        const f = st.org.present.getIn(['files', p]);
+        if (!f || !f.get('headers')) return;
+        const text = exportOrg({
+          headers: f.get('headers'),
+          linesBeforeHeadings: f.get('linesBeforeHeadings') || List(),
+          dontIndent: st.base.get('eliIndentOnExport') !== true,
+        });
+        const name = (p || '').split('/').pop();
+        if (how === 'share') {
+          shareContent({ title: name, text });
+          return;
+        }
+        Promise.resolve()
+          .then(() => navigator.clipboard.writeText(text))
+          .then(
+            () => showMessage('Copiado', `El texto de «${name}» está en el portapapeles.`),
+            () =>
+              showMessage('No se ha podido copiar', 'El navegador no deja usar el portapapeles.')
+          );
+      }),
   };
 };
 

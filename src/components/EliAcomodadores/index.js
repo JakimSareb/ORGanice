@@ -15,8 +15,9 @@ import {
   parseAcom,
   saveMonth,
   saveConfig,
-  weeksOf,
   emptyMonth,
+  addWeek,
+  removeWeek,
   suggestedMonth,
   countersForDraft,
   availableFor,
@@ -70,7 +71,10 @@ export default function EliAcomodadores({ onClose }) {
       dontIndent,
     });
   }, [files, path, dontIndent]);
-  const acom = useMemo(() => (fileText !== null ? parseAcom(fileText, today) : null), [fileText, today]);
+  const acom = useMemo(() => (fileText !== null ? parseAcom(fileText, today) : null), [
+    fileText,
+    today,
+  ]);
 
   // Mes elegido y su tabla (borrador)
   const [ym, setYm] = useState(null);
@@ -104,7 +108,10 @@ export default function EliAcomodadores({ onClose }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape' && !document.querySelector('.eli-prompt__overlay:not(.eli-acom__overlay)')) {
+      if (
+        e.key === 'Escape' &&
+        !document.querySelector('.eli-prompt__overlay:not(.eli-acom__overlay)')
+      ) {
         e.preventDefault();
         e.stopPropagation();
         close();
@@ -137,8 +144,8 @@ export default function EliAcomodadores({ onClose }) {
     return (
       <Shell onClose={onClose}>
         <div className="eli-acom__empty">
-          No encuentro el fichero <code>{ACOM_PATH}</code> en Dropbox. Crea ese fichero (o ábrelo una
-          vez) con las tablas <code>#+NAME: Publicadores</code>, <code>Ancianos</code> y{' '}
+          No encuentro el fichero <code>{ACOM_PATH}</code> en Dropbox. Crea ese fichero (o ábrelo
+          una vez) con las tablas <code>#+NAME: Publicadores</code>, <code>Ancianos</code> y{' '}
           <code>Ministeriales</code> y el encabezado <code>* HISTORICO</code>.
         </div>
       </Shell>
@@ -178,17 +185,23 @@ export default function EliAcomodadores({ onClose }) {
     new Set(
       rows
         .flatMap((r) => r.names)
-        .filter((n) => n && n.trim() && !/^(asamblea|-+|x+)$/i.test(n.trim()) && !resolveName(acom, n))
+        .filter(
+          (n) => n && n.trim() && !/^(asamblea|-+|x+)$/i.test(n.trim()) && !resolveName(acom, n)
+        )
     )
   );
 
   const setCell = (i, k, v) => {
-    setRows((rs) => rs.map((r, j) => (j === i ? { ...r, names: k === 0 ? [v, r.names[1]] : [r.names[0], v] } : r)));
+    setRows((rs) =>
+      rs.map((r, j) => (j === i ? { ...r, names: k === 0 ? [v, r.names[1]] : [r.names[0], v] } : r))
+    );
     setDirtyDraft(true);
   };
   const pick = (name) => {
     // al primer hueco de la semana elegida (día a día: acomodador 1 y 2)
-    const i = rows.findIndex((r, j) => weekOfRow[j] === wk && r.dia && (!r.names[0] || !r.names[1]));
+    const i = rows.findIndex(
+      (r, j) => weekOfRow[j] === wk && r.dia && (!r.names[0] || !r.names[1])
+    );
     if (i < 0) {
       showMessage('Turnos', 'Esta semana ya está completa. Borra un nombre para cambiarlo.');
       return;
@@ -234,10 +247,35 @@ export default function EliAcomodadores({ onClose }) {
       setWeek(0);
     }
   };
+  // (3.03) semana de más: la de antes (mes anterior) o la de después (mes siguiente)
+  const extendWeek = (where) => {
+    setRows((rs) => addWeek(rs, where, ym, acom.config));
+    setWeek(where === 'before' ? 0 : weekKeys.length);
+    setDirtyDraft(true);
+  };
+  const dropWeek = async (where) => {
+    const target = where === 'first' ? 0 : weekKeys.length - 1;
+    const hasNames = rows.some(
+      (r, i) => weekOfRow[i] === target && r.names.some((n) => n && n.trim())
+    );
+    if (hasNames) {
+      const ok = await askConfirm({
+        title: 'Quitar semana',
+        message: `La semana ${weekKeys[target]} tiene nombres. ¿Quitarla de la tabla?`,
+        okLabel: 'Quitar',
+      });
+      if (!ok) return;
+    }
+    setRows((rs) => removeWeek(rs, where));
+    setWeek(0);
+    setDirtyDraft(true);
+  };
   const resetWeeks = async () => {
     const ok = await askConfirm({
       title: 'Rehacer la tabla',
-      message: `¿Volver a hacer la tabla de ${monthLabel(ym.year, ym.month)} con los ajustes (${acom.config.semanas} semanas; ${acom.config.dias.join(', ')})? Se pierde lo escrito en ella.`,
+      message: `¿Volver a hacer la tabla de ${monthLabel(ym.year, ym.month)} con los ajustes (${
+        acom.config.semanas
+      } semanas; ${acom.config.dias.join(', ')})? Se pierde lo escrito en ella.`,
       okLabel: 'Rehacer',
     });
     if (!ok) return;
@@ -249,14 +287,26 @@ export default function EliAcomodadores({ onClose }) {
   return (
     <Shell onClose={close}>
       <div className="eli-acom__bar">
-        <button type="button" className="btn" onClick={() => changeMonth(-1)} aria-label="Mes anterior" data-testid="eli-acom-prev">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => changeMonth(-1)}
+          aria-label="Mes anterior"
+          data-testid="eli-acom-prev"
+        >
           <i className="fas fa-chevron-left" />
         </button>
         <strong className="eli-acom__month" data-testid="eli-acom-month">
           {monthLabel(ym.year, ym.month)}
           {ym.exists ? ' (en el histórico)' : ' (nuevo)'}
         </strong>
-        <button type="button" className="btn" onClick={() => changeMonth(1)} aria-label="Mes siguiente" data-testid="eli-acom-next">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => changeMonth(1)}
+          aria-label="Mes siguiente"
+          data-testid="eli-acom-next"
+        >
           <i className="fas fa-chevron-right" />
         </button>
         <span className="eli-acom__spacer" />
@@ -270,9 +320,7 @@ export default function EliAcomodadores({ onClose }) {
           <i className="fas fa-cog" />
         </button>
       </div>
-      {showCfg && (
-        <Settings config={acom.config} onSave={saveSettings} onRebuild={resetWeeks} />
-      )}
+      {showCfg && <Settings config={acom.config} onSave={saveSettings} onRebuild={resetWeeks} />}
       {pending.length > 0 && (
         <div className="eli-acom__note" data-testid="eli-acom-pending">
           Sin sumar a los contadores:{' '}
@@ -280,6 +328,15 @@ export default function EliAcomodadores({ onClose }) {
         </div>
       )}
       <div className="eli-acom__weeks" role="tablist">
+        <button
+          type="button"
+          className="eli-acom__week eli-acom__week--add"
+          onClick={() => extendWeek('before')}
+          title="Añadir la semana anterior (p. ej. la última del mes anterior)"
+          data-testid="eli-acom-week-before"
+        >
+          ＋ antes
+        </button>
         {weekKeys.map((k, i) => (
           <button
             key={k + i}
@@ -293,6 +350,15 @@ export default function EliAcomodadores({ onClose }) {
             {k || '—'}
           </button>
         ))}
+        <button
+          type="button"
+          className="eli-acom__week eli-acom__week--add"
+          onClick={() => extendWeek('after')}
+          title="Añadir la semana siguiente (p. ej. la primera del mes siguiente)"
+          data-testid="eli-acom-week-after"
+        >
+          ＋ después
+        </button>
       </div>
       <div className="eli-acom__cols">
         <section className="eli-acom__side">
@@ -346,7 +412,11 @@ export default function EliAcomodadores({ onClose }) {
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i} className={weekOfRow[i] === wk ? 'is-week' : ''} onClick={() => setWeek(weekOfRow[i])}>
+                <tr
+                  key={i}
+                  className={weekOfRow[i] === wk ? 'is-week' : ''}
+                  onClick={() => setWeek(weekOfRow[i])}
+                >
                   <td>{r.semana}</td>
                   <td>{r.dia}</td>
                   {[0, 1].map((k) => (
@@ -369,6 +439,26 @@ export default function EliAcomodadores({ onClose }) {
               <option key={n} value={n} />
             ))}
           </datalist>
+          {weekKeys.length > 1 && (
+            <div className="eli-acom__week-tools">
+              <button
+                type="button"
+                className="btn-passive"
+                onClick={() => dropWeek('first')}
+                data-testid="eli-acom-drop-first"
+              >
+                Quitar la primera semana
+              </button>
+              <button
+                type="button"
+                className="btn-passive"
+                onClick={() => dropWeek('last')}
+                data-testid="eli-acom-drop-last"
+              >
+                Quitar la última semana
+              </button>
+            </div>
+          )}
           {unknownInTable.length > 0 && (
             <div className="eli-acom__warn" data-testid="eli-acom-unknown">
               No están en la lista de hermanos (no se cuentan): {unknownInTable.join(', ')}
@@ -380,7 +470,12 @@ export default function EliAcomodadores({ onClose }) {
         <button type="button" className="btn eli-prompt__cancel" onClick={close}>
           Cerrar
         </button>
-        <button type="button" className="btn eli-prompt__ok" onClick={save} data-testid="eli-acom-save">
+        <button
+          type="button"
+          className="btn eli-prompt__ok"
+          onClick={save}
+          data-testid="eli-acom-save"
+        >
           Guardar el mes
         </button>
       </div>
@@ -394,7 +489,12 @@ function Shell({ onClose, children }) {
       className="eli-prompt__overlay eli-acom__overlay"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="eli-prompt__box eli-acom" role="dialog" aria-label="Turnos de acomodadores" data-testid="eli-acom">
+      <div
+        className="eli-prompt__box eli-acom"
+        role="dialog"
+        aria-label="Turnos de acomodadores"
+        data-testid="eli-acom"
+      >
         <div className="eli-acom__head">
           <strong>
             <i className="fas fa-users" /> Turnos de acomodadores
@@ -444,14 +544,22 @@ function Settings({ config, onSave, onRebuild }) {
         ))}
       </div>
       <div className="eli-acom__cfg-btns">
-        <button type="button" className="btn" disabled={!dias.length} onClick={() => onSave(semanas, dias)} data-testid="eli-acom-cfg-save">
+        <button
+          type="button"
+          className="btn"
+          disabled={!dias.length}
+          onClick={() => onSave(semanas, dias)}
+          data-testid="eli-acom-cfg-save"
+        >
           Guardar ajustes
         </button>
         <button type="button" className="btn" onClick={onRebuild}>
           Rehacer la tabla del mes
         </button>
       </div>
-      <div className="eli-acom__hint">Se guardan en el propio fichero (#+ACOM_SEMANAS, #+ACOM_DIAS), igual para Emacs.</div>
+      <div className="eli-acom__hint">
+        Se guardan en el propio fichero (#+ACOM_SEMANAS, #+ACOM_DIAS), igual para Emacs.
+      </div>
     </div>
   );
 }

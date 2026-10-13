@@ -285,3 +285,8 @@
   opacity: 1;
   color: var(--orange, #cb4b16);
 }
+
+/* (3.03) la lupa (única, arriba) en naranja mientras corre un reloj */
+.header-bar__actions__item.eli-search-clock {
+  color: var(--orange);
+}

@@ -1,5 +1,4 @@
 import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
-import { openPalette } from '../../../../lib/eli_palette';
 import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -28,7 +27,7 @@ const ActionDrawer = ({
   path,
   selectedTableCellId,
   selectedListItemId,
-  activeClocks,
+  // activeClocks: la lupa de arriba lo indica (3.03)
 }) => {
   const [isDisplayingArrowButtons, setIsDisplayingArrowButtons] = useState(false);
   const [isDisplayingCaptureButtons, setIsDisplayingCaptureButtons] = useState(false);
@@ -136,6 +135,8 @@ const ActionDrawer = ({
   arrowsOpen.current = isDisplayingArrowButtons;
   useEffect(() => {
     const onMove = () => {
+      // (3.03) con un encabezado seleccionado, lo hace el menú «Mover» de la barra flotante
+      if (document.querySelector('.eli-docbar.is-main')) return;
       setIsDisplayingCaptureButtons(false);
       setIsDisplayingArrowButtons(!arrowsOpen.current);
     };
@@ -381,27 +382,7 @@ const ActionDrawer = ({
               principales y Mover (flechas) están en el menú «⋯» de arriba (y con s, f y m). */}
           {renderMovementButtons()}
 
-          {/* ORG Mode para Eli: la paleta de comandos (Ctrl+Espacio). La vista GTD está en el
-              conmutador Documentos/GTD de arriba. Naranja mientras corre un reloj. */}
-          <ActionButton
-            iconName="search"
-            isDisabled={false}
-            onClick={openPalette}
-            dataTestId="eli-fab-palette"
-            additionalClassName={activeClocks !== 0 ? 'active-clock-indicator' : undefined}
-            style={{
-              opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
-              position: 'relative',
-              zIndex: 1,
-              pointerEvents:
-                isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
-            }}
-            tooltip={
-              activeClocks !== 0
-                ? 'Paleta de comandos (Ctrl+Espacio) · hay un reloj en marcha'
-                : 'Paleta de comandos (Ctrl+Espacio)'
-            }
-          />
+          {/* (3.03) la lupa (paleta, Ctrl+Espacio) está solo arriba: una sola lupa */}
 
           <ActionButton
             iconName="calendar-alt"

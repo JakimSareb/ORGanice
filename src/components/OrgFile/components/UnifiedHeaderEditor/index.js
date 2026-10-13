@@ -645,7 +645,10 @@ class UnifiedHeaderEditor extends PureComponent {
     if (this.props.inline) return this.renderSubEditor();
 
     return (
-      <div className="unified-header-editor" data-testid="unified-header-editor">
+      <div
+        className={'unified-header-editor' + (captureMode ? '' : ' eli-sheet')}
+        data-testid="unified-header-editor"
+      >
         {captureMode && captureTemplate && (
           <div className="capture-header-bar" data-testid="capture-header-bar">
             <div className="capture-header-bar__template-info">
@@ -690,15 +693,30 @@ class UnifiedHeaderEditor extends PureComponent {
             </div>
           </div>
         )}
+        {/* (3.03) Fuera de una captura, la ventana solo tiene lo suyo y un botón «Listo»: las
+            demás acciones del encabezado están en la barra flotante (EliDocBar), no aquí */}
+        {!captureMode && (
+          <button
+            type="button"
+            className="eli-sheet-done"
+            onClick={this.props.onInlineDone}
+            title="Listo (también al tocar fuera o con Esc)"
+            data-testid="eli-sheet-done"
+          >
+            <i className="fas fa-check" /> Listo
+          </button>
+        )}
         {this.renderSubEditor()}
-        <DrawerActionBar
-          onSwitch={onSwitch}
-          editRawValues={editRawValues}
-          setEditRawValues={setEditRawValues}
-          restorePreferEditRawValues={restorePreferEditRawValues}
-          captureMode={captureMode}
-          captureHeader={captureMode ? selectedHeader : null}
-        />
+        {captureMode && (
+          <DrawerActionBar
+            onSwitch={onSwitch}
+            editRawValues={editRawValues}
+            setEditRawValues={setEditRawValues}
+            restorePreferEditRawValues={restorePreferEditRawValues}
+            captureMode={captureMode}
+            captureHeader={captureMode ? selectedHeader : null}
+          />
+        )}
       </div>
     );
   }

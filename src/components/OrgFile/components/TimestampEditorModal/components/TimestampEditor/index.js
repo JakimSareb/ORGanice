@@ -380,12 +380,16 @@ class TimestampEditor extends PureComponent {
       // for scheduled timestamp and deadline the modal can be opened when no timestamp exists
       return (
         <>
-          <div className="timestamp-editor__field-title">Añadir fecha</div>
+          {/* (3.03) un botón con texto (antes, un «+» suelto) */}
           <div className="timestamp-editor__field">
-            <i
-              className="fas fa-plus timestamp-editor__icon timestamp-editor__icon--add"
+            <button
+              type="button"
+              className="btn eli-ts-add"
               onClick={this.createPlanningItem}
-            />
+              data-testid="eli-ts-add"
+            >
+              <i className="far fa-calendar-plus" /> Poner fecha (hoy, luego se cambia)
+            </button>
           </div>
         </>
       );

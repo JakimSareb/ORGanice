@@ -37,7 +37,20 @@ export const MONTHS_ES = [
   'Diciembre',
 ];
 const MON3 = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-const MON3_EN = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MON3_EN = [
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'may',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'oct',
+  'nov',
+  'dec',
+];
 export const DAYS = [
   { id: 'lun', label: 'Lun', offset: 0 },
   { id: 'mar', label: 'Mar', offset: 1 },
@@ -105,7 +118,10 @@ export const parseLast = (raw, today = new Date()) => {
 const isTableLine = (l) => /^\s*\|/.test(l);
 const isRuleLine = (l) => /^\s*\|[-+:\s]*\|?\s*$/.test(l) && /-/.test(l);
 export const cellsOf = (line) => {
-  const t = line.trim().replace(/^\|/, '').replace(/\|\s*$/, '');
+  const t = line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|\s*$/, '');
   return t.split('|').map((c) => c.trim());
 };
 export const formatTable = (rows, { headerRows = 1 } = {}) => {
@@ -135,8 +151,7 @@ const tableAt = (lines, start) => {
   return { start, end }; // [start, end)
 };
 
-const isHeaderRow = (cells, words) =>
-  cells.some((c) => words.some((w) => fold(c).startsWith(w)));
+const isHeaderRow = (cells, words) => cells.some((c) => words.some((w) => fold(c).startsWith(w)));
 
 // --- lectura ---
 export const parseAcom = (text, today = new Date()) => {
@@ -312,26 +327,81 @@ export const pendingMonths = (acom) => {
   );
 };
 
+// Una semana (desde su lunes) con sus días de reunión
+export const weekFrom = (monday, config) => {
+  const days = (config.dias || ['jue', 'sab'])
+    .map((id) => DAYS.find((x) => x.id === id))
+    .filter(Boolean)
+    .sort((a, b) => a.offset - b.offset)
+    .map((day) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + day.offset);
+      return { day: day.id, date, dia: `${day.label}-${date.getDate()}-${MON3[date.getMonth()]}` };
+    });
+  return {
+    semana: `${monday.getDate()}-${MON3[monday.getMonth()]}`,
+    monday: new Date(monday),
+    days,
+  };
+};
+
 // Semanas de un mes: los lunes que caen en él (hasta `semanas`), con sus días de reunión
 export const weeksOf = (year, month, config) => {
   const out = [];
   const d = new Date(year, month, 1);
   while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
   while (d.getMonth() === month && out.length < (config.semanas || 5)) {
-    const monday = new Date(d);
-    const days = (config.dias || ['jue', 'sab'])
-      .map((id) => DAYS.find((x) => x.id === id))
-      .filter(Boolean)
-      .sort((a, b) => a.offset - b.offset)
-      .map((day) => {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + day.offset);
-        return { day: day.id, date, dia: `${day.label}-${date.getDate()}-${MON3[date.getMonth()]}` };
-      });
-    out.push({ semana: `${monday.getDate()}-${MON3[monday.getMonth()]}`, monday, days });
+    out.push(weekFrom(d, config));
     d.setDate(d.getDate() + 7);
   }
   return out;
+};
+
+// (3.03) Lunes de una fila de la tabla (por su Semana «7-Sep», o por el día «Jue-10-Sep»)
+const mondayOfRow = (r, year, month) => {
+  const d = dateOfDia(r.semana, year, month) || r.date || dateOfDia(r.dia, year, month);
+  if (!d) return null;
+  const m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  while (m.getDay() !== 1) m.setDate(m.getDate() - 1);
+  return m;
+};
+
+// (3.03) Añadir a la tabla del mes la semana de antes de la primera (p. ej. la última del mes
+// anterior) o la de después de la última (la primera del mes siguiente). Devuelve las filas nuevas
+// (o las mismas si no se puede calcular).
+export const addWeek = (rows, where, { year, month }, config) => {
+  const dated = rows.filter((r) => mondayOfRow(r, year, month));
+  let monday;
+  if (!dated.length) {
+    const first = weeksOf(year, month, config)[0];
+    monday = first ? new Date(first.monday) : new Date(year, month, 1);
+    monday.setDate(monday.getDate() + (where === 'before' ? -7 : 0));
+  } else {
+    const ref = mondayOfRow(where === 'before' ? dated[0] : dated[dated.length - 1], year, month);
+    monday = new Date(ref);
+    monday.setDate(ref.getDate() + (where === 'before' ? -7 : 7));
+  }
+  const w = weekFrom(monday, config);
+  const fresh = w.days.map((d) => ({
+    semana: w.semana,
+    dia: d.dia,
+    date: d.date,
+    names: ['', ''],
+  }));
+  return where === 'before' ? [...fresh, ...rows] : [...rows, ...fresh];
+};
+
+// (3.03) Quitar la primera o la última semana de la tabla
+export const removeWeek = (rows, where) => {
+  if (!rows.length) return rows;
+  const keyOf = [];
+  let cur = '';
+  rows.forEach((r) => {
+    cur = r.semana || cur;
+    keyOf.push(cur);
+  });
+  const target = where === 'first' ? keyOf[0] : keyOf[keyOf.length - 1];
+  return rows.filter((r, i) => keyOf[i] !== target);
 };
 
 // Filas vacías de un mes nuevo
@@ -351,7 +421,9 @@ export const suggestedMonth = (acom, today = new Date()) => {
     const d = new Date(today.getFullYear(), today.getMonth() + 1, 1);
     return { year: d.getFullYear(), month: d.getMonth() };
   }
-  const last = acom.months.reduce((a, b) => (ymKey(b.year, b.month) > ymKey(a.year, a.month) ? b : a));
+  const last = acom.months.reduce((a, b) =>
+    ymKey(b.year, b.month) > ymKey(a.year, a.month) ? b : a
+  );
   const d = new Date(last.year, last.month + 1, 1);
   return { year: d.getFullYear(), month: d.getMonth() };
 };
@@ -360,7 +432,13 @@ export const suggestedMonth = (acom, today = new Date()) => {
 export const countersWith = (acom, extraRowsList = []) => {
   const map = {};
   allPeople(acom).forEach((p) => {
-    map[p.name] = { name: p.name, group: p.group, groupLabel: p.groupLabel, veces: p.veces, last: p.last };
+    map[p.name] = {
+      name: p.name,
+      group: p.group,
+      groupLabel: p.groupLabel,
+      veces: p.veces,
+      last: p.last,
+    };
   });
   extraRowsList.forEach((rows) => {
     const { turns } = monthTurns(acom, rows);
@@ -500,7 +578,9 @@ export const saveMonth = (text, { year, month, rows }, today = new Date()) => {
   const stamp = isoDate(today);
   const mark = [...toSum].sort((a, b) => b.line - a.line);
   mark.forEach((m) => {
-    const drawerAt = lines.findIndex((l, i) => i > m.line && i < m.end && /^\s*:PROPERTIES:\s*$/i.test(l));
+    const drawerAt = lines.findIndex(
+      (l, i) => i > m.line && i < m.end && /^\s*:PROPERTIES:\s*$/i.test(l)
+    );
     if (drawerAt >= 0) lines.splice(drawerAt + 1, 0, `:SUMADO: ${stamp}`);
     else lines.splice(m.line + 1, 0, ':PROPERTIES:', `:SUMADO: ${stamp}`, ':END:');
   });
@@ -532,7 +612,8 @@ export const saveConfig = (text, { semanas, dias }) => {
 };
 
 export const monthLabel = (y, m) => `${MONTHS_ES[m]} ${y}`;
-export const shortDate = (d) => (d ? `${d.getDate()}-${MON3[d.getMonth()]}-${d.getFullYear()}` : '—');
+export const shortDate = (d) =>
+  d ? `${d.getDate()}-${MON3[d.getMonth()]}-${d.getFullYear()}` : '—';
 export { sameOrBefore };
 
 // Contadores para elegir mientras se rellena un mes: la base + los meses pendientes + lo que se

@@ -176,3 +176,16 @@
 .eli-acom .btn.is-on {
   outline: 2px solid var(--blue, #268bd2);
 }
+
+/* (3.03) semana de antes / de después y quitar la primera o la última */
+.eli-acom__week--add {
+  border-style: dashed;
+  opacity: 0.8;
+}
+.eli-acom__week-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 0.9em;
+}
