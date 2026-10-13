@@ -11,7 +11,7 @@
 //   Logbook   = terminadas (DONE, CANCELLED…) · Reference = encabezados sin estado ni tareas debajo
 //   Áreas     = propiedad :AREA: (se hereda) · Energía :ENERGY: · Tiempo :EFFORT:
 import { List } from 'immutable';
-import { attributedStringToRawText } from '../export_org';
+import { attributedStringToRawText, createRawDescriptionText } from '../export_org';
 import { dateForTimestamp } from '../timestamps';
 import { DEFAULT_ENERGY, DEFAULT_EFFORT } from '../eli_todo_defaults';
 import { fileTargetsInText } from '../eli_attachments';
@@ -136,7 +136,9 @@ export const isSleeping = (task) => hasSleepTag(task.tags);
 const isFutureDate = (d, today) => !!d && startOfDay(d) > startOfDay(today);
 // Tarea (no proyecto) aparcada: dentro de algo dormido o de un proyecto que aún no empieza
 export const isParked = (task, today = new Date()) =>
-  !task.isProject && !task.isDone && (isSleeping(task) || isFutureDate(task.projectStart, today));
+  !task.isProject &&
+  !task.isDone &&
+  (isSleeping(task) || !!task.projectSleeping || isFutureDate(task.projectStart, today));
 export const projectState = (project, today = new Date()) => {
   if (isSleeping(project)) return 'sleep';
   if (isFutureDate(project.scheduled, today) || isFutureDate(project.projectStart, today))
@@ -187,6 +189,50 @@ const completedKeywordsOf = (file) =>
 // a la vista GTD o cambiar de lista no recalcula miles de encabezados.
 const fileTasksCache = new WeakMap();
 
+// (3.01) Tareas y referencias de OTROS ficheros asignadas a un proyecto: propiedad
+// «:PROYECTO: [[id:UUID][Título]]» (el proyecto lleva «:ID: UUID», como org-id). Se resuelven con
+// todos los ficheros a la vista: cuentan como las del proyecto (project, projectExternal); si no
+// se encuentra el proyecto (borrado, archivado, fichero sin cargar…), badProject y se comportan
+// como sueltas. Lo de debajo de una tarea asignada va con ella (salvo otro proyecto en medio).
+export const PROJECT_LINK_PROPERTY = 'PROYECTO';
+const ID_LINK_RE = /^\s*\[\[id:([^\]]+)\](?:\[([^\]]*)\])?\]\s*$/i;
+export const parseProjectLink = (value) => {
+  if (!value) return null;
+  const m = ID_LINK_RE.exec(String(value));
+  if (m) return { id: m[1].trim(), title: (m[2] || '').trim() };
+  const bare = /^\s*id:(\S+)\s*$/i.exec(String(value));
+  return bare ? { id: bare[1], title: '' } : null;
+};
+export const projectLinkFor = (orgId, title) =>
+  `[[id:${orgId}][${String(title || '').replace(/[\[\]]/g, '')}]]`;
+export const newOrgId = () => {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID().toUpperCase();
+  } catch (e) {}
+  const h = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).slice(1);
+  return `${h()}${h()}-${h()}-4${h().slice(1)}-${h()}-${h()}${h()}${h()}`.toUpperCase();
+};
+const resolveProjectLinks = (tasks) => {
+  if (!tasks.some((t) => t.projRef)) return tasks;
+  const byOrgId = new Map();
+  tasks.forEach((t) => {
+    if (t.isProject && t.orgId && !t.isTrashed) byOrgId.set(t.orgId.toLowerCase(), t);
+  });
+  return tasks.map((t) => {
+    if (!t.projRef || t.isProject) return t;
+    const p = byOrgId.get(t.projRef.id.toLowerCase());
+    if (!p) return t.isDone ? t : { ...t, badProject: true };
+    if (p.path === t.path && t.project && t.project.id === p.id) return t; // ya es suya
+    return {
+      ...t,
+      project: { id: p.id, path: p.path, title: p.title },
+      projectExternal: true,
+      projectStart: laterDate(p.scheduled, p.projectStart),
+      projectSleeping: hasSleepTag(p.tags),
+    };
+  });
+};
+
 export const buildTasks = (files, inboxPaths = []) => {
   const tasks = [];
   if (!files) return tasks;
@@ -202,7 +248,7 @@ export const buildTasks = (files, inboxPaths = []) => {
     fileTasksCache.set(file, { path, isInboxFile, tasks: fileTasks });
     for (const t of fileTasks) tasks.push(t);
   });
-  return tasks;
+  return resolveProjectLinks(tasks);
 };
 
 const buildFileTasks = (file, path, isInboxFile) => {
@@ -224,6 +270,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
       const rawTitle = header.getIn(['titleLine', 'rawTitle']) || '';
       const pm = PRIORITY_RE.exec(rawTitle);
       const isProject = keyword === 'PROJECT';
+      const ownRef = parseProjectLink(propertyValue(header, PROJECT_LINK_PROPERTY));
+      const projRef = isProject ? null : ownRef || (parent ? parent.projRef : null);
       const task = {
         key: `${path}::${header.get('id')}`,
         id: header.get('id'),
@@ -260,6 +308,10 @@ const buildFileTasks = (file, path, isInboxFile) => {
         // Fecha de inicio del proyecto que la contiene (SCHEDULED del PROJECT o de uno de fuera)
         projectStart: parent ? parent.projectStart : null,
         isProject,
+        // (3.01) :ID: (org-id) del encabezado y proyecto asignado con :PROYECTO:
+        orgId: propertyValue(header, 'ID'),
+        projRef,
+        projRefOwn: !!ownRef && !isProject,
         isInboxFile,
         parentHasKeyword: parent ? parent.hasKeyword : false,
         hasTaskChildren: false,
@@ -280,6 +332,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         project: isProject ? { id: header.get('id'), path, title: task.title } : task.project,
         projectStart: isProject ? laterDate(task.scheduled, task.projectStart) : task.projectStart,
         hasKeyword: !!keyword || (parent ? parent.hasKeyword : false),
+        projRef: isProject ? null : projRef,
       });
     });
   }
@@ -431,6 +484,11 @@ export const matchesFilters = (task, filters) => {
   const { area, tags = [], energy, time, dated, text } = filters || {};
   if (area && area !== '*' && (task.area || '') !== (area === '-' ? '' : area)) return false;
   if (tags.length && !tags.every((t) => task.tags.includes(t))) return false;
+  // (3.01) etiquetas tachadas en la barra de filtros: fuera las que las llevan
+  const notTags = (filters && filters.notTags) || [];
+  if (notTags.length && notTags.some((t) => task.tags.includes(t))) return false;
+  // (3.01) filtro «Proyecto no encontrado»
+  if (filters && filters.badProject && !task.badProject) return false;
   if (energy && (task.energy || '').toLowerCase() !== energy.toLowerCase()) return false;
   if (time) {
     const minutes = effortMinutes(task.effort);
@@ -465,6 +523,11 @@ const byDateThenTitle = (a, b) => {
   return 0;
 };
 
+// (3.01) ¿Es de ese proyecto? (por estructura o asignada con :PROYECTO:)
+export const inProject = (t, project) =>
+  !!t.project && t.project.path === project.path && t.project.id === project.id;
+const byProjectOrder = (a, b) => cmpRank(a, b);
+
 // Tareas de una vista (lista, proyecto) con los filtros aplicados
 export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
   let out;
@@ -491,16 +554,12 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
     const projectTask = tasks.find((t) => t.key === view.key);
     if (!projectTask) return [];
     const s = getGtdConfig().sections.projects;
-    out = tasks.filter(
-      (t) =>
-        t.path === projectTask.path &&
-        t.project &&
-        t.project.id === projectTask.id &&
-        t.keyword &&
-        !t.isDone &&
-        !t.isProject &&
-        !hiddenBy(t, s, today)
-    );
+    out = tasks
+      .filter(
+        (t) =>
+          inProject(t, projectTask) && t.keyword && !t.isDone && !t.isProject && !hiddenBy(t, s, today)
+      )
+      .sort(byProjectOrder);
   } else if (view.id === 'focus') {
     out = tasks.filter((t) => isFocus(t, today));
   } else if (view.id === 'deadline') {
@@ -525,6 +584,8 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
         !t.isDone &&
         !t.isProject &&
         (withRules ? matchesSectionRules(t, s, propertyOfTask) : !!t.keyword) &&
+        // (3.01) «Mostrar cabeceras sin tarea»: también los encabezados sin estado (con reglas)
+        (!!t.keyword || hasInboxTag(t) || (s.headings === true && withRules)) &&
         !hiddenBy(t, s, today)
     );
   } else {
@@ -588,15 +649,8 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
   const byId = {};
   out.forEach((sec) => (byId[sec.id] = sec));
   tasks
-    .filter(
-      (t) =>
-        t.path === projectTask.path &&
-        t.project &&
-        t.project.id === projectTask.id &&
-        t.keyword &&
-        !t.isProject &&
-        !t.isTrashed
-    )
+    .filter((t) => inProject(t, projectTask) && t.keyword && !t.isProject && !t.isTrashed)
+    .sort(byProjectOrder)
     .filter((t) => {
       if (t.isDone) return true;
       // Aparcadas (proyecto dormido) y hábitos: según los ticks de Ajustes; las programadas a
@@ -614,18 +668,11 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
   });
   // (2.17) «Referencias»: los encabezados sin estado del proyecto (notas, material…), en el orden
   // del fichero; división plegable al final, como «Terminadas»
+  // (3.01) …y las de otros ficheros asignadas al proyecto, detrás
   const refs = tasks
-    .filter(
-      (t) =>
-        t.path === projectTask.path &&
-        !t.keyword &&
-        !t.isTrashed &&
-        t.project &&
-        t.project.id === projectTask.id &&
-        t.id !== projectTask.id
-    )
+    .filter((t) => !t.keyword && !t.isTrashed && inProject(t, projectTask) && t.key !== projectTask.key)
     .filter((t) => matchesFilters(t, filters))
-    .sort((a, b) => a.index - b.index);
+    .sort(byProjectOrder);
   out.push({ id: 'refs', label: 'Referencias', icon: 'far fa-file-alt', tasks: refs });
   return out;
 };
@@ -649,10 +696,7 @@ export const groupByProject = (list, today = new Date()) => {
     byKey[key].tasks.push(t);
   });
   groups.forEach((g) => {
-    g.tasks = dueFirstFileOrder(
-      [...g.tasks].sort((a, b) => a.index - b.index),
-      today
-    );
+    g.tasks = dueFirstFileOrder([...g.tasks].sort(byProjectOrder), today);
   });
   return { loose, groups };
 };
@@ -699,7 +743,9 @@ export const facetsFor = (tasks) => {
   const energy = new Set();
   let hasEffort = false;
   let hasDates = false;
+  let hasBadProject = false;
   tasks.forEach((t) => {
+    if (t.badProject) hasBadProject = true;
     t.tags.forEach((x) => x.toLowerCase() !== SLEEP_TAG && tags.add(x));
     if (t.energy) energy.add(t.energy);
     if (t.effort) hasEffort = true;
@@ -717,6 +763,7 @@ export const facetsFor = (tasks) => {
     ],
     hasEffort,
     hasDates,
+    hasBadProject,
   };
 };
 
@@ -770,16 +817,9 @@ export const archivableDone = (tasks, onlyPaths = null) => {
 export const projectsOverview = (tasks, filters = {}, today = new Date()) => {
   const groups = { active: [], scheduled: [], sleep: [] };
   projectsOf(tasks, filters).forEach((p) => {
-    const actions = tasks.filter(
-      (t) =>
-        t.path === p.path &&
-        t.project &&
-        t.project.id === p.id &&
-        t.keyword &&
-        !t.isDone &&
-        !t.isProject &&
-        !t.isTrashed
-    );
+    const actions = tasks
+      .filter((t) => inProject(t, p) && t.keyword && !t.isDone && !t.isProject && !t.isTrashed)
+      .sort(byProjectOrder);
     const next = actions.find((t) => t.keyword === 'NEXT') || actions[0] || null;
     const state = projectState(p, today);
     groups[state].push({
@@ -895,21 +935,84 @@ export const sortByDue = (list) => {
   return [...list].sort((a, b) => (a.deadline || far) - (b.deadline || far));
 };
 
-// (3.0) Copiar la lista como Markdown (⌘C / Ctrl+C sin texto seleccionado), como Nirvana
+// (3.01) Copiar la lista (o las seleccionadas) como ORG Mode (⌘C / Ctrl+C sin texto
+// seleccionado): «* TODO título :etiqueta:», un nivel más por cada subtarea que va con su madre,
+// y debajo su cuerpo tal cual (SCHEDULED/DEADLINE, propiedades y notas). Con título (la lista
+// entera), «#+TITLE:» delante.
 const ymd = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
     2,
     '0'
   )}`;
-export const tasksToMarkdown = (title, list) => {
-  const lines = list.map((t) => {
-    let line = `- [${t.isDone ? 'x' : ' '}] ${t.title || '(sin título)'}`;
-    if (t.project && !t.isProject) line += ` (${t.project.title})`;
-    if (t.deadline) line += ` (due: ${ymd(t.deadline)})`;
-    if (t.scheduled) line += ` (start: ${ymd(t.scheduled)})`;
-    return line;
+export const tasksToOrg = (title, list) => {
+  const byKey = new Map(list.map((t) => [t.key, t]));
+  const depthOf = (t) => {
+    let d = 0;
+    let cur = t;
+    const seen = new Set();
+    while (cur && cur.parentId) {
+      const pk = `${cur.path}::${cur.parentId}`;
+      if (seen.has(pk)) break;
+      seen.add(pk);
+      const p = byKey.get(pk);
+      if (!p) break;
+      d++;
+      cur = p;
+    }
+    return d;
+  };
+  const blocks = list.map((t) => {
+    const raw = (t.rawTitle || t.title || '').replace(PRIORITY_RE, '').trim() || '(sin título)';
+    const tags = (t.ownTags || t.tags || []).filter(Boolean);
+    const head = [t.keyword || null, t.priority ? `[#${t.priority}]` : null, raw]
+      .filter(Boolean)
+      .join(' ');
+    const line = `${'*'.repeat(depthOf(t) + 1)} ${head}${tags.length ? ` :${tags.join(':')}:` : ''}`;
+    let body = '';
+    if (t.header && t.header.get) {
+      try {
+        body = createRawDescriptionText(t.header, false, true);
+      } catch (e) {
+        body = t.description || '';
+      }
+    } else {
+      const plan = [
+        t.scheduled ? `SCHEDULED: <${ymd(t.scheduled)}>` : '',
+        t.deadline ? `DEADLINE: <${ymd(t.deadline)}>` : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+      body = [plan, t.description || ''].filter(Boolean).join('\n');
+    }
+    body = body.replace(/\s+$/, '');
+    return body ? `${line}\n${body}` : line;
   });
-  return title ? [`## ${title}`, '', ...lines].join('\n') : lines.join('\n');
+  return title ? [`#+TITLE: ${title}`, '', ...blocks].join('\n') : blocks.join('\n');
+};
+
+// (3.01) «Acciones siguientes secuenciales» (como Nirvana): de cada proyecto, solo su primera
+// acción (en el orden del proyecto: primero las suyas, en el orden del fichero, y luego las de
+// otros ficheros asignadas con :PROYECTO:); las sueltas, todas
+const projectKeyOf = (t) => (t.project ? `${t.project.path}::${t.project.id}` : null);
+const projectRank = (t) => [t.projectExternal ? 1 : 0, t.projectExternal ? t.path : '', t.index];
+const cmpRank = (a, b) => {
+  const ra = projectRank(a);
+  const rb = projectRank(b);
+  for (let i = 0; i < ra.length; i++) {
+    if (ra[i] < rb[i]) return -1;
+    if (ra[i] > rb[i]) return 1;
+  }
+  return 0;
+};
+export const firstPerProject = (list) => {
+  const best = new Map();
+  list.forEach((t) => {
+    const k = !t.isProject && projectKeyOf(t);
+    if (!k) return;
+    const b = best.get(k);
+    if (!b || cmpRank(t, b) < 0) best.set(k, t);
+  });
+  return list.filter((t) => t.isProject || !t.project || best.get(projectKeyOf(t)) === t);
 };
 
 // (3.0) Tiempo total de varias tareas (menú contextual con varias seleccionadas)

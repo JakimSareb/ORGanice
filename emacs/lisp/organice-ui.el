@@ -8,6 +8,8 @@
 ;;   m Someday, p Proyectos, r Reference, l Logbook, a Agenda.
 ;; - Adjuntos: C-c g j adjuntar, o abrir, D borrar, R revisar los de tareas terminadas.
 ;; - Calendario: C-c g C.
+;; - (3.01) Asignar a un proyecto de otro fichero: C-c g y (C-u: quitar); C-c g Y: desvincular
+;;   las de proyecto no encontrado (vista «gY» de C-c a).
 ;; - Menú lateral de GTD (como la app): sale solo al entrar en GTD; C-c g b lo muestra u oculta.
 ;; - Formato como en la app: ⌘B negrita, ⌘I cursiva, ⌘U subrayado, ⌘⇧X tachado, ⌘E código,
 ;;   ⌘⇧E literal (en Linux/Windows, la tecla Super; y siempre también C-c e b/i/u/s/c/v).
@@ -199,6 +201,9 @@
     (define-key m "k" #'organice-trash)
     (define-key m "c" #'organice-cleanup)
     (define-key m "K" #'organice-empty-trash)
+    ;; (3.01) asignar a un proyecto de cualquier fichero (C-u: quitarlo); Y: proyecto no encontrado
+    (define-key m "y" #'organice-assign-project)
+    (define-key m "Y" #'organice-unlink-orphans)
     m)
   "Atajos de la vista GTD (C-c g …).")
 

@@ -115,6 +115,7 @@ export default class HeaderActionDrawer extends PureComponent {
       onEditPlain,
       onWiden,
       isNarrowed,
+      onAssignProject,
     } = this.props;
 
     // Create a fallback function for onDuplicateHeader if not provided
@@ -270,6 +271,13 @@ export default class HeaderActionDrawer extends PureComponent {
         label: 'Duplicar',
         onClick: handleDuplicateHeader,
         testId: 'eli-duplicate-header',
+      },
+      // (3.01) asignar a un proyecto (aunque esté en otro fichero)
+      onAssignProject && {
+        icon: 'fas fa-project-diagram',
+        label: 'Asignar a proyecto…',
+        onClick: onAssignProject,
+        testId: 'eli-assign-project',
       },
       onArchive && {
         icon: 'fas fa-archive',

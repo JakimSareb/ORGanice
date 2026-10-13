@@ -32,7 +32,7 @@ const DEFAULT_BINDINGS = [
 // tecla, grupo]
 export const GTD_BINDINGS = [
   // (3.0) como Nirvana (https://www.nirvanahq.com/es/help/how-to/keyboard-shortcuts)
-  ['GTD: tarea nueva en esta lista', 'gtdNew', 'n', 'Crear'],
+  ['GTD: tarea nueva (debajo de la seleccionada)', 'gtdNew', 'n', 'Crear'],
   ['GTD: tarea nueva arriba de esta lista', 'gtdNewTop', 'shift+n', 'Crear'],
   ['GTD: tarea nueva en Inbox', 'gtdNewInbox', 'i', 'Crear'],
   ['GTD: tarea nueva en Next', 'gtdNewNext', 'x', 'Crear'],

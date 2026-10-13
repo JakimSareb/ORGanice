@@ -2388,3 +2388,104 @@
     max-width: 45%;
   }
 }
+
+/* (3.01) estrella: al pasar el ratón, sombreada en dorado (solo con ratón; la marcada no cambia) */
+@media (hover: hover) {
+  .gtd-star:not(.is-on):hover {
+    color: #f2b24a;
+    opacity: 1;
+  }
+  .gtd-star:not(.is-on):hover i {
+    font-weight: 900;
+    opacity: 0.55;
+  }
+}
+/* (3.01) icono de notas (botón: ciclo de notas solo en esa fila) */
+.gtd-notes-btn {
+  border: 0;
+  background: transparent;
+  padding: 0 2px;
+  cursor: pointer;
+  color: var(--base1);
+  font: inherit;
+  font-size: 12px;
+}
+.gtd-notes-btn.is-on {
+  color: var(--base00);
+}
+@media (hover: hover) {
+  .gtd-notes-btn:hover {
+    color: var(--blue);
+  }
+}
+/* (3.01) nombre del proyecto en la fila: abre el proyecto */
+.gtd-meta--project-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.gtd-meta--project-link:hover {
+  text-decoration: underline;
+}
+.gtd-meta--bad-project {
+  color: var(--red);
+}
+/* (3.01) Opciones de vista → sin «Ajustar títulos largos»: una línea con … */
+.gtd-task__title.is-nowrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
+/* (3.01) títulos de grupo dentro del menú (Opciones de vista: Acciones, Detalles) */
+.gtd-menu__heading {
+  padding: 6px 12px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--base1);
+}
+/* (3.01) etiqueta tachada en la barra de filtros: fuera las que la llevan */
+.gtd-chip.is-not {
+  text-decoration: line-through;
+  border-color: var(--red);
+  color: var(--red);
+  background: transparent;
+}
+.gtd-chip--bad.is-on {
+  border-color: var(--red);
+}
+/* (3.01) «Proyectos» del menú lateral: plegable */
+.gtd-side__section-toggle {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.gtd-tagman__btn.is-on {
+  color: var(--blue);
+  opacity: 1;
+}
+/* (3.01) autorrelleno de la Entrada rápida */
+.gtd-rapid {
+  position: relative;
+}
+.gtd-menu.gtd-rapid__ac {
+  position: absolute;
+  left: 28px;
+  top: 100%;
+  min-width: 220px;
+  max-width: calc(100% - 36px);
+  z-index: 3100;
+}
+.gtd-rapid__ac .gtd-menu__item.is-active {
+  background: var(--base2);
+}

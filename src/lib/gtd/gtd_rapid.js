@@ -7,6 +7,8 @@
 //   #focus o #star      con ★ (Focus)            (también #enfoque, #estrella)
 //   #next o #someday    a Next o a Someday       (también #siguiente, #algundia)
 //   #project            crea un proyecto         (también #proyecto)
+//   >Nombre             (3.01) en ese proyecto (hasta el siguiente «#» o el final; se elige de
+//                       la lista que sale al escribir «>»)
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
@@ -156,10 +158,18 @@ const FLAGS = {
 };
 
 /**
- * @returns { title, tags, deadline, focus, list ('next' | 'someday' | null), project, badDate }
+ * @returns { title, tags, deadline, focus, list ('next' | 'someday' | null), project, badDate,
+ *            projectName }
  */
 export const parseRapidEntry = (input, today = new Date()) => {
-  const text = String(input || '');
+  let text = String(input || '');
+  // (3.01) «>Proyecto»: hasta el siguiente «#» (o el final)
+  let projectName = null;
+  const pm = /(^|\s)>([^#>]*)/.exec(text);
+  if (pm) {
+    projectName = pm[2].trim() || null;
+    text = `${text.slice(0, pm.index)}${pm[1]}${text.slice(pm.index + pm[0].length)}`;
+  }
   const first = text.search(/(^|\s)#\S/);
   const title = (first < 0 ? text : text.slice(0, first)).trim();
   const out = {
@@ -170,6 +180,7 @@ export const parseRapidEntry = (input, today = new Date()) => {
     list: null,
     project: false,
     badDate: null,
+    projectName,
   };
   if (first < 0) return out;
   // Trozos que empiezan por «#» (lo que va detrás de #due es la fecha)
@@ -200,4 +211,75 @@ export const parseRapidEntry = (input, today = new Date()) => {
     if (rest.length && key !== 'due') out.title = `${out.title} ${rest.join(' ')}`.trim();
   });
   return out;
+};
+
+// (3.01) Nombres que admite «#» además de las etiquetas (para la lista de sugerencias)
+export const RAPID_KEYWORDS = [
+  { word: 'due', hint: 'fecha límite: #due mañana' },
+  { word: 'star', hint: 'Focus ★' },
+  { word: 'next', hint: 'a Next' },
+  { word: 'someday', hint: 'a Someday' },
+  { word: 'project', hint: 'crear un proyecto' },
+];
+
+const fold = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+// (3.01) Proyecto por su nombre (sin acentos ni mayúsculas): exacto o, si no, el único que empieza
+// así o lo contiene. Devuelve el proyecto, null (ninguno) o 'many' (varios).
+export const findProjectByName = (projects, name) => {
+  const q = fold(name).trim();
+  if (!q) return null;
+  const exact = projects.filter((p) => fold(p.title).trim() === q);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) return 'many';
+  const starts = projects.filter((p) => fold(p.title).startsWith(q));
+  if (starts.length === 1) return starts[0];
+  const has = starts.length ? starts : projects.filter((p) => fold(p.title).includes(q));
+  if (has.length === 1) return has[0];
+  return has.length ? 'many' : null;
+};
+
+// (3.01) Autorrelleno de la Entrada rápida: qué se está escribiendo justo antes del cursor
+// («#eti» o «>Proy…»). Devuelve { kind: 'tag' | 'project', query, start } o null.
+export const rapidTokenAt = (text, caret) => {
+  const before = String(text || '').slice(0, caret);
+  let m = /(^|\s)#([^\s#>]*)$/.exec(before);
+  if (m) return { kind: 'tag', query: m[2], start: m.index + m[1].length };
+  m = /(^|\s)>([^#>]*)$/.exec(before);
+  if (m) return { kind: 'project', query: m[2].replace(/^\s+/, ''), start: m.index + m[1].length };
+  return null;
+};
+export const rapidSuggestions = (token, { tags = [], projects = [] } = {}, max = 8) => {
+  if (!token) return [];
+  const q = fold(token.query);
+  if (token.kind === 'tag') {
+    const fromTags = tags
+      .filter((t) => fold(t).includes(q))
+      .sort((a, b) => (fold(a).startsWith(q) ? 0 : 1) - (fold(b).startsWith(q) ? 0 : 1))
+      .map((t) => ({ value: t, label: t, icon: 'fas fa-tag' }));
+    const fromWords = RAPID_KEYWORDS.filter((k) => fold(k.word).startsWith(q)).map((k) => ({
+      value: k.word,
+      label: k.word,
+      hint: k.hint,
+      icon: 'fas fa-hashtag',
+    }));
+    return [...fromTags, ...fromWords].slice(0, max);
+  }
+  return projects
+    .filter((p) => fold(p.title).includes(q))
+    .sort((a, b) => (fold(a.title).startsWith(q) ? 0 : 1) - (fold(b.title).startsWith(q) ? 0 : 1))
+    .slice(0, max)
+    .map((p) => ({ value: p.title, label: p.title, icon: 'fas fa-project-diagram', key: p.key }));
+};
+// Aceptar una sugerencia: el texto con el trozo sustituido y dónde queda el cursor
+export const applyRapidSuggestion = (text, caret, token, sug) => {
+  const lead = token.kind === 'tag' ? '#' : '>';
+  const insert = `${lead}${sug.value} `;
+  const after = String(text).slice(caret).replace(/^[^\s#>]*/, token.kind === 'tag' ? '' : '');
+  const out = `${String(text).slice(0, token.start)}${insert}${after.replace(/^\s+/, '')}`;
+  return { text: out, caret: token.start + insert.length };
 };

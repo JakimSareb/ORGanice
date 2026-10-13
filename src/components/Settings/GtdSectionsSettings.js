@@ -299,6 +299,14 @@ export default function GtdSectionsSettings() {
             testId={`eli-gtdsec-${id}-${key}`}
           />
         ))}
+        {custom && (
+          <Tick
+            checked={!!s.headings}
+            label="Mostrar cabeceras sin tarea (encabezados sin estado que cumplan sus reglas)"
+            onChange={(v) => setSection(id, { headings: v })}
+            testId={`eli-gtdsec-${id}-headings`}
+          />
+        )}
         {custom ? (
           <button
             type="button"

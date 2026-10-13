@@ -2,6 +2,7 @@
 // final de la fila; también el ⋯ de la cabecera), como el de Nirvana. Los submenús («Mover a ▸»,
 // «Convertir ▸»…) se abren en el mismo sitio, con «‹» para volver (así funciona igual con el dedo).
 //   items: [{ label, icon, onClick, sub: [...], checked, danger, disabled, sep, hint }]
+//   (3.01) { heading: 'Texto' }: título de un grupo de opciones (no se puede pulsar)
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export default function GtdMenu({ x, y, items, header, onClose, testId = 'gtd-menu' }) {
@@ -84,6 +85,10 @@ export default function GtdMenu({ x, y, items, header, onClose, testId = 'gtd-me
         {page.items.map((item, i) =>
           item.sep ? (
             <div key={`sep${i}`} className="gtd-menu__sep" />
+          ) : item.heading ? (
+            <div key={`h${i}`} className="gtd-menu__heading">
+              {item.heading}
+            </div>
           ) : (
             <button
               key={item.label + i}

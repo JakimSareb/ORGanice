@@ -14,6 +14,8 @@ export default function GtdTagManager({
   onRenameArea,
   onAddDefaultTag,
   onRemoveDefaultTag,
+  headingTags = [],
+  onToggleHeadings = null,
 }) {
   useEffect(() => {
     const onKey = (e) => {
@@ -152,6 +154,26 @@ export default function GtdTagManager({
                   <i className="fas fa-tag" /> {tag}
                 </button>
                 <span className="gtd-tagman__n">{tagCounts[tag] || ''}</span>
+                {onToggleHeadings && (
+                  // (3.01) en la vista de esta etiqueta, también los encabezados sin estado
+                  // (en un grupo aparte, debajo de las acciones)
+                  <button
+                    type="button"
+                    className={
+                      'gtd-tagman__btn' + (headingTags.includes(tag) ? ' is-on' : '')
+                    }
+                    onClick={() => onToggleHeadings(tag)}
+                    aria-pressed={headingTags.includes(tag)}
+                    title={
+                      headingTags.includes(tag)
+                        ? 'Cabeceras sin tarea: se ven (en un grupo aparte, debajo)'
+                        : 'Cabeceras sin tarea: mostrarlas también en la vista de esta etiqueta'
+                    }
+                    data-testid="gtd-tagman-headings"
+                  >
+                    <i className="far fa-file-alt" />
+                  </button>
+                )}
                 <button
                   type="button"
                   className="gtd-tagman__btn"

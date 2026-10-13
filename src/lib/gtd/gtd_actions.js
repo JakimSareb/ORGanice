@@ -16,6 +16,10 @@ import {
   doneWaitingCleanup,
   tagsForList,
   TRASH_TAG,
+  propertyValue,
+  PROJECT_LINK_PROPERTY,
+  projectLinkFor,
+  newOrgId,
 } from './gtd_model';
 import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
@@ -230,6 +234,14 @@ const buildSaveTask = (getState, task, changes) => {
       'propertyListItems',
       setProperty(h.get('propertyListItems'), EFFORT_PROPERTY, changes.effort)
     );
+  }
+  // (3.01) propiedades sueltas: { NOMBRE: valor } (null o '' la quita)
+  if (changes.props) {
+    Object.keys(changes.props).forEach((name) => {
+      const v = changes.props[name];
+      if ((v || null) === (propertyValue(h, name) || null)) return;
+      h = h.set('propertyListItems', setProperty(h.get('propertyListItems'), name, v));
+    });
   }
   // (3.0) DONE_IN (grupo «Hecho» de su lista): se pone al terminarla desde GTD y se quita al
   // reabrirla, al llevarla a otra lista o con la «Limpieza»
@@ -737,3 +749,43 @@ export const gtdRedo = () => undoRedo(ActionTypes.REDO);
 
 // Archivar la tarea (como en la hoja: a su fichero _archive), aunque esté en otro fichero
 export const gtdArchiveTask = (task) => (dispatch) => dispatch(archiveSubtree(task.id, task.path));
+
+// (3.01) Asignar tareas o referencias (de cualquier fichero) a un proyecto: «:PROYECTO:
+// [[id:UUID][Título]]»; si el proyecto aún no tiene «:ID:», se le pone (como org-id). Las que ya
+// son del proyecto por estar dentro de él no se tocan (salvo quitarles otra asignación). Todo en
+// un solo Deshacer. Devuelve cuántas se han cambiado.
+export const assignProjectEntries = (tasks, project) => {
+  if (!project) return [];
+  const entries = [];
+  let orgId = project.orgId;
+  if (!orgId) {
+    orgId = newOrgId();
+    entries.push([project, { props: { ID: orgId } }]);
+  }
+  const link = projectLinkFor(orgId, project.title);
+  tasks.forEach((t) => {
+    if (!t || t.isProject || t.key === project.key) return;
+    const structural =
+      !t.projectExternal &&
+      !!t.project &&
+      t.project.path === project.path &&
+      t.project.id === project.id &&
+      !t.projRefOwn;
+    if (structural) return;
+    const inside = t.path === project.path && t.project && t.project.id === project.id && !t.projectExternal;
+    entries.push([t, { props: { [PROJECT_LINK_PROPERTY]: inside ? null : link } }]);
+  });
+  return entries;
+};
+export const gtdAssignProject = (tasks, project) => (dispatch) => {
+  const entries = assignProjectEntries(tasks, project);
+  if (!entries.length) return 0;
+  return dispatch(gtdSaveMany(entries));
+};
+// Quitar la asignación (la tarea sigue donde está, como suelta o en su proyecto de siempre)
+export const gtdUnassignProject = (tasks) => (dispatch) =>
+  dispatch(
+    gtdSaveMany(
+      tasks.filter((t) => t && t.projRefOwn).map((t) => [t, { props: { [PROJECT_LINK_PROPERTY]: null } }])
+    )
+  );

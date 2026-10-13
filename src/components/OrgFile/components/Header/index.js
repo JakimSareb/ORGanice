@@ -30,6 +30,7 @@ import { getCurrentTimestamp, millisDuration } from '../../../../lib/timestamps'
 import { Map } from 'immutable';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
+import { eliAssignHeaderToProject } from '../../../../lib/gtd/gtd_assign';
 
 // ORG Mode para Eli: dentro de un cuadro de texto no se desliza ni se arrastra el encabezado
 const eliIsEditableTarget = (el) =>
@@ -773,6 +774,11 @@ class Header extends PureComponent {
                     );
                   }}
                   onArchive={() => this.props.org.archiveSubtree(header.get('id'))}
+                  onAssignProject={
+                    this.props.path && !this.props.path.startsWith('/__')
+                      ? () => this.props.assignProject(this.props.path, header.get('id'))
+                      : null
+                  }
                   onDuplicateHeader={this.handleDuplicateHeader}
                 />
               </Collapse>
@@ -815,6 +821,8 @@ const mapStateToProps = (state, ownProps) => {
 const mapDispatchToProps = (dispatch) => ({
   org: bindActionCreators(orgActions, dispatch),
   base: bindActionCreators(baseActions, dispatch),
+  // (3.01) «Asignar a proyecto…» (tareas y referencias de otros ficheros)
+  assignProject: (path, headerId) => dispatch(eliAssignHeaderToProject(path, headerId)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Header);

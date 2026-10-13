@@ -8,7 +8,7 @@ import {
   tasksForView,
   doneForView,
   dueInfo,
-  tasksToMarkdown,
+  tasksToOrg,
   totalEffort,
   listOf,
   countsFor,
@@ -172,7 +172,7 @@ describe('3.0: copia, etiquetas, Focus de proyectos', () => {
   });
 });
 
-describe('3.0: fechas, Markdown y tiempo total', () => {
+describe('3.0: fechas, copiar y tiempo total', () => {
   test('fecha límite como Nirvana', () => {
     expect(dueInfo(new Date(2026, 9, 12), TODAY)).toMatchObject({ level: 'overdue', text: 'Atrasada' });
     expect(dueInfo(new Date(2026, 9, 13), TODAY)).toMatchObject({ level: 'today', text: 'Vence hoy' });
@@ -181,12 +181,24 @@ describe('3.0: fechas, Markdown y tiempo total', () => {
     expect(dueInfo(new Date(2026, 11, 1), TODAY).level).toBe('later');
   });
 
-  test('Markdown de la lista', () => {
-    const md = tasksToMarkdown('Next', [
-      { title: 'Uno', isDone: false, project: { title: 'Casa' }, deadline: new Date(2026, 9, 20) },
-      { title: 'Dos', isDone: true },
+  test('ORG Mode de la lista (3.01)', () => {
+    const org = tasksToOrg('Next', [
+      {
+        key: 'a::1',
+        path: 'a',
+        id: '1',
+        title: 'Uno',
+        rawTitle: '[#A] Uno',
+        keyword: 'NEXT',
+        priority: 'A',
+        ownTags: ['@casa'],
+        deadline: new Date(2026, 9, 20),
+      },
+      { key: 'a::2', path: 'a', id: '2', parentId: '1', title: 'Dos', rawTitle: 'Dos', keyword: 'DONE' },
     ]);
-    expect(md).toBe('## Next\n\n- [ ] Uno (Casa) (due: 2026-10-20)\n- [x] Dos');
+    expect(org).toBe(
+      '#+TITLE: Next\n\n* NEXT [#A] Uno :@casa:\nDEADLINE: <2026-10-20>\n** DONE Dos'
+    );
   });
 
   test('tiempo total', () => {

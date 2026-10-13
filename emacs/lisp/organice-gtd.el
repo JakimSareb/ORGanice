@@ -310,12 +310,99 @@ grupo por proyecto (necesita org-super-agenda)."
   (lambda () (eq (organice-list-of) id)))
 
 (defun organice--project-title-here ()
-  "Título del PROJECT que contiene el punto (o nil si la tarea está suelta)."
+  "Título del PROJECT que contiene el punto (o nil si la tarea está suelta).
+(3.01) Si la tarea (o una antepasada) está asignada a un proyecto de otro fichero con
+:PROYECTO: [[id:…][…]], ese proyecto."
+  (or (organice--assigned-project-title)
+      (save-excursion
+        (let (title)
+          (while (and (not title) (org-up-heading-safe))
+            (when (organice--project-p) (setq title (org-get-heading t t t t))))
+          title))))
+
+;;;; (3.01) Tareas y referencias de otros ficheros asignadas a un proyecto -------------------
+;; Como en la app: «:PROYECTO: [[id:UUID][Título]]» en la tarea y «:ID: UUID» en el PROJECT
+;; (org-id). C-c g y asigna (o, con prefijo, quita), C-c g Y lista las de proyecto no encontrado.
+
+(require 'org-id)
+
+(defun organice--project-link-id (&optional value)
+  "Id del enlace «[[id:…][…]]» de VALUE (o de :PROYECTO:, propio o heredado)."
+  (let ((v (or value (org-entry-get (point) "PROYECTO" t))))
+    (when (and v (string-match "\\[\\[id:\\([^]]+\\)\\]" v))
+      (string-trim (match-string 1 v)))))
+
+(defun organice--assigned-project-title ()
+  "Título del proyecto asignado con :PROYECTO: (nil si no hay o no se encuentra)."
+  (let* ((id (organice--project-link-id))
+         (m (and id (org-id-find id 'marker))))
+    (when (markerp m)
+      (prog1 (with-current-buffer (marker-buffer m)
+               (org-with-wide-buffer (goto-char m) (org-get-heading t t t t)))
+        (set-marker m nil)))))
+
+(defun organice--bad-project-p ()
+  "¿Tiene asignado (:PROYECTO: propio) un proyecto que no se encuentra?"
+  (let ((id (organice--project-link-id (org-entry-get (point) "PROYECTO"))))
+    (and id (not (org-id-find id)))))
+
+(defun organice--all-projects ()
+  "((TÍTULO . MARCADOR) …) de los PROJECT abiertos de los ficheros de la agenda."
+  (let (out)
+    (org-map-entries
+     (lambda ()
+       (unless (member "trash" (mapcar #'downcase (org-get-tags nil t)))
+         (push (cons (format "%s  (%s)" (org-get-heading t t t t)
+                             (file-name-nondirectory (buffer-file-name)))
+                     (point-marker))
+               out)))
+     "TODO=\"PROJECT\"" 'agenda)
+    (nreverse out)))
+
+(defun organice-assign-project (&optional remove)
+  "Asigna el encabezado del punto (de cualquier fichero) a un proyecto, como la app.
+Con prefijo (C-u), le quita el proyecto asignado."
+  (interactive "P")
+  (unless (derived-mode-p 'org-mode) (user-error "Ponte en un encabezado de un fichero .org"))
   (save-excursion
-    (let (title)
-      (while (and (not title) (org-up-heading-safe))
-        (when (organice--project-p) (setq title (org-get-heading t t t t))))
-      title)))
+    (org-back-to-heading t)
+    (if remove
+        (progn (org-entry-delete (point) "PROYECTO") (message "Proyecto quitado"))
+      (when (organice--project-p) (user-error "Esto ya es un proyecto"))
+      (let* ((all (organice--all-projects))
+             (choice (completing-read "Asignar a proyecto: " (mapcar #'car all) nil t))
+             (m (cdr (assoc choice all)))
+             id title)
+        (with-current-buffer (marker-buffer m)
+          (org-with-wide-buffer
+           (goto-char m)
+           (setq id (org-id-get-create)
+                 title (org-get-heading t t t t))))
+        (org-entry-put (point) "PROYECTO"
+                       (format "[[id:%s][%s]]" id (replace-regexp-in-string "[][]" "" title)))
+        (message "Asignado a «%s»" title)))))
+
+(defun organice-unassign-project ()
+  "Quita el proyecto asignado (:PROYECTO:) al encabezado del punto."
+  (interactive)
+  (organice-assign-project t))
+
+(defun organice-unlink-orphans ()
+  "Quita :PROYECTO: a las tareas cuyo proyecto no se encuentra (con confirmación).
+Nunca se hace solo: puede faltar porque el fichero no está en la agenda o está archivado."
+  (interactive)
+  (let (found)
+    (org-map-entries (lambda () (when (organice--bad-project-p) (push (point-marker) found)))
+                     nil 'agenda)
+    (if (not found)
+        (message "No hay tareas con el proyecto sin encontrar")
+      (when (yes-or-no-p (format "%d tareas con un proyecto que no se encuentra. ¿Quitarles la asignación? "
+                                 (length found)))
+        (dolist (m found)
+          (with-current-buffer (marker-buffer m)
+            (org-with-wide-buffer (goto-char m) (org-entry-delete (point) "PROYECTO")))
+          (set-marker m nil))
+        (message "Asignaciones quitadas: %d" (length found))))))
 (defun organice--item-project-title (item)
   (organice--at-item item (organice--project-title-here)))
 (defun organice--item-loose-p (item) (not (organice--item-project-title item)))
@@ -393,6 +480,9 @@ grupo por proyecto (necesita org-super-agenda)."
       ("gP" "Acciones del proyecto (desde el proyecto: C-c g P)" (,project-actions))
       ("gr" "Reference" (,(organice--list-block "📄 Reference" 'reference)))
       ("gl" "Logbook" (,logbook))
+      ("gY" "Proyecto no encontrado (3.01)"
+       (,(organice--block 'tags "LEVEL>0" "Tareas con un proyecto que no se encuentra"
+                          'organice--bad-project-p)))
       ("ga" "Agenda (semana)" agenda ""
        ((org-agenda-span 'week)
         (org-agenda-start-on-weekday 1)))
@@ -448,15 +538,45 @@ llegado, que van primero."
           ((and db (not da)) 1)
           (t nil))))
 
+(defvar organice--current-project-id nil
+  "(3.01) :ID: del proyecto de `organice-project-view' (para incluir las tareas asignadas).")
+(defvar organice--current-project-marker nil)
+
+(defun organice--in-current-project-p ()
+  "¿Es acción del proyecto actual? (dentro de él, o asignada con :PROYECTO:)."
+  (and (organice--project-action-p)
+       (or (and organice--current-project-id
+                (equal (organice--project-link-id) organice--current-project-id))
+           (and (markerp organice--current-project-marker)
+                (eq (current-buffer) (marker-buffer organice--current-project-marker))
+                (not (organice--project-link-id))
+                (save-excursion
+                  (let (found)
+                    (while (and (not found) (org-up-heading-safe))
+                      (when (= (point) organice--current-project-marker) (setq found t)))
+                    found))))))
+
 (defun organice-project-view ()
-  "Acciones abiertas del PROJECT en el que está el punto (en un fichero .org)."
+  "Acciones abiertas del PROJECT en el que está el punto (en un fichero .org), con las de otros
+ficheros asignadas a él (3.01)."
   (interactive)
   (unless (derived-mode-p 'org-mode) (user-error "Ponte en un proyecto de un fichero .org"))
   (save-excursion
     (org-back-to-heading t)
     (while (and (not (organice--project-p)) (org-up-heading-safe)))
     (unless (organice--project-p) (user-error "No estás dentro de un PROJECT"))
-    (org-agenda nil "gP" 'subtree)))
+    (setq organice--current-project-id (org-entry-get (point) "ID")
+          organice--current-project-marker (point-marker))
+    (if organice--current-project-id
+        (let ((org-agenda-custom-commands
+               `(("gX" "Acciones del proyecto"
+                  (,(apply #'organice--block 'todo "" (format "Acciones de «%s»" (org-get-heading t t t t))
+                           'organice--in-current-project-p
+                           '(org-agenda-sorting-strategy '(user-defined-up))
+                           '(org-agenda-cmp-user-defined #'organice--cmp-due-first)
+                           nil))))))
+          (org-agenda nil "gX"))
+      (org-agenda nil "gP" 'subtree))))
 
 ;;;; ★ automática al llegar la fecha (como la app, una sola vez) --------------------------------
 

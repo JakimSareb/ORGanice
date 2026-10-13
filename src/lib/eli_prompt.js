@@ -288,3 +288,138 @@ export const askDate = ({ title, message = '', value = new Date(), okLabel = 'Ac
     document.body.appendChild(overlay);
     setTimeout(() => input.focus(), 30);
   });
+
+// (3.01) Elegir de una lista con buscador (p. ej. «Asignar a proyecto…»). items: [{ id, label,
+// hint }]. ↑ ↓ para moverse, Intro elige, Esc cancela. Devuelve Promise<id|null>.
+const plainText = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+export const askPick = ({ title, message = '', placeholder = 'Buscar…', items = [], emptyText = 'Nada que elegir.' }) =>
+  new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'eli-prompt__overlay';
+    overlay.innerHTML = `
+      <form class="eli-prompt__box eli-pick" autocomplete="off" data-testid="eli-ask-pick">
+        <div class="eli-prompt__title"></div>
+        <div class="eli-prompt__message"></div>
+        <input type="text" class="eli-prompt__input" autocapitalize="off" autocorrect="off" spellcheck="false" data-testid="eli-pick-search" />
+        <div class="eli-pick__list" role="listbox"></div>
+        <div class="eli-prompt__buttons">
+          <button type="button" class="btn eli-prompt__cancel">Cancelar</button>
+        </div>
+      </form>`;
+    overlay.querySelector('.eli-prompt__title').textContent = title;
+    overlay.querySelector('.eli-prompt__message').textContent = message;
+    const input = overlay.querySelector('.eli-prompt__input');
+    input.placeholder = placeholder;
+    const listEl = overlay.querySelector('.eli-pick__list');
+    let shown = [];
+    let active = 0;
+    const paint = () => {
+      const q = plainText(input.value.trim());
+      shown = items.filter((it) => !q || plainText(`${it.label} ${it.hint || ''}`).includes(q));
+      if (active >= shown.length) active = Math.max(0, shown.length - 1);
+      listEl.innerHTML = '';
+      if (!shown.length) {
+        const empty = document.createElement('div');
+        empty.className = 'eli-pick__empty';
+        empty.textContent = items.length ? 'No hay coincidencias.' : emptyText;
+        listEl.appendChild(empty);
+        return;
+      }
+      shown.forEach((it, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'eli-pick__item' + (i === active ? ' is-active' : '');
+        b.setAttribute('data-testid', 'eli-pick-item');
+        const label = document.createElement('span');
+        label.textContent = it.label;
+        b.appendChild(label);
+        if (it.hint) {
+          const hint = document.createElement('small');
+          hint.textContent = it.hint;
+          b.appendChild(hint);
+        }
+        b.addEventListener('click', () => done(it.id));
+        listEl.appendChild(b);
+      });
+      const on = listEl.querySelector('.is-active');
+      if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+    };
+    const done = (v) => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        done(null);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!shown.length) return;
+        active = (active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % shown.length;
+        paint();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    input.addEventListener('input', () => {
+      active = 0;
+      paint();
+    });
+    overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(null));
+    overlay.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (shown[active]) done(shown[active].id);
+    });
+    document.body.appendChild(overlay);
+    paint();
+    setTimeout(() => input.focus(), 50);
+  });
+
+// (3.01) Pregunta con varias respuestas (botones). choices: [{ id, label, danger }]. Devuelve
+// Promise<id|null> (null = Cancelar o Esc).
+export const askChoice = ({ title, message = '', choices = [] }) =>
+  new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'eli-prompt__overlay';
+    overlay.innerHTML = `
+      <div class="eli-prompt__box" role="dialog" data-testid="eli-ask-choice">
+        <div class="eli-prompt__title"></div>
+        <div class="eli-prompt__message"></div>
+        <div class="eli-prompt__buttons eli-prompt__buttons--column">
+          <button type="button" class="btn eli-prompt__cancel">Cancelar</button>
+        </div>
+      </div>`;
+    overlay.querySelector('.eli-prompt__title').textContent = title;
+    overlay.querySelector('.eli-prompt__message').textContent = message;
+    const buttons = overlay.querySelector('.eli-prompt__buttons');
+    const done = (v) => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      resolve(v);
+    };
+    choices.forEach((c) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn eli-prompt__ok' + (c.danger ? ' is-danger' : '');
+      b.textContent = c.label;
+      b.setAttribute('data-testid', `eli-choice-${c.id}`);
+      b.addEventListener('click', () => done(c.id));
+      buttons.insertBefore(b, buttons.firstChild);
+    });
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        done(null);
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(null));
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.querySelector('.eli-prompt__cancel').focus(), 30);
+  });

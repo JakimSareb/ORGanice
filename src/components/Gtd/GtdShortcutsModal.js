@@ -122,7 +122,7 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>Mayús Clic</kbd>
-                    <span>elemento nuevo encima de esa tarea</span>
+                    <span>seleccionar desde la última elegida hasta esa</span>
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>⋮⋮ y arrastrar</kbd>
@@ -158,7 +158,7 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>⌘C Ctrl C</kbd>
-                    <span>copiar la lista (o la selección) como Markdown</span>
+                    <span>copiar la lista (o la selección) como ORG Mode</span>
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>⌘A Ctrl A</kbd>

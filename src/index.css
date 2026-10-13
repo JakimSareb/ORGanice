@@ -367,3 +367,53 @@ div.eli-viewer__none {
   padding: 24px;
   text-align: center;
 }
+
+/* (3.01) Elegir de una lista con buscador (askPick) y preguntas con varias respuestas (askChoice) */
+.eli-pick__list {
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--base2, #eee8d5);
+  border-radius: 6px;
+}
+.eli-pick__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 8px 10px;
+  cursor: pointer;
+  font: inherit;
+}
+.eli-pick__item small {
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+.eli-pick__item.is-active,
+.eli-pick__item:hover {
+  background: var(--base2, #eee8d5);
+}
+.eli-pick__empty {
+  padding: 10px;
+  opacity: 0.6;
+}
+.eli-prompt__buttons--column {
+  flex-direction: column;
+  align-items: stretch;
+}
+.eli-prompt__buttons--column .btn {
+  width: 100%;
+}
+.eli-prompt__ok.is-danger {
+  background: var(--red, #dc322f);
+  border-color: var(--red, #dc322f);
+  color: #fff;
+}
