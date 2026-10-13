@@ -7,6 +7,7 @@ import './stylesheet.css';
 
 import AttributedString from '../OrgFile/components/AttributedString';
 import { exportOrg } from '../../lib/export_org';
+import EliAcomodadores from '../EliAcomodadores';
 import {
   subheadersOfHeaderWithId,
   isRegularPlanningItem,
@@ -1068,12 +1069,15 @@ export default function EliTools() {
   const [favorites, setFavorites] = useState(false);
   const [upload, setUpload] = useState(null); // { files, headerId?, target?, source }
   const [moon, setMoon] = useState(false);
+  const [acom, setAcom] = useState(false);
   const uploadPath = (upload && upload.path) || (usable ? path : null);
   const uploadFile = uploadPath && files ? files.get(uploadPath) : null;
 
   useEffect(() => {
     const onFav = () => setFavorites(true);
     const onMoon = () => setMoon(true);
+    const onAcom = () => setAcom(true);
+    window.addEventListener('eli:acomodadores', onAcom);
     const onUpload = (e) => setUpload(e.detail);
     window.addEventListener('eli:favorites', onFav);
     window.addEventListener('eli:moon', onMoon);
@@ -1081,6 +1085,7 @@ export default function EliTools() {
     return () => {
       window.removeEventListener('eli:favorites', onFav);
       window.removeEventListener('eli:moon', onMoon);
+      window.removeEventListener('eli:acomodadores', onAcom);
       window.removeEventListener('eli:upload', onUpload);
     };
   }, []);
@@ -1176,6 +1181,7 @@ export default function EliTools() {
       )}
       {favorites && <FavoritesPopup currentPath={path} onClose={() => setFavorites(false)} />}
       {moon && <MoonPhases onClose={() => setMoon(false)} />}
+      {acom && <EliAcomodadores onClose={() => setAcom(false)} />}
       {/* ORG Mode para Eli: también desde la vista GTD (upload.path = fichero de la tarea) */}
       {upload && uploadFile && uploadFile.get('headers') && (
         <UploadDialog

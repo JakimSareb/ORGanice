@@ -1,4 +1,5 @@
 import { openRawEditor, openPrintPreview, openMoonPhases, openFavorites } from '../EliTools';
+import { openAcomodadores } from '../EliAcomodadores';
 import { openPalette } from '../../lib/eli_palette';
 import { openCalendar } from '../EliCalendar';
 import { openCalculator } from '../EliCalculator';
@@ -668,6 +669,12 @@ class HeaderBar extends PureComponent {
               label: 'Calculadora',
               onClick: () => openCalculator(),
               testId: 'eli-calculator-menu',
+            },
+            {
+              icon: 'fas fa-users',
+              label: 'Turnos de acomodadores',
+              onClick: openAcomodadores,
+              testId: 'eli-acomodadores',
             },
             {
               icon: 'fas fa-moon',

@@ -1,0 +1,178 @@
+/* ORG Mode para Eli (3.01): Turnos de acomodadores */
+.eli-prompt__box.eli-acom {
+  max-width: 980px;
+  width: 100%;
+  max-height: 92vh;
+  overflow: auto;
+}
+.eli-acom__head,
+.eli-acom__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eli-acom__head strong {
+  flex: 1;
+}
+.eli-acom__spacer {
+  flex: 1;
+}
+.eli-acom__month {
+  min-width: 12em;
+  text-align: center;
+}
+.eli-acom__note {
+  font-size: 0.9em;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--base2, #eee8d5);
+}
+.eli-acom__warn {
+  font-size: 0.85em;
+  color: var(--red, #dc322f);
+}
+.eli-acom__weeks {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.eli-acom__week {
+  border: 1px solid var(--base1, #93a1a1);
+  background: transparent;
+  color: inherit;
+  border-radius: 14px;
+  padding: 3px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.eli-acom__week.is-on {
+  background: var(--blue, #268bd2);
+  border-color: var(--blue, #268bd2);
+  color: #fff;
+}
+.eli-acom__cols {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .eli-acom__cols {
+    grid-template-columns: 1fr;
+  }
+}
+.eli-acom__label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85em;
+  margin: 6px 0 4px;
+}
+.eli-acom__assigned {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--base1, #93a1a1);
+  background: var(--base3, #fdf6e3);
+  color: inherit;
+}
+.eli-acom__group {
+  margin-bottom: 8px;
+}
+.eli-acom__group-title {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  margin: 4px 0 2px;
+}
+.eli-acom__person {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  padding: 5px 8px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.eli-acom__person:hover {
+  background: var(--base2, #eee8d5);
+}
+.eli-acom__person.is-in .eli-acom__name {
+  font-weight: 700;
+  color: var(--blue, #268bd2);
+}
+.eli-acom__meta {
+  opacity: 0.65;
+  white-space: nowrap;
+  font-size: 0.9em;
+}
+.eli-acom__table-wrap {
+  overflow-x: auto;
+}
+.eli-acom__table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95em;
+}
+.eli-acom__table th,
+.eli-acom__table td {
+  border-bottom: 1px solid var(--base2, #eee8d5);
+  padding: 3px 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+.eli-acom__table tr.is-week td {
+  background: color-mix(in srgb, var(--blue, #268bd2) 10%, transparent);
+}
+.eli-acom__table input {
+  width: 100%;
+  min-width: 9em;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  padding: 3px 6px;
+  border: 1px solid var(--base2, #eee8d5);
+  border-radius: 4px;
+  background: var(--base3, #fdf6e3);
+  color: inherit;
+}
+.eli-acom__cfg {
+  border: 1px solid var(--base2, #eee8d5);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eli-acom__cfg input[type='number'] {
+  width: 4em;
+}
+.eli-acom__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.eli-acom__cfg-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.eli-acom__hint {
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+.eli-acom__empty {
+  padding: 12px 0;
+}
+.eli-acom .btn.is-on {
+  outline: 2px solid var(--blue, #268bd2);
+}

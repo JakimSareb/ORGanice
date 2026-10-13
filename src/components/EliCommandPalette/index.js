@@ -38,6 +38,7 @@ import {
   setLastViewedFile,
 } from '../../actions/base';
 import { openFavorites, openMoonPhases, openRawEditor, openPrintPreview } from '../EliTools';
+import { openAcomodadores } from '../EliAcomodadores';
 
 const selectIsAuthenticated = (s) => s.syncBackend.get('isAuthenticated');
 const MAX_RESULTS = 50;
@@ -489,6 +490,7 @@ export default function EliCommandPalette() {
       'changelog versión'
     );
     act('moon', 'Fases de la Luna', 'fas fa-moon', openMoonPhases);
+    act('acomodadores', 'Turnos de acomodadores', 'fas fa-users', openAcomodadores);
     act(
       'calculator',
       'Calculadora',
