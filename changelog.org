@@ -3,6 +3,28 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.01 (octubre de 2026)
+La 3.0 queda como punto de partida estable.
+** Vista GTD
+- La *casilla de hecho* va ahora a la izquierda de la ★, y la ★ se sombrea en dorado al pasar el ratón.
+- *Icono de notas* de cada fila: cambia sus notas (ocultas → parciales → completas) solo en esa tarea.
+- *Mayús+clic* selecciona todas desde la última elegida hasta esa (ya no crea una tarea encima). Un *clic fuera* de las tareas quita la selección.
+- La tecla *n* (y «Nuevo elemento») crea la tarea *justo debajo de la seleccionada*; sin ninguna, al principio de la lista.
+- *Copiar como ORG Mode* (antes Markdown): =* TODO título :etiqueta:=, subtareas con un nivel más, fechas, propiedades y notas. También ⌘C / Ctrl+C.
+- *Proyectos con tareas de otros ficheros*: «Asignar a proyecto…» (y «Quitar del proyecto») en el menú de la tarea, también con varias, en Documentos y en Emacs (=C-c g y=). Se guarda como =:PROYECTO: [[id:…][Proyecto]]= y el proyecto recibe un =:ID:=. Cuentan como las del proyecto (detrás de las suyas); las cabeceras sin estado, en Referencias. Si el proyecto no se encuentra: «proyecto no encontrado», filtro para verlas y nunca se desasignan solas.
+- *Entrada rápida*: =>Proyecto= y lista de sugerencias al escribir =#= (etiquetas y palabras) o =>= (proyectos).
+- *Opciones de vista* (⋯), como Nirvana: Lista única, Agrupar por proyecto o *Acciones siguientes secuenciales* (lo de siempre: en Next, la 1.ª de cada proyecto); y Ajustar títulos largos, Mostrar notas, etiquetas y esfuerzo.
+- El nombre del proyecto en una tarea abre ese proyecto (Alt+← vuelve).
+- Filtro de etiquetas: un segundo clic la *tacha* (fuera las que la llevan); el tercero lo quita.
+- Menú de la tarea: *Programar…* (también con varias, un solo Deshacer).
+- Secciones propias: casilla «Mostrar cabeceras sin tarea». Gestor de etiquetas: botón para ver también los encabezados sin estado de esa etiqueta, en un grupo aparte.
+- La sección *Proyectos* del menú lateral se pliega.
+** Documentos
+- *Barra de acciones estilo Logseq*: al seleccionar un encabezado sale una sola fila de iconos fija abajo (← → sangrar, ↑ ↓ mover, estado, ★, fechas, #, enlace, adjuntos, ＋, ⋯, deshacer y rehacer); al editar, sube encima del teclado y añade Aa (formato) y ⌨↓. Los submenús son una fila de botones con ‹ para volver, y «/» en el texto busca acciones. Sustituye a los iconos de dentro del encabezado, a las flechas del editor de título y al Aa plegado. Mientras hay selección, los botones redondos de abajo se ocultan.
+- Tocar un encabezado lo selecciona; *tocarlo otra vez edita el título* (abrir o cerrar: el punto •). Tocar en un hueco quita la selección.
+** Turnos de acomodadores
+- Nueva herramienta (⋯ → «Turnos de acomodadores», y en Emacs =C-c g u=) para =pages/acomodadores.org=: mes y semana, asignados de la semana, disponibles por grupo (menos turnos y más antiguos primero), tabla del mes, y al guardar suma sola los turnos a los contadores (una vez por semana; =:SUMADO:= evita contarlos dos veces). Ajustes de semanas y días en el propio fichero.
+
 * 3.0 (octubre de 2026) — versión de prueba: la vista GTD como Nirvana
 La 2.18 queda guardada en la rama =v2.18-estable= por si hay que volver atrás. Documentos no cambia.
 ** Moverse por la lista como en Nirvana

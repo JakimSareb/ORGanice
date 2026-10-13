@@ -53,7 +53,9 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Focus / Inbox / Next / Todo / Waiting   | =C-c g f= / =i= / =n= / =t= / =w=                   |
 | Scheduled / Deadline / Someday          | =C-c g s= / =d= / =m=                               |
 | Todos los proyectos / Reference / Logbook | =C-c g p= / =r= / =l=                             |
-| Acciones de un proyecto                 | En el proyecto: =C-c g P=                           |
+| Acciones de un proyecto                 | En el proyecto: =C-c g P= (con las de otros ficheros asignadas) |
+| Asignar a un proyecto de otro fichero   | =C-c g y= (=C-u C-c g y= lo quita); =C-c g Y= desvincula las de proyecto no encontrado; vista =C-c a gY= |
+| Turnos de acomodadores                  | =C-c g u n= mes nuevo, =d= disponibles, =s= sumar, =o= abrir |
 | Agenda                                  | =C-c g a= (o =C-c a=)                               |
 | Tablero Focus + Inbox + Next            | =C-c a g g=                                         |
 | Capturar (tecla c + letra)              | =C-c c= + letra                                     |

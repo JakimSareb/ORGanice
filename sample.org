@@ -14,37 +14,42 @@ Empieza tocando el encabezado «Lo básico» de aquí abajo.
 
 * Lo básico
 ** Abrir, cerrar y seleccionar
-- Toca un encabezado para abrirlo o cerrarlo. Los que tienen «...» al final esconden contenido.
-- Al tocarlo también queda *seleccionado* y aparece debajo la barra de iconos.
-- Para quitar la selección, toca el nombre del fichero en la barra superior.
+- Toca un encabezado para seleccionarlo (y abrirlo, si está cerrado). Los que tienen «...» al final esconden contenido. Al seleccionarlo aparece *abajo de la pantalla* la barra de acciones (ver la sección siguiente).
+- Tócalo *otra vez* (ya seleccionado) para editar su título. Para abrirlo o cerrarlo, toca el punto (•) de la izquierda.
+- Para quitar la selección (y la barra), toca en un hueco fuera de los encabezados, o el nombre del fichero en la barra superior.
 - Con el teclado: ↑ y ↓ recorren los encabezados; Intro abre o cierra el seleccionado.
 
-** La barra de iconos del encabezado
-Selecciona este encabezado. A la vista están solo los iconos de cada día; el resto, en *⋯*:
+** La barra de acciones (estilo Logseq)
+Selecciona este encabezado: abajo sale una sola fila de iconos, siempre en el mismo orden (si no caben, se desliza a los lados). Todo está a uno o dos toques. Mientras editas el título o la descripción, la misma barra sube encima del teclado.
 
 | Icono          | Qué hace                                                                                                      |
 |----------------+---------------------------------------------------------------------------------------------------------------|
-| Estrella       | Pone o quita la prioridad [#A]                                                                                 |
-| Lápiz          | Editar el título. Con el tabulador pasas a la descripción, las etiquetas y las fechas                          |
-| Lápiz en recuadro | Editar la descripción (el texto de debajo)                                                                  |
-| Calendarios    | Fecha límite (DEADLINE) y fecha programada (SCHEDULED)                                                         |
-| Más            | Nuevo encabezado debajo (mantenlo pulsado para duplicar el actual)                                             |
-| Etiquetas      | Poner o quitar etiquetas                                                                                       |
-| Mover          | Mover (refile) a otro encabezado o al nivel superior de cualquier fichero                                      |
-| Reloj de arena | Solo se ve con el reloj en marcha: tócalo para pararlo                                                         |
-| ⋯              | *Marcar como hecha* (DONE) y *Cancelar la tarea* (solo en tareas abiertas), *editar como texto plano* (solo este encabezado con sus subencabezados), nota, reloj, tiempo registrado, *reducir a este encabezado (narrow)* (o «Ver todo» si ya lo está), propiedades, adjuntar, duplicar, archivar, copiar enlace (C-c l), compartir, PDF y borrar |
+| ← →            | Sangrar hacia fuera o hacia dentro (solo el encabezado; mantenlo pulsado: con sus subencabezados)             |
+| ↑ ↓            | Subir o bajar el encabezado (con sus subencabezados)                                                           |
+| TODO           | Cambia el estado (NEXT → TODO → … → DONE); mantenlo pulsado para pasar a otro conjunto de estados             |
+| ★              | Pone o quita la prioridad [#A]                                                                                 |
+| 📅 Fechas      | Programada (SCHEDULED), fecha límite (DEADLINE), insertar la fecha de hoy y repetir                            |
+| #              | Etiquetas                                                                                                      |
+| Aa             | Solo editando: formato (negrita, cursiva…) y marcadores de lista                                               |
+| 🔗 Enlace      | Insertar un enlace o copiar el enlace a este encabezado                                                        |
+| 📎             | Adjuntar un archivo o borrar adjuntos                                                                          |
+| ＋             | Encabezado nuevo debajo (mantenlo pulsado para duplicar el actual)                                             |
+| ⋯              | Reloj, tiempo registrado, nota, propiedades, mover (refile), *asignar a proyecto*, archivar, duplicar, hecha o cancelada, reducir (narrow) o ver todo, texto plano, correo, PDF y borrar |
+| ↶ ↷            | Deshacer y rehacer                                                                                             |
+| ⌨↓             | Solo editando: oculta el teclado                                                                               |
+Los submenús (Fechas, Aa, Enlace, 📎, ⋯) cambian la barra por una fila de botones con su nombre; *‹* vuelve. Mientras escribes en el título o la descripción, *«/»* (al principio o tras un espacio) abre un buscador con todas las acciones. Si usas una acción del encabezado con el editor abierto, primero se guarda lo escrito. Mientras hay un encabezado seleccionado, los botones redondos de abajo (paleta, agenda, capturar) se ocultan.
 
 ** El editor de título
-Selecciona este encabezado y toca el lápiz.
+Toca este encabezado dos veces (la primera lo selecciona; la segunda abre el editor).
 - La *estrella* del principio pone o quita [#A].
 - Los botones de estados (NEXT, TODO, …, DONE, CANCELLED) cambian el estado.
-- Las *flechas azules* de la derecha mueven solo este encabezado: ↑ y ↓ una línea arriba o abajo, ← y → un nivel hacia fuera o hacia dentro. Sus subencabezados se quedan donde están.
+- Para sangrar o mover el encabezado, las flechas de la barra de abajo.
 - Con el *tabulador* saltas al siguiente editor: título → descripción → etiquetas → fecha límite → fecha programada (mayúsculas + tabulador, al revés).
 - Tocando otra vez el lápiz de la barra inferior pasas a «Editar título completo», con el texto tal cual (estado, prioridad y etiquetas incluidos).
 - «+ Insertar fecha», debajo de los editores, escribe la fecha de hoy como fecha inactiva, p. ej. [%HOY%].
 - La barra de abajo del editor tiene título, descripción, etiquetas, fechas y enlace; propiedades, adjuntar, nota y borrar están en su *⋯*.
 ** Formato del texto
-Encima de los editores (título, descripción, notas, elementos de lista y editor de la vista GTD) está el botón *Aa*; al tocarlo aparecen los botones de formato (y se quedan abiertos hasta que lo vuelvas a tocar): *negrita*, /cursiva/, _subrayado_, +tachado+, ~código~ y =literal=.
+En Documentos, mientras editas el título o la descripción, el botón *Aa* está en la barra de abajo. Encima de los demás editores (notas, elementos de lista, capturas y editor de la vista GTD) está el botón *Aa*; al tocarlo aparecen los botones de formato (y se quedan abiertos hasta que lo vuelvas a tocar): *negrita*, /cursiva/, _subrayado_, +tachado+, ~código~ y =literal=.
 - Selecciona el texto y toca el botón: se le ponen los marcadores de Org Mode. Si ya los tenía, se quitan.
 - Sin seleccionar nada, pone los dos marcadores y deja el cursor en medio para escribir.
 - Si seleccionas varias líneas, se marca cada una por separado (así lo entiende Emacs).
@@ -68,7 +73,7 @@ Encima de los editores (título, descripción, notas, elementos de lista y edito
 - En *⋯*: buscar en el fichero (tecla b), rehacer, reducir al encabezado seleccionado (narrow), *contraer todas las cabeceras* y *expandir todas las cabeceras*, mover con flechas (tecla m), editar como texto plano, PDF, ficheros principales (tecla f), dos columnas, *calendario*, *calculadora*, fases de la Luna, novedades y ajustes.
 - En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero.
 - *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa. Al tocar un enlace a un fichero o a un encabezado (o «Abrir» en el editor de la vista GTD), te pregunta si abrirlo *aquí* o *en la otra columna* (Ctrl+clic, o ⌘+clic en el Mac, lo abre directamente en la otra).
-- Abajo quedan tres botones: *paleta de comandos* (la lupa; se pone naranja si hay un reloj en marcha), *agenda* y *+ capturar*.
+- Abajo quedan tres botones (se ocultan mientras hay un encabezado seleccionado): *paleta de comandos* (la lupa; se pone naranja si hay un reloj en marcha), *agenda* y *+ capturar*.
 - En el *explorador de ficheros*, abajo: *ficheros principales*, *agenda* y *+*, que abre siempre las plantillas de captura. «Nuevo fichero Org» está en el menú de ficheros principales (solo dentro de una carpeta).
 - Los encabezados terminados (DONE, CANCELLED) se ven atenuados.
 - Los avisos (sincronizando, descargando…) salen como una pastilla pequeña en el centro de la barra superior, sin tapar el texto. Tócala para ocultarla.
@@ -138,21 +143,32 @@ Tecla *a* o el botón del calendario (abajo, en el centro).
 *GTD* en el conmutador de arriba a la izquierda, o tecla *g* (para volver a Documentos: el conmutador o *Mayús+g*; en GTD, la g abre «Gestionar etiquetas», como Nirvana). Necesitas haber iniciado sesión: trabaja con tus ficheros de la agenda, no con este manual.
 
 ** Cómo se usa (como Nirvana)
-Desde la versión 3.0 la vista GTD se maneja como Nirvana:
+Desde la versión 3.0 la vista GTD se maneja como Nirvana (en cada fila: la casilla de hecho y, a su derecha, la ★, que se sombrea en dorado al pasar el ratón):
 - *Clic* en una tarea la selecciona; *doble clic* (o Intro) la abre para editarla. En el móvil, tocarla la abre.
 - *Ctrl+clic* (⌘ en el Mac) añade o quita tareas de la selección. Los *puntos ⋮⋮* de la izquierda de cada fila seleccionan con un *lazo*: pulsa en ellos y arrastra hacia arriba o abajo.
 - *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección).
-- *Clic derecho* en una tarea (o el ▾ del final de la fila) abre su menú: Editar, Focus ★, Completar, Mover a, Convertir en (acción, proyecto o referencia), Etiquetas, Tiempo, Energía, Fecha límite, Hacer una copia, Copiar como Markdown, Abrir en su fichero y Papelera. Con varias seleccionadas, el menú actúa sobre todas y arriba dice cuánto tiempo suman.
-- *Mayús+clic* en una tarea crea un elemento nuevo justo encima de ella.
+- *Clic derecho* en una tarea (o el ▾ del final de la fila) abre su menú: Editar, Focus ★, Completar, Mover a, *Asignar a proyecto…* (y *Quitar del proyecto*), Convertir en, Etiquetas, Tiempo, Energía, *Programar…*, Fecha límite, Hacer una copia, Copiar como ORG Mode, Abrir en su fichero y Papelera. Con varias seleccionadas, el menú actúa sobre todas y arriba dice cuánto tiempo suman.
+- *Mayús+clic* en una tarea selecciona todas las que hay desde la última elegida hasta ella.
+- Un clic fuera de las tareas (en el hueco de abajo, la cabecera o el menú lateral) quita la selección.
+- El *nombre del proyecto* que sale en una tarea es un enlace: abre ese proyecto (*Alt+←* vuelve).
+- El *icono de notas* de una fila cambia sus notas: ocultas → parciales → completas, solo en esa tarea (el modo general está en ⋯ → Opciones de vista → Mostrar notas, y al cambiarlo se olvida lo de cada fila).
 - *Completar*: la casilla de la izquierda. La tarea pasa al grupo *Hecho*, al final de su lista (tócalo para plegarlo). La *Limpieza* (tecla c o el botón «Limpieza» de arriba) pasa todo lo hecho al Logbook. Mientras está en «Hecho», la tarea lleva la propiedad =DONE_IN= con su lista. En el ⋯ de arriba puedes pedir que pasen al Logbook al momento.
 - *Papelera*: Supr o ⌫, deslizar a la izquierda o arrastrar a «Papelera» no borra: la tira a la papelera (etiqueta =:trash:=; se puede deshacer). Desde la Papelera, el menú la saca (o arrástrala a una lista); «Vaciar papelera» la borra para siempre.
-- *Nuevo elemento* (arriba, o la tecla n) abre el editor de una tarea nueva en la lista que ves. *Entrada rápida* (Mayús+E la muestra u oculta; e pone el cursor): escribe y pulsa Intro (se añade abajo; con Mayús+Intro, arriba). Admite =#etiqueta=, =#due mañana= (también hoy, un día de la semana, «1 agosto», «20/10» o «2026-12-01»), =#focus= o =#star=, =#next=, =#someday= y =#project=. Por ejemplo: =Comprar la compra #@recados #star #due viernes=.
+- *Nuevo elemento* (arriba, o la tecla n) abre el editor de una tarea nueva en la lista que ves, *justo debajo de la tarea seleccionada* (sin ninguna, al principio de la lista). *Entrada rápida* (Mayús+E la muestra u oculta; e pone el cursor): escribe y pulsa Intro (se añade abajo; con Mayús+Intro, arriba). Admite =#etiqueta=, =#due mañana= (también hoy, un día de la semana, «1 agosto», «20/10» o «2026-12-01»), =#focus= o =#star=, =#next=, =#someday=, =#project= y =>Proyecto= (la tarea va a ese proyecto). Al escribir *#* o *>* sale una lista con tus etiquetas (y esas palabras) o tus proyectos, que se filtra según escribes: ↑ ↓ para moverte, Tab o Intro la eligen (Intro no envía mientras la lista está abierta), Esc la cierra sin borrar nada. Por ejemplo: =Comprar la compra #@recados #star #due viernes= o =Barnizar >Casa=.
 - En el editor: *Intro* en el título o *Mayús+Intro* en cualquier campo guardan; *Esc* cancela.
-- *Filtros*: bajo el título, las etiquetas y atributos (energía, tiempo, con fecha) de la lista. Clic = solo ese; Ctrl/⌘+clic = añadir otro (tienen que cumplirse todos).
-- *Etiquetas* (al final del menú lateral): cada una muestra lo que la lleva en todas las listas y proyectos activos. La rueda (o la tecla g) abre *Gestionar etiquetas*: renombrar o quitar una etiqueta en todas las tareas, crear etiquetas nuevas y renombrar áreas.
-- El *⋯* de arriba: vista unificada o agrupada por proyecto (en Focus, también por estado), ordenar por fecha límite (tecla d), notas completas, parciales u ocultas bajo cada tarea (completas: con las casillas marcables), Entrada rápida, plantillas de captura (t) y más.
+- *Filtros*: bajo el título, las etiquetas y atributos (energía, tiempo, con fecha) de la lista. Clic = solo ese; Ctrl/⌘+clic = añadir otro (tienen que cumplirse todos). En las etiquetas, un *segundo clic la tacha*: se ven las que NO la llevan; un tercero quita el filtro. Si alguna tarea tiene un proyecto asignado que no se encuentra, sale el filtro *Proyecto no encontrado*.
+- *Etiquetas* (al final del menú lateral): cada una muestra lo que la lleva en todas las listas y proyectos activos. La rueda (o la tecla g) abre *Gestionar etiquetas*: renombrar o quitar una etiqueta en todas las tareas, crear etiquetas nuevas y renombrar áreas. El botón de la hoja (📄) de cada etiqueta hace que su vista muestre también los *encabezados sin estado* que la llevan, en un grupo aparte debajo de las tareas.
+- El *⋯* de arriba: *Opciones de vista* (como Nirvana) — Acciones: *Lista única*, *Agrupar por proyecto* o *Acciones siguientes secuenciales* (la de siempre: en Next, solo la primera acción de cada proyecto; las otras dos muestran todas); en Focus, también *Agrupar por estado* — y Detalles: *Ajustar títulos largos* (en varias líneas; quitado, una línea con …), *Mostrar notas* (completas, con las casillas marcables, parciales u ocultas), *Mostrar etiquetas* y *Mostrar esfuerzo* (el tiempo, :EFFORT:). Además: ordenar por fecha límite (tecla d), Entrada rápida, plantillas de captura (t) y más.
+- La sección *Proyectos* del menú lateral se pliega y despliega tocando su nombre (se recuerda).
 - La fecha límite se ve como en Nirvana: «Vence hoy» y «Atrasada» en rojo; las que aún no han llegado, más transparentes («Mañana», «en 3 días», o la fecha).
-- *⌘C / Ctrl+C* (sin texto seleccionado) copia la lista, o las tareas seleccionadas, como Markdown (para pegar en otra app). *⌘A / Ctrl+A* selecciona todas.
+- *⌘C / Ctrl+C* (sin texto seleccionado) copia la lista, o las tareas seleccionadas, como *ORG Mode* (=* TODO título :etiqueta:=, las subtareas con un nivel más, y debajo sus fechas, propiedades y notas), listo para pegar en otro fichero o en Emacs.
+
+** Proyectos con tareas de otros ficheros
+Una tarea (o un encabezado sin estado) de *cualquier fichero* puede ser de un proyecto sin moverla: menú de la tarea → *Asignar a proyecto…* (también con varias seleccionadas), con un buscador de proyectos. En Documentos, en el ⋯ de la barra de abajo. En Emacs, =C-c g y= (=C-u C-c g y= la quita).
+- Se guarda como en Emacs (org-id): la tarea lleva =:PROYECTO: [[id:…][Nombre del proyecto]]= y el proyecto recibe un =:ID:= la primera vez. Si renombras el proyecto, sigue funcionando.
+- En el proyecto cuentan como las suyas (secciones, contadores, Next): primero las del propio proyecto, en el orden del fichero, y después las de fuera. Los encabezados sin estado salen en su sección *Referencias* (no cuentan como acciones).
+- Si el proyecto ya no se encuentra (borrado, archivado, fichero sin cargar…), la tarea dice *proyecto no encontrado* y se porta como suelta (sigue en Next). Su menú: Quitar del proyecto o Asignar a otro. Nunca se desasigna sola. Al tirar a la Papelera un proyecto que tiene tareas de otros ficheros, te pregunta qué hacer con ellas.
+- Arrastrar una tarea a un proyecto del menú lateral sigue *moviéndola* a su fichero, como siempre. *⌘A / Ctrl+A* selecciona todas.
 
 ** Las listas del menú lateral
 En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de arriba (se queda fijo aunque bajes por la lista).
@@ -233,6 +249,7 @@ En Ajustes → *Vista GTD y gestos* → «Secciones de la vista GTD» está la l
 - En estados, etiquetas y propiedades caben *varios, separados por comas* (p. ej. NEXT, TODO).
 - *Nombre en el menú*: cada sección puede llamarse como quieras (vacío = el de siempre).
 - *Nueva sección*: al final de la lista. Le pones nombre, icono y reglas. Muestra las tareas abiertas que cumplen alguna de sus reglas (si no tiene ninguna, todas las abiertas), y esas tareas siguen también en su lista de siempre. Se ordena, se oculta y se borra como las demás; «n» dentro de ella crea la tarea con su primer estado y su primera etiqueta.
+- En una sección propia, la casilla *Mostrar cabeceras sin tarea* hace que salgan también los encabezados sin estado que cumplan sus reglas (sin ella, solo tareas).
 - *Restablecer* vuelve a la configuración de siempre (hay uno general y otro en cada sección).
 
 ** Áreas
@@ -417,10 +434,19 @@ Solo con teclas sueltas, y nunca mientras escribes ni con el editor de una tarea
 | k o ?     | Ventana de atajos                                             |
 | ↑ ↓ / Mayús+↑ ↓ | Recorrer la lista / ampliar la selección                |
 | Intro / Supr | Editar / a la Papelera                                     |
-| ⌘C Ctrl+C / ⌘A Ctrl+A | Copiar como Markdown / seleccionar todas           |
+| ⌘C Ctrl+C / ⌘A Ctrl+A | Copiar como ORG Mode / seleccionar todas           |
 | Esc       | Quitar la selección (en el editor: cancelar)                  |
 | ← / →     | Al menú lateral (↑ ↓ cambian de sección) / a la lista          |
 Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
+* Turnos de acomodadores
+⋯ → *Turnos de acomodadores* (o la paleta). Trabaja con =pages/acomodadores.org=, y en Emacs con =C-c g u= (n mes nuevo, d disponibles, s sumar, o abrir el fichero).
+- Arriba eliges el *mes* (propone el siguiente al último del histórico; si ya existe, se abre para cambiarlo) y la *semana* (los lunes del mes).
+- *Asignados de la semana*: un nombre por línea (se pueden pegar). Esos no salen en *Disponibles*, que van por grupo (Publicadores, Ancianos, Ministeriales), primero los de *menos turnos* y, a igualdad, los que hace *más tiempo*. Tocar un nombre lo pone en el primer hueco de la semana; las casillas de la tabla también se escriben a mano (con sugerencias).
+- *Guardar el mes* lo escribe en el HISTORICO (=** 2026, Octubre= con su tabla Semana | Dia | Acomodador 1 | Acomodador 2) y *suma solo* los turnos a los contadores (veces y fecha de la última vez): cada semana asignada es *un turno*, aunque sean dos días. Los meses sumados llevan =:SUMADO:=, así no se cuentan dos veces; si cambias un mes ya sumado, se suma solo la diferencia.
+- Los contadores de partida son las tablas =#+NAME: Publicadores=, =Ancianos= y =Ministeriales= (Nombre | Veces | Mes). El primer mes que se suma es septiembre de 2026 (=#+ACOM_DESDE: 2026-09=).
+- Los nombres se comparan sin acentos ni mayúsculas, con alias: =#+ACOM_ALIAS: Toni=Antonio Vilchez; Miguel Angel Lliteras=Miguel Lliteras=. Avisa de los nombres que no están en la lista.
+- La rueda ⚙: nº de semanas (por defecto 5) y días de reunión (por defecto jueves y sábado), guardados en el fichero (=#+ACOM_SEMANAS=, =#+ACOM_DIAS=) para que Emacs use lo mismo.
+
 * Calculadora
 ⋯ → *Calculadora* (en todas las vistas) o la paleta. Escribe la operación con el teclado o con sus botones: + − × ÷, paréntesis, decimales con coma y porcentajes (200 + 10% = 220). Debajo se ve el resultado según escribes; Intro (o =) lo deja para seguir calculando, el botón de copiar lo copia y Esc borra o cierra.
 
