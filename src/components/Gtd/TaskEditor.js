@@ -646,7 +646,8 @@ export default function TaskEditor({
               document.activeElement === titleRef.current ? titleRef.current : notesRef.current
             }
             getListField={() => notesRef.current}
-            after={
+            // (3.04) deshacer y rehacer, antes del botón de formato
+            before={
               !isNew && onUndo ? (
                 <>
                   <button

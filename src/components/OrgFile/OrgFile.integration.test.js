@@ -215,7 +215,7 @@ describe('Render all views', () => {
         const header = queryByText('A header with plain list items');
         fireEvent.click(header);
         fireEvent.click(queryByText('Plain list item 1'));
-        fireEvent.click(container.querySelectorAll("[data-testid='list-item-action-plus']")[0]);
+        fireEvent.click(container.querySelectorAll("[data-testid='eli-docbar-li-new']")[0]);
 
         const input = getByTestId('list-item-edit');
         fireEvent.change(input, { target: { value: 'Plain list item 2a' } });
@@ -225,7 +225,7 @@ describe('Render all views', () => {
 
         // New list item has the same UX
         fireEvent.click(queryByText('Plain list item 2a'));
-        expect(container.querySelectorAll("[data-testid='list-item-action-plus']")[0]).toBeTruthy();
+        expect(container.querySelectorAll("[data-testid='eli-docbar-li-new']")[0]).toBeTruthy();
 
         // The new item is inserted in the middle of 'item 1' and 'item 2'
         expect(

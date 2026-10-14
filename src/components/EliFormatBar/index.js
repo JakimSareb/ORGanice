@@ -100,6 +100,7 @@ export default ({
   compact = false,
   collapsible = true,
   after = null,
+  before = null, // (3.04) botones antes del «Aa» (p. ej. deshacer/rehacer en GTD)
 }) => {
   const [open, setOpen] = React.useState(!collapsible || readOpen());
   const keep = (e) => e.preventDefault();
@@ -118,6 +119,7 @@ export default ({
       onMouseDown={keep}
       onPointerDown={keep}
     >
+      {before}
       {collapsible && (
         <button
           type="button"

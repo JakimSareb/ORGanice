@@ -358,6 +358,8 @@ class UnifiedHeaderEditor extends PureComponent {
           onChange={this.handleTitleChange}
           enterKeyHint="done"
           onKeyDown={(e) => {
+            // (3.04) Tab: a las notas
+            if (this.eliTabSwitch(e, 'description-editor')) return;
             // Intro guarda y sale (sin partir el título en dos líneas)
             if (e.key === 'Enter' && !(e.nativeEvent && e.nativeEvent.isComposing)) {
               e.preventDefault();
@@ -371,6 +373,17 @@ class UnifiedHeaderEditor extends PureComponent {
     );
   }
 
+  // (3.04) Tab (o Mayús+Tab) al editar en el sitio: salta entre el título y las notas
+  eliTabSwitch(e, target) {
+    if (e.key !== 'Tab' || e.ctrlKey || e.altKey || e.metaKey || !this.props.onInlineSwitch)
+      return false;
+    if (e.nativeEvent && e.nativeEvent.isComposing) return false;
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.onInlineSwitch(target);
+    return true;
+  }
+
   renderInlineDescription() {
     const { descriptionValue } = this.state;
     return (
@@ -381,7 +394,11 @@ class UnifiedHeaderEditor extends PureComponent {
           ref={this.handleDescriptionTextareaRef}
           value={descriptionValue}
           onChange={this.handleDescriptionChange}
-          onKeyDown={this.handleDescriptionKeyDown}
+          onKeyDown={(e) => {
+            // (3.04) Tab: al título
+            if (this.eliTabSwitch(e, 'title-editor')) return;
+            this.handleDescriptionKeyDown(e);
+          }}
           placeholder="Notas"
           onDone={this.props.onInlineDone}
         />

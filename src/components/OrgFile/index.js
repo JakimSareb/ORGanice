@@ -98,6 +98,7 @@ class OrgFile extends PureComponent {
       'handleEliKeyDown',
       'handleCaptureCancel',
       'getPopupSwitchAction',
+      'eliSwitchInlineEditor',
       'checkPopupAndHeader',
       'checkPopupAndHeaderOrListItem',
       'applyEliPendingNarrow',
@@ -745,6 +746,20 @@ class OrgFile extends PureComponent {
     );
   }
 
+  // (3.04) Tab al editar en el sitio: del título a las notas y de las notas al título (guardando)
+  eliSwitchInlineEditor(target) {
+    const cur = this.props.activePopupType;
+    if (this.state.captureMode || !cur || cur === target) return;
+    this.getPopupSwitchAction(cur)(
+      ...(this.state.popupCloseActionValuesAccessor
+        ? this.state.popupCloseActionValuesAccessor()
+        : [])
+    );
+    if (target === 'description-editor' && this.props.selectedHeaderId)
+      this.props.org.openHeader(this.props.selectedHeaderId);
+    this.props.base.activatePopup(target);
+  }
+
   getPopupSwitchAction(activePopupType) {
     if (this.state.captureMode) {
       // In capture mode, save to local state instead of dispatching Redux actions
@@ -1148,6 +1163,7 @@ class OrgFile extends PureComponent {
       <UnifiedHeaderEditor
         inline={inline}
         onInlineDone={this.handleActivePopupClose}
+        onInlineSwitch={this.state.captureMode ? null : this.eliSwitchInlineEditor}
         activePopupType={activePopupType}
         activePopupData={activePopupData}
         selectedHeader={

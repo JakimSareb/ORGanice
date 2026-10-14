@@ -285,3 +285,8 @@ body.eli-docbar-on .action-drawer-container {
   margin: 4px 8px;
   background: color-mix(in srgb, var(--base1) 30%, transparent);
 }
+
+/* (3.04) sin nada seleccionado: píldora pequeña (Agenda, Capturar, deshacer, rehacer) */
+.eli-docbar.is-idle {
+  width: auto;
+}

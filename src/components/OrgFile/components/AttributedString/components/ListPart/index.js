@@ -1,11 +1,9 @@
 import React, { PureComponent, Fragment } from 'react';
-import { UnmountClosed as Collapse } from 'react-collapse';
 
 import './stylesheet.css';
 
 import AttributedString from '../../../AttributedString/';
 import Checkbox from '../../../../../UI/Checkbox/';
-import ListActionDrawer from './ListActionDrawer';
 import { listPartContainsItemId } from '../../../../../../lib/org_utils';
 
 import { attributedStringToRawText } from '../../../../../../lib/export_org';
@@ -250,12 +248,7 @@ export default class ListPart extends PureComponent {
   renderContent() {
     const {
       part,
-      subPartDataAndHandlers: {
-        selectedListItemId,
-        inListTitleEditMode,
-        inListContentsEditMode,
-        shouldDisableActions,
-      },
+      subPartDataAndHandlers: { selectedListItemId, inListTitleEditMode, inListContentsEditMode },
     } = this.props;
     const { listTitleValues, listContentsValues } = this.state;
 
@@ -307,9 +300,7 @@ export default class ListPart extends PureComponent {
               <span>&nbsp;</span>
             )}
           </div>
-          <Collapse isOpened={isItemSelected && !shouldDisableActions}>
-            <ListActionDrawer subPartDataAndHandlers={this.props.subPartDataAndHandlers} />
-          </Collapse>
+          {/* (3.04) Las acciones del elemento (✎, contenido, ＋, ✕) van en la barra flotante */}
           {isItemSelected && inListContentsEditMode ? (
             <div className="list-contents__edit-container">
               <EliFormatBar compact getField={() => this.textarea} />

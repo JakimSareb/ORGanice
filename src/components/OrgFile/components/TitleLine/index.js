@@ -11,7 +11,7 @@ import classNames from 'classnames';
 import * as orgActions from '../../../../actions/org';
 import * as baseActions from '../../../../actions/base';
 
-import { createIsTodoKeywordInDoneState } from '../../../../lib/org_utils';
+import { createIsTodoKeywordInDoneState, hasHeaderContent } from '../../../../lib/org_utils';
 
 import { generateTitleLine } from '../../../../lib/export_org';
 import AttributedString from '../AttributedString';
@@ -80,7 +80,10 @@ class TitleLine extends PureComponent {
     if (isDouble) {
       this.lastTap = null;
       // el primer toque plegó/desplegó: se deja como estaba
-      if (prev.toggled) {
+      if (prev.unhid) {
+        // (3.04) el primer toque mostró las notas: se vuelven a ocultar
+        this.props.org.eliSetHideBody(header.get('id'), true);
+      } else if (prev.toggled) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       }
       if (!this.props.shouldDisableActions && !onInner && !isDocLocked()) {
@@ -89,8 +92,11 @@ class TitleLine extends PureComponent {
       return;
     }
     if (hasContent && !onInner) {
+      // (3.04) abierto «solo cabeceras»: este toque muestra las notas (no pliega)
+      if (header.get('opened') && header.get('eliHideBody') && hasHeaderContent(header))
+        this.lastTap.unhid = true;
+      else this.lastTap.toggled = true;
       this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
-      this.lastTap.toggled = true;
     }
     this.props.org.selectHeader(header.get('id'));
   }
@@ -205,7 +211,10 @@ class TitleLine extends PureComponent {
                     shouldDisableActions,
                   }}
                 />
-                {!header.get('opened') && hasContent ? '...' : ''}
+                {(!header.get('opened') && hasContent) ||
+                (header.get('opened') && header.get('eliHideBody') && hasHeaderContent(header))
+                  ? '...'
+                  : ''}
                 {attachmentCount > 0 && (
                   <span
                     className="eli-attach-indicator"

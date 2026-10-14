@@ -98,6 +98,9 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   const headerId = file.get('selectedHeaderId');
   const headers = file.get('headers');
   const header = headerId && headers ? headers.find((h) => h.get('id') === headerId) : null;
+  // (3.04) Elemento de lista («-» o «+») de las notas seleccionado: sus acciones van en la barra
+  const listItemId = file.get('selectedListItemId') || null;
+  const listEditMode = file.get('editMode');
   const todoKeywordSets = file.get('todoKeywordSets');
   const narrowedId = file.get('narrowedHeaderId');
   const logIntoDrawer = useSelector((s) => s.base.get('shouldLogIntoDrawer'));
@@ -123,7 +126,10 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   const widths = useRef({});
   const anchorRef = useRef(null);
 
-  const visible = !hidden && (!!header || !!table);
+  // (3.04) Siempre a la vista en el documento: sin nada seleccionado, una píldora pequeña con
+  // Agenda, Capturar y deshacer/rehacer (antes, botones redondos grandes abajo).
+  const idle = !header && !table && !(listItemId && !locked);
+  const visible = !hidden && !!path && file.has('headers');
 
   // Encima del teclado (visualViewport): lo que tapa el teclado por abajo
   useLayoutEffect(() => {
@@ -170,13 +176,14 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
       if (!t.closest('.org-file-container') && t !== document.body && !t.closest('.App, #root'))
         return;
       dispatch(orgActions.selectHeader(null));
+      if (listItemId) dispatch(orgActions.setSelectedListItemId(null));
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
-  }, [visible, editing, dispatch]);
+  }, [visible, editing, dispatch, listItemId]);
 
   // Al cambiar de encabezado o de modo, se cierra el submenú
-  useEffect(() => setSub(null), [headerId, editing, locked, !!table]);
+  useEffect(() => setSub(null), [headerId, editing, locked, !!table, listItemId]);
 
   const id = header ? header.get('id') : null;
   const org = (name, ...args) => dispatch(orgActions[name](...args));
@@ -273,6 +280,9 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     base('activatePopup', 'description-editor');
     setTimeout(() => insertLinkInto(activeField(), insertIntoField), 120);
   };
+  // (3.04) Agenda y plantillas de captura (antes, botones redondos grandes)
+  const openAgenda = () => base('activatePopup', 'agenda');
+  const openCapture = () => window.dispatchEvent(new CustomEvent('eli:capture-menu'));
   // (3.03) Editar las notas (descripción) en el sitio
   const editNotes = () => {
     org('openHeader', id);
@@ -608,6 +618,16 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           },
         ],
         more: [
+          // (3.04) Agenda y Capturar (antes, botones redondos grandes abajo)
+          { id: 'agenda', icon: 'far fa-calendar-check', label: 'Agenda', onClick: openAgenda },
+          {
+            id: 'capture',
+            icon: 'fas fa-inbox',
+            label: 'Capturar (plantillas)',
+            hint: 'c',
+            onClick: openCapture,
+          },
+          { id: 'sep-capture', sep: true },
           {
             id: 'clock',
             icon: hasClock ? 'fas fa-hourglass-end' : 'fas fa-hourglass-start',
@@ -869,8 +889,125 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
         },
       ]
     : [];
-  const rowItems = table ? tableMain : locked ? lockedMain : main;
-  const mode = table ? 'table' : locked ? 'locked' : 'main';
+  // (3.04) Elemento de lista seleccionado: lo que antes salía debajo del elemento (✎, editar
+  // contenido, ＋, ✕), más subir/bajar, deshacer/rehacer y ✓ (terminar).
+  const listMain = listItemId
+    ? [
+        {
+          id: 'li-title',
+          icon: 'fas fa-pencil-alt',
+          title: 'Editar el texto del elemento',
+          on: listEditMode === 'list-title',
+          onClick: () => org('enterEditMode', 'list-title'),
+          text: true,
+        },
+        {
+          id: 'li-contents',
+          icon: 'far fa-edit',
+          title: 'Editar el contenido (notas) del elemento',
+          on: listEditMode === 'list-contents',
+          onClick: () => org('enterEditMode', 'list-contents'),
+          text: true,
+        },
+        {
+          id: 'li-new',
+          icon: 'fas fa-plus',
+          title: 'Elemento nuevo debajo',
+          onClick: () => org('addNewListItemAndEdit'),
+          text: true,
+        },
+        {
+          id: 'li-up',
+          icon: 'fas fa-arrow-up',
+          title: 'Subir elemento',
+          onClick: () => org('moveListItemUp'),
+          text: true,
+        },
+        {
+          id: 'li-down',
+          icon: 'fas fa-arrow-down',
+          title: 'Bajar elemento',
+          onClick: () => org('moveListItemDown'),
+          text: true,
+        },
+        {
+          id: 'li-left',
+          icon: 'fas fa-outdent',
+          title: 'Subir de nivel el elemento',
+          onClick: () => org('moveListItemLeft'),
+          text: true,
+        },
+        {
+          id: 'li-right',
+          icon: 'fas fa-indent',
+          title: 'Bajar de nivel el elemento',
+          onClick: () => org('moveListItemRight'),
+          text: true,
+        },
+        {
+          id: 'li-del',
+          icon: 'fas fa-times',
+          title: 'Borrar elemento',
+          onClick: () => org('removeListItem'),
+          text: true,
+        },
+        { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
+        { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
+        {
+          id: 'li-done',
+          icon: 'fas fa-check',
+          title: 'Terminar',
+          onClick: () => {
+            // primero se sale de la edición (guarda el texto); luego se quita la selección
+            org('exitEditMode');
+            setTimeout(() => org('setSelectedListItemId', null), 0);
+          },
+          text: true,
+        },
+      ]
+    : [];
+  const idleMain = [
+    { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
+    ...(locked
+      ? [
+          {
+            id: 'unlock',
+            icon: 'fas fa-lock',
+            on: true,
+            title: 'Quitar el candado (volver a editar)',
+            onClick: toggleDocLock,
+          },
+        ]
+      : [
+          {
+            id: 'capture',
+            icon: 'fas fa-inbox',
+            badge: '+',
+            title: 'Capturar (plantillas de captura)',
+            onClick: openCapture,
+          },
+          { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
+          { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
+        ]),
+  ];
+  const rowItems = table
+    ? tableMain
+    : listItemId && !locked
+    ? listMain
+    : idle
+    ? idleMain
+    : locked
+    ? lockedMain
+    : main;
+  const mode = table
+    ? 'table'
+    : listItemId && !locked
+    ? 'list'
+    : idle
+    ? 'idle'
+    : locked
+    ? 'locked'
+    : 'main';
 
   // Ordenador: medir y mandar al ⋯ lo que no cabe (el ⋯ siempre se queda)
   const canOverflow = !coarse && mode === 'main';
@@ -926,7 +1063,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
 
   // (3.03) Tecla m (o «Mover» en la paleta): abre el menú Mover de la barra
   useEffect(() => {
-    if (!visible || locked || table) return undefined;
+    if (!visible || locked || table || !header) return undefined;
     const onMove = () => {
       const btn = document.querySelector('.eli-docbar__btn[data-bid="move"]');
       anchorRef.current = btn || null;
@@ -934,7 +1071,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     };
     window.addEventListener('eli:move-menu', onMove);
     return () => window.removeEventListener('eli:move-menu', onMove);
-  }, [visible, locked, table]);
+  }, [visible, locked, table, !!header]); // eslint-disable-line
 
   // Menú abierto: se cierra al tocar fuera o con Esc
   useEffect(() => {

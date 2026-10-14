@@ -3807,7 +3807,8 @@ export default function GtdView() {
               <i className="fas fa-plus" /> <span>Nuevo proyecto</span>
             </button>
           )}
-          {cleanupCount > 0 && !isTrash && (
+          {/* (3.04) arriba, solo en el Logbook; en las demás listas, al final (grupo «Hecho») */}
+          {cleanupCount > 0 && view.id === 'logbook' && (
             <button
               className="gtd-main__cleanup"
               onClick={cleanupNow}
@@ -4267,7 +4268,7 @@ export default function GtdView() {
                       title="Limpieza (c): pasar lo hecho al Logbook"
                       data-testid="gtd-done-cleanup"
                     >
-                      <i className="fas fa-broom" /> Al Logbook
+                      <i className="fas fa-broom" /> Limpieza
                     </button>
                   )}
                 </div>

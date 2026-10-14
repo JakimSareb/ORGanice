@@ -264,6 +264,38 @@ class HeaderContent extends PureComponent {
     );
   }
 
+  // (3.04) Doble clic (o doble toque) en las notas: editarlas en su sitio
+  eliNotesClick = (event) => {
+    const { header, shouldDisableActions } = this.props;
+    if (shouldDisableActions || isDocLocked()) return;
+    const t = event.target;
+    if (
+      t &&
+      t.closest &&
+      t.closest(
+        'a, button, input, textarea, select, table, .timestamp, .eli-org-table, ' +
+          '.list-part__checkbox, .checkbox, .eli-crypt-box'
+      )
+    ) {
+      this.eliLastNotesTap = 0;
+      return;
+    }
+    const now = Date.now();
+    const isDouble = this.eliLastNotesTap && now - this.eliLastNotesTap < 400;
+    this.eliLastNotesTap = isDouble ? 0 : now;
+    if (!isDouble) return;
+    event.stopPropagation();
+    if (window.getSelection) {
+      try {
+        window.getSelection().removeAllRanges();
+      } catch (e) {}
+    }
+    this.props.org.exitEditMode();
+    this.props.org.setSelectedListItemId(null);
+    this.props.org.selectHeader(header.get('id'));
+    this.props.base.activatePopup('description-editor');
+  };
+
   render() {
     const {
       header,
@@ -274,12 +306,17 @@ class HeaderContent extends PureComponent {
     } = this.props;
     const { containerWidth } = this.state;
 
-    if (!header.get('opened')) {
+    // (3.04) abierto «solo cabeceras» (al saltar desde otro sitio): sin las notas
+    if (!header.get('opened') || header.get('eliHideBody')) {
       return <div />;
     }
 
     return (
-      <div className="header-content-container nice-scroll" style={{ width: containerWidth }}>
+      <div
+        className="header-content-container nice-scroll"
+        style={{ width: containerWidth }}
+        onClick={this.eliNotesClick}
+      >
         {
           <Fragment>
             <PlanningItems

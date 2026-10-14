@@ -58,6 +58,7 @@ import {
   parentListItemWithIdInHeaders,
   updateListContainingListItemId,
   headerThatContainsListItemId,
+  hasHeaderContent,
   updateContentsWithListItemAddition,
 } from '../lib/org_utils';
 import { timestampForDate, getTimestampAsText, applyRepeater } from '../lib/timestamps';
@@ -84,7 +85,10 @@ const openHeader = (state, action) => {
   const headers = state.get('headers');
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
-  return state.setIn(['headers', headerIndex, 'opened'], true);
+  // (3.04) también se ven las notas (por si estaba abierto «solo cabeceras»)
+  return state
+    .setIn(['headers', headerIndex, 'opened'], true)
+    .setIn(['headers', headerIndex, 'eliHideBody'], false);
 };
 
 // ORG Mode para Eli: desplegar un encabezado y todos sus subencabezados
@@ -96,20 +100,41 @@ const eliOpenSubtree = (state, action) => {
   let next = headers;
   // (2.17) titlesOnly: se abre el encabezado pero sus subencabezados quedan plegados (solo títulos)
   for (let i = index; i <= index + count; i++)
-    next = next.setIn([i, 'opened'], action.titlesOnly ? i === index : true);
+    next = next
+      .setIn([i, 'opened'], action.titlesOnly ? i === index : true)
+      .setIn([i, 'eliHideBody'], !!action.hideBody && i === index);
   return state.set('headers', next);
 };
 
 // ORG Mode para Eli (2.15): contraer / expandir todas las cabeceras del fichero. Con la vista
 // reducida (narrow) el encabezado reducido sigue abierto (si no, no se vería nada).
+// (3.04) Con la vista reducida también siguen abiertos sus padres: si no, el reducido no se veía
+// y la pantalla se quedaba vacía. Al contraer, el reducido queda en «solo cabeceras».
 const eliSetAllOpened = (state, action) => {
   const narrowedId = state.get('narrowedHeaderId');
   const headers = state.get('headers');
   if (!headers) return state;
+  const keep = new Set();
+  if (narrowedId && !action.opened) {
+    let i = indexOfHeaderWithId(headers, narrowedId);
+    if (i >= 0) {
+      keep.add(i);
+      let level = headers.getIn([i, 'nestingLevel']);
+      for (let j = i - 1; j >= 0 && level > 1; j--) {
+        const l = headers.getIn([j, 'nestingLevel']);
+        if (l < level) {
+          keep.add(j);
+          level = l;
+        }
+      }
+    }
+  }
   return state.set(
     'headers',
-    headers.map((h) =>
-      h.set('opened', !!action.opened || (!!narrowedId && h.get('id') === narrowedId))
+    headers.map((h, i) =>
+      h
+        .set('opened', !!action.opened || keep.has(i))
+        .set('eliHideBody', !action.opened && keep.has(i) && h.get('id') === narrowedId)
     )
   );
 };
@@ -120,8 +145,17 @@ const toggleHeaderOpened = (state, action) => {
   const { header, headerIndex } = indexAndHeaderWithId(headers, action.headerId);
   const isOpened = header.get('opened');
 
+  // (3.04) Abierto «solo cabeceras» (sin notas, al saltar desde otro sitio): el toque muestra
+  // las notas, como el ciclo de org-mode (CHILDREN → SUBTREE), en vez de plegar
+  if (isOpened && header.get('eliHideBody') && hasHeaderContent(header)) {
+    return state.setIn(['headers', headerIndex, 'eliHideBody'], false);
+  }
+
   if (isOpened && state.get('narrowedHeaderId') === action.headerId) {
-    return state;
+    // (3.04) el reducido no se pliega: vuelve a «solo cabeceras»
+    return hasHeaderContent(header)
+      ? state.setIn(['headers', headerIndex, 'eliHideBody'], true)
+      : state;
   }
 
   if (isOpened && action.closeSubheadersRecursively) {
@@ -131,7 +165,18 @@ const toggleHeaderOpened = (state, action) => {
     });
   }
 
-  return state.setIn(['headers', headerIndex, 'opened'], !isOpened);
+  return state
+    .setIn(['headers', headerIndex, 'opened'], !isOpened)
+    .setIn(['headers', headerIndex, 'eliHideBody'], false);
+};
+
+// (3.04) Mostrar u ocultar las notas de un encabezado abierto (deshacer el primer toque de un
+// doble toque)
+const eliSetHideBody = (state, action) => {
+  const headers = state.get('headers');
+  const index = indexOfHeaderWithId(headers, action.headerId);
+  if (index < 0) return state;
+  return state.setIn(['headers', index, 'eliHideBody'], !!action.hide);
 };
 
 const selectHeader = (state, action) => {
@@ -2305,6 +2350,8 @@ const reducer = (state, action) => {
       return inFile(eliOpenSubtree);
     case 'ELI_SET_ALL_OPENED':
       return inFile(eliSetAllOpened);
+    case 'ELI_SET_HIDE_BODY':
+      return inFile(eliSetHideBody);
     case 'ELI_MOVE_HEADER_LINE':
       return inFile(eliMoveHeaderLine);
     case 'SELECT_HEADER':

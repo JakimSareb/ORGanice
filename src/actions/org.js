@@ -586,11 +586,18 @@ export const narrowHeader = (headerId) => ({
   headerId,
 });
 
-// ORG Mode para Eli: vista reducida a un encabezado, con todo su contenido desplegado
-export const eliNarrowAndExpand = (headerId, { titlesOnly = false } = {}) => (dispatch) => {
+// ORG Mode para Eli: vista reducida a un encabezado.
+// (3.04) Por defecto se abre «solo cabeceras»: se ven los títulos de los subencabezados (plegados)
+// y no las notas; un toque en el título muestra las notas (como el ciclo de org-mode).
+export const eliNarrowAndExpand = (headerId, { titlesOnly = true, hideBody = true } = {}) => (
+  dispatch
+) => {
   dispatch(narrowHeader(headerId));
-  dispatch({ type: 'ELI_OPEN_SUBTREE', headerId, titlesOnly });
+  dispatch({ type: 'ELI_OPEN_SUBTREE', headerId, titlesOnly, hideBody });
 };
+
+// (3.04) mostrar (false) u ocultar (true) las notas de un encabezado abierto
+export const eliSetHideBody = (headerId, hide) => ({ type: 'ELI_SET_HIDE_BODY', headerId, hide });
 
 // ORG Mode para Eli (2.15): contraer (false) o expandir (true) todas las cabeceras
 export const eliSetAllHeadersOpened = (opened) => ({ type: 'ELI_SET_ALL_OPENED', opened });
@@ -1929,6 +1936,13 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
   window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
   if (header) {
     dispatch(selectHeaderAndOpenParents(targetPath, header.get('id'), { widen: true }));
+    // (3.04) el encabezado del enlace se abre «solo cabeceras» (sin notas)
+    dispatch({
+      type: 'ELI_OPEN_SUBTREE',
+      headerId: header.get('id'),
+      titlesOnly: true,
+      hideBody: true,
+    });
   } else {
     dispatch(setPath(targetPath));
   }

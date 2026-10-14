@@ -3,6 +3,19 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.04 (octubre de 2026)
+** Documentos
+- *Arriba*, solo atrás/adelante, sincronizar, la lupa y el ⋯. El *candado* y los *ficheros principales* pasan a ⋯ › Fichero; con el candado puesto se ve un candadito junto al nombre. *Deshacer* ya no está arriba (sigue en la barra flotante).
+- La barra flotante *siempre a la vista*: sin nada seleccionado es una píldora pequeña con *Agenda*, *Capturar* (plantillas) y deshacer/rehacer. Se quitan los botones redondos grandes. Con un encabezado seleccionado, Agenda y Capturar están en su ⋯.
+- Al tocar un *elemento de lista* («-» o «+») de las notas, sus acciones van en la barra flotante: editar texto, editar contenido, ＋ nuevo, subir, bajar, sangrar, borrar, deshacer/rehacer y ✓ terminar (antes, una fila de iconos debajo del elemento).
+- Al *saltar a un encabezado* desde otro sitio (lupa, agenda, GTD, enlaces) se abre *solo con las cabeceras* (sin notas). Un toque en el título muestra las notas; otro, pliega (como el ciclo de org-mode).
+- *Contraer todas las cabeceras* con la vista reducida ya no deja la pantalla vacía.
+- *Doble clic (o doble toque) en las notas*: se editan en su sitio.
+- Editando en el sitio, *Tab* salta del título a las notas y de las notas al título (guardando).
+** Vista GTD
+- Al editar una tarea, *deshacer y rehacer* van antes del botón de formato (Aa).
+- El botón *Limpieza* de arriba sale solo en el Logbook; en las demás listas está al final, en el grupo «Hecho».
+
 * 3.03 (octubre de 2026)
 ** Documentos
 - *Editar notas* (y el título) desde la barra flotante: botón ✎ Editar, con propiedades, nota al registro y texto plano.

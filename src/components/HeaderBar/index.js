@@ -1,4 +1,4 @@
-import EliDocLockButton from './EliDocLockButton';
+import { isDocLocked, toggleDocLock, subscribeDocLock } from '../../lib/eli_doc_lock';
 import { openRawEditor, openPrintPreview, openMoonPhases, openFavorites } from '../EliTools';
 import { openAcomodadores } from '../EliAcomodadores';
 import { openPalette } from '../../lib/eli_palette';
@@ -187,6 +187,8 @@ class HeaderBar extends PureComponent {
     window.addEventListener('eli:nav-history', this.eliNavChanged);
     window.addEventListener('keydown', this.eliNavKey);
     installNavHistory(this.props.history);
+    // (3.04) el candado está en ⋯ › Fichero; el nombre del fichero lo muestra cuando está puesto
+    this.eliUnsubLock = subscribeDocLock(() => this.forceUpdate());
   }
 
   // (2.16) Atrás / adelante con el teclado: Alt+← / Alt+→ (y ⌘[ / ⌘] en el Mac), como en el
@@ -225,6 +227,7 @@ class HeaderBar extends PureComponent {
     window.removeEventListener('eli:split-open', this.eliOpenSplit);
     window.removeEventListener('eli:nav-history', this.eliNavChanged);
     window.removeEventListener('keydown', this.eliNavKey);
+    if (this.eliUnsubLock) this.eliUnsubLock();
   }
 
   eliNavChanged = () => this.forceUpdate();
@@ -451,6 +454,13 @@ class HeaderBar extends PureComponent {
         data-testid="eli-file-title"
       >
         {/\.(gpg|asc)$/i.test(this.props.path) && <i className="fas fa-lock eli-title-lock" />}
+        {isDocLocked() && !isStaticFile(this.props.path) && (
+          <i
+            className="fas fa-lock eli-title-lock eli-title-doclock"
+            title="Candado puesto (solo lectura). Se quita en ⋯ › Fichero"
+            data-testid="eli-doc-locked-badge"
+          />
+        )}
         {name}
       </div>
     );
@@ -564,7 +574,6 @@ class HeaderBar extends PureComponent {
       hasUnseenChangelog,
       activeModalPage,
       path,
-      isUndoEnabled,
       isRedoEnabled,
       online,
       dirtyCount,
@@ -577,9 +586,6 @@ class HeaderBar extends PureComponent {
         </div>
       );
     } else if (this.getPathRoot() !== 'settings') {
-      const undoIconClassName = classNames('fas fa-undo header-bar__actions__item', {
-        'header-bar__actions__item--disabled': !isUndoEnabled,
-      });
       const inGtd = this.getPathRoot() === 'gtd';
       const inFile = isAuthenticated && !!path && !inGtd;
       const inRealFile = inFile && !isStaticFile(path);
@@ -679,8 +685,8 @@ class HeaderBar extends PureComponent {
               label: 'Fichero',
               testId: 'eli-menu-file',
               items: [
-                // (en un documento ya está el botón de arriba)
-                !inFile && {
+                // (3.04) también en los documentos (ya no hay botón arriba)
+                {
                   icon: 'far fa-copy',
                   label: 'Ficheros principales',
                   onClick: openFavorites,
@@ -691,6 +697,20 @@ class HeaderBar extends PureComponent {
                   label: 'Explorador de ficheros',
                   onClick: () => this.props.history.push('/files'),
                   testId: 'eli-files-menu',
+                },
+                // (3.04) el candado (modo lectura), antes un botón de la barra de arriba
+                inRealFile && {
+                  icon: isDocLocked() ? 'fas fa-lock-open' : 'fas fa-lock',
+                  label: isDocLocked()
+                    ? 'Quitar el candado (volver a editar)'
+                    : 'Poner el candado (solo lectura)',
+                  onClick: () => {
+                    // si se estaba escribiendo, se guarda antes (como al tocar fuera)
+                    const el = document.activeElement;
+                    if (!isDocLocked() && el && el.blur) el.blur();
+                    toggleDocLock();
+                  },
+                  testId: 'eli-doc-lock',
                 },
                 inRealFile && {
                   icon: 'fas fa-align-left',
@@ -808,9 +828,6 @@ class HeaderBar extends PureComponent {
             </>
           )}
 
-          {/* (3.02) candado de Documentos (modo lectura) */}
-          {isAuthenticated && inRealFile && <EliDocLockButton />}
-
           {/* ORG Mode para Eli: sincronizar, en los dos modos */}
           {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
             <i
@@ -825,17 +842,6 @@ class HeaderBar extends PureComponent {
             />
           )}
 
-          {/* ORG Mode para Eli (2.17): en un documento, el botón de ficheros principales (favoritos);
-              la paleta de comandos queda en el resto de vistas. El calendario está en el menú ⋯ */}
-          {isAuthenticated && inFile && (
-            <i
-              className="far fa-copy header-bar__actions__item"
-              onClick={openFavorites}
-              title="Ficheros principales"
-              data-testid="eli-favorites-btn"
-              role="button"
-            />
-          )}
           {isAuthenticated && (
             <i
               className={
@@ -849,15 +855,6 @@ class HeaderBar extends PureComponent {
               }
               data-testid="eli-palette-btn"
               role="button"
-            />
-          )}
-
-          {inFile && !activeModalPage && (
-            <i
-              className={undoIconClassName}
-              onClick={this.handleUndoClick}
-              title="Deshacer"
-              data-testid="eli-undo"
             />
           )}
 
@@ -884,7 +881,8 @@ class HeaderBar extends PureComponent {
             </button>
           )}
 
-          {isAuthenticated && hasUnseenChangelog && (
+          {/* (3.04) en los documentos, arriba solo atrás/adelante, sincronizar, lupa y ⋯ */}
+          {isAuthenticated && hasUnseenChangelog && !inFile && (
             <i
               className="changelog-icon--has-unseen-changelog header-bar__actions__item fas fa-gift"
               onClick={this.handleChangelogClick}

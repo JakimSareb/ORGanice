@@ -101,17 +101,6 @@ const ActionDrawer = ({
 
   const handleMainArrowButtonClick = () => setIsDisplayingArrowButtons(!isDisplayingArrowButtons);
 
-  const handleMainCaptureButtonClick = () => {
-    if (!isDisplayingCaptureButtons && getAvailableCaptureTemplates().size === 0) {
-      alert(
-        'No tienes plantillas de captura para este fichero. Añade alguna en Ajustes > Plantillas de captura.'
-      );
-      return;
-    }
-
-    setIsDisplayingCaptureButtons(!isDisplayingCaptureButtons);
-  };
-
   // ORG Mode para Eli: atajo de captura (tecla c, configurable): muestra las plantillas y la
   // siguiente tecla elige la plantilla por su letra (Escape cancela)
   const latest = useRef();
@@ -153,67 +142,6 @@ const ActionDrawer = ({
       document.removeEventListener('keydown', onKey);
     };
   }, []);
-
-  const renderCaptureButtons = () => {
-    const availableCaptureTemplates = getAvailableCaptureTemplates();
-
-    const baseCaptureButtonStyle = {
-      position: 'absolute',
-      zIndex: 0,
-      left: 0,
-      opacity: isDisplayingArrowButtons ? 0 : 1,
-    };
-    if (!isDisplayingCaptureButtons) {
-      baseCaptureButtonStyle.boxShadow = 'none';
-    }
-
-    const mainButtonStyle = {
-      opacity: isDisplayingArrowButtons ? 0 : 1,
-      position: 'relative',
-      zIndex: 1,
-    };
-
-    const animatedStyle = {
-      bottom: spring(isDisplayingCaptureButtons ? 70 : 0, { stiffness: 300 }),
-    };
-
-    return (
-      <Motion style={animatedStyle}>
-        {(style) => (
-          <div className="action-drawer__capture-buttons-container">
-            <ActionButton
-              iconName={isDisplayingCaptureButtons ? 'times' : 'plus'}
-              isDisabled={false}
-              onClick={handleMainCaptureButtonClick}
-              style={mainButtonStyle}
-              dataTestId="capture-main-button"
-              tooltip={
-                isDisplayingCaptureButtons
-                  ? 'Ocultar plantillas de captura'
-                  : 'Mostrar plantillas de captura'
-              }
-            />
-
-            {availableCaptureTemplates.map((template, index) => (
-              <ActionButton
-                key={template.get('id')}
-                letter={template.get('letter')}
-                iconName={template.get('iconName')}
-                isDisabled={false}
-                onClick={handleCaptureButtonClick(template)}
-                style={{ ...baseCaptureButtonStyle, bottom: style.bottom * (index + 1) }}
-                dataTestId={`capture-template-${template
-                  .get('description')
-                  .toLowerCase()
-                  .replace(/\s+/g, '-')}`}
-                tooltip={`Activar la plantilla de captura «${template.get('description')}»`}
-              />
-            ))}
-          </div>
-        )}
-      </Motion>
-    );
-  };
 
   const renderMovementButtons = () => {
     const baseArrowButtonStyle = {
@@ -372,8 +300,6 @@ const ActionDrawer = ({
     );
   };
 
-  const handleAgendaClick = () => base.activatePopup('agenda');
-
   return (
     <div className="action-drawer-container nice-scroll">
       {
@@ -384,19 +310,8 @@ const ActionDrawer = ({
 
           {/* (3.03) la lupa (paleta, Ctrl+Espacio) está solo arriba: una sola lupa */}
 
-          <ActionButton
-            iconName="calendar-alt"
-            isDisabled={false}
-            onClick={handleAgendaClick}
-            style={{
-              opacity: isDisplayingArrowButtons || isDisplayingCaptureButtons ? 0 : 1,
-              pointerEvents:
-                isDisplayingArrowButtons || isDisplayingCaptureButtons ? 'none' : 'all',
-            }}
-            tooltip="Mostrar agenda"
-          />
-
-          {renderCaptureButtons()}
+          {/* (3.04) Agenda y Capturar están en la barra flotante (EliDocBar), siempre a la vista;
+              aquí solo quedan las flechas de mover (tecla m) y el atajo de captura (tecla c) */}
         </Fragment>
       }
     </div>
