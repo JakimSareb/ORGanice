@@ -17,6 +17,7 @@ import { generateTitleLine } from '../../../../lib/export_org';
 import AttributedString from '../AttributedString';
 import { attachmentCountOfHeader } from '../../../../lib/eli_attachments';
 import { isDocLocked } from '../../../../lib/eli_doc_lock';
+import { getTapMode, isTouchEvent } from '../../../../lib/eli_tap_mode';
 
 class TitleLine extends PureComponent {
   constructor(props) {
@@ -92,7 +93,9 @@ class TitleLine extends PureComponent {
       return;
     }
     // (3.05) el primer toque solo selecciona (sin plegar ni desplegar); el segundo, despliega
-    if (!isSelected) {
+    // (3.07) salvo que en Ajustes se elija «Plegar / desplegar» (móvil y ordenador por separado)
+    const tapMode = getTapMode(isTouchEvent(event) ? 'header-mobile' : 'header-desktop');
+    if (!isSelected && tapMode !== 'open') {
       this.props.org.selectHeader(header.get('id'));
       return;
     }

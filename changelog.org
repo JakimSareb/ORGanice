@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.07 (octubre de 2026)
+- Ajustes: cuatro opciones nuevas, por separado en el *móvil* y en el *ordenador*:
+  - *Al tocar una tarea (móvil)*: «Abrirla» (como hasta ahora) o «Seleccionarla» (el primer toque la selecciona y muestra su barra; tocarla otra vez o el doble toque la abre).
+  - *Al hacer clic en una tarea (ordenador)*: «Según dónde» (como hasta ahora: clic en el título = abrir; en el resto de la fila = seleccionar), «Abrirla» o «Seleccionarla» (doble clic = abrir).
+  - *Al tocar / hacer clic en una cabecera (Documentos)*: «Seleccionarla» (como hasta ahora) o «Plegar / desplegar» ya con el primer toque.
+- Vista GTD, móvil: la barra de formato de las notas ya no se monta encima del recuadro «Notas» (va en una fila que se desliza de lado).
+- El menú ⋯ de arriba (Herramientas, Novedades, Ajustes) ya no queda tapado por la cabecera de la lista, en el móvil y en el ordenador.
+- Editor de tareas (ordenador): el Tabulador va Título › Etiquetas › Notas › Estado › Proyecto (Mayús+Tab, al revés).
+
 * 3.06 (octubre de 2026)
 ** Temas y lectura
 - El *estilo limpio de Nirvana* (tarjetas, separadores finos, píldoras, mucho aire) vale ahora para *todos los temas*; cada uno conserva sus colores (claro y oscuro).

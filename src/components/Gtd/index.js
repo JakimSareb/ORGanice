@@ -156,6 +156,7 @@ import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../..
 import { calculateGtdKeybindings } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
 import { pushModalPage, setDisappearingLoadingMessage, setEliSetting } from '../../actions/base';
+import { getTapMode } from '../../lib/eli_tap_mode';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -2897,7 +2898,18 @@ export default function GtdView() {
     // (3.05) con el dedo: un toque abre la tarea en vista previa (se edita al tocar el título o
     // las notas; fechas, etiquetas, estado… siguen a mano). Seleccionar = pulsación larga.
     if (lastPointer.current !== 'mouse') {
+      // (3.07) Ajustes › «Al tocar una tarea (móvil)» = Seleccionarla: el primer toque la
+      // selecciona (con su barra); tocar la ya seleccionada (o doble toque) la abre
+      if (getTapMode('task-mobile') === 'select' && selKey !== task.key) {
+        setSelKey(task.key);
+        return;
+      }
       rowOpen(item, e, { preview: true });
+      return;
+    }
+    // (3.07) ordenador, «Abrirla»: un clic en cualquier parte de la fila la abre
+    if (getTapMode('task-desktop') === 'open') {
+      rowOpen(item, e);
       return;
     }
     setSelKey(task.key);
@@ -2906,6 +2918,8 @@ export default function GtdView() {
   const titleClick = (item) => (e) => {
     if (lastPointer.current !== 'mouse') return;
     if (e.shiftKey || e.ctrlKey || e.metaKey) return;
+    // (3.07) «Seleccionarla»: el clic en el título también solo selecciona (doble clic = abrir)
+    if (getTapMode('task-desktop') === 'select') return;
     e.stopPropagation();
     if (clickSuppressed()) return;
     if (newKey && openKey === newKey) {

@@ -290,3 +290,9 @@
 .header-bar__actions__item.eli-search-clock {
   color: var(--orange);
 }
+
+/* 3.07: con el menú ⋯ abierto, la barra sube por encima de la cabecera fija de GTD (z-index 5)
+   y de las cabeceras de Documentos, para que el desplegable no quede tapado (móvil y ordenador). */
+.header-bar:has(.eli-more__menu) {
+  z-index: 3200;
+}

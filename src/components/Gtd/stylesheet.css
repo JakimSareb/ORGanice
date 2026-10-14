@@ -3080,6 +3080,24 @@ html[data-eli-theme] .gtd-overview__row:last-child {
 }
 .gtd-editor--sheet .eli-format-bar {
   order: 2;
+  /* 3.07: una sola fila que se desliza de lado; sin encogerse (en la columna flexible de la hoja
+     se encogía y la 2.ª fila quedaba encima de las notas) y alineada con el título y las notas */
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 2px 0 8px 40px !important;
+  padding-bottom: 2px;
+  position: relative;
+  z-index: 1;
+}
+.gtd-editor--sheet .eli-format-bar::-webkit-scrollbar {
+  display: none;
+}
+.gtd-editor--sheet .eli-format-bar > * {
+  flex: 0 0 auto;
 }
 .gtd-editor--sheet:not(.is-editing-text) .eli-format-bar {
   display: none;
