@@ -447,7 +447,44 @@ export default function TaskEditor({
     if (onCancelNew) onCancelNew();
     else onClose();
   };
+  // (3.07) en el ordenador, Tab recorre primero Título › Etiquetas › Notas › Estado › Proyecto
+  // (Mayús+Tab al revés); desde ahí y en el resto de campos, el orden normal de la ventana.
+  const TAB_ORDER = [
+    ['gtd-editor-title'],
+    ['gtd-editor-tag', 'gtd-editor-area'],
+    ['gtd-editor-notes'],
+    ['gtd-editor-list', 'gtd-editor-project-state'],
+    ['gtd-editor-project'],
+  ];
+  const tabTarget = (ids) => {
+    const root = editorRef.current;
+    if (!root) return null;
+    for (const id of ids) {
+      const el = root.querySelector(`[data-testid="${id}"]`);
+      if (el && !el.disabled && el.offsetParent !== null) return el;
+    }
+    return null;
+  };
+  const onTabKey = (e) => {
+    if (sheet || e.ctrlKey || e.metaKey || e.altKey) return false;
+    const id = e.target && e.target.getAttribute && e.target.getAttribute('data-testid');
+    const idx = TAB_ORDER.findIndex((ids) => ids.includes(id));
+    if (idx < 0) return false;
+    const step = e.shiftKey ? -1 : 1;
+    for (let i = idx + step; i >= 0 && i < TAB_ORDER.length; i += step) {
+      const el = tabTarget(TAB_ORDER[i]);
+      if (el) {
+        e.preventDefault();
+        e.stopPropagation();
+        el.focus();
+        if (el.readOnly) startEditing({ currentTarget: el });
+        return true;
+      }
+    }
+    return false;
+  };
   const onKeyDown = (e) => {
+    if (e.key === 'Tab' && onTabKey(e)) return;
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();

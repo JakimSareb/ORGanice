@@ -480,6 +480,7 @@ Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
 - *Archivar en*: junto al fichero (tareas.org_archive) o en la subcarpeta archive de cada carpeta.
 - Los ajustes están en secciones plegables: *Apariencia*, *Tareas y etiquetas*, *Vista GTD y gestos* y *Opciones avanzadas*.
 - *Vista GTD y gestos*: deslizar sí/no, por separado en los documentos y en la vista GTD, y las secciones de la vista GTD (ver «Secciones configurables»).
+- *Al tocar una tarea* y *Al tocar una cabecera* (en Apariencia, debajo de Legibilidad; 3.07): por separado en el móvil y en el ordenador. Tarea: «Abrirla» o «Seleccionarla» (en el ordenador también «Según dónde», lo de siempre). Cabecera: «Seleccionarla» (lo de siempre) o «Plegar / desplegar» con el primer toque.
 - *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada), «Nirvana» (como NirvanaHQ: grises claros, tarjetas blancas y acento azul; en oscuro, grafito; la vista GTD se ve aún más limpia) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).
