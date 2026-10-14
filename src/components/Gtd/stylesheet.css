@@ -3306,3 +3306,19 @@ html[data-eli-theme] .gtd-overview__row:last-child {
 .gtd-editor.gtd-editor--sheet .gtd-ed__tags {
   margin-left: 0;
 }
+
+/* 3.08: en el móvil, el cuadro «Fecha de inicio» se salía por la derecha (scroll lateral):
+   se alinea al borde derecho de su campo y nunca es más ancho que la pantalla */
+@media (max-width: 720px) {
+  .gtd-editor .gtd-sched__menu {
+    left: auto;
+    right: 0;
+    min-width: 0;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+  }
+  .gtd-editor .gtd-sched__quick {
+    flex-wrap: wrap;
+  }
+}
