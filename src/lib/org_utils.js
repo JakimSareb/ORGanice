@@ -204,7 +204,7 @@ export const getOpenHeaderPaths = (headers) => {
       continue;
     }
 
-    const title = header.getIn(['titleLine', 'rawTitle']);
+    const title = eliFoldKey(header.getIn(['titleLine', 'rawTitle']));
 
     const subheaders = subheadersOfHeaderWithId(headers, header.get('id'));
     const openSubheaderPaths = getOpenHeaderPaths(subheaders);
@@ -261,16 +261,26 @@ export const headerWithPath = (headers, headerPath) => {
   return headerWithPath(subheaders, headerPath.rest());
 };
 
-export const openHeaderWithPath = (headers, headerPath, maxNestingLevel = 1) => {
-  if (headerPath.size === 0) {
+// (3.06) Clave de plegado de un título: sin contadores [2/5] / [40%] (cambian al marcar casillas),
+// así el plegado guardado sigue valiendo aunque cambien
+export const eliFoldKey = (title) =>
+  String(title || '')
+    .replace(/\s*\[\d*\/\d*\]|\s*\[\d*%\]/g, '')
+    .trim();
+
+export const openHeaderWithPath = (headers, headerPath, maxNestingLevel = null) => {
+  if (!headerPath || headerPath.size === 0 || !headers || headers.size === 0) {
     return headers;
   }
 
-  const firstTitle = headerPath.first();
+  // (3.06) el nivel de los hijos directos es el menor de la lista (aunque salte niveles: * → ***)
+  const level =
+    maxNestingLevel === null ? headers.map((h) => h.get('nestingLevel')).min() : maxNestingLevel;
+  const firstTitle = eliFoldKey(headerPath.first());
   const headerIndex = headers.findIndex((header) => {
-    const rawTitle = header.getIn(['titleLine', 'rawTitle']);
+    const rawTitle = eliFoldKey(header.getIn(['titleLine', 'rawTitle']));
     const nestingLevel = header.get('nestingLevel');
-    return rawTitle === firstTitle && nestingLevel <= maxNestingLevel;
+    return rawTitle === firstTitle && nestingLevel <= level;
   });
   if (headerIndex === -1) {
     return headers;
@@ -279,7 +289,7 @@ export const openHeaderWithPath = (headers, headerPath, maxNestingLevel = 1) => 
   headers = headers.update(headerIndex, (header) => header.set('opened', true));
 
   let subheaders = subheadersOfHeaderWithId(headers, headers.getIn([headerIndex, 'id']));
-  subheaders = openHeaderWithPath(subheaders, headerPath.rest(), maxNestingLevel + 1);
+  subheaders = openHeaderWithPath(subheaders, headerPath.rest());
 
   headers = headers
     .take(headerIndex + 1)

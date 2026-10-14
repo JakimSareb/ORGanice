@@ -9,6 +9,8 @@ import {
   toggleOrgEmphasis,
   emphasisForKeyEvent,
   emphasisShortcutLabel,
+  cycleListType,
+  sortList,
 } from '../../lib/eli_format';
 
 import './stylesheet.css';
@@ -34,6 +36,25 @@ export const applyList = (el, kind) => {
   restore();
   requestAnimationFrame(() => el.value === result.value && restore());
 };
+
+// (3.06) Aplica una transformación ({ value, start, end } o null) al campo y recoloca el cursor
+export const applyFieldTransform = (el, fn) => {
+  if (!el) return false;
+  const result = fn(el.value, el.selectionStart, el.selectionEnd);
+  if (!result) return false;
+  setFieldValue(el, result.value);
+  const restore = () => {
+    try {
+      el.focus();
+      el.setSelectionRange(result.start, result.end);
+    } catch (e) {}
+  };
+  restore();
+  requestAnimationFrame(() => el.value === result.value && restore());
+  return true;
+};
+export const cycleListIn = (el) => applyFieldTransform(el, (v, s) => cycleListType(v, s));
+export const sortListIn = (el, mode) => applyFieldTransform(el, (v, s) => sortList(v, s, mode));
 
 export const applyEmphasis = (el, marker) => {
   if (!el) return;
@@ -70,6 +91,22 @@ export const installFormatHotkeys = () => {
   window.addEventListener(
     'keydown',
     (event) => {
+      // (3.06) Ctrl+Mayús+- (⌘ en Mac): cambiar el tipo de la lista (como C-c - en Emacs)
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        !event.altKey &&
+        (event.key === '-' || event.key === '_' || event.code === 'Minus') &&
+        event.target &&
+        event.target.tagName === 'TEXTAREA' &&
+        isFormattable(event.target)
+      ) {
+        if (cycleListIn(event.target)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
       const item = emphasisForKeyEvent(event);
       if (!item) return;
       const el = event.target;

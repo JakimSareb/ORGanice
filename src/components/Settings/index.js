@@ -13,6 +13,7 @@ import OfflineSettings from './OfflineSettings';
 import './stylesheet.css';
 
 import TabButtons from '../UI/TabButtons';
+import { READABILITY, getReadability, setReadability } from '../../lib/eli_readability';
 import Switch from '../UI/Switch';
 import ExternalLink from '../UI/ExternalLink';
 import { APP_NAME, APP_VERSION } from '../../lib/eli_app_name';
@@ -24,6 +25,29 @@ import {
 } from '../../lib/eli_todo_defaults';
 
 // ORG Mode para Eli: campo de texto que se guarda al salir de él (o con Intro)
+
+// (3.06) Legibilidad del texto en Documentos (en este dispositivo)
+const EliReadabilitySetting = () => {
+  const [value, setValue] = React.useState(getReadability());
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-readability"
+    >
+      <div className="setting-label">Legibilidad del texto (Documentos)</div>
+      <TabButtons
+        buttons={READABILITY.map((r) => r.label)}
+        values={READABILITY.map((r) => r.id)}
+        selectedButton={value}
+        onSelect={(v) => {
+          setValue(v);
+          setReadability(v);
+        }}
+      />
+    </div>
+  );
+};
+
 const EliLineSetting = ({ label, description, value, fallback, isValid, onSave, testId }) => {
   const [text, setText] = React.useState(value || fallback);
   const [error, setError] = React.useState('');
@@ -203,6 +227,8 @@ const Settings = ({
             onSelect={handleThemeClick}
           />
         </div>
+
+        <EliReadabilitySetting />
 
         <div className="setting-container">
           <div className="setting-label">Estilo de viñetas</div>

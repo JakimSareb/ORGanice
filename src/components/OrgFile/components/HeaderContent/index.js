@@ -15,7 +15,14 @@ import * as baseActions from '../../../../actions/base';
 
 import { eliInsertTodayInactive } from '../../../../lib/timestamps';
 import { createRawDescriptionText } from '../../../../lib/export_org';
-import { tableLinesAt, replaceTableAt } from '../../../../lib/eli_org_table';
+import {
+  tableLinesAt,
+  replaceTableAt,
+  nestedTableIds,
+  nestedTableLinesAt,
+  replaceNestedTableAt,
+} from '../../../../lib/eli_org_table';
+import { rememberNotesCaret } from '../../../../lib/eli_notes_caret';
 import { isDocLocked, subscribeDocLock } from '../../../../lib/eli_doc_lock';
 
 import AttributedString from '../AttributedString';
@@ -79,18 +86,28 @@ class HeaderContent extends PureComponent {
 
   // (3.02) Líneas de la tabla tal como están en el fichero (null si no es de primer nivel)
   eliTableLines(tableId) {
+    const raw = this.props.header.get('rawDescription') || '';
     const ord = this.eliTableOrdinal(tableId);
-    if (ord < 0) return null;
-    return tableLinesAt(this.props.header.get('rawDescription') || '', ord);
+    if (ord >= 0) return tableLinesAt(raw, ord);
+    // (3.06) tabla dentro de un elemento de lista
+    const nOrd = nestedTableIds(this.props.header.get('description')).indexOf(tableId);
+    if (nOrd < 0) return null;
+    return nestedTableLinesAt(raw, nOrd);
   }
 
   // (3.02) Guardar una tabla editada: se sustituye solo su bloque de líneas en las notas
   handleEliTableChange(tableId, newLines) {
     const { header } = this.props;
     const ord = this.eliTableOrdinal(tableId);
-    if (ord < 0) return;
     const raw = header.get('rawDescription') || '';
-    const nextRaw = replaceTableAt(raw, ord, newLines);
+    let nextRaw = raw;
+    if (ord >= 0) nextRaw = replaceTableAt(raw, ord, newLines);
+    else {
+      // (3.06) tabla dentro de un elemento de lista
+      const nOrd = nestedTableIds(header.get('description')).indexOf(tableId);
+      if (nOrd < 0) return;
+      nextRaw = replaceNestedTableAt(raw, nOrd, newLines);
+    }
     if (nextRaw === raw) return;
     const full = createRawDescriptionText(
       header.set('rawDescription', nextRaw),
@@ -289,6 +306,8 @@ class HeaderContent extends PureComponent {
     this.eliLastNotesTap = isDouble ? 0 : now;
     if (!isDouble) return;
     event.stopPropagation();
+    // (3.06) el cursor irá donde se ha pulsado
+    rememberNotesCaret(header.get('id'), event.currentTarget, event.clientX, event.clientY);
     if (window.getSelection) {
       try {
         window.getSelection().removeAllRanges();

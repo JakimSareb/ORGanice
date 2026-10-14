@@ -3,7 +3,8 @@ import { parseISO, addSeconds } from 'date-fns';
 import { localStorageAvailable } from '../util/settings_persister';
 import { exportOrg } from '../lib/export_org';
 import { parseFile } from '../reducers/org';
-import { STATIC_FILE_PREFIX } from '../lib/org_utils';
+import { STATIC_FILE_PREFIX, openHeaderWithPath } from '../lib/org_utils';
+import { fromJS } from 'immutable';
 import {
   isEncryptedPath,
   hasUnencryptedCryptEntries,
@@ -157,10 +158,25 @@ export const loadFilesFromLocalStorage = (state) => {
   if (localStorageAvailable) {
     const persistedFiles = JSON.parse(localStorage.getItem('persistedFiles')) || {};
     const isDirty = JSON.parse(localStorage.getItem('isDirty')) || {};
+    // (3.06) el plegado guardado (por fichero, en este dispositivo) se recupera también al
+    // abrir la app desde lo guardado en el navegador (antes solo al leerlo de la nube)
+    let openness = {};
+    try {
+      openness = JSON.parse(localStorage.getItem('headerOpenness')) || {};
+    } catch (e) {}
     Object.entries(persistedFiles).forEach(([path, lastSyncAt]) => {
       const contents = getPlainCopy(path);
       if (contents) {
         state.org.present = state.org.present.update((org) => parseFile(org, { path, contents }));
+        if (Array.isArray(openness[path]) && openness[path].length) {
+          let headers = state.org.present.getIn(['files', path, 'headers']);
+          if (headers) {
+            openness[path].forEach((p) => {
+              headers = openHeaderWithPath(headers, fromJS(p));
+            });
+            state.org.present = state.org.present.setIn(['files', path, 'headers'], headers);
+          }
+        }
         state.org.present = state.org.present.setIn(
           ['files', path, 'lastSyncAt'],
           parseISO(lastSyncAt)

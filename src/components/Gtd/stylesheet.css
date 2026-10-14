@@ -175,7 +175,10 @@
   /* ORG Mode para Eli: la cabecera (con ☰ en el móvil) se queda arriba al bajar por la lista */
   position: sticky;
   top: -12px;
-  z-index: 1;
+  /* 3.06: por encima de las filas (z-index 1) para que no la tapen al hacer scroll;
+     por debajo del menú lateral del móvil (20/30), Drawer y menús */
+  z-index: 5;
+  isolation: isolate;
   margin-top: -12px;
   padding: 12px 0 8px;
   background: var(--base3);
@@ -600,7 +603,6 @@
 .gtd-scrim {
   display: none;
 }
-
 
 /* ---------- Móvil: el menú lateral se despliega ---------- */
 @media (max-width: 720px) {
@@ -2612,6 +2614,25 @@
    (3.05) Tema «Nirvana» (como NirvanaHQ): fondo gris claro, menú lateral blanco, listas en
    tarjetas blancas con separadores finos, píldoras de filtro y mucho aire. Solo con ese tema.
    ========================================================================================== */
+/* (3.06) El estilo limpio de Nirvana vale para TODOS los temas: cada tema conserva su paleta
+   (estas variables salen de sus colores); el tema Nirvana define las suyas justo debajo. */
+html {
+  --nv-main: color-mix(in srgb, var(--base2) 55%, var(--base3));
+  --nv-side: var(--base3);
+  --nv-side-on: var(--base2);
+  --nv-row: var(--base3);
+  --nv-row-hover: color-mix(in srgb, var(--base2) 35%, var(--base3));
+  --nv-sep: color-mix(in srgb, var(--base2) 75%, var(--base3));
+  --nv-card: var(--base2);
+  --nv-meta: var(--base0);
+  --nv-pill: var(--base2);
+  --nv-pill-text: var(--base01);
+  --nv-pill-on: var(--blue);
+  --nv-pill-on-text: #ffffff;
+  --nv-area: var(--yellow);
+  --nv-check: var(--base1);
+  --nv-line: var(--base1);
+}
 html[data-eli-theme='Nirvana'] {
   --nv-main: #f0f0f0;
   --nv-side: #ffffff;
@@ -2646,7 +2667,7 @@ html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] {
   --nv-check: #5b5f68;
   --nv-line: #3a3d45;
 }
-html[data-eli-theme='Nirvana'] .gtd {
+html[data-eli-theme] .gtd {
   background: var(--nv-main);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Roboto, Arial,
     sans-serif;
@@ -2654,82 +2675,82 @@ html[data-eli-theme='Nirvana'] .gtd {
 }
 
 /* menú lateral */
-html[data-eli-theme='Nirvana'] .gtd-side {
+html[data-eli-theme] .gtd-side {
   background: var(--nv-side);
   border-right: 0;
   padding: 14px 10px 28px;
 }
-html[data-eli-theme='Nirvana'] .gtd-side__item {
+html[data-eli-theme] .gtd-side__item {
   padding: 9px 12px;
   font-size: 15px;
   color: var(--base01);
   border-radius: 6px;
 }
-html[data-eli-theme='Nirvana'] .gtd-side__item:hover {
+html[data-eli-theme] .gtd-side__item:hover {
   background: var(--nv-row-hover);
 }
-html[data-eli-theme='Nirvana'] .gtd-side__item.is-on {
+html[data-eli-theme] .gtd-side__item.is-on {
   background: var(--nv-side-on);
   color: var(--base01);
 }
-html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] .gtd-side__item.is-on {
+html[data-eli-theme][data-eli-scheme='Dark'] .gtd-side__item.is-on {
   box-shadow: inset 3px 0 0 var(--blue);
   border-radius: 0 6px 6px 0;
 }
-html[data-eli-theme='Nirvana'] .gtd-side__icon {
+html[data-eli-theme] .gtd-side__icon {
   color: var(--blue);
   opacity: 0.9;
 }
-html[data-eli-theme='Nirvana'] .gtd-side__item.is-on .gtd-side__icon {
+html[data-eli-theme] .gtd-side__item.is-on .gtd-side__icon {
   color: var(--blue);
 }
-html[data-eli-theme='Nirvana'] .gtd-side__count {
+html[data-eli-theme] .gtd-side__count {
   color: var(--nv-meta);
   opacity: 1;
 }
-html[data-eli-theme='Nirvana'] .gtd-side__section,
-html[data-eli-theme='Nirvana'] .gtd-side__sep-toggle {
+html[data-eli-theme] .gtd-side__section,
+html[data-eli-theme] .gtd-side__sep-toggle {
   text-transform: none;
   letter-spacing: 0;
   font-size: 15px;
   font-weight: 500;
   color: var(--base01);
 }
-html[data-eli-theme='Nirvana'] .gtd-side__lists--extra,
-html[data-eli-theme='Nirvana'] .gtd-side__item--agenda,
-html[data-eli-theme='Nirvana'] .gtd-side__sep,
-html[data-eli-theme='Nirvana'] .gtd-side__sep--head {
+html[data-eli-theme] .gtd-side__lists--extra,
+html[data-eli-theme] .gtd-side__item--agenda,
+html[data-eli-theme] .gtd-side__sep,
+html[data-eli-theme] .gtd-side__sep--head {
   border-color: transparent;
 }
-html[data-eli-theme='Nirvana'] .gtd-side__area,
-html[data-eli-theme='Nirvana'] .gtd-side__search {
+html[data-eli-theme] .gtd-side__area,
+html[data-eli-theme] .gtd-side__search {
   border-color: transparent;
   background: var(--nv-main);
 }
 
 /* zona principal */
-html[data-eli-theme='Nirvana'] .gtd-main {
+html[data-eli-theme] .gtd-main {
   background: var(--nv-main);
   padding: 18px 34px 70px;
 }
-html[data-eli-theme='Nirvana'] .gtd-main__head {
+html[data-eli-theme] .gtd-main__head {
   background: var(--nv-main);
   padding: 18px 0 14px;
   margin-top: -18px;
   top: -18px;
 }
-html[data-eli-theme='Nirvana'] .gtd-main__title {
+html[data-eli-theme] .gtd-main__title {
   font-size: 34px;
   font-weight: 400;
   letter-spacing: -0.01em;
   color: var(--base01);
 }
-html[data-eli-theme='Nirvana'] .gtd-main__count {
+html[data-eli-theme] .gtd-main__count {
   font-size: 15px;
   color: var(--nv-meta);
 }
 /* proyecto: el título en una tarjeta, como Nirvana */
-html[data-eli-theme='Nirvana'] .gtd-main.is-project-view .gtd-main__head {
+html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head {
   position: static;
   margin: 0 0 18px;
   padding: 26px 22px;
@@ -2737,38 +2758,38 @@ html[data-eli-theme='Nirvana'] .gtd-main.is-project-view .gtd-main__head {
   border: 1px solid var(--nv-card);
   border-radius: 6px;
 }
-html[data-eli-theme='Nirvana'] .gtd-main.is-project-view .gtd-main__title {
+html[data-eli-theme] .gtd-main.is-project-view .gtd-main__title {
   font-size: 24px;
   font-weight: 600;
 }
-html[data-eli-theme='Nirvana'] .gtd-project-info {
+html[data-eli-theme] .gtd-project-info {
   margin: -8px 0 16px;
   color: var(--nv-meta);
 }
-html[data-eli-theme='Nirvana'] .gtd-meta--area {
+html[data-eli-theme] .gtd-meta--area {
   color: var(--nv-meta);
   font-weight: normal;
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 0.02em;
 }
-html[data-eli-theme='Nirvana'] .gtd-meta--area::before {
+html[data-eli-theme] .gtd-meta--area::before {
   content: '●';
   color: var(--nv-area);
   margin-right: 4px;
   font-size: 9px;
   vertical-align: 2px;
 }
-html[data-eli-theme='Nirvana'] .gtd-project-notes {
+html[data-eli-theme] .gtd-project-notes {
   margin-bottom: 14px;
 }
 
 /* filtros: píldoras */
-html[data-eli-theme='Nirvana'] .gtd-filterbar {
+html[data-eli-theme] .gtd-filterbar {
   gap: 8px;
   margin: 6px 0 22px;
 }
-html[data-eli-theme='Nirvana'] .gtd-filterbar .gtd-chip {
+html[data-eli-theme] .gtd-filterbar .gtd-chip {
   border: 0;
   background: var(--nv-pill);
   color: var(--nv-pill-text);
@@ -2777,17 +2798,17 @@ html[data-eli-theme='Nirvana'] .gtd-filterbar .gtd-chip {
   font-size: 14px;
   font-weight: 500;
 }
-html[data-eli-theme='Nirvana'] .gtd-filterbar .gtd-chip.is-on {
+html[data-eli-theme] .gtd-filterbar .gtd-chip.is-on {
   background: var(--nv-pill-on);
   color: var(--nv-pill-on-text);
 }
-html[data-eli-theme='Nirvana'] .gtd-filterbar .gtd-chip.is-not {
+html[data-eli-theme] .gtd-filterbar .gtd-chip.is-not {
   text-decoration: line-through;
   opacity: 0.7;
 }
 
 /* entrada rápida: una línea, sin caja */
-html[data-eli-theme='Nirvana'] .gtd-rapid {
+html[data-eli-theme] .gtd-rapid {
   max-width: 640px;
   margin: 4px 0 30px;
   padding: 10px 2px;
@@ -2797,16 +2818,16 @@ html[data-eli-theme='Nirvana'] .gtd-rapid {
   background: transparent;
   color: var(--nv-meta);
 }
-html[data-eli-theme='Nirvana'] .gtd-rapid:focus-within {
+html[data-eli-theme] .gtd-rapid:focus-within {
   border-color: var(--blue);
 }
-html[data-eli-theme='Nirvana'] .gtd-rapid input {
+html[data-eli-theme] .gtd-rapid input {
   font-size: 17px;
   color: var(--base01);
 }
 
 /* divisiones: títulos sencillos («Next Up», «Later»…) */
-html[data-eli-theme='Nirvana'] .gtd-section {
+html[data-eli-theme] .gtd-section {
   margin: 26px 0 10px;
   padding: 0 2px;
   border-bottom: 0;
@@ -2816,103 +2837,103 @@ html[data-eli-theme='Nirvana'] .gtd-section {
   font-weight: 600;
   color: var(--base01);
 }
-html[data-eli-theme='Nirvana'] .gtd-section > i,
-html[data-eli-theme='Nirvana'] .gtd-section > span > i,
-html[data-eli-theme='Nirvana'] .gtd-section__toggle > i:not([class*='fa-caret']) {
+html[data-eli-theme] .gtd-section > i,
+html[data-eli-theme] .gtd-section > span > i,
+html[data-eli-theme] .gtd-section__toggle > i:not([class*='fa-caret']) {
   display: none;
 }
-html[data-eli-theme='Nirvana'] .gtd-section__n {
+html[data-eli-theme] .gtd-section__n {
   font-size: 14px;
   color: var(--nv-meta);
   opacity: 1;
 }
-html[data-eli-theme='Nirvana'] .gtd-section.is-drop {
+html[data-eli-theme] .gtd-section.is-drop {
   color: var(--blue);
 }
 
 /* filas en tarjeta blanca, con separadores finos */
-html[data-eli-theme='Nirvana'] .gtd-task {
+html[data-eli-theme] .gtd-task {
   background: var(--nv-row);
   border-left: 1px solid var(--nv-card);
   border-right: 1px solid var(--nv-card);
   border-bottom: 1px solid var(--nv-sep);
 }
-html[data-eli-theme='Nirvana'] .gtd-list > .gtd-task:first-child,
-html[data-eli-theme='Nirvana'] .gtd-list > .gtd-empty + .gtd-task,
-html[data-eli-theme='Nirvana'] .gtd-section + .gtd-task {
+html[data-eli-theme] .gtd-list > .gtd-task:first-child,
+html[data-eli-theme] .gtd-list > .gtd-empty + .gtd-task,
+html[data-eli-theme] .gtd-section + .gtd-task {
   border-top: 1px solid var(--nv-card);
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
 }
-html[data-eli-theme='Nirvana'] .gtd-task:last-child,
-html[data-eli-theme='Nirvana'] .gtd-task:has(+ .gtd-section) {
+html[data-eli-theme] .gtd-task:last-child,
+html[data-eli-theme] .gtd-task:has(+ .gtd-section) {
   border-bottom: 1px solid var(--nv-card);
   border-bottom-left-radius: 6px;
   border-bottom-right-radius: 6px;
 }
-html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] .gtd-task:last-child,
-html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] .gtd-task:has(+ .gtd-section) {
+html[data-eli-theme][data-eli-scheme='Dark'] .gtd-task:last-child,
+html[data-eli-theme][data-eli-scheme='Dark'] .gtd-task:has(+ .gtd-section) {
   border-bottom-color: transparent;
 }
-html[data-eli-theme='Nirvana'] .gtd-task__row {
+html[data-eli-theme] .gtd-task__row {
   padding: 13px 14px 13px 8px;
   border-radius: inherit;
   gap: 10px;
   align-items: center;
 }
-html[data-eli-theme='Nirvana'] .gtd-task__row:hover {
+html[data-eli-theme] .gtd-task__row:hover {
   background: var(--nv-row-hover);
 }
-html[data-eli-theme='Nirvana'] .gtd-task.is-open .gtd-task__row {
+html[data-eli-theme] .gtd-task.is-open .gtd-task__row {
   background: var(--nv-row);
 }
-html[data-eli-theme='Nirvana'] .gtd-task__title {
+html[data-eli-theme] .gtd-task__title {
   font-size: 16px;
   color: var(--base01);
 }
-html[data-eli-theme='Nirvana'] .gtd-task__right,
-html[data-eli-theme='Nirvana'] .gtd-task__meta {
+html[data-eli-theme] .gtd-task__right,
+html[data-eli-theme] .gtd-task__meta {
   color: var(--nv-meta);
   font-size: 13px;
   gap: 4px 12px;
 }
-html[data-eli-theme='Nirvana'] .gtd-task__right .gtd-meta--tag,
-html[data-eli-theme='Nirvana'] .gtd-task__row:hover .gtd-task__right .gtd-meta--tag,
-html[data-eli-theme='Nirvana'] .gtd-task.is-selected .gtd-task__right .gtd-meta--tag {
+html[data-eli-theme] .gtd-task__right .gtd-meta--tag,
+html[data-eli-theme] .gtd-task__row:hover .gtd-task__right .gtd-meta--tag,
+html[data-eli-theme] .gtd-task.is-selected .gtd-task__right .gtd-meta--tag {
   padding: 0;
   background: none;
   color: var(--nv-meta);
 }
-html[data-eli-theme='Nirvana'] .gtd-meta--energy i,
-html[data-eli-theme='Nirvana'] .gtd-meta--effort i {
+html[data-eli-theme] .gtd-meta--energy i,
+html[data-eli-theme] .gtd-meta--effort i {
   display: none;
 }
-html[data-eli-theme='Nirvana'] .gtd-check {
+html[data-eli-theme] .gtd-check {
   width: 20px;
   height: 20px;
   border: 1.5px solid var(--nv-check);
   border-radius: 3px;
 }
-html[data-eli-theme='Nirvana'] .gtd-check.is-on {
+html[data-eli-theme] .gtd-check.is-on {
   background: var(--blue);
   border-color: var(--blue);
 }
-html[data-eli-theme='Nirvana'] .gtd-star {
+html[data-eli-theme] .gtd-star {
   color: var(--nv-check);
   opacity: 1;
   font-size: 16px;
 }
-html[data-eli-theme='Nirvana'] .gtd-star:not(.is-on) i {
+html[data-eli-theme] .gtd-star:not(.is-on) i {
   font-weight: 900;
 }
-html[data-eli-theme='Nirvana'] .gtd-star.is-on {
+html[data-eli-theme] .gtd-star.is-on {
   color: #f2b24a;
 }
-html[data-eli-theme='Nirvana'] .gtd-task__dots {
+html[data-eli-theme] .gtd-task__dots {
   color: var(--nv-check);
   opacity: 0.9;
 }
-html[data-eli-theme='Nirvana'] .gtd-task__caret {
+html[data-eli-theme] .gtd-task__caret {
   border: 1px solid var(--nv-line);
   border-radius: 3px;
   width: 20px;
@@ -2922,49 +2943,49 @@ html[data-eli-theme='Nirvana'] .gtd-task__caret {
   color: var(--nv-meta);
   opacity: 0.9;
 }
-html[data-eli-theme='Nirvana'] .gtd-task.is-selected > .gtd-task__row,
-html[data-eli-theme='Nirvana'] .gtd-task.is-selected > .gtd-task__row:hover {
+html[data-eli-theme] .gtd-task.is-selected > .gtd-task__row,
+html[data-eli-theme] .gtd-task.is-selected > .gtd-task__row:hover {
   background: color-mix(in srgb, var(--blue) 10%, var(--nv-row));
 }
-html[data-eli-theme='Nirvana'] .gtd-editor {
+html[data-eli-theme] .gtd-editor {
   border-radius: 6px;
 }
 /* resumen de proyectos */
-html[data-eli-theme='Nirvana'] .gtd-overview__row {
+html[data-eli-theme] .gtd-overview__row {
   background: var(--nv-row);
   border: 1px solid var(--nv-card);
   border-top: 0;
   padding: 13px 14px;
 }
-html[data-eli-theme='Nirvana'] .gtd-section + .gtd-overview__row {
+html[data-eli-theme] .gtd-section + .gtd-overview__row {
   border-top: 1px solid var(--nv-card);
   border-radius: 6px 6px 0 0;
 }
-html[data-eli-theme='Nirvana'] .gtd-overview__row:last-child {
+html[data-eli-theme] .gtd-overview__row:last-child {
   border-radius: 0 0 6px 6px;
 }
 @media (max-width: 720px) {
-  html[data-eli-theme='Nirvana'] .gtd-main {
+  html[data-eli-theme] .gtd-main {
     padding: 12px 12px 70px;
   }
-  html[data-eli-theme='Nirvana'] .gtd-main__head {
+  html[data-eli-theme] .gtd-main__head {
     padding-top: 12px;
     margin-top: -12px;
     top: -12px;
   }
-  html[data-eli-theme='Nirvana'] .gtd-main__title {
+  html[data-eli-theme] .gtd-main__title {
     font-size: 26px;
   }
-  html[data-eli-theme='Nirvana'] .gtd-main.is-project-view .gtd-main__head {
+  html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head {
     padding: 16px 14px;
   }
-  html[data-eli-theme='Nirvana'] .gtd-task__row {
+  html[data-eli-theme] .gtd-task__row {
     padding: 12px 10px 12px 4px;
     flex-wrap: wrap;
     row-gap: 4px;
   }
   /* en el móvil, etiquetas, tiempo y fechas debajo del título (el título no se parte) */
-  html[data-eli-theme='Nirvana'] .gtd-task__right {
+  html[data-eli-theme] .gtd-task__right {
     order: 5;
     flex-basis: 100%;
     max-width: none;
@@ -2972,7 +2993,298 @@ html[data-eli-theme='Nirvana'] .gtd-overview__row:last-child {
     padding-left: 95px;
     box-sizing: border-box;
   }
-  html[data-eli-theme='Nirvana'] .gtd-task__right:empty {
+  html[data-eli-theme] .gtd-task__right:empty {
     display: none;
   }
+}
+
+/* (3.06) Área dentro del cuadro de etiquetas: chip ámbar, distinto de las etiquetas */
+.gtd-chip.gtd-chip--area {
+  background: #f6d77a;
+  border-color: #e5bd45;
+  color: #5a4300;
+  font-weight: 600;
+}
+.gtd-chip.gtd-chip--area .gtd-chip__label {
+  cursor: pointer;
+}
+.gtd-chip.gtd-chip--area button {
+  color: inherit;
+}
+.gtd-chip.gtd-chip--area.is-empty {
+  background: transparent;
+  border-style: dashed;
+  color: var(--base01);
+  font-weight: 400;
+}
+.gtd-chip.gtd-chip--area.is-editing input {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  min-width: 4em;
+  outline: none;
+}
+
+/* ---------- (3.06) Móvil: vista previa de la tarea como hoja de Nirvana ---------- */
+.gtd-editor.gtd-editor--nirvana.gtd-editor--sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2500; /* por encima de la vista; por debajo de los menús (3100) y avisos */
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--base2);
+  color: var(--base00);
+}
+.gtd-sheet__top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 6px;
+  background: var(--base2);
+}
+.gtd-sheet__done {
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-size: 17px;
+  font-weight: 600;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+.gtd-editor--sheet .gtd-ed__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 16px;
+}
+/* orden: título, notas, (tablas, casillas, adjuntos, enlaces), estado, etiquetas */
+.gtd-editor--sheet .gtd-ed__title-row {
+  order: 1;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0 4px;
+}
+.gtd-editor--sheet .gtd-ed__finished {
+  order: 1;
+}
+.gtd-editor--sheet .eli-format-bar {
+  order: 2;
+}
+.gtd-editor--sheet:not(.is-editing-text) .eli-format-bar {
+  display: none;
+}
+.gtd-editor--sheet .gtd-editor__notes {
+  order: 3;
+  /* el mismo sangrado que el título (tras la casilla) */
+  margin-left: 40px;
+  width: calc(100% - 40px);
+  border: 0;
+  background: transparent;
+  padding: 0 0 10px;
+  min-height: 3em;
+  font-size: 16px;
+  color: var(--base01);
+  resize: none;
+}
+.gtd-editor--sheet .gtd-editor__tables,
+.gtd-editor--sheet .gtd-checklist,
+.gtd-editor--sheet .gtd-attachments,
+.gtd-editor--sheet .gtd-links {
+  order: 4;
+  margin-left: 40px;
+}
+.gtd-editor--sheet .gtd-sheet__status {
+  order: 5;
+}
+.gtd-editor--sheet .gtd-ed__tags {
+  order: 6;
+}
+.gtd-editor--sheet .gtd-tags-predefined {
+  order: 7;
+}
+.gtd-editor--sheet .gtd-editor__title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+  flex: 1;
+  min-width: 0;
+}
+.gtd-editor--sheet .gtd-ed__done {
+  flex: none;
+  margin-top: 4px;
+}
+.gtd-editor--sheet .gtd-ed__title-row > .gtd-ed__star {
+  flex: none;
+  margin-top: 4px;
+  font-size: 20px;
+}
+/* filas con separadores finos */
+.gtd-sheet__row,
+.gtd-editor--sheet .gtd-ed__tags {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 0;
+  border: 0;
+  border-top: 1px solid var(--base1-soft, rgba(128, 128, 128, 0.25));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  flex-wrap: wrap;
+}
+.gtd-sheet__icon {
+  width: 28px;
+  flex: none;
+  text-align: center;
+  color: var(--base01);
+  font-size: 16px;
+}
+.gtd-sheet__icon.is-blue {
+  color: var(--blue);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.gtd-sheet__status .gtd-ed__field {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  flex: 1;
+}
+.gtd-sheet__status .gtd-ed__field > i {
+  display: none;
+}
+.gtd-sheet__status select {
+  font-size: 17px;
+  font-weight: 500;
+  border: 0;
+  background: transparent;
+  color: var(--base00);
+  padding: 4px 0;
+}
+.gtd-editor--sheet .gtd-ed__tags .gtd-chip:not(.gtd-chip--area) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--base01);
+  padding: 2px 4px;
+}
+.gtd-editor--sheet .gtd-ed__tags input {
+  flex: 1;
+  min-width: 6em;
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+}
+.gtd-sheet__clear {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--base01);
+  font-size: 16px;
+  padding: 6px;
+  cursor: pointer;
+}
+/* píldoras pequeñas a la derecha (Tiempo, Energía, Vence); lo demás, debajo en filas finas */
+.gtd-editor--sheet .gtd-ed__side {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px 0;
+  border-top: 1px solid var(--base1-soft, rgba(128, 128, 128, 0.25));
+}
+.gtd-editor--sheet .gtd-ed__side > * {
+  flex: 1 1 100%;
+}
+.gtd-editor--sheet .gtd-ed__side > :nth-child(-n + 4) {
+  flex: 0 0 auto;
+  border-radius: 14px;
+  font-size: 13px;
+  padding: 2px 10px;
+  min-height: 0;
+}
+.gtd-editor--sheet .gtd-ed__gap {
+  display: none;
+}
+/* lo de abajo (Abrir, Adjuntar, Archivar, Cancelar, Guardar) solo con ⋯ */
+.gtd-editor--sheet .gtd-editor__actions {
+  display: none;
+}
+.gtd-editor--sheet.is-sheet-more .gtd-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--base1-soft, rgba(128, 128, 128, 0.25));
+}
+/* barra flotante en píldora: → Mover | 🗑 Papelera | ⋯ */
+.gtd-sheet__bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: stretch;
+  background: var(--base3);
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.gtd-sheet__bar button {
+  border: 0;
+  background: transparent;
+  color: var(--base00);
+  font-size: 15px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gtd-sheet__bar button + button {
+  border-left: 1px solid var(--base1-soft, rgba(128, 128, 128, 0.25));
+}
+.gtd-sheet__bar button.is-on {
+  color: var(--blue);
+}
+/* (3.06) hoja del móvil: retoques */
+.gtd-editor.gtd-editor--sheet .gtd-ed__title-row .gtd-editor__title {
+  font-size: 22px !important;
+  font-weight: 700;
+  padding: 0 !important;
+  height: auto;
+}
+.gtd-editor.gtd-editor--sheet .gtd-editor__notes {
+  field-sizing: content;
+  min-height: 2.5em;
+  max-height: none;
+  height: auto;
+}
+.gtd-editor.gtd-editor--sheet .gtd-ed__tags {
+  flex-wrap: nowrap;
+}
+.gtd-editor.gtd-editor--sheet .gtd-ed__tags input {
+  min-width: 2em;
+}
+.gtd-editor.gtd-editor--sheet .gtd-sheet__status,
+.gtd-editor.gtd-editor--sheet .gtd-ed__tags {
+  margin-left: 0;
 }

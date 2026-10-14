@@ -206,10 +206,8 @@ class Header extends PureComponent {
       target: event.target,
     };
 
-    // (3.02) con el candado no se arrastra para reordenar
-    if (!isDocLocked()) {
-      this.props.onLongPressPointerStart(this.props.header.get('id'), event.clientX, event.clientY);
-    }
+    // (3.06) dejar pulsado = narrow (no edita: vale también con el candado)
+    this.props.onLongPressPointerStart(this.props.header.get('id'), event.clientX, event.clientY);
     this.addGlobalDragHandlers();
   }
 
@@ -242,7 +240,8 @@ class Header extends PureComponent {
       target: event.target,
     };
 
-    if (!isDocLocked()) {
+    // (3.06) solo en la línea del título (pulsar las notas para leer no estrecha)
+    if (eliIsInTitleLine(event.target)) {
       this.props.onLongPressPointerStart(this.props.header.get('id'), touch.clientX, touch.clientY);
     }
     this.addGlobalDragHandlers();

@@ -3,6 +3,26 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.06 (octubre de 2026)
+** Temas y lectura
+- El *estilo limpio de Nirvana* (tarjetas, separadores finos, píldoras, mucho aire) vale ahora para *todos los temas*; cada uno conserva sus colores (claro y oscuro).
+- Ajustes › Apariencia › *Legibilidad del texto (Documentos)*: Normal (como siempre), *Más contraste*, *Combinado suave* (fuente del sistema, algo más grande y espaciada) y *Fuente legible* (Atkinson Hyperlegible, incluida en la app). Se guarda en cada dispositivo.
+** Vista GTD
+- *Móvil*: la vista previa de una tarea es una hoja a pantalla completa como la de Nirvana: «Hecho» arriba, título grande con su casilla y ★, notas debajo, fila de estado («» Next»), fila de etiquetas con el área como chip ámbar y ✕ para quitarlas, píldoras pequeñas (tiempo, energía, vence, empieza) y abajo una barra flotante *→ Mover | Papelera | ⋯* (⋯ muestra Abrir, Adjuntar, Archivar, Cancelar y Guardar).
+- Editor de tareas: el *área* va dentro del cuadro de etiquetas, como un chip ámbar (tocar = cambiarla; × = quitarla).
+- Al *completar una tarea con subtareas abiertas* pregunta «¿Marcar también las subtareas como hechas?» (Sí, todas / Solo esta / Cancelar). Incluye las subtareas de las subtareas; solo las que tienen un estado sin terminar. También en Documentos.
+- *Papelera con confirmación*: enviar a la Papelera (menú, tecla, deslizar, editor) y borrar para siempre lo piden antes; con varias seleccionadas, una sola pregunta con el número.
+- *Secciones propias*: las condiciones de Ajustes se combinan con *Y* (todas a la vez): uno de los estados, *todas* las etiquetas y *todas* las propiedades. Lo que se deja vacío no cuenta.
+- Arreglado: al bajar por la lista, las tareas ya no tapan la cabecera fija de la sección («Next 24», ＋, ↶, ⋯).
+- Menú lateral: lo que pliega una cabecera de separador acaba en el siguiente separador, también en los de serie (antes de Agenda y de Proyectos).
+** Documentos
+- *Dejar pulsado* un encabezado lo *estrecha* (narrow: solo se ve él y lo de debajo). Ya no lo arrastra; para moverlo, Mover› o los atajos.
+- *Doble clic en las notas*: el cursor queda donde se ha pulsado (antes, al principio o al final).
+- El *plegado* de encabezados se recuerda al cerrar y volver a abrir la app (por fichero y dispositivo; no se escribe en el .org). Aguanta cambios hechos fuera, como un contador [2/5] que cambia.
+- Arreglado: las *tablas dentro de un elemento de lista* (sangradas bajo «- …») ya no tumban la vista («Vaya, algo ha fallado…»); se editan en su sitio como las demás y se desplazan dentro de su marco sin cortar la primera columna.
+- Formato [Aa›] está siempre en la barra. Nuevo *Tabla*: inserta una tabla vacía (3 columnas, fila de títulos) donde está el cursor (o al final de las notas) y abre su primera celda.
+- Formato › *Lista ›*: Casilla, Guion, Más, Numerada y Quitar, en la línea actual o en todas las seleccionadas (numera 1. 2. 3. por niveles); *Cambiar tipo* (- → + → 1. → 1), atajo Ctrl+Mayús+-, como C-c - de Emacs) y *Ordenar lista ›* (A→Z, Z→A, por número, casillas hechas al final; como C-c ^). Sin estar editando, abre las notas y lo aplica allí.
+
 * 3.05 (octubre de 2026)
 ** Temas
 - Tema nuevo *Nirvana* (claro y oscuro), inspirado en NirvanaHQ. En la vista GTD: fondo gris claro, menú lateral blanco, listas en tarjetas blancas con separadores finos, filtros en píldoras, entrada rápida en una sola línea y el proyecto en una tarjeta. En el móvil, etiquetas, tiempo y fechas van debajo del título.

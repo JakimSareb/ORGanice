@@ -243,7 +243,7 @@ export default function GtdSectionsSettings() {
           <>
             <div className="eli-gtdsec__note">
               {custom
-                ? 'Sección propia: muestra las tareas abiertas que tengan alguno de estos estados, etiquetas o propiedades (si no pones ninguno, todas). Las tareas siguen también en su lista de siempre.'
+                ? 'Sección propia: muestra las tareas abiertas que cumplan TODO lo que pongas (Y): uno de los estados, todas las etiquetas y todas las propiedades. Lo que dejes vacío no cuenta (sin nada, todas). Las tareas siguen también en su lista de siempre.'
                 : isList
                 ? 'Entran las tareas con cualquiera de estos (si cumplen varias listas, van a la primera en este orden):'
                 : 'Además de su criterio propio, entran también las tareas con:'}

@@ -20,6 +20,7 @@ import {
   exclusiveOrder,
   inboxTags,
   matchesSectionRules,
+  matchesAllSectionRules,
   keywordForSection,
   sectionDef,
   isCustomId,
@@ -589,7 +590,8 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
     // Todas las programadas a futuro (también las que tienen DEADLINE y se ven en su lista)
     out = tasks.filter((t) => isScheduledView(t, today));
   } else if (isCustomId(view.id)) {
-    // (2.16) Sección propia: tareas abiertas que cumplen sus reglas (sin reglas, todas)
+    // (2.16) Sección propia: tareas abiertas que cumplen sus reglas (sin reglas, todas).
+    // (3.06) Las reglas se combinan con «Y» (todas a la vez)
     const s = getGtdConfig().sections[view.id];
     if (!s) return [];
     const withRules = hasRules(s);
@@ -597,7 +599,7 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
       (t) =>
         !t.isDone &&
         !t.isProject &&
-        (withRules ? matchesSectionRules(t, s, propertyOfTask) : !!t.keyword) &&
+        (withRules ? matchesAllSectionRules(t, s, propertyOfTask) : !!t.keyword) &&
         // (3.01) «Mostrar cabeceras sin tarea»: también los encabezados sin estado (con reglas)
         (!!t.keyword || hasInboxTag(t) || (s.headings === true && withRules)) &&
         !hiddenBy(t, s, today)

@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react';
+import { takeNotesCaret, caretOffsetIn } from '../../../../lib/eli_notes_caret';
 import { fromJS } from 'immutable';
 
 import './stylesheet.css';
@@ -176,6 +177,22 @@ class UnifiedHeaderEditor extends PureComponent {
 
   handleDescriptionTextareaRef(textarea) {
     this.descriptionTextarea = textarea;
+    // (3.06) doble clic en las notas: el cursor, donde se pulsó
+    if (textarea && this.props.selectedHeader) {
+      const p = takeNotesCaret(this.props.selectedHeader.get('id'));
+      if (p) {
+        const place = () => {
+          const pos = caretOffsetIn(textarea.value, p);
+          if (pos === null) return;
+          try {
+            textarea.focus();
+            textarea.setSelectionRange(pos, pos);
+          } catch (e) {}
+        };
+        place();
+        setTimeout(place, 0);
+      }
+    }
   }
 
   calculateRawDescription(header) {

@@ -1,5 +1,6 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import EliFormatBar from '../EliFormatBar';
 import { continueListOnEnter } from '../../lib/eli_format';
 import ScheduleField from './ScheduleField';
@@ -148,8 +149,18 @@ export default function TaskEditor({
   inTrash = false,
   // (3.05) móvil: se abre en vista previa; título y notas se editan al tocarlos
   preview = false,
+  onMove = null, // (3.06) hoja del móvil: «→ Mover» (abre el menú Mover a)
 }) {
   const [editingText, setEditingText] = useState(!preview);
+  // (3.06) en el móvil, la vista previa es una hoja a pantalla completa, como Nirvana
+  const [sheet] = useState(
+    () =>
+      !!preview &&
+      typeof window !== 'undefined' &&
+      !!window.matchMedia &&
+      window.matchMedia('(max-width: 720px)').matches
+  );
+  const [sheetMore, setSheetMore] = useState(false);
   // Al tocar el título o las notas en vista previa: editable y con el teclado (en el mismo toque,
   // para que iOS lo saque)
   const startEditing = (e) => {
@@ -167,6 +178,7 @@ export default function TaskEditor({
   // Lista a la que vuelve al reabrirla (se recuerda aunque el editor se vuelva a crear al guardar)
   const reopenList = useRef(reopenMemory.get(task.key) || currentListOf(task));
   const [area, setArea] = useState(task.ownArea || '');
+  const [editingArea, setEditingArea] = useState(false);
   // ORG Mode para Eli: en un proyecto, la etiqueta :sleep: se maneja con «Activo / Dormido»
   const isProject = !!task.isProject;
   const [sleep, setSleep] = useState(isProject && hasSleepTag(task.ownTags));
@@ -533,12 +545,27 @@ export default function TaskEditor({
     onSave(finished ? { list: target, tags: tagsForList(task, target, tags) } : { list: target });
   };
 
+  const renderListField = () => (
+    <label className="gtd-ed__field has-value" title="Lista o estado">
+      <i className="far fa-arrow-alt-circle-right" aria-hidden="true" />
+      <select value={list} onChange={(e) => setList(e.target.value)} data-testid="gtd-editor-list">
+        {listOptions.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
   // ORG Mode para Eli: diseño como el de Nirvana: a la izquierda ★, título, etiquetas y notas;
   // a la derecha, tiempo, energía, fechas, lista, proyecto y área.
-  return (
+  const editorEl = (
     <div
       className={
         'gtd-editor gtd-editor--nirvana' +
+        (sheet ? ' gtd-editor--sheet' : '') +
+        (sheetMore ? ' is-sheet-more' : '') +
+        (editingText ? ' is-editing-text' : '') +
         (replacesRow ? ' gtd-editor--inline' : '') +
         (mustDecide ? ' gtd-editor--new' : '') +
         (finished && showDone ? ' is-finished' : '')
@@ -547,6 +574,18 @@ export default function TaskEditor({
       onKeyDown={onKeyDown}
       data-testid="gtd-editor"
     >
+      {sheet && (
+        <div className="gtd-sheet__top">
+          <button
+            type="button"
+            className="gtd-sheet__done"
+            onClick={() => closeEditor()}
+            data-testid="gtd-sheet-done"
+          >
+            Hecho
+          </button>
+        </div>
+      )}
       <div className="gtd-ed__main">
         <div className="gtd-ed__title-row">
           {showDone ? (
@@ -595,7 +634,16 @@ export default function TaskEditor({
             }
             data-testid="gtd-editor-title"
           />
+          {sheet && showDone && renderStar()}
         </div>
+        {sheet && !isProject && (
+          <div className="gtd-sheet__row gtd-sheet__status" data-testid="gtd-sheet-status">
+            <span className="gtd-sheet__icon is-blue" aria-hidden="true">
+              »
+            </span>
+            {renderListField()}
+          </div>
+        )}
 
         {finished && (
           <div className="gtd-ed__finished" data-testid="gtd-editor-finished">
@@ -603,7 +651,63 @@ export default function TaskEditor({
           </div>
         )}
         <div className="gtd-ed__tags">
-          {showDone && renderStar()}
+          {sheet && <i className="fas fa-tag gtd-sheet__icon" aria-hidden="true" />}
+          {!sheet && showDone && renderStar()}
+          {/* (3.06) el área va dentro del cuadro de etiquetas, como un chip distinto */}
+          {editingArea ? (
+            <span className="gtd-chip gtd-chip--area is-editing">
+              <i className="far fa-folder" aria-hidden="true" />
+              <input
+                list="gtd-areas"
+                value={area}
+                autoFocus
+                size={Math.max(6, (area || '').length + 1)}
+                onChange={(e) => setArea(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setEditingArea(false);
+                  }
+                }}
+                onBlur={() => setEditingArea(false)}
+                placeholder={task.area && !task.ownArea ? `${task.area} (heredada)` : 'área'}
+                aria-label="Área"
+                data-testid="gtd-editor-area"
+              />
+              <datalist id="gtd-areas">
+                {areas.map((a) => (
+                  <option key={a} value={a} />
+                ))}
+              </datalist>
+            </span>
+          ) : area ? (
+            <span className="gtd-chip gtd-chip--area" title="Área (tocar para cambiarla)">
+              <span
+                className="gtd-chip__label"
+                role="button"
+                tabIndex={0}
+                onClick={() => setEditingArea(true)}
+                data-testid="gtd-editor-area-chip"
+              >
+                <i className="far fa-folder" aria-hidden="true" /> {area}
+              </span>
+              <button type="button" onClick={() => setArea('')} aria-label="Quitar el área">
+                ×
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className={'gtd-chip gtd-chip--area is-empty'}
+              onClick={() => setEditingArea(true)}
+              title={task.area ? `Área heredada: ${task.area}` : 'Poner un área'}
+              data-testid="gtd-editor-area-add"
+            >
+              <i className="far fa-folder" aria-hidden="true" />{' '}
+              {task.area && !task.ownArea ? task.area : 'Área'}
+            </button>
+          )}
           {tags.map((t) => (
             <span key={t} className="gtd-chip is-on">
               {t}
@@ -638,6 +742,21 @@ export default function TaskEditor({
               <option key={t} value={t} />
             ))}
           </datalist>
+          {sheet && (tags.length > 0 || area) && (
+            <button
+              type="button"
+              className="gtd-sheet__clear"
+              onClick={() => {
+                setTags([]);
+                setArea('');
+              }}
+              title="Quitar etiquetas y área"
+              aria-label="Quitar etiquetas y área"
+              data-testid="gtd-sheet-clear-tags"
+            >
+              ✕
+            </button>
+          )}
           {contextTags.length > 0 && (
             <button
               type="button"
@@ -896,21 +1015,8 @@ export default function TaskEditor({
               <option value="sleep">Proyecto dormido (:sleep:)</option>
             </select>
           </label>
-        ) : (
-          <label className="gtd-ed__field has-value" title="Lista o estado">
-            <i className="far fa-arrow-alt-circle-right" aria-hidden="true" />
-            <select
-              value={list}
-              onChange={(e) => setList(e.target.value)}
-              data-testid="gtd-editor-list"
-            >
-              {listOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        ) : sheet ? null : (
+          renderListField()
         )}
         <label className="gtd-ed__field has-value" title="Proyecto">
           <i className="fas fa-long-arrow-alt-right" aria-hidden="true" />
@@ -978,21 +1084,6 @@ export default function TaskEditor({
             )}
           </label>
         )}
-        <label className={'gtd-ed__field' + (area ? ' has-value' : '')} title="Área">
-          <i className="far fa-folder" aria-hidden="true" />
-          <input
-            list="gtd-areas"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            placeholder={task.area && !task.ownArea ? `${task.area} (heredada)` : 'área'}
-            data-testid="gtd-editor-area"
-          />
-          <datalist id="gtd-areas">
-            {areas.map((a) => (
-              <option key={a} value={a} />
-            ))}
-          </datalist>
-        </label>
       </div>
 
       <div className="gtd-editor__actions">
@@ -1092,6 +1183,45 @@ export default function TaskEditor({
           </div>
         )}
       </div>
+      {sheet && (
+        <div className="gtd-sheet__bar" data-testid="gtd-sheet-bar">
+          {onMove && !isNew && (
+            <button
+              type="button"
+              onClick={(e) => {
+                commit();
+                onMove(e);
+              }}
+              data-testid="gtd-sheet-move"
+            >
+              <i className="fas fa-arrow-right" /> Mover
+            </button>
+          )}
+          {!isNew && (
+            <button
+              type="button"
+              onClick={onDelete}
+              data-testid="gtd-sheet-trash"
+              title={inTrash ? 'Borrar para siempre' : 'A la Papelera'}
+            >
+              <i className="fas fa-trash" /> {inTrash ? 'Borrar' : 'Papelera'}
+            </button>
+          )}
+          <button
+            type="button"
+            className={sheetMore ? 'is-on' : ''}
+            onClick={() => setSheetMore(!sheetMore)}
+            aria-label="Más"
+            aria-expanded={sheetMore}
+            data-testid="gtd-sheet-more"
+          >
+            <i className="fas fa-ellipsis-h" />
+          </button>
+        </div>
+      )}
     </div>
   );
+  return sheet && typeof document !== 'undefined'
+    ? createPortal(editorEl, document.body)
+    : editorEl;
 }

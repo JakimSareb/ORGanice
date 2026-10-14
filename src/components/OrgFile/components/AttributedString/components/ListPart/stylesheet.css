@@ -43,3 +43,15 @@
   display: flex;
   align-items: center;
 }
+
+/* 3.06: una tabla dentro de un elemento de lista no se sale de la pantalla: se desplaza
+   dentro de su propio marco (la primera columna sigue visible) */
+.list-part__item-contents {
+  min-width: 0;
+  max-width: 100%;
+}
+.list-part__item-contents .eli-table-wrap,
+.list-part__item-contents .table-part__wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}

@@ -1,6 +1,6 @@
 {
   "name": "organice",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "private": true,
   "engines": {
     "node": "^20.17.0"
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@bity/oauth2-auth-code-pkce": "^2.13.0",
+    "@fontsource/atkinson-hyperlegible": "5",
     "@fortawesome/fontawesome-free": "5.1.1",
     "@parcel/service-worker": "^2.14.4",
     "@types/node-fetch": "^2.5.7",

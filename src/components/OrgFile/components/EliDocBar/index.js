@@ -39,7 +39,8 @@ import {
   openRawEditor,
   insertIntoField,
 } from '../../../EliTools';
-import { applyEmphasis, applyList } from '../../../EliFormatBar';
+import { applyEmphasis, applyList, cycleListIn, sortListIn } from '../../../EliFormatBar';
+import { emptyOrgTable } from '../../../../lib/eli_format';
 
 import { subscribeActiveTable, getActiveTable } from '../../../../lib/eli_table_focus';
 import { useDocLock, toggleDocLock } from '../../../../lib/eli_doc_lock';
@@ -373,6 +374,71 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     if (el && el.blur) el.blur();
   };
   const fieldNow = () => activeField();
+  // (3.06) Acciones de Formato que van en las notas: si no se están editando, se abren (cursor
+  // al final) y se aplica allí
+  const withNotes = (fn) => {
+    const f = fieldNow();
+    if (isListField(f)) {
+      fn(f);
+      return;
+    }
+    if (editing) commit();
+    editNotes();
+    let tries = 0;
+    const go = () => {
+      const g = activeField();
+      if (g && isListField(g)) {
+        try {
+          g.focus();
+          g.setSelectionRange(g.value.length, g.value.length);
+        } catch (e) {}
+        fn(g);
+      } else if (tries++ < 20) setTimeout(go, 50);
+    };
+    setTimeout(go, 60);
+  };
+  // (3.06) Formato › Tabla: tabla vacía en el cursor y el editor de tablas en la 1ª celda
+  const insertTable = () =>
+    withNotes((f) => {
+      const v = f.value || '';
+      const s0 = f.selectionStart == null ? v.length : f.selectionStart;
+      const lineStart = v.lastIndexOf('\n', s0 - 1) + 1;
+      const lineText = v.slice(lineStart, s0);
+      // dentro de un elemento de lista, con su sangría
+      const indent = /^\s*([-+]|\d+[.)])\s/.test(v.slice(lineStart).split('\n')[0])
+        ? ' '.repeat((/^\s*/.exec(lineText) || [''])[0].length + 2)
+        : (/^\s*/.exec(lineText) || [''])[0];
+      const lineEnd = v.indexOf('\n', s0) < 0 ? v.length : v.indexOf('\n', s0);
+      // va en líneas propias, después de la línea del cursor (si tiene texto)
+      const at = lineText.trim() || v.slice(s0, lineEnd).trim() ? lineEnd : lineStart;
+      const pre = at > 0 && v[at - 1] !== '\n' ? '\n' : '';
+      const post = at < v.length && v[at] !== '\n' ? '\n' : '';
+      const block = pre + emptyOrgTable(indent) + post;
+      // nº de tablas que hay antes en el texto (para encontrarla luego en la vista)
+      const before = v.slice(0, at).split('\n');
+      let ord = 0;
+      before.forEach((l, i) => {
+        if (/^\s*\|/.test(l) && !(i > 0 && /^\s*\|/.test(before[i - 1]))) ord++;
+      });
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+      setter.call(f, v.slice(0, at) + block + v.slice(at));
+      f.dispatchEvent(new Event('input', { bubbles: true }));
+      const hid = id;
+      // se guarda (se cierra el editor) y se abre la 1ª celda de la tabla nueva
+      setTimeout(() => {
+        if (commitEditing) commitEditing();
+        let tries = 0;
+        const open = () => {
+          const box = document.querySelector(`[data-header-id="${hid}"]`);
+          const tables = box ? box.querySelectorAll('[data-testid="eli-org-table"]') : [];
+          const t = tables[Math.min(ord, tables.length - 1)];
+          const cell = t && t.querySelector('[data-testid="eli-table-cell"]');
+          if (cell) cell.click();
+          else if (tries++ < 20) setTimeout(open, 60);
+        };
+        setTimeout(open, 80);
+      }, 30);
+    });
 
   // Submenús: [{ id, icon, label, onClick, text, danger }]
   const subs = header
@@ -430,7 +496,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             : []),
         ],
         format: [
-          ...ORG_EMPHASIS.map((it) => ({
+          ...(fieldNow() ? ORG_EMPHASIS : []).map((it) => ({
             id: `fmt-${it.id}`,
             icon: it.icon,
             label:
@@ -446,21 +512,76 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
             text: true,
             onClick: () => applyEmphasis(fieldNow(), it.marker),
           })),
-          { id: 'fmt-link', icon: 'fas fa-link', label: 'Enlace', text: true, onClick: insertLink },
-          ...(isListField(fieldNow())
+          ...(fieldNow()
             ? [
-                ['dash', 'Lista', 'fas fa-list-ul'],
-                ['num', 'Lista numerada', 'fas fa-list-ol'],
-                ['check', 'Casilla', 'far fa-check-square'],
-              ].map(([kind, label, icon]) => ({
-                id: `list-${kind}`,
-                icon,
-                label,
-                text: true,
-                onClick: () => applyList(fieldNow(), kind),
-              }))
+                {
+                  id: 'fmt-link',
+                  icon: 'fas fa-link',
+                  label: 'Enlace',
+                  text: true,
+                  onClick: insertLink,
+                },
+                { id: 'sep-fmt', sep: true },
+              ]
+            : []),
+          // (3.06) listas y tablas: también sin estar editando (se abren las notas)
+          ...(!fieldNow() || isListField(fieldNow())
+            ? [
+                { id: 'fmt-list', icon: 'fas fa-list-ul', label: 'Lista', openSub: 'list' },
+                {
+                  id: 'fmt-table',
+                  icon: 'fas fa-table',
+                  label: 'Tabla',
+                  text: true,
+                  onClick: insertTable,
+                },
+              ]
             : []),
         ],
+        list: [
+          ...[
+            ['check', 'Casilla', 'far fa-check-square', '- [ ]'],
+            ['dash', 'Guion', 'fas fa-list-ul', '-'],
+            ['plus', 'Más', 'fas fa-plus', '+'],
+            ['num', 'Numerada', 'fas fa-list-ol', '1.'],
+            ['none', 'Quitar', 'fas fa-eraser', ''],
+          ].map(([kind, label, icon, hint]) => ({
+            id: `list-${kind}`,
+            icon,
+            label,
+            hint,
+            text: true,
+            onClick: () => withNotes((f) => applyList(f, kind)),
+          })),
+          { id: 'sep-list', sep: true },
+          {
+            id: 'list-cycle',
+            icon: 'fas fa-sync-alt',
+            label: 'Cambiar tipo',
+            hint: 'Ctrl+Mayús+-',
+            text: true,
+            keepOpen: true,
+            onClick: () => withNotes((f) => cycleListIn(f)),
+          },
+          {
+            id: 'list-sort',
+            icon: 'fas fa-sort-alpha-down',
+            label: 'Ordenar lista',
+            openSub: 'listsort',
+          },
+        ],
+        listsort: [
+          ['alpha', 'A → Z', 'fas fa-sort-alpha-down'],
+          ['alpha-desc', 'Z → A', 'fas fa-sort-alpha-up'],
+          ['num', 'Por número', 'fas fa-sort-numeric-down'],
+          ['check', 'Casillas hechas al final', 'far fa-check-square'],
+        ].map(([mode, label, icon]) => ({
+          id: `sort-${mode}`,
+          icon,
+          label,
+          text: true,
+          onClick: () => withNotes((f) => sortListIn(f, mode)),
+        })),
         todo: todoMenu(),
         // (3.03) Editar: título, notas y lo demás del encabezado (todo con el estilo nuevo)
         edit: [
@@ -708,7 +829,8 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           onClick: () => base('activatePopup', 'tags-editor'),
         },
         { id: 'move', icon: 'fas fa-arrows-alt', title: 'Mover', sub: 'move' },
-        ...(editing ? [{ id: 'format', label: 'Aa', title: 'Formato', sub: 'format' }] : []),
+        // (3.06) Formato siempre (sin editar: Lista› y Tabla, que abren las notas)
+        { id: 'format', label: 'Aa', title: 'Formato', sub: 'format' },
         { id: 'insert', icon: 'fas fa-paperclip', title: 'Insertar', sub: 'insert' },
         {
           id: 'new',
@@ -1261,6 +1383,7 @@ export const DOCBAR_ORDER = [
   'dates',
   'tags',
   'move',
+  'format',
   'insert',
   'new',
   'share',

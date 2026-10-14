@@ -230,6 +230,30 @@ export const matchesSectionRules = (task, section, propertyOf) => {
   return false;
 };
 
+// (3.06) Secciones propias: las reglas se suman con «Y» (AND), para afinar: la tarea tiene que
+// tener uno de los estados (una tarea solo tiene uno), TODAS las etiquetas y TODAS las
+// propiedades. Un grupo vacío no cuenta.
+export const matchesAllSectionRules = (task, section, propertyOf) => {
+  if (!section) return false;
+  if (section.states.length && !(task.keyword && section.states.includes(task.keyword))) {
+    return false;
+  }
+  if (section.tags.length) {
+    const pool = (task.tags || task.ownTags || []).map((t) => t.toLowerCase());
+    if (!section.tags.every((t) => pool.includes(t.toLowerCase()))) return false;
+  }
+  if (section.props.length) {
+    if (!propertyOf) return false;
+    for (const rule of section.props) {
+      const [name, ...rest] = rule.split('=');
+      const value = propertyOf(task, name.trim());
+      if (value === null || value === undefined || value === '') return false;
+      if (rest.length && value.toLowerCase() !== rest.join('=').trim().toLowerCase()) return false;
+    }
+  }
+  return true;
+};
+
 // Qué poner al llevar una tarea a una lista (editor, arrastrar): el primer estado configurado
 // (o ninguno) y la primera etiqueta si la lista no tiene estados
 export const keywordForSection = (id, cfg = current) => {

@@ -13,4 +13,7 @@ try {
     document.documentElement.setAttribute('data-eli-theme', a[0]);
     document.documentElement.setAttribute('data-eli-scheme', a[1]);
   }
+  // (3.06) legibilidad del texto en Documentos
+  var r = localStorage.getItem('eliReadability');
+  if (r && r !== 'normal') document.documentElement.setAttribute('data-eli-read', r);
 } catch (e) {}

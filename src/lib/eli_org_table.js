@@ -60,6 +60,71 @@ export const tableBlocks = (rawText) => {
   return out;
 };
 
+// (3.06) Tablas que van DENTRO de un elemento de lista (sangradas bajo «- …»), en el orden del
+// texto. Es el complemento de tableBlocks: se usan para editar esas tablas igual que las demás.
+export const nestedTableBlocks = (rawText) => {
+  const lines = String(rawText || '').split('\n');
+  const out = [];
+  let listLevel = null;
+  let cur = null;
+  lines.forEach((line, i) => {
+    const lead = line.match(/^( *)/)[0].length;
+    let isTable = false;
+    if (listLevel !== null && (lead > listLevel || !line.trim())) {
+      if (line.trim().startsWith('|')) isTable = true;
+    } else {
+      listLevel = null;
+      if (line.match(LIST_HEADER_REGEX)) listLevel = lead;
+    }
+    if (isTable) {
+      if (cur && cur.end === i - 1) cur.end = i;
+      else {
+        cur = { start: i, end: i };
+        out.push(cur);
+      }
+    } else {
+      cur = null;
+    }
+  });
+  return out;
+};
+
+export const nestedTableLinesAt = (rawText, blockIndex) => {
+  const b = nestedTableBlocks(rawText)[blockIndex];
+  if (!b) return null;
+  return String(rawText || '')
+    .split('\n')
+    .slice(b.start, b.end + 1);
+};
+
+export const replaceNestedTableAt = (rawText, blockIndex, newLines) => {
+  const b = nestedTableBlocks(rawText)[blockIndex];
+  if (!b) return rawText;
+  const lines = String(rawText || '').split('\n');
+  lines.splice(b.start, b.end - b.start + 1, ...newLines);
+  return lines.join('\n');
+};
+
+// (3.06) Ids de las tablas que van dentro de listas, en el orden del texto (recorrido en
+// profundidad de las partes ya leídas: elementos de lista → su contenido)
+export const nestedTableIds = (parts) => {
+  const ids = [];
+  const walk = (ps, nested) => {
+    if (!ps) return;
+    ps.forEach((p) => {
+      const type = p.get ? p.get('type') : p.type;
+      if (type === 'table') {
+        if (nested) ids.push(p.get ? p.get('id') : p.id);
+      } else if (type === 'list') {
+        const items = p.get ? p.get('items') : p.items;
+        (items || []).forEach((it) => walk(it.get ? it.get('contents') : it.contents, true));
+      }
+    });
+  };
+  walk(parts, false);
+  return ids;
+};
+
 export const tableLinesAt = (rawText, blockIndex) => {
   const b = tableBlocks(rawText)[blockIndex];
   if (!b) return null;

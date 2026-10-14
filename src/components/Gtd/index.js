@@ -73,6 +73,7 @@ import {
   gtdDuplicate,
   untrashChanges,
   doneChangesFor,
+  openSubtasksOf,
   autoCollect,
   LS_AUTO_COLLECT,
   gtdRenameTag,
@@ -1944,7 +1945,41 @@ export default function GtdView() {
     if (view.type === 'project' && view.key === project.key) selectView({ id: 'projects' });
   };
 
-  const saveTask = (task, changes, projectKey) => {
+  // (3.06) Completar una tarea con subtareas abiertas: «¿Marcar también las subtareas como
+  // hechas?». Devuelve las entradas a guardar con ellas ([] = solo esta) o null (cancelar).
+  const subtaskEntries = async (list, opts = {}) => {
+    const subs = [];
+    const keys = new Set(list.map((t) => t.key));
+    list
+      .filter((t) => !t.isDone && !t.isProject)
+      .forEach((t) =>
+        openSubtasksOf(tasks, t).forEach((s) => {
+          if (!keys.has(s.key)) {
+            keys.add(s.key);
+            subs.push(s);
+          }
+        })
+      );
+    if (!subs.length) return [];
+    const what = await askChoice({
+      title: 'Subtareas',
+      message: `¿Marcar también las subtareas como hechas? (${
+        subs.length === 1 ? '1 abierta' : `${subs.length} abiertas`
+      })`,
+      choices: [
+        { id: 'one', label: 'Solo esta' },
+        { id: 'all', label: 'Sí, todas' },
+      ],
+    });
+    if (!what) return null;
+    return what === 'all' ? subs.map((s) => [s, doneChangesFor(s, opts)]) : [];
+  };
+  const saveTask = async (task, changes, projectKey) => {
+    // (3.06) completada desde el editor: lo mismo con sus subtareas (cancelar = solo esta)
+    if (!task.isDone && !task.isProject && ['done', 'cancelled'].includes(changes.list)) {
+      const extra = await subtaskEntries([task], { cancel: changes.list === 'cancelled' });
+      if (extra && extra.length) dispatch(gtdSaveMany(extra));
+    }
     dispatch(gtdSaveTask(task, changes));
     // Proyecto convertido en tarea desde su propia vista: se va a Todo, donde queda la tarea
     if (task.isProject && changes.list === 'later' && view.key === task.key) {
@@ -1967,10 +2002,34 @@ export default function GtdView() {
     }
     return false;
   };
-  // (3.0) A la Papelera (como Nirvana: sin preguntar; se puede deshacer o sacarla de ella)
+  // (3.06) varias en la Papelera: una sola confirmación con el número
+  const deleteTasks = async (list) => {
+    const todo = list.filter(Boolean);
+    if (todo.length <= 1) return todo.length ? deleteTask(todo[0]) : false;
+    const ok = await askConfirm({
+      title: 'Borrar para siempre',
+      message: `¿Borrar para siempre ${todo.length} elementos (con lo que tengan debajo)?`,
+      okLabel: 'Borrar',
+    });
+    if (!ok) return false;
+    todo.forEach((t) => dispatch(gtdDeleteTask(t)));
+    setOpenKey(null);
+    return true;
+  };
+  // (3.0) A la Papelera (se puede deshacer o sacarla de ella). (3.06) Pide confirmación (con
+  // varias, una sola con el número)
   const trashTasks = async (list) => {
     const todo = list.filter((t) => t && !t.isTrashed);
-    if (!todo.length) return;
+    if (!todo.length) return false;
+    const sure = await askConfirm({
+      title: 'Enviar a la Papelera',
+      message:
+        todo.length === 1
+          ? `¿Enviar «${todo[0].title || 'Sin título'}» a la Papelera?`
+          : `¿Enviar ${todo.length} tareas a la Papelera?`,
+      okLabel: 'A la Papelera',
+    });
+    if (!sure) return false;
     // (3.01) proyecto con tareas de otros ficheros asignadas: qué hacer con ellas
     const extra = [];
     for (const p of todo.filter((t) => t.isProject)) {
@@ -2016,6 +2075,7 @@ export default function GtdView() {
           2500
         )
       );
+    return true;
   };
   const emptyTrash = async () => {
     const list = tasksForView(tasks, { id: 'trash' }, {}, today);
@@ -2047,7 +2107,15 @@ export default function GtdView() {
       closeProject(task);
       return;
     }
-    dispatch(gtdSaveMany([[task, doneChangesFor(task, { cancel: !!(e && e.shiftKey) })]]));
+    const opts = { cancel: !!(e && e.shiftKey) };
+    if (task.isDone) {
+      dispatch(gtdSaveMany([[task, doneChangesFor(task, opts)]]));
+      return;
+    }
+    subtaskEntries([task], opts).then((extra) => {
+      if (extra === null) return;
+      dispatch(gtdSaveMany([...extra, [task, doneChangesFor(task, opts)]]));
+    });
   };
 
   // (3.0) Llevar tareas (una o varias) a una lista, proyecto, Focus, Logbook o Papelera: al
@@ -2689,10 +2757,9 @@ export default function GtdView() {
           .find((r) => !list.includes(r)) ||
         null;
       if (view.id === 'trash') {
-        deleteTask(task).then((deleted) => deleted && select(after));
+        deleteTasks(list).then((deleted) => deleted && select(after));
       } else {
-        trashTasks(list);
-        select(after);
+        trashTasks(list).then((done) => done && select(after));
       }
       return true;
     }
@@ -3111,7 +3178,11 @@ export default function GtdView() {
             {
               label: allDone ? 'Reabrir' : 'Completar',
               icon: allDone ? 'fas fa-undo' : 'fas fa-check',
-              onClick: () => dispatch(gtdSaveMany(list.map((t) => [t, doneChangesFor(t)]))),
+              onClick: async () => {
+                const extra = allDone ? [] : await subtaskEntries(list);
+                if (extra === null) return;
+                dispatch(gtdSaveMany([...extra, ...list.map((t) => [t, doneChangesFor(t)])]));
+              },
             },
           ]),
       { sep: true },
@@ -3455,6 +3526,18 @@ export default function GtdView() {
       onGoToParent={() => goToTask(parentTaskOf(task))}
       noAutoFocus={jumpedKey === task.key}
       preview={previewKey === task.key}
+      onMove={(e) => {
+        // (3.06) hoja del móvil: «→ Mover» abre directamente «Mover a»
+        const mv = taskMenuItems([task]).find((i) => i.testId === 'gtd-menu-move');
+        const r = e && e.currentTarget ? e.currentTarget.getBoundingClientRect() : null;
+        setMenu({
+          x: r ? r.left : 8,
+          y: r ? r.top - 8 : window.innerHeight,
+          items: mv && mv.sub ? mv.sub : taskMenuItems([task]),
+          header: 'Mover a',
+          testId: 'gtd-task-menu-popup',
+        });
+      }}
     />
   );
 
@@ -3695,6 +3778,9 @@ export default function GtdView() {
         );
         return;
       }
+      // (3.06) el ámbito de un separador con título acaba en el siguiente separador, también en
+      // los «de serie» (antes de Agenda y de Proyectos, que van en su propio bloque)
+      if (id === 'agenda' || id === 'projects') folded = false;
       if (folded) return;
       if (!isSectionShown(id, gtdCfg)) return;
       if (id === 'agenda') {

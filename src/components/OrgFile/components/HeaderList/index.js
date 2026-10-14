@@ -256,23 +256,22 @@ class HeaderList extends PureComponent {
     }
   }
 
+  // 3.06: dejar pulsado un encabezado ya no lo arrastra: lo «estrecha» (narrow), como
+  // org-narrow-to-subtree. Para moverlo están Mover› en la barra y los atajos.
   startDrag() {
     if (!this.longPressCandidate) {
       return;
     }
-
-    this.setState({
-      draggingHeaderId: this.longPressCandidate.headerId,
-      draggingStartY: this.longPressCandidate.startY,
-      currentPointerY: this.longPressCandidate.currentY,
-      dropTargetHeaderId: null,
-      dropPosition: null,
-    });
-
-    this.pointerX = this.longPressCandidate.currentX;
-    this.pointerY = this.longPressCandidate.currentY;
+    const headerId = this.longPressCandidate.headerId;
     this.stopLongPressCandidate();
-    this.loopAutoScroll();
+    this.removeWindowListeners();
+    if (headerId && headerId !== this.props.narrowedHeaderId) {
+      this.eliJustNarrowed = Date.now();
+      this.props.org.narrowHeader(headerId);
+      try {
+        if (navigator.vibrate) navigator.vibrate(15);
+      } catch (e) {}
+    }
   }
 
   updateDragState(pointerX, pointerY) {

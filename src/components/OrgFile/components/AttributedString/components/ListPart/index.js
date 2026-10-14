@@ -328,7 +328,8 @@ export default class ListPart extends PureComponent {
             <div
               className="list-part__item-contents"
               onClick={(e) => {
-                if (e.target.closest('a, .eli-org-link, input, button')) return;
+                if (e.target.closest('a, .eli-org-link, input, button, .eli-table-wrap, table'))
+                  return;
                 if (e.target.closest('li') !== e.currentTarget.closest('li')) return;
                 this.props.subPartDataAndHandlers.onListItemSelect(item.get('id'));
               }}

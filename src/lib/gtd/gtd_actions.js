@@ -844,3 +844,17 @@ export const gtdUnassignProject = (tasks) => (dispatch) =>
         .map((t) => [t, { props: { [PROJECT_LINK_PROPERTY]: null } }])
     )
   );
+
+// (3.06) Subtareas abiertas (con palabra de estado sin terminar) de una tarea, a cualquier
+// profundidad: las que van debajo de ella en su fichero
+export const openSubtasksOf = (tasks, task) => {
+  if (!task || !tasks) return [];
+  const same = tasks.filter((t) => t.path === task.path).sort((a, b) => a.index - b.index);
+  const out = [];
+  for (const t of same) {
+    if (t.index <= task.index) continue;
+    if (t.level <= task.level) break;
+    if (t.keyword && !t.isDone) out.push(t);
+  }
+  return out;
+};

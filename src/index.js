@@ -4,12 +4,19 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import './fontawesome.css';
+// (3.06) fuente «Atkinson Hyperlegible» para Legibilidad › Fuente legible (va con la app)
+import '@fontsource/atkinson-hyperlegible/400.css';
+import '@fontsource/atkinson-hyperlegible/700.css';
+import './eli_readability.css';
+import { applyReadability } from './lib/eli_readability';
 import App from './App';
 import EliSplitView from './components/EliSplitView';
 import { BASE_PATH } from './lib/base_path';
 import { registerServiceWorker } from './lib/eli_offline';
 import { initOfflineStore, isOfflineStoreReady } from './lib/eli_offline_store';
 import { flushLocalSaves } from './util/file_persister';
+
+applyReadability();
 
 const rootElement = document.getElementById('root');
 

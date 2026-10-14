@@ -129,14 +129,21 @@ export const applyListMarker = (value, start, end, kind) => {
   const lines = text.slice(lineStart, lineEnd).split('\n');
   const touched = lines.filter((l) => l.trim() || lines.length === 1);
   const allSame = kind !== 'none' && touched.length && touched.every((l) => kindOfLine(l) === kind);
-  let n = 0;
+  // (3.06) numeración por nivel de sangría (1. 2. 3. en cada nivel; al volver a un nivel
+  // menor, los más hondos empiezan de nuevo)
+  const counters = {};
   const out = lines.map((line) => {
     if (!line.trim() && lines.length > 1) return line;
     const { indent, rest } = stripMarker(line);
     if (kind === 'none' || allSame) return indent + rest;
-    n += 1;
+    Object.keys(counters).forEach((k) => {
+      if (+k > indent.length) delete counters[k];
+    });
+    counters[indent.length] = (counters[indent.length] || 0) + 1;
     const marker =
-      kind === 'num' ? `${n}. ` : (LIST_MARKERS.find((m) => m.id === kind) || {}).marker;
+      kind === 'num'
+        ? `${counters[indent.length]}. `
+        : (LIST_MARKERS.find((m) => m.id === kind) || {}).marker;
     return indent + marker + rest;
   });
   const block = out.join('\n');
@@ -175,3 +182,136 @@ export const continueListOnEnter = (value, pos) => {
   const v = text.slice(0, pos) + prefix + text.slice(pos);
   return { value: v, pos: pos + prefix.length };
 };
+
+// --- (3.06) Cambiar el tipo de lista (como C-c - en Emacs) y ordenarla (como C-c ^) ----------
+
+const lineAt = (text, pos) => {
+  const start = text.lastIndexOf('\n', pos - 1) + 1;
+  let end = text.indexOf('\n', pos);
+  if (end < 0) end = text.length;
+  return { start, end };
+};
+const leadOf = (line) => (/^\s*/.exec(line) || [''])[0].length;
+const isItem = (line) => !!kindOfLine(line);
+
+// La lista (bloque de líneas) donde está pos y el nivel del elemento: { lines, first, last, level }
+// (índices de línea). Las líneas más sangradas que el nivel van con su elemento.
+const listAround = (lines, idx) => {
+  // elemento al que pertenece la línea idx
+  let item = idx;
+  while (item >= 0 && !isItem(lines[item])) {
+    if (!lines[item].trim()) return null;
+    item--;
+  }
+  if (item < 0) return null;
+  const level = leadOf(lines[item]);
+  const belongs = (l) =>
+    l.trim() ? leadOf(l) > level || (leadOf(l) === level && isItem(l)) : false;
+  let first = item;
+  while (first > 0 && belongs(lines[first - 1])) first--;
+  // la primera línea del bloque tiene que ser un elemento de ese nivel
+  while (first < item && !(leadOf(lines[first]) === level && isItem(lines[first]))) first++;
+  let last = item;
+  while (last + 1 < lines.length && belongs(lines[last + 1])) last++;
+  return { first, last, level };
+};
+
+const LIST_CYCLE = ['-', '+', '1.', '1)'];
+
+const renumber = (lines, level) => {
+  let n = 0;
+  return lines.map((l) => {
+    if (leadOf(l) !== level || !isItem(l)) return l;
+    const m = LIST_LINE_RE.exec(l);
+    const num = /^(\d+)([.)])$/.exec(m[2]);
+    if (!num) return l;
+    n += 1;
+    return m[1] + `${n}${num[2]}` + m[3] + (m[4] || '') + m[5];
+  });
+};
+
+/** Cambia el marcador de TODA la lista (el nivel del cursor): - → + → 1. → 1) → - */
+export const cycleListType = (value, pos) => {
+  const text = value || '';
+  const lines = text.split('\n');
+  const idx = text.slice(0, pos).split('\n').length - 1;
+  const block = listAround(lines, idx);
+  if (!block) return null;
+  const m0 = LIST_LINE_RE.exec(lines[block.first]);
+  const cur = /^\d+\.$/.test(m0[2])
+    ? '1.'
+    : /^\d+\)$/.test(m0[2])
+    ? '1)'
+    : m0[2] === '+'
+    ? '+'
+    : '-';
+  const next = LIST_CYCLE[(LIST_CYCLE.indexOf(cur) + 1) % LIST_CYCLE.length];
+  let part = lines.slice(block.first, block.last + 1).map((l) => {
+    if (leadOf(l) !== block.level || !isItem(l)) return l;
+    const m = LIST_LINE_RE.exec(l);
+    return m[1] + next + m[3] + (m[4] || '') + m[5];
+  });
+  part = renumber(part, block.level);
+  const out = [...lines.slice(0, block.first), ...part, ...lines.slice(block.last + 1)];
+  const v = out.join('\n');
+  // el cursor se queda en su línea (al final de ella)
+  const before = out.slice(0, idx + 1).join('\n').length;
+  return { value: v, start: before, end: before };
+};
+
+const itemText = (line) => {
+  const m = LIST_LINE_RE.exec(line);
+  return m ? m[5] : line.trim();
+};
+
+/**
+ * Ordena los elementos de la lista del cursor (con lo que cuelga de cada uno).
+ * mode: 'alpha' (A→Z), 'alpha-desc' (Z→A), 'num' (por el número del principio), 'check'
+ * (casillas hechas al final). Las listas numeradas se vuelven a numerar.
+ */
+export const sortList = (value, pos, mode = 'alpha') => {
+  const text = value || '';
+  const lines = text.split('\n');
+  const idx = text.slice(0, pos).split('\n').length - 1;
+  const block = listAround(lines, idx);
+  if (!block) return null;
+  const items = [];
+  for (let i = block.first; i <= block.last; i++) {
+    const l = lines[i];
+    if (leadOf(l) === block.level && isItem(l)) items.push({ lines: [l], key: i });
+    else items[items.length - 1].lines.push(l);
+  }
+  const coll = (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base', numeric: true });
+  const numOf = (t) => {
+    const m = /-?\d+(?:[.,]\d+)?/.exec(t);
+    return m ? parseFloat(m[0].replace(',', '.')) : Infinity;
+  };
+  const isDone = (l) => /\[[xX]\]/.test((LIST_LINE_RE.exec(l) || [])[4] || '');
+  const sorted = [...items].sort((a, b) => {
+    const ta = itemText(a.lines[0]);
+    const tb = itemText(b.lines[0]);
+    let r = 0;
+    if (mode === 'alpha') r = coll(ta, tb);
+    else if (mode === 'alpha-desc') r = coll(tb, ta);
+    else if (mode === 'num') r = numOf(ta) - numOf(tb);
+    else if (mode === 'check') r = (isDone(a.lines[0]) ? 1 : 0) - (isDone(b.lines[0]) ? 1 : 0);
+    return r || a.key - b.key;
+  });
+  // el marcador numérico se reparte por posición (el primero, 1.)
+  let part = [].concat(...sorted.map((it) => it.lines));
+  part = renumber(part, block.level);
+  const out = [...lines.slice(0, block.first), ...part, ...lines.slice(block.last + 1)];
+  const v = out.join('\n');
+  const start = out.slice(0, block.first).join('\n').length + (block.first ? 1 : 0);
+  const end = start + part.join('\n').length;
+  return { value: v, start, end };
+};
+
+/** Tabla Org vacía (3 columnas × 2 filas, con fila de títulos) para insertar en las notas */
+export const emptyOrgTable = (indent = '') =>
+  [
+    `${indent}|   |   |   |`,
+    `${indent}|---+---+---|`,
+    `${indent}|   |   |   |`,
+    `${indent}|   |   |   |`,
+  ].join('\n');
