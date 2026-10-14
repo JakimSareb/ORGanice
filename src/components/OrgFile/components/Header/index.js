@@ -323,8 +323,9 @@ class Header extends PureComponent {
     if (classList.contains('header') || classList.contains('header__bullet')) {
       const { header, hasContent, closeSubheadersRecursively } = this.props;
 
-      // (3.02) un toque = seleccionar Y plegar/desplegar
-      if (hasContent) {
+      // (3.05) el primer toque solo selecciona; en el ya seleccionado, plegar/desplegar
+      const { isSelected } = this.props;
+      if (hasContent && isSelected) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       }
       this.props.org.selectHeader(header.get('id'));

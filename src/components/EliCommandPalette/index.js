@@ -43,7 +43,7 @@ import { openAcomodadores } from '../EliAcomodadores';
 const selectIsAuthenticated = (s) => s.syncBackend.get('isAuthenticated');
 const MAX_RESULTS = 50;
 const LS_RECENT = 'eliPaletteRecent';
-const THEMES = ['Unicornio', 'Cuki', 'Solarized', 'One', 'Gruvbox', 'Smyck', 'Code'];
+const THEMES = ['Unicornio', 'Cuki', 'Solarized', 'One', 'Gruvbox', 'Smyck', 'Code', 'Nirvana'];
 const SCHEMES = [
   ['OS', 'Sistema'],
   ['Light', 'Claro'],

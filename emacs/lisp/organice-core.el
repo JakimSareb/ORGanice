@@ -249,5 +249,124 @@ pasa solo al final de `organice-tasks-file' (como en la app). Los encabezados si
     (run-with-timer 0.2 nil #'organice--refile-from-inbox-now (point-marker))))
 (add-hook 'org-after-todo-state-change-hook #'organice--refile-from-inbox)
 
+;;;; (3.05) Historial de estados en :LOGBOOK: («Ordenar historial» de la app) -------------------
+;; La app (3.05) escribe siempre los cambios de estado dentro de :LOGBOOK: (como
+;; `org-log-into-drawer' t, ya puesto arriba). `eli/estados-a-logbook' arregla los ficheros
+;; antiguos: en el fichero actual, las líneas «- State …» sueltas de cada entrada pasan a su
+;; cajón :LOGBOOK: (se crea si falta), con las notas de varias líneas («\\») y en orden (las
+;; más nuevas arriba). Se deshace con C-/ como cualquier cambio.
+
+(defun eli--state-line-time (line)
+  "Momento (segundos) de la fecha [AAAA-MM-DD …] de LINE, o nil."
+  (when (string-match
+         "\\[\\([0-9]\\{4\\}\\)-\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)[^]0-9]*\\(?:\\([0-9]\\{1,2\\}\\):\\([0-9]\\{2\\}\\)\\)?[^]]*\\]"
+         line)
+    (float-time
+     (encode-time 0
+                  (if (match-string 5 line) (string-to-number (match-string 5 line)) 0)
+                  (if (match-string 4 line) (string-to-number (match-string 4 line)) 0)
+                  (string-to-number (match-string 3 line))
+                  (string-to-number (match-string 2 line))
+                  (string-to-number (match-string 1 line))))))
+
+(defun eli--state-block-lines (text base)
+  "Líneas de TEXT (una entrada «- State» y su nota) sin la sangría BASE de la primera."
+  (let ((lines (split-string (string-trim-right text "\n") "\n")))
+    (cons (string-trim (car lines))
+          (mapcar (lambda (l)
+                    (concat (make-string (max 2 (- (length (progn (string-match "\\`[ \t]*" l)
+                                                                   (match-string 0 l)))
+                                                     base))
+                                         ?\s)
+                            (string-trim l)))
+                  (cdr lines)))))
+
+(defun eli--take-loose-state-lines ()
+  "Quita del cuerpo de la entrada actual las líneas «- State» sueltas (fuera de cajones).
+Devuelve la lista de bloques (cada uno, lista de líneas) en su orden."
+  (save-excursion
+    (org-back-to-heading t)
+    (let ((end (copy-marker (save-excursion (outline-next-heading) (point))))
+          blocks)
+      (forward-line 1)
+      (while (< (point) end)
+        (cond
+         ((looking-at "^[ \t]*:\\([A-Za-z][A-Za-z0-9_-]*\\):[ \t]*$")
+          (forward-line 1)
+          (if (re-search-forward "^[ \t]*:END:[ \t]*$" end t)
+              (forward-line 1)
+            (goto-char end)))
+         ((looking-at "^\\([ \t]*\\)- State[ \t]+\"")
+          (let* ((base (length (match-string 1)))
+                 (start (point))
+                 (multi (string-match-p "\\\\\\\\[ \t]*$"
+                                        (buffer-substring-no-properties
+                                         (line-beginning-position) (line-end-position)))))
+            (forward-line 1)
+            (when multi
+              (while (and (< (point) end)
+                          (looking-at "^\\([ \t]*\\)[^ \t\n]")
+                          (> (length (match-string 1)) base))
+                (forward-line 1)))
+            (push (eli--state-block-lines (buffer-substring-no-properties start (point)) base)
+                  blocks)
+            (delete-region start (point))))
+         (t (forward-line 1))))
+      (set-marker end nil)
+      (nreverse blocks))))
+
+(defun eli--put-state-blocks-in-logbook (blocks)
+  "Mete BLOCKS en el cajón :LOGBOOK: de la entrada actual (lo crea si falta)."
+  (save-excursion
+    (org-back-to-heading t)
+    (goto-char (let ((org-log-into-drawer t)) (org-log-beginning t)))
+    (let* ((start (line-beginning-position))
+           (ind (save-excursion
+                  (forward-line -1)
+                  (and (looking-at "^\\([ \t]*\\):LOGBOOK:") (match-string 1))))
+           (end (save-excursion (re-search-forward "^[ \t]*:END:[ \t]*$") (line-beginning-position)))
+           (old '()))
+      ;; lo que ya hay en el cajón, en bloques (una línea de estado o CLOCK con sus notas)
+      (dolist (l (split-string (buffer-substring-no-properties start end) "\n" t))
+        (if (or (null old) (string-match-p "^[ \t]*\\(- State\\|CLOCK:\\)" l))
+            (push (list (string-trim l)) old)
+          (setcar old (append (car old) (list (concat "  " (string-trim l)))))))
+      (setq old (nreverse old))
+      (dolist (b blocks)
+        (let* ((tb (eli--state-line-time (car b)))
+               (pos (and tb (cl-position-if
+                             (lambda (o)
+                               (and (string-prefix-p "- State" (car o))
+                                    (let ((to (eli--state-line-time (car o))))
+                                      (and to (< to tb)))))
+                             old))))
+          (setq old (if pos
+                        (append (cl-subseq old 0 pos) (list b) (nthcdr pos old))
+                      (append old (list b))))))
+      (delete-region start end)
+      (goto-char start)
+      (dolist (b old)
+        (dolist (l b) (insert (or ind "") l "\n"))))))
+
+(defun eli/estados-a-logbook ()
+  "Pasa al cajón :LOGBOOK: las líneas «- State …» sueltas de cada entrada del fichero actual."
+  (interactive)
+  (unless (derived-mode-p 'org-mode) (user-error "Esto funciona en un fichero .org"))
+  (let ((n 0) (entries 0))
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (unless (org-at-heading-p) (outline-next-heading))
+     (while (and (org-at-heading-p) (not (eobp)))
+       (let ((blocks (eli--take-loose-state-lines)))
+         (when blocks
+           (setq n (+ n (length blocks)) entries (1+ entries))
+           (eli--put-state-blocks-in-logbook blocks)))
+       (unless (outline-next-heading) (goto-char (point-max)))))
+    (message (if (> n 0)
+                 (format "Historial ordenado: %d línea(s) en %d entrada(s)" n entries)
+               "El historial ya está ordenado"))
+    n))
+(defalias 'organice-tidy-state-log #'eli/estados-a-logbook)
+
 (provide 'organice-core)
 ;;; organice-core.el ends here

@@ -14,7 +14,8 @@ Empieza tocando el encabezado «Lo básico» de aquí abajo.
 
 * Lo básico
 ** Abrir, cerrar y seleccionar
-- *Un toque* (o un clic) en un encabezado lo selecciona *y* lo abre o lo cierra. Los que tienen «...» al final esconden contenido. Al seleccionarlo aparece *abajo* la barra de acciones (ver la sección siguiente).
+- *Un toque* (o un clic) en un encabezado *solo lo selecciona*; *otro toque* (ya seleccionado) lo abre o lo cierra. Los que tienen «...» al final esconden contenido. Al seleccionarlo aparece *abajo* la barra de acciones (ver la sección siguiente).
+- Un toque o clic en las *notas* de un encabezado también lo selecciona.
 - *Dos toques* (o doble clic) editan el título *en su sitio*, sin ventana: escribes donde está el texto. Intro, Esc o tocar fuera guardan.
 - *El candado* (⋯ › Fichero; con él puesto sale un candadito junto al nombre del fichero): con él puesto el documento es de *solo lectura*; puedes tocar, abrir, cerrar y moverte, pero nada se edita sin querer. Se recuerda en este aparato.
 - Para quitar la selección (y la barra), toca en un hueco fuera de los encabezados, o el nombre del fichero en la barra superior.
@@ -84,6 +85,10 @@ Los estados se escriben delante del título. ORGanice usa los mismos que tu Emac
 - Terminados: DONE y CANCELLED.
 Al terminar una tarea se añade «CLOSED:» con la fecha y la hora, y la tarea pierde su prioridad.
 
+Los cambios de estado que registra la app (=- State "DONE" from "TODO" [fecha]=) van siempre dentro del cajón =:LOGBOOK:= (se crea si falta), nunca sueltos en las notas, como Emacs con =org-log-into-drawer=. Para ordenar ficheros antiguos: ⋯ › Herramientas › *Ordenar historial* (las líneas sueltas del fichero abierto pasan a su cajón; se puede deshacer). En Emacs: =M-x eli/estados-a-logbook=.
+
+Al terminar una tarea con *adjuntos* (enlaces a ficheros o carpeta de org-attach con =:ATTACH:=), la app pregunta si se borran.
+
 Los estados salen de la línea «#+TODO:» del fichero. Si un fichero no la tiene, se usan los de Ajustes → «Estados de las tareas».
 ** Tareas para practicar [1/5]
 El contador [1/5] de este encabezado se actualiza solo.
@@ -144,7 +149,8 @@ Tecla *a* o el botón del calendario (abajo, en el centro).
 
 ** Cómo se usa (como Nirvana)
 Desde la versión 3.0 la vista GTD se maneja como Nirvana (en cada fila: la casilla de hecho y, a su derecha, la ★, que se sombrea en dorado al pasar el ratón):
-- *Clic* en una tarea la selecciona; *doble clic* (o Intro) la abre para editarla. En el móvil igual: *un toque selecciona, dos toques editan*.
+- *Clic* en una tarea la selecciona; *doble clic* (o Intro) la abre para editarla. Un *clic justo sobre el texto del título* también la edita (al pasar el ratón se subraya, como un enlace). En un proyecto, clic en su título lo edita («Abrir en su fichero» está en el ⋯).
+- En el *móvil*: *un toque* abre la tarea en *vista previa*; el título y las notas se editan al tocarlos, y fechas, etiquetas, estado… se cambian como siempre. Para *seleccionar* (y mover o arrastrar), *pulsación larga*.
 - Una tarea con subtareas lleva *▾* a la izquierda: tócalo para plegarlas (▸) o desplegarlas; se recuerda. Como subtareas solo salen las que tienen palabra de acción (TODO, NEXT…).
 - *Ctrl+clic* (⌘ en el Mac) añade o quita tareas de la selección. Los *puntos ⋮⋮* de la izquierda de cada fila seleccionan con un *lazo*: pulsa en ellos y arrastra hacia arriba o abajo.
 - *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección); puede ir junto a una tarea de otro fichero o encabezado si así no cambia de proyecto, tarea madre, área ni etiquetas (si no, avisa y no se mueve). Si la lista estaba ordenada por fecha, pasa a orden manual.
@@ -161,7 +167,10 @@ Desde la versión 3.0 la vista GTD se maneja como Nirvana (en cada fila: la casi
 - *Etiquetas* (al final del menú lateral): cada una muestra lo que la lleva en todas las listas y proyectos activos. La rueda (o la tecla g) abre *Gestionar etiquetas*: renombrar o quitar una etiqueta en todas las tareas, crear etiquetas nuevas y renombrar áreas. El botón de la hoja (📄) de cada etiqueta hace que su vista muestre también los *encabezados sin estado* que la llevan, en un grupo aparte debajo de las tareas.
 - El *⋯* de arriba: *Opciones de vista* (como Nirvana) — Acciones: *Lista única*, *Agrupar por proyecto* o *Acciones siguientes secuenciales* (la de siempre: en Next, solo la primera acción de cada proyecto; las otras dos muestran todas); en Focus, también *Agrupar por estado* — y Detalles: *Ajustar títulos largos* (en varias líneas; quitado, una línea con …), *Mostrar notas* (completas, con las casillas marcables, parciales u ocultas), *Mostrar etiquetas* y *Mostrar esfuerzo* (el tiempo, :EFFORT:). Además: ordenar por fecha límite (tecla d), Entrada rápida, plantillas de captura (t) y más.
 - La sección *Proyectos* del menú lateral se pliega y despliega tocando su nombre (se recuerda).
-- La fecha límite se ve como en Nirvana: «Vence hoy» y «Atrasada» en rojo; las que aún no han llegado, más transparentes («Mañana», «en 3 días», o la fecha).
+- La fecha límite se ve como en Nirvana: «Vence hoy» y «Atrasada» en rojo (con lo que lleva atrasada: «3 d», «2 sem», «4 meses»…); las que aún no han llegado, más transparentes («Mañana», «en 3 días», o la fecha).
+- *Acciones siguientes secuenciales* (⋯ → Opciones de vista): en la lista de cada proyecto, las tareas *en espera* (WAITING) y las *programadas* van mezcladas con las Next, marcadas con una *E* o una *P* pequeñas, y se ordenan arrastrándolas. Si una queda antes que las Next, las *bloquea*: no salen en Next hasta que se resuelva. En los proyectos, *Referencias* va la primera, justo después de las notas.
+- Filtro *Sin etiquetas*: como los demás (solo las que no tienen ninguna, o tachado: fuera). La *Entrada rápida* va justo después de los filtros.
+- Con *Mostrar notas*, los adjuntos de las notas (=[[file:…]]= y =[[attachment:…]]= de org-attach) se ven como vista previa.
 - *⌘C / Ctrl+C* (sin texto seleccionado) copia la lista, o las tareas seleccionadas, como *ORG Mode* (=* TODO título :etiqueta:=, las subtareas con un nivel más, y debajo sus fechas, propiedades y notas), listo para pegar en otro fichero o en Emacs.
 
 ** Proyectos con tareas de otros ficheros
@@ -251,6 +260,7 @@ En Ajustes → *Vista GTD y gestos* → «Secciones de la vista GTD» está la l
 - *Nombre en el menú*: cada sección puede llamarse como quieras (vacío = el de siempre).
 - *Nueva sección*: al final de la lista. Le pones nombre, icono y reglas. Muestra las tareas abiertas que cumplen alguna de sus reglas (si no tiene ninguna, todas las abiertas), y esas tareas siguen también en su lista de siempre. Se ordena, se oculta y se borra como las demás; «n» dentro de ella crea la tarea con su primer estado y su primera etiqueta.
 - En una sección propia, la casilla *Mostrar cabeceras sin tarea* hace que salgan también los encabezados sin estado que cumplan sus reglas (sin ella, solo tareas).
+- *Separadores*: «Separador: línea» o «Separador: línea con cabecera» (al final de la lista; se ordenan con las flechas). Con cabecera, lo que cuelga de ella en el menú lateral (hasta el siguiente separador) se pliega tocándola, y se recuerda.
 - *Restablecer* vuelve a la configuración de siempre (hay uno general y otro en cada sección).
 
 ** Áreas
@@ -457,7 +467,7 @@ Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
 - *Archivar en*: junto al fichero (tareas.org_archive) o en la subcarpeta archive de cada carpeta.
 - Los ajustes están en secciones plegables: *Apariencia*, *Tareas y etiquetas*, *Vista GTD y gestos* y *Opciones avanzadas*.
 - *Vista GTD y gestos*: deslizar sí/no, por separado en los documentos y en la vista GTD, y las secciones de la vista GTD (ver «Secciones configurables»).
-- *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
+- *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada), «Nirvana» (como NirvanaHQ: grises claros, tarjetas blancas y acento azul; en oscuro, grafito; la vista GTD se ve aún más limpia) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).
   - «Todos los ficheros .org, automáticamente» (interruptor): todos los ficheros .org de tu carpeta y subcarpetas (sin la de copias de seguridad), también los que crees más adelante, entran solos en la agenda, la búsqueda, la lista de tareas y el refile; los que borres se quitan. Se revisa al abrir la app, al volver a ella y con «Buscar ficheros nuevos ahora». Al desactivarlo vuelves a elegirlos uno a uno (la lista se queda como estaba).

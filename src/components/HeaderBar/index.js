@@ -620,6 +620,13 @@ class HeaderBar extends PureComponent {
           onClick: openMoonPhases,
           testId: 'eli-moon',
         },
+        // (3.05) líneas «- State …» sueltas → al cajón :LOGBOOK: (en el fichero abierto)
+        inRealFile && {
+          icon: 'fas fa-history',
+          label: 'Ordenar historial',
+          onClick: () => this.props.org.eliTidyStateLog(),
+          testId: 'eli-tidy-state-log',
+        },
         // (2.16) en la vista GTD, la ventana de atajos va aquí (antes, un botón en la lista)
         inGtd && {
           icon: 'far fa-keyboard',

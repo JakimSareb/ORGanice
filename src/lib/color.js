@@ -449,6 +449,53 @@ const themes = {
       '--green-soft': 'rgba(143, 208, 176, 0.2)',
     },
   },
+  // (3.05) tema «Nirvana», inspirado en NirvanaHQ: grises claros, filas blancas y acento azul
+  // (oscuro: grafito). La vista GTD tiene además sus propios retoques (Gtd/stylesheet.css, con
+  // html[data-eli-theme='Nirvana']).
+  Nirvana: {
+    Light: {
+      '--base3': '#ffffff',
+      '--base2': '#ececec',
+      '--base1': '#d0d0d0',
+      '--base0': '#999999',
+      '--base00': '#4a4a4a',
+      '--base01': '#333333',
+      '--base02': '#262626',
+      '--base03': '#1c1c1c',
+      '--base0-soft': 'rgba(0, 0, 0, 0.16)',
+      '--base1-soft': 'rgba(91, 143, 217, 0.13)',
+      '--blue': '#5b8fd9',
+      '--green': '#4a9d6e',
+      '--cyan': '#3f8fae',
+      '--yellow': '#c99a1e',
+      '--orange': '#e0843a',
+      '--red': '#d9534f',
+      '--magenta': '#8b6fd1',
+      '--violet': '#a866bd',
+      '--green-soft': 'rgba(74, 157, 110, 0.2)',
+    },
+    Dark: {
+      '--base3': '#202227',
+      '--base2': '#2c2f36',
+      '--base1': '#3c4048',
+      '--base0': '#61656e',
+      '--base00': '#c8c8c8',
+      '--base01': '#e2e2e2',
+      '--base02': '#ececec',
+      '--base03': '#f5f5f5',
+      '--base0-soft': 'rgba(0, 0, 0, 0.6)',
+      '--base1-soft': 'rgba(91, 143, 217, 0.18)',
+      '--blue': '#6b9de3',
+      '--green': '#6cc391',
+      '--cyan': '#69b4cf',
+      '--yellow': '#e6c45a',
+      '--orange': '#f0a060',
+      '--red': '#f0726d',
+      '--magenta': '#a58ce6',
+      '--violet': '#cf8fe0',
+      '--green-soft': 'rgba(108, 195, 145, 0.2)',
+    },
+  },
 };
 
 export const loadTheme = (theme = 'Solarized', colorScheme = 'Light') => {
@@ -464,11 +511,17 @@ export const loadTheme = (theme = 'Solarized', colorScheme = 'Light') => {
   const themeColors = (themes[theme] || themes.Solarized)[colorScheme] || themes.Solarized.Light;
   const style = document.documentElement.style;
   Object.entries(themeColors).forEach(([k, v]) => style.setProperty(k, v));
+  // (3.05) para los retoques propios de cada tema en CSS (p. ej. Nirvana en la vista GTD)
+  const themeName = themes[theme] ? theme : 'Solarized';
+  const scheme = (themes[themeName] || {})[colorScheme] ? colorScheme : 'Light';
+  document.documentElement.setAttribute('data-eli-theme', themeName);
+  document.documentElement.setAttribute('data-eli-scheme', scheme);
 
   // Cache resolved CSS variables so the inline script in index.html can
   // apply them before CSS loads on the next cold start (eliminates flash).
   try {
     localStorage.setItem('themeVariables', JSON.stringify(themeColors));
+    localStorage.setItem('themeAttrs', JSON.stringify([themeName, scheme]));
   } catch (_e) {
     // localStorage may be unavailable; ignore.
   }

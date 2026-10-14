@@ -2538,3 +2538,441 @@
 .gtd-editor__tables {
   margin: 6px 0 4px;
 }
+
+/* (3.05) Proyecto: divisiones por estado sin línea */
+.gtd-section.is-psec {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+/* (3.05) Título: con el ratón, el texto se edita al hacer clic (subrayado al pasar por encima) */
+@media (hover: hover) and (pointer: fine) {
+  .gtd-task__title-text.is-link:hover,
+  .gtd-main__title-text.is-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+}
+/* (3.05) Proyecto secuencial: en espera (E) / programada (P) entre las Next */
+.gtd-task__seq {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--base0);
+  opacity: 0.8;
+  vertical-align: 1px;
+}
+/* (3.05) Vencidas: cuánto llevan */
+.gtd-date__ago {
+  font-weight: normal;
+  opacity: 0.7;
+}
+/* (3.05) Móvil: vista previa (título y notas se editan al tocarlos) */
+.gtd-editor__title.is-preview,
+.gtd-editor__notes.is-preview {
+  cursor: text;
+}
+/* (3.05) Separadores del menú lateral (Ajustes) */
+.gtd-side__sep {
+  border: 0;
+  border-top: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.08));
+  margin: 10px 8px;
+}
+.gtd-side__sep--head {
+  margin: 14px 0 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.08));
+}
+.gtd-side__sep-toggle {
+  border: 0;
+  background: transparent;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--base1);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.gtd-side__sep-toggle:hover {
+  color: var(--blue);
+}
+/* (3.05) cabeceras de proyecto (agrupar por proyecto): el título, como enlace al pasar */
+@media (hover: hover) and (pointer: fine) {
+  .gtd-section--group.is-project .gtd-section__toggle:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+/* ==========================================================================================
+   (3.05) Tema «Nirvana» (como NirvanaHQ): fondo gris claro, menú lateral blanco, listas en
+   tarjetas blancas con separadores finos, píldoras de filtro y mucho aire. Solo con ese tema.
+   ========================================================================================== */
+html[data-eli-theme='Nirvana'] {
+  --nv-main: #f0f0f0;
+  --nv-side: #ffffff;
+  --nv-side-on: #e9e9e9;
+  --nv-row: #ffffff;
+  --nv-row-hover: #fafafa;
+  --nv-sep: #e6e6e6;
+  --nv-card: #e3e3e3;
+  --nv-meta: #999999;
+  --nv-pill: #e8e8e8;
+  --nv-pill-text: #333333;
+  --nv-pill-on: #5b8fd9;
+  --nv-pill-on-text: #ffffff;
+  --nv-area: #f2d36b;
+  --nv-check: #c9c9c9;
+  --nv-line: #d6d6d6;
+}
+html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] {
+  --nv-main: #202227;
+  --nv-side: #1d1f24;
+  --nv-side-on: #2c2f36;
+  --nv-row: #272a30;
+  --nv-row-hover: #2c2f36;
+  --nv-sep: #30333a;
+  --nv-card: transparent;
+  --nv-meta: #9a9a9a;
+  --nv-pill: #33363d;
+  --nv-pill-text: #e2e2e2;
+  --nv-pill-on: #4b4f58;
+  --nv-pill-on-text: #ffffff;
+  --nv-area: #e6c45a;
+  --nv-check: #5b5f68;
+  --nv-line: #3a3d45;
+}
+html[data-eli-theme='Nirvana'] .gtd {
+  background: var(--nv-main);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Roboto, Arial,
+    sans-serif;
+  color: var(--base01);
+}
+
+/* menú lateral */
+html[data-eli-theme='Nirvana'] .gtd-side {
+  background: var(--nv-side);
+  border-right: 0;
+  padding: 14px 10px 28px;
+}
+html[data-eli-theme='Nirvana'] .gtd-side__item {
+  padding: 9px 12px;
+  font-size: 15px;
+  color: var(--base01);
+  border-radius: 6px;
+}
+html[data-eli-theme='Nirvana'] .gtd-side__item:hover {
+  background: var(--nv-row-hover);
+}
+html[data-eli-theme='Nirvana'] .gtd-side__item.is-on {
+  background: var(--nv-side-on);
+  color: var(--base01);
+}
+html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] .gtd-side__item.is-on {
+  box-shadow: inset 3px 0 0 var(--blue);
+  border-radius: 0 6px 6px 0;
+}
+html[data-eli-theme='Nirvana'] .gtd-side__icon {
+  color: var(--blue);
+  opacity: 0.9;
+}
+html[data-eli-theme='Nirvana'] .gtd-side__item.is-on .gtd-side__icon {
+  color: var(--blue);
+}
+html[data-eli-theme='Nirvana'] .gtd-side__count {
+  color: var(--nv-meta);
+  opacity: 1;
+}
+html[data-eli-theme='Nirvana'] .gtd-side__section,
+html[data-eli-theme='Nirvana'] .gtd-side__sep-toggle {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--base01);
+}
+html[data-eli-theme='Nirvana'] .gtd-side__lists--extra,
+html[data-eli-theme='Nirvana'] .gtd-side__item--agenda,
+html[data-eli-theme='Nirvana'] .gtd-side__sep,
+html[data-eli-theme='Nirvana'] .gtd-side__sep--head {
+  border-color: transparent;
+}
+html[data-eli-theme='Nirvana'] .gtd-side__area,
+html[data-eli-theme='Nirvana'] .gtd-side__search {
+  border-color: transparent;
+  background: var(--nv-main);
+}
+
+/* zona principal */
+html[data-eli-theme='Nirvana'] .gtd-main {
+  background: var(--nv-main);
+  padding: 18px 34px 70px;
+}
+html[data-eli-theme='Nirvana'] .gtd-main__head {
+  background: var(--nv-main);
+  padding: 18px 0 14px;
+  margin-top: -18px;
+  top: -18px;
+}
+html[data-eli-theme='Nirvana'] .gtd-main__title {
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--base01);
+}
+html[data-eli-theme='Nirvana'] .gtd-main__count {
+  font-size: 15px;
+  color: var(--nv-meta);
+}
+/* proyecto: el título en una tarjeta, como Nirvana */
+html[data-eli-theme='Nirvana'] .gtd-main.is-project-view .gtd-main__head {
+  position: static;
+  margin: 0 0 18px;
+  padding: 26px 22px;
+  background: var(--nv-row);
+  border: 1px solid var(--nv-card);
+  border-radius: 6px;
+}
+html[data-eli-theme='Nirvana'] .gtd-main.is-project-view .gtd-main__title {
+  font-size: 24px;
+  font-weight: 600;
+}
+html[data-eli-theme='Nirvana'] .gtd-project-info {
+  margin: -8px 0 16px;
+  color: var(--nv-meta);
+}
+html[data-eli-theme='Nirvana'] .gtd-meta--area {
+  color: var(--nv-meta);
+  font-weight: normal;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+html[data-eli-theme='Nirvana'] .gtd-meta--area::before {
+  content: '●';
+  color: var(--nv-area);
+  margin-right: 4px;
+  font-size: 9px;
+  vertical-align: 2px;
+}
+html[data-eli-theme='Nirvana'] .gtd-project-notes {
+  margin-bottom: 14px;
+}
+
+/* filtros: píldoras */
+html[data-eli-theme='Nirvana'] .gtd-filterbar {
+  gap: 8px;
+  margin: 6px 0 22px;
+}
+html[data-eli-theme='Nirvana'] .gtd-filterbar .gtd-chip {
+  border: 0;
+  background: var(--nv-pill);
+  color: var(--nv-pill-text);
+  border-radius: 999px;
+  padding: 4px 13px;
+  font-size: 14px;
+  font-weight: 500;
+}
+html[data-eli-theme='Nirvana'] .gtd-filterbar .gtd-chip.is-on {
+  background: var(--nv-pill-on);
+  color: var(--nv-pill-on-text);
+}
+html[data-eli-theme='Nirvana'] .gtd-filterbar .gtd-chip.is-not {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* entrada rápida: una línea, sin caja */
+html[data-eli-theme='Nirvana'] .gtd-rapid {
+  max-width: 640px;
+  margin: 4px 0 30px;
+  padding: 10px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--nv-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--nv-meta);
+}
+html[data-eli-theme='Nirvana'] .gtd-rapid:focus-within {
+  border-color: var(--blue);
+}
+html[data-eli-theme='Nirvana'] .gtd-rapid input {
+  font-size: 17px;
+  color: var(--base01);
+}
+
+/* divisiones: títulos sencillos («Next Up», «Later»…) */
+html[data-eli-theme='Nirvana'] .gtd-section {
+  margin: 26px 0 10px;
+  padding: 0 2px;
+  border-bottom: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--base01);
+}
+html[data-eli-theme='Nirvana'] .gtd-section > i,
+html[data-eli-theme='Nirvana'] .gtd-section > span > i,
+html[data-eli-theme='Nirvana'] .gtd-section__toggle > i:not([class*='fa-caret']) {
+  display: none;
+}
+html[data-eli-theme='Nirvana'] .gtd-section__n {
+  font-size: 14px;
+  color: var(--nv-meta);
+  opacity: 1;
+}
+html[data-eli-theme='Nirvana'] .gtd-section.is-drop {
+  color: var(--blue);
+}
+
+/* filas en tarjeta blanca, con separadores finos */
+html[data-eli-theme='Nirvana'] .gtd-task {
+  background: var(--nv-row);
+  border-left: 1px solid var(--nv-card);
+  border-right: 1px solid var(--nv-card);
+  border-bottom: 1px solid var(--nv-sep);
+}
+html[data-eli-theme='Nirvana'] .gtd-list > .gtd-task:first-child,
+html[data-eli-theme='Nirvana'] .gtd-list > .gtd-empty + .gtd-task,
+html[data-eli-theme='Nirvana'] .gtd-section + .gtd-task {
+  border-top: 1px solid var(--nv-card);
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+html[data-eli-theme='Nirvana'] .gtd-task:last-child,
+html[data-eli-theme='Nirvana'] .gtd-task:has(+ .gtd-section) {
+  border-bottom: 1px solid var(--nv-card);
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] .gtd-task:last-child,
+html[data-eli-theme='Nirvana'][data-eli-scheme='Dark'] .gtd-task:has(+ .gtd-section) {
+  border-bottom-color: transparent;
+}
+html[data-eli-theme='Nirvana'] .gtd-task__row {
+  padding: 13px 14px 13px 8px;
+  border-radius: inherit;
+  gap: 10px;
+  align-items: center;
+}
+html[data-eli-theme='Nirvana'] .gtd-task__row:hover {
+  background: var(--nv-row-hover);
+}
+html[data-eli-theme='Nirvana'] .gtd-task.is-open .gtd-task__row {
+  background: var(--nv-row);
+}
+html[data-eli-theme='Nirvana'] .gtd-task__title {
+  font-size: 16px;
+  color: var(--base01);
+}
+html[data-eli-theme='Nirvana'] .gtd-task__right,
+html[data-eli-theme='Nirvana'] .gtd-task__meta {
+  color: var(--nv-meta);
+  font-size: 13px;
+  gap: 4px 12px;
+}
+html[data-eli-theme='Nirvana'] .gtd-task__right .gtd-meta--tag,
+html[data-eli-theme='Nirvana'] .gtd-task__row:hover .gtd-task__right .gtd-meta--tag,
+html[data-eli-theme='Nirvana'] .gtd-task.is-selected .gtd-task__right .gtd-meta--tag {
+  padding: 0;
+  background: none;
+  color: var(--nv-meta);
+}
+html[data-eli-theme='Nirvana'] .gtd-meta--energy i,
+html[data-eli-theme='Nirvana'] .gtd-meta--effort i {
+  display: none;
+}
+html[data-eli-theme='Nirvana'] .gtd-check {
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--nv-check);
+  border-radius: 3px;
+}
+html[data-eli-theme='Nirvana'] .gtd-check.is-on {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+html[data-eli-theme='Nirvana'] .gtd-star {
+  color: var(--nv-check);
+  opacity: 1;
+  font-size: 16px;
+}
+html[data-eli-theme='Nirvana'] .gtd-star:not(.is-on) i {
+  font-weight: 900;
+}
+html[data-eli-theme='Nirvana'] .gtd-star.is-on {
+  color: #f2b24a;
+}
+html[data-eli-theme='Nirvana'] .gtd-task__dots {
+  color: var(--nv-check);
+  opacity: 0.9;
+}
+html[data-eli-theme='Nirvana'] .gtd-task__caret {
+  border: 1px solid var(--nv-line);
+  border-radius: 3px;
+  width: 20px;
+  height: 20px;
+  flex-basis: 20px;
+  font-size: 11px;
+  color: var(--nv-meta);
+  opacity: 0.9;
+}
+html[data-eli-theme='Nirvana'] .gtd-task.is-selected > .gtd-task__row,
+html[data-eli-theme='Nirvana'] .gtd-task.is-selected > .gtd-task__row:hover {
+  background: color-mix(in srgb, var(--blue) 10%, var(--nv-row));
+}
+html[data-eli-theme='Nirvana'] .gtd-editor {
+  border-radius: 6px;
+}
+/* resumen de proyectos */
+html[data-eli-theme='Nirvana'] .gtd-overview__row {
+  background: var(--nv-row);
+  border: 1px solid var(--nv-card);
+  border-top: 0;
+  padding: 13px 14px;
+}
+html[data-eli-theme='Nirvana'] .gtd-section + .gtd-overview__row {
+  border-top: 1px solid var(--nv-card);
+  border-radius: 6px 6px 0 0;
+}
+html[data-eli-theme='Nirvana'] .gtd-overview__row:last-child {
+  border-radius: 0 0 6px 6px;
+}
+@media (max-width: 720px) {
+  html[data-eli-theme='Nirvana'] .gtd-main {
+    padding: 12px 12px 70px;
+  }
+  html[data-eli-theme='Nirvana'] .gtd-main__head {
+    padding-top: 12px;
+    margin-top: -12px;
+    top: -12px;
+  }
+  html[data-eli-theme='Nirvana'] .gtd-main__title {
+    font-size: 26px;
+  }
+  html[data-eli-theme='Nirvana'] .gtd-main.is-project-view .gtd-main__head {
+    padding: 16px 14px;
+  }
+  html[data-eli-theme='Nirvana'] .gtd-task__row {
+    padding: 12px 10px 12px 4px;
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  /* en el móvil, etiquetas, tiempo y fechas debajo del título (el título no se parte) */
+  html[data-eli-theme='Nirvana'] .gtd-task__right {
+    order: 5;
+    flex-basis: 100%;
+    max-width: none;
+    justify-content: flex-start;
+    padding-left: 95px;
+    box-sizing: border-box;
+  }
+  html[data-eli-theme='Nirvana'] .gtd-task__right:empty {
+    display: none;
+  }
+}

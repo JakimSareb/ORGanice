@@ -14,12 +14,17 @@ import {
   CUSTOM_ICONS,
   CUSTOM_PREFIX,
   isCustomId,
+  isSepId,
+  SEP_PREFIX,
 } from '../../lib/gtd/gtd_sections';
 
 const selectSections = (s) => s.base.get('eliGtdSections');
 // (2.17) rutas de los ficheros que se pueden elegir (los de «Ajustes de ficheros» y los cargados)
 const selectOrgPaths = (s) => {
-  const fromSettings = s.org.present.get('fileSettings').map((f) => f.get('path')).toArray();
+  const fromSettings = s.org.present
+    .get('fileSettings')
+    .map((f) => f.get('path'))
+    .toArray();
   const loaded = s.org.present.get('files').keySeq().toArray();
   return Array.from(new Set([...fromSettings, ...loaded]))
     .filter((p) => p && /\.org(\.gpg|\.asc)?$/i.test(p) && !/_archive/i.test(p))
@@ -142,6 +147,23 @@ export default function GtdSectionsSettings() {
     });
     setOpenId(null);
   };
+  // (3.05) Separadores del menú lateral: línea simple o línea con cabecera (plegable)
+  const addSeparator = (withHead) => {
+    const id = `${SEP_PREFIX}${Date.now().toString(36)}`;
+    const separators = [...(cfg.separators || []), { id, label: withHead ? 'Cabecera' : '' }];
+    save({ ...cfg, separators, order: [...cfg.order, id] });
+  };
+  const setSeparator = (id, label) =>
+    save({
+      ...cfg,
+      separators: (cfg.separators || []).map((x) => (x.id === id ? { ...x, label } : x)),
+    });
+  const removeSeparator = (id) =>
+    save({
+      ...cfg,
+      separators: (cfg.separators || []).filter((x) => x.id !== id),
+      order: cfg.order.filter((x) => x !== id),
+    });
   const HINT_STATES = 'Varios, separados por comas: NEXT, TODO';
   const HINT_TAGS = 'Varias, separadas por comas: @casa, @llamadas';
   const HINT_PROPS = 'Varias, separadas por comas: CONTEXTO, ENERGY=Low';
@@ -440,6 +462,63 @@ export default function GtdSectionsSettings() {
           la primera), elige cuáles se ven y toca una para decidir qué tareas entran.
         </div>
         {cfg.order.map((id, i) => {
+          if (isSepId(id)) {
+            const sep = (cfg.separators || []).find((x) => x.id === id);
+            if (!sep) return null;
+            return (
+              <div
+                key={id}
+                className="eli-gtdsec__row eli-gtdsec__row--sep"
+                data-testid="eli-gtdsec-sep"
+              >
+                <div className="eli-gtdsec__line">
+                  <button
+                    type="button"
+                    className="eli-gtdsec__move"
+                    onClick={() => move(id, -1)}
+                    disabled={i === 0}
+                    title="Subir"
+                    data-testid="eli-gtdsec-sep-up"
+                  >
+                    <i className="fas fa-arrow-up" />
+                  </button>
+                  <button
+                    type="button"
+                    className="eli-gtdsec__move"
+                    onClick={() => move(id, 1)}
+                    disabled={i === cfg.order.length - 1}
+                    title="Bajar"
+                    data-testid="eli-gtdsec-sep-down"
+                  >
+                    <i className="fas fa-arrow-down" />
+                  </button>
+                  <span className="eli-gtdsec__sep-line" aria-hidden="true" />
+                  <input
+                    className="eli-gtdsec__sep-name"
+                    defaultValue={sep.label}
+                    key={sep.label}
+                    placeholder="Línea simple (escribe un nombre para que sea cabecera)"
+                    onBlur={(e) =>
+                      e.target.value.trim() !== sep.label && setSeparator(id, e.target.value.trim())
+                    }
+                    onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                    aria-label="Nombre de la cabecera (vacío: línea simple)"
+                    data-testid="eli-gtdsec-sep-name"
+                  />
+                  <span className="eli-gtdsec__sep-line" aria-hidden="true" />
+                  <button
+                    type="button"
+                    className="eli-gtdsec__move"
+                    onClick={() => removeSeparator(id)}
+                    title="Quitar el separador"
+                    data-testid="eli-gtdsec-sep-remove"
+                  >
+                    <i className="fas fa-times" />
+                  </button>
+                </div>
+              </div>
+            );
+          }
           const def = sectionDef(id, cfg);
           if (!def) return null;
           const s = cfg.sections[id];
@@ -501,6 +580,22 @@ export default function GtdSectionsSettings() {
           data-testid="eli-gtdsec-add"
         >
           <i className="fas fa-plus" /> Nueva sección
+        </button>
+        <button
+          type="button"
+          className="btn eli-gtdsec__add"
+          onClick={() => addSeparator(false)}
+          data-testid="eli-gtdsec-add-line"
+        >
+          <i className="fas fa-minus" /> Separador: línea
+        </button>
+        <button
+          type="button"
+          className="btn eli-gtdsec__add"
+          onClick={() => addSeparator(true)}
+          data-testid="eli-gtdsec-add-head"
+        >
+          <i className="fas fa-heading" /> Separador: línea con cabecera
         </button>
       </div>
     </>

@@ -71,7 +71,6 @@ const Settings = ({
   showDeadlineDisplay,
   shouldSyncOnBecomingVisibile,
   shouldShowTitleInOrgFile,
-  shouldLogIntoDrawer,
   closeSubheadersRecursively,
   eliIndentOnExport,
   eliArchiveInSubfolder,
@@ -140,8 +139,6 @@ const Settings = ({
   const handleShouldShowTitleInOrgFile = () =>
     base.setShouldShowTitleInOrgFile(!shouldShowTitleInOrgFile);
 
-  const handleShouldLogIntoDrawer = () => base.setShouldLogIntoDrawer(!shouldLogIntoDrawer);
-
   const handleCloseSubheadersRecursively = () =>
     base.setCloseSubheadersRecursively(!closeSubheadersRecursively);
 
@@ -192,7 +189,16 @@ const Settings = ({
         <div className="setting-container setting-container--vertical eli-theme-setting">
           <div className="setting-label">Tema</div>
           <TabButtons
-            buttons={['Unicornio', 'Cuki', 'Solarized', 'One', 'Gruvbox', 'Smyck', 'Code']}
+            buttons={[
+              'Unicornio',
+              'Cuki',
+              'Solarized',
+              'One',
+              'Gruvbox',
+              'Smyck',
+              'Code',
+              'Nirvana',
+            ]}
             selectedButton={theme}
             onSelect={handleThemeClick}
           />
@@ -323,22 +329,7 @@ const Settings = ({
           <Switch isEnabled={shouldShowTitleInOrgFile} onToggle={handleShouldShowTitleInOrgFile} />
         </div>
 
-        <div className="setting-container">
-          <div className="setting-label">
-            Registrar en el cajón LOGBOOK cuando la tarea se repite
-            <div className="setting-label__description">
-              Registra los cambios de estado TODO (por ahora solo en tareas repetitivas) en el cajón
-              LOGBOOK en lugar de en el cuerpo del encabezado (opción por defecto). Consulta la
-              documentación de Org sobre{' '}
-              <ExternalLink href="https://www.gnu.org/software/emacs/manual/html_node/org/Tracking-TODO-state-changes.html">
-                <code>org-log-into-drawer</code>
-              </ExternalLink>{' '}
-              para más información.
-            </div>
-          </div>
-          <Switch isEnabled={shouldLogIntoDrawer} onToggle={handleShouldLogIntoDrawer} />
-        </div>
-
+        {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
         <div className="setting-container">
           <div className="setting-label">
             Al plegar un encabezado, plegar también sus subencabezados

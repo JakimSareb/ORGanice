@@ -207,9 +207,13 @@ export const projectLinkFor = (orgId, title) =>
   `[[id:${orgId}][${String(title || '').replace(/[\[\]]/g, '')}]]`;
 export const newOrgId = () => {
   try {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID().toUpperCase();
+    if (typeof crypto !== 'undefined' && crypto.randomUUID)
+      return crypto.randomUUID().toUpperCase();
   } catch (e) {}
-  const h = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).slice(1);
+  const h = () =>
+    Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .slice(1);
   return `${h()}${h()}-${h()}-4${h().slice(1)}-${h()}-${h()}${h()}${h()}`.toUpperCase();
 };
 const resolveProjectLinks = (tasks) => {
@@ -480,13 +484,19 @@ export const isFocus = (task, today = new Date()) => {
   return !hiddenBy(task, s, today);
 };
 
+// (3.05) Filtro «Sin etiquetas»
+export const NO_TAGS = '\u2205sin-etiquetas';
+export const isUntagged = (task) =>
+  !(task.tags || []).some((t) => !['sleep', 'trash'].includes(String(t).toLowerCase()));
 export const matchesFilters = (task, filters) => {
   const { area, tags = [], energy, time, dated, text } = filters || {};
   if (area && area !== '*' && (task.area || '') !== (area === '-' ? '' : area)) return false;
-  if (tags.length && !tags.every((t) => task.tags.includes(t))) return false;
+  // (3.05) NO_TAGS = «Sin etiquetas» (ninguna, salvo :sleep:/:trash:): filtrar por ella o tacharla
+  const has = (t) => (t === NO_TAGS ? isUntagged(task) : task.tags.includes(t));
+  if (tags.length && !tags.every(has)) return false;
   // (3.01) etiquetas tachadas en la barra de filtros: fuera las que las llevan
   const notTags = (filters && filters.notTags) || [];
-  if (notTags.length && notTags.some((t) => task.tags.includes(t))) return false;
+  if (notTags.length && notTags.some(has)) return false;
   // (3.01) filtro «Proyecto no encontrado»
   if (filters && filters.badProject && !task.badProject) return false;
   if (energy && (task.energy || '').toLowerCase() !== energy.toLowerCase()) return false;
@@ -557,7 +567,11 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
     out = tasks
       .filter(
         (t) =>
-          inProject(t, projectTask) && t.keyword && !t.isDone && !t.isProject && !hiddenBy(t, s, today)
+          inProject(t, projectTask) &&
+          t.keyword &&
+          !t.isDone &&
+          !t.isProject &&
+          !hiddenBy(t, s, today)
       )
       .sort(byProjectOrder);
   } else if (view.id === 'focus') {
@@ -640,8 +654,21 @@ export const projectSectionOf = (task, today = new Date()) => {
   return 'later';
 };
 
+// (3.05) «Acciones siguientes secuenciales»: en la lista del proyecto, las tareas en espera
+// (WAITING) y las programadas a futuro van mezcladas con las Next (y se ordenan entre sí); si una
+// queda antes que las Next, las «bloquea» (no salen en la sección Next general hasta que se
+// resuelva)
+export const isSeqBlocker = (t, today = new Date()) => {
+  if (!t || t.isDone || t.isProject || t.isTrashed || !t.keyword || t.isHabit) return false;
+  const sec = projectSectionOf(t, today);
+  return sec === 'waiting' || sec === 'scheduled';
+};
+// Sección de una tarea en su proyecto, con el modo secuencial (bloqueantes → 'next')
+export const projectSectionOfSeq = (task, today = new Date(), sequential = false) =>
+  sequential && isSeqBlocker(task, today) ? 'next' : projectSectionOf(task, today);
+
 // Tareas del proyecto por secciones: [{ ...sección, tasks }] (también las vacías)
-export const projectSections = (tasks, projectKey, filters = {}, today = new Date()) => {
+export const projectSections = (tasks, projectKey, filters = {}, today = new Date(), opts = {}) => {
   const projectTask = tasks.find((t) => t.key === projectKey);
   const out = PROJECT_SECTIONS.map((s) => ({ ...s, tasks: [] }));
   if (!projectTask) return out;
@@ -659,7 +686,7 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
       return why !== 'parked' && why !== 'habit';
     })
     .filter((t) => matchesFilters(t, filters))
-    .forEach((t) => byId[projectSectionOf(t, today)].tasks.push(t));
+    .forEach((t) => byId[projectSectionOfSeq(t, today, !!opts.sequential)].tasks.push(t));
   out.forEach((sec) => {
     sec.tasks =
       sec.id === 'done'
@@ -670,7 +697,9 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
   // del fichero; división plegable al final, como «Terminadas»
   // (3.01) …y las de otros ficheros asignadas al proyecto, detrás
   const refs = tasks
-    .filter((t) => !t.keyword && !t.isTrashed && inProject(t, projectTask) && t.key !== projectTask.key)
+    .filter(
+      (t) => !t.keyword && !t.isTrashed && inProject(t, projectTask) && t.key !== projectTask.key
+    )
     .filter((t) => matchesFilters(t, filters))
     .sort(byProjectOrder);
   out.push({ id: 'refs', label: 'Referencias', icon: 'far fa-file-alt', tasks: refs });
@@ -744,8 +773,10 @@ export const facetsFor = (tasks) => {
   let hasEffort = false;
   let hasDates = false;
   let hasBadProject = false;
+  let hasUntagged = false;
   tasks.forEach((t) => {
     if (t.badProject) hasBadProject = true;
+    if (isUntagged(t)) hasUntagged = true;
     t.tags.forEach((x) => x.toLowerCase() !== SLEEP_TAG && tags.add(x));
     if (t.energy) energy.add(t.energy);
     if (t.effort) hasEffort = true;
@@ -764,6 +795,7 @@ export const facetsFor = (tasks) => {
     hasEffort,
     hasDates,
     hasBadProject,
+    hasUntagged,
   };
 };
 
@@ -916,12 +948,25 @@ export const doneInValueFor = (task, today = new Date()) => {
 
 // (3.0) Fecha límite como en Nirvana: «Atrasada», «Vence hoy», «Mañana», «en 3 días»…
 // level: 'overdue' | 'today' | 'soon' (≤ 7 días) | 'later'
+// (3.05) Tiempo que lleva vencida, corto: «3 d», «2 sem», «4 meses», «1 año»
+export const overdueAgo = (days) => {
+  if (!(days > 0)) return '';
+  if (days < 14) return `${days} d`;
+  if (days < 60) return `${Math.floor(days / 7)} sem`;
+  if (days < 365) {
+    const m = Math.floor(days / 30);
+    return m === 1 ? '1 mes' : `${m} meses`;
+  }
+  const y = Math.floor(days / 365);
+  return y === 1 ? '1 año' : `${y} años`;
+};
 export const dueInfo = (deadline, today = new Date()) => {
   if (!deadline) return null;
   const d = startOfDay(deadline);
   const t0 = startOfDay(today);
   const days = Math.round((d - t0) / 86400000);
-  if (days < 0) return { level: 'overdue', text: 'Atrasada', days };
+  // (3.05) …y, discreto, cuánto lleva atrasada (3 d, 2 sem, 4 meses)
+  if (days < 0) return { level: 'overdue', text: 'Atrasada', days, ago: overdueAgo(-days) };
   if (days === 0) return { level: 'today', text: 'Vence hoy', days };
   if (days === 1) return { level: 'soon', text: 'Mañana', days };
   if (days <= 7) return { level: 'soon', text: `en ${days} días`, days };
@@ -970,7 +1015,9 @@ export const tasksToOrg = (title, list) => {
     const head = [t.keyword || null, t.priority ? `[#${t.priority}]` : null, raw]
       .filter(Boolean)
       .join(' ');
-    const line = `${'*'.repeat(depthOf(t) + 1)} ${head}${tags.length ? ` :${tags.join(':')}:` : ''}`;
+    const line = `${'*'.repeat(depthOf(t) + 1)} ${head}${
+      tags.length ? ` :${tags.join(':')}:` : ''
+    }`;
     let body = '';
     if (t.header && t.header.get) {
       try {
@@ -1007,14 +1054,17 @@ const cmpRank = (a, b) => {
   }
   return 0;
 };
-export const firstPerProject = (list) => {
+// (3.05) Con `allTasks`, las en espera / programadas del proyecto que vayan antes la bloquean
+export const firstPerProject = (list, allTasks = null, today = new Date()) => {
   const best = new Map();
-  list.forEach((t) => {
+  const consider = (t) => {
     const k = !t.isProject && projectKeyOf(t);
     if (!k) return;
     const b = best.get(k);
     if (!b || cmpRank(t, b) < 0) best.set(k, t);
-  });
+  };
+  list.forEach(consider);
+  if (allTasks) allTasks.forEach((t) => projectKeyOf(t) && isSeqBlocker(t, today) && consider(t));
   return list.filter((t) => t.isProject || !t.project || best.get(projectKeyOf(t)) === t);
 };
 

@@ -29,7 +29,10 @@ import {
   projectState,
   projectsOverview,
   projectSections,
-  projectSectionOf,
+  projectSectionOfSeq,
+  isSeqBlocker,
+  NO_TAGS,
+  isFutureScheduled,
   groupByProject,
   isGroupableList,
   keywordForList,
@@ -131,12 +134,16 @@ import {
 } from '../../lib/eli_todo_defaults';
 import { openUploadDialog } from '../EliTools';
 import { confirmAndDeleteAttachment } from '../../lib/eli_attachments';
+import { linkTargetFor } from '../../lib/eli_org_attach';
+import EliMedia from '../OrgFile/components/EliMedia';
 import {
   setGtdConfig,
   isSectionShown,
   sectionLabel,
   sectionDef,
   isCustomId,
+  isSepId,
+  separatorOf,
 } from '../../lib/gtd/gtd_sections';
 import { createRawDescriptionText } from '../../lib/export_org';
 import { getShowArchived, setShowArchived, isArchiveFile } from '../../lib/eli_archived';
@@ -248,7 +255,25 @@ const fmtDate = (d) => (d ? d.toLocaleDateString('es-ES', { day: 'numeric', mont
 // (3.0) Notas bajo la fila (como Nirvana: completas, parciales u ocultas). Sin la línea :Created:
 // ni cajones (:LOGBOOK: …); las casillas «- [ ]» se pueden marcar desde la lista.
 const NOTE_CHECK_RE = /^(\s*(?:[-+*]|\d+[.)])\s+\[)([ xX-])(\])(.*)$/;
-export const notesLinesOf = (text) => {
+// (3.05) Con `linkTarget` (uri → destino o null), los enlaces a ficheros ([[file:…]] y los de
+// org-attach [[attachment:…]]) salen como vista previa (imagen, vídeo, audio o fichero) en lugar
+// del texto del enlace
+const NOTE_LINK_RE = /\[\[([^\]]+)\](?:\[([^\]]*)\])?\]/g;
+const noteLineWithMedia = (index, line, linkTarget) => {
+  const media = [];
+  const rest = line.replace(NOTE_LINK_RE, (m, uri, desc) => {
+    const target = linkTarget ? linkTarget(uri) : null;
+    if (target) {
+      if (!media.some((x) => x.target === target)) media.push({ target, label: desc || null });
+      return '';
+    }
+    return desc || uri;
+  });
+  return media.length
+    ? { index, text: rest.replace(/\s+$/, '').replace(/^\s*[-+]\s*$/, ''), media }
+    : { index, text: rest };
+};
+export const notesLinesOf = (text, linkTarget = null) => {
   const out = [];
   let inDrawer = false;
   (text || '').split('\n').forEach((line, index) => {
@@ -262,10 +287,18 @@ export const notesLinesOf = (text) => {
     out.push(
       m
         ? { index, check: true, checked: m[2] !== ' ', text: m[4].trim() }
+        : linkTarget
+        ? noteLineWithMedia(index, line, linkTarget)
         : { index, text: line.replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, '$2') }
     );
   });
-  while (out.length && !out[out.length - 1].text.trim() && !out[out.length - 1].check) out.pop();
+  while (
+    out.length &&
+    !out[out.length - 1].text.trim() &&
+    !out[out.length - 1].check &&
+    !out[out.length - 1].media
+  )
+    out.pop();
   return out;
 };
 
@@ -318,12 +351,18 @@ function TaskRow({
   hasKids = false,
   folded = false,
   onToggleFold = null,
+  onTitleClick = null,
+  seqMark = null,
 }) {
   const due = dueInfo(task.deadline, today);
   const isProjectRow = !!task.isProject;
-  const notes = notesMode !== 'none' && !isProjectRow ? notesLinesOf(task.description) : [];
+  // (3.05) adjuntos (file: y attachment:) a la vista en las notas
+  const notes =
+    notesMode !== 'none' && !isProjectRow
+      ? notesLinesOf(task.description, (uri) => linkTargetFor(uri, task.header))
+      : [];
   const shownNotes =
-    notesMode === 'partial' ? notes.filter((l) => l.text.trim()).slice(0, 2) : notes;
+    notesMode === 'partial' ? notes.filter((l) => l.text.trim() || l.media).slice(0, 2) : notes;
   return (
     <div
       className={
@@ -420,7 +459,28 @@ function TaskRow({
         )}
         <div className="gtd-task__main">
           <div className={'gtd-task__title' + (wrapTitle ? '' : ' is-nowrap')}>
-            {task.title || '(sin título)'}
+            {/* (3.05) proyecto secuencial: en espera (E) o programada (P) mezclada con las Next */}
+            {seqMark && (
+              <span
+                className="gtd-task__seq"
+                title={
+                  seqMark === 'E'
+                    ? 'En espera (bloquea las de después)'
+                    : 'Programada (bloquea las de después)'
+                }
+                data-testid="gtd-seq-mark"
+              >
+                {seqMark}
+              </span>
+            )}
+            {/* (3.05) con el ratón, clic justo sobre el texto del título = editar */}
+            <span
+              className={'gtd-task__title-text' + (onTitleClick ? ' is-link' : '')}
+              onClick={onTitleClick || undefined}
+              data-testid="gtd-task-title"
+            >
+              {task.title || '(sin título)'}
+            </span>
             {task.cookie && (
               <span
                 className="gtd-task__cookie"
@@ -522,6 +582,25 @@ function TaskRow({
                     />
                     <span>{l.text}</span>
                   </label>
+                ) : l.media ? (
+                  <div
+                    key={l.index}
+                    className="gtd-task__note-line gtd-task__note-media"
+                    data-testid="gtd-note-media"
+                  >
+                    {l.text.trim() ? <span>{l.text}</span> : null}
+                    {l.media.map((m) => (
+                      <span
+                        key={m.target}
+                        className="gtd-task__note-attach"
+                        onClick={(e) => e.stopPropagation()}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <EliMedia target={m.target} title={m.label} orgPath={task.path} />
+                      </span>
+                    ))}
+                  </div>
                 ) : (
                   <div key={l.index} className="gtd-task__note-line">
                     {l.check ? `${l.checked ? '☑' : '☐'} ${l.text}` : l.text || ' '}
@@ -605,6 +684,12 @@ function TaskRow({
               data-testid="gtd-due"
             >
               <i className="fas fa-flag" /> {due.text}
+              {due.ago && (
+                <span className="gtd-date__ago" data-testid="gtd-due-ago">
+                  {' '}
+                  · {due.ago}
+                </span>
+              )}
             </span>
           )}
           {task.isDone && task.closed && <span className="gtd-date">{fmtDate(task.closed)}</span>}
@@ -671,6 +756,11 @@ export default function GtdView() {
     () => readLS('eliGtdProjNotes', true) !== false
   );
   const [openKey, setOpenKey] = useState(null);
+  // (3.05) cabeceras del menú lateral plegadas
+  const [sepFolded, setSepFolded] = useState(() => {
+    const v = readLS('eliGtdSepFolded', []);
+    return Array.isArray(v) ? v : [];
+  });
   // (2.16) tarea seleccionada con el teclado (↑ ↓; Intro la abre, Supr la borra)
   const [selKey, setCursor] = useState(null);
   // (3.0) selección (varias tareas, como Nirvana: clic, Ctrl/⌘+clic, lazo con los puntos ⋮⋮)
@@ -834,7 +924,11 @@ export default function GtdView() {
     const c = countsFor(tasks, { area }, today);
     // (3.01) secuenciales: en Next cuenta solo la primera acción de cada proyecto
     if (groupMode === 'sequential') {
-      c.next = firstPerProject(tasksForView(tasks, { id: 'next' }, { area }, today)).length;
+      c.next = firstPerProject(
+        tasksForView(tasks, { id: 'next' }, { area }, today),
+        tasks,
+        today
+      ).length;
     }
     return c;
   }, [tasks, area, today, groupMode]);
@@ -884,13 +978,15 @@ export default function GtdView() {
       : visible;
     // (3.01) «Acciones siguientes secuenciales» (como Nirvana): en Next, solo la primera acción
     // de cada proyecto
-    if (view.id === 'next' && groupMode === 'sequential') list = firstPerProject(list);
+    // (3.05) las en espera / programadas del proyecto que vayan antes la bloquean
+    if (view.id === 'next' && groupMode === 'sequential')
+      list = firstPerProject(list, tasks, today);
     if (freshKeys.length) {
       const fresh = freshKeys.map((k) => list.find((t) => t.key === k)).filter(Boolean);
       if (fresh.length) list = [...fresh, ...list.filter((t) => !freshKeys.includes(t.key))];
     }
     return list;
-  }, [visible, splitHabits, freshKeys, sortDue, view.id, groupMode]);
+  }, [visible, splitHabits, freshKeys, sortDue, view.id, groupMode, tasks, today]);
   const sectionStarts = useMemo(() => {
     const out = {};
     if (splitHabits) {
@@ -921,15 +1017,19 @@ export default function GtdView() {
   const canReorderLoose = !isProjectView && isGroupableList(view.id);
   const projSections = useMemo(
     () =>
-      isProjectView ? projectSections(tasks, view.key, { area, text, ...filters }, today) : null,
-    [isProjectView, tasks, view.key, area, text, filters, today]
+      isProjectView
+        ? projectSections(tasks, view.key, { area, text, ...filters }, today, {
+            sequential: groupMode === 'sequential',
+          })
+        : null,
+    [isProjectView, tasks, view.key, area, text, filters, today, groupMode]
   );
   const onReorderDropRef = useRef(null);
   const rowDragRef = useRef({});
   const { onPointerDown, dragging, dropTarget, dropSection, clickSuppressed } = useRowDrag({
     onDrop: (list, id) => rowDragRef.current.onDrop(list, id),
     onReorder: (task, pos) => onReorderDropRef.current && onReorderDropRef.current(task, pos),
-    onStart: () => rowDragRef.current.onStart(),
+    onStart: (t) => rowDragRef.current.onStart(t),
     canSwipe: (task) => rowDragRef.current.canSwipe(task),
     onSwipe: (task, dir) => rowDragRef.current.onSwipe(task, dir),
     dragSet: (task) => rowDragRef.current.dragSet(task),
@@ -1132,7 +1232,12 @@ export default function GtdView() {
       return out;
     }
     if (isProjectView && projSections) {
-      projSections.forEach((sec) => {
+      // (3.05) «Referencias» justo después de las notas del proyecto (arriba del todo)
+      const ordered = [
+        ...projSections.filter((sec) => sec.id === 'refs'),
+        ...projSections.filter((sec) => sec.id !== 'refs'),
+      ];
+      ordered.forEach((sec) => {
         const isDone = sec.id === 'done';
         const isRefs = sec.id === 'refs';
         // Mientras se arrastra se ven también las secciones vacías (para poder soltar en ellas)
@@ -1149,6 +1254,7 @@ export default function GtdView() {
           collapsible: isDone || isRefs,
           collapsed: (isDone || isRefs) && !open,
           toggle: isRefs ? 'refs' : 'done',
+          psec: true,
           testId: `gtd-psec-${sec.id}`,
         });
         if ((isDone || isRefs) && !open) return;
@@ -2046,7 +2152,7 @@ export default function GtdView() {
     if (isProjectView) {
       const target = pos.section;
       if (!target || target === 'refs') return;
-      const own = projectSectionOf(task, today);
+      const own = projectSectionOfSeq(task, today, groupMode === 'sequential');
       const inTarget = rows.filter((i) => i.section === target).map((i) => i.task);
       const before = pos.beforeKey && inTarget.find((t) => t.key === pos.beforeKey);
       const after = pos.afterKey && inTarget.find((t) => t.key === pos.afterKey);
@@ -2189,9 +2295,11 @@ export default function GtdView() {
   };
   rowDragRef.current = {
     onDrop: applyDrop,
-    onStart: () => {
+    onStart: (t) => {
       setOpenKey(null);
       setMenu(null);
+      // (3.05) con el dedo, la pulsación larga también selecciona la tarea
+      if (t && lastPointer.current !== 'mouse' && !sel.includes(t.key)) setSelKey(t.key);
       if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
     },
     canSwipe: (task) => !noSwipeGtd && !task.isDone && !task.isProject && view.id !== 'logbook',
@@ -2280,7 +2388,7 @@ export default function GtdView() {
   const sidebarViews = () => {
     const out = [];
     gtdCfg.order.forEach((id) => {
-      if (!isSectionShown(id, gtdCfg) || id === 'agenda') return;
+      if (!isSectionShown(id, gtdCfg) || id === 'agenda' || isSepId(id)) return;
       if (id === 'projects') {
         if (gtdCfg.sections.projects.allProjects !== false) out.push({ id: 'projects' });
         projectGroups.active.forEach((p) => out.push({ type: 'project', key: p.key }));
@@ -2348,7 +2456,10 @@ export default function GtdView() {
     gtdNewFocus: () => openDraft('focus'),
     gtdNewProject: () => addProject(),
     gtdNewReference: () => openDraft('reference'),
-    gtdRapidFocus: () => toggleRapid(true),
+    // (3.05) con la entrada rápida desactivada, «e» no la muestra
+    gtdRapidFocus: () => {
+      if (rapidOn) toggleRapid(true);
+    },
     gtdRapidToggle: () => toggleRapid(false),
     gtdCapture: () => captureWithTemplate(),
     gtdGoInbox: () => goList('inbox'),
@@ -2716,22 +2827,32 @@ export default function GtdView() {
       );
       return;
     }
-    // (3.02) con el dedo, igual que con el ratón: un toque = seleccionar, dos toques = editar
-    // (doble toque propio: iOS no siempre manda dblclick)
+    // (3.05) con el dedo: un toque abre la tarea en vista previa (se edita al tocar el título o
+    // las notas; fechas, etiquetas, estado… siguen a mano). Seleccionar = pulsación larga.
     if (lastPointer.current !== 'mouse') {
-      const now = Date.now();
-      const prev = lastTapRef.current;
-      lastTapRef.current = { key: task.key, at: now };
-      if (prev && prev.key === task.key && now - prev.at < 400) {
-        lastTapRef.current = null;
-        rowOpen(item, e);
-        return;
-      }
+      rowOpen(item, e, { preview: true });
+      return;
     }
     setSelKey(task.key);
   };
-  const lastTapRef = useRef(null);
-  const rowOpen = (item, e) => {
+  // (3.05) con el ratón, clic sobre el texto del título = editar (con Mayús/Ctrl/⌘, seleccionar)
+  const titleClick = (item) => (e) => {
+    if (lastPointer.current !== 'mouse') return;
+    if (e.shiftKey || e.ctrlKey || e.metaKey) return;
+    e.stopPropagation();
+    if (clickSuppressed()) return;
+    if (newKey && openKey === newKey) {
+      window.dispatchEvent(new CustomEvent('eli:gtd-attention'));
+      return;
+    }
+    anchorRef.current = item.task.key;
+    rowOpen(item, e);
+  };
+  const [previewKey, setPreviewKey] = useState(null);
+  useEffect(() => {
+    if (!openKey && previewKey) setPreviewKey(null);
+  }, [openKey, previewKey]);
+  const rowOpen = (item, e, opts = {}) => {
     const task = item.task;
     if (item.isRef) {
       openInFile(task, e);
@@ -2742,6 +2863,7 @@ export default function GtdView() {
       return;
     }
     setSelKey(task.key);
+    setPreviewKey(opts.preview ? task.key : null);
     setOpenKey(task.key);
   };
   // (3.01) Con tareas seleccionadas, un clic fuera de las filas (hueco, cabecera, menú lateral…)
@@ -3102,6 +3224,24 @@ export default function GtdView() {
       setNotesOverride({});
     };
     const out = [];
+    // (3.05) en un proyecto: editarlo y abrirlo en su fichero (antes, botones bajo el título)
+    if (projectTask) {
+      out.push(
+        {
+          label: 'Editar el proyecto',
+          icon: 'fas fa-pen',
+          onClick: () => setOpenKey(projectTask.key),
+          testId: 'gtd-menu-edit-project',
+        },
+        {
+          label: 'Abrir en su fichero',
+          icon: 'fas fa-external-link-alt',
+          onClick: () => openInFile(projectTask, null),
+          testId: 'gtd-menu-open-project-file',
+        },
+        { sep: true }
+      );
+    }
     // (3.01) «Opciones de vista» (como Nirvana): Acciones (una sola) y Detalles (interruptores)
     const opts = [
       { heading: 'Acciones' },
@@ -3314,6 +3454,7 @@ export default function GtdView() {
       parentTaskId={(parentTaskOf(task) || {}).id || ''}
       onGoToParent={() => goToTask(parentTaskOf(task))}
       noAutoFocus={jumpedKey === task.key}
+      preview={previewKey === task.key}
     />
   );
 
@@ -3521,7 +3662,40 @@ export default function GtdView() {
       );
       group = [];
     };
+    // (3.05) separadores de Ajustes: línea simple o cabecera plegable (se recuerda)
+    let folded = false;
     gtdCfg.order.forEach((id) => {
+      if (isSepId(id)) {
+        flush();
+        const sep = separatorOf(id, gtdCfg);
+        if (!sep) return;
+        folded = !!sep.label && sepFolded.includes(id);
+        out.push(
+          sep.label ? (
+            <div key={id} className="gtd-side__sep gtd-side__sep--head" data-testid="gtd-side-sep">
+              <button
+                type="button"
+                className="gtd-side__sep-toggle"
+                onClick={() => {
+                  const next = sepFolded.includes(id)
+                    ? sepFolded.filter((x) => x !== id)
+                    : [...sepFolded, id];
+                  setSepFolded(next);
+                  writeLS('eliGtdSepFolded', next);
+                }}
+                aria-expanded={!folded}
+                data-testid="gtd-side-sep-toggle"
+              >
+                <i className={folded ? 'fas fa-caret-right' : 'fas fa-caret-down'} /> {sep.label}
+              </button>
+            </div>
+          ) : (
+            <hr key={id} className="gtd-side__sep" data-testid="gtd-side-sep" />
+          )
+        );
+        return;
+      }
+      if (folded) return;
       if (!isSectionShown(id, gtdCfg)) return;
       if (id === 'agenda') {
         flush();
@@ -3621,6 +3795,17 @@ export default function GtdView() {
       key={item.task.key}
       task={item.task}
       onRowClick={rowClick(item)}
+      onTitleClick={titleClick(item)}
+      seqMark={
+        isProjectView &&
+        groupMode === 'sequential' &&
+        item.section === 'next' &&
+        isSeqBlocker(item.task, today)
+          ? isFutureScheduled(item.task, today)
+            ? 'P'
+            : 'E'
+          : null
+      }
       onRowDoubleClick={() => {
         if (clickSuppressed()) return;
         // (3.02) con el dedo ya lo hace el doble toque propio
@@ -3774,13 +3959,24 @@ export default function GtdView() {
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
 
-      <main className="gtd-main">
+      <main className={'gtd-main' + (projectTask ? ' is-project-view' : '')}>
         <header className="gtd-main__head">
           <button className="gtd-main__menu" onClick={() => setSideOpen(true)} aria-label="Menú">
             <i className="fas fa-bars" />
           </button>
           <h1 className="gtd-main__title" data-testid="gtd-title">
-            {title}
+            {projectTask ? (
+              <span
+                className="gtd-main__title-text is-link"
+                onClick={() => setOpenKey(openKey === projectTask.key ? null : projectTask.key)}
+                title="Editar el proyecto"
+                data-testid="gtd-edit-project"
+              >
+                {title}
+              </span>
+            ) : (
+              title
+            )}
             <span className="gtd-main__count">
               {view.id === 'projects'
                 ? overview.active.length + overview.scheduled.length + overview.sleep.length
@@ -3871,39 +4067,34 @@ export default function GtdView() {
         {newProject && renderNewProjectEditor()}
         {draft && renderDraftEditor()}
 
-        {projectTask && (
-          <div className="gtd-project-info">
-            {projectTask.area && (
-              <span className="gtd-meta gtd-meta--area">{projectTask.area}</span>
-            )}
-            {projectTask.deadline && (
-              <span className="gtd-date gtd-date--due">
-                <i className="fas fa-flag" /> {fmtDate(projectTask.deadline)}
-              </span>
-            )}
-            {projectState(projectTask, today) === 'sleep' && (
-              <span className="gtd-badge gtd-badge--sleep" data-testid="gtd-project-sleeping">
-                <i className="fas fa-bed" /> Dormido
-              </span>
-            )}
-            {projectState(projectTask, today) === 'scheduled' && (
-              <span className="gtd-badge" data-testid="gtd-project-scheduled">
-                <i className="far fa-calendar-alt" /> Empieza el{' '}
-                {fmtDate(projectTask.scheduled || projectTask.projectStart)}
-              </span>
-            )}
-            <button
-              className="gtd-btn gtd-btn--link"
-              onClick={() => setOpenKey(openKey === projectTask.key ? null : projectTask.key)}
-              data-testid="gtd-edit-project"
-            >
-              <i className="fas fa-pen" /> Editar el proyecto
-            </button>
-            <button className="gtd-btn gtd-btn--link" onClick={(e) => openInFile(projectTask, e)}>
-              <i className="fas fa-external-link-alt" /> Abrir en su fichero
-            </button>
-          </div>
-        )}
+        {/* (3.05) sin «Editar el proyecto» ni «Abrir en su fichero»: se edita con clic en el título
+            (y los dos siguen en ⋯) */}
+        {projectTask &&
+          (projectTask.area ||
+            projectTask.deadline ||
+            projectState(projectTask, today) !== 'active') && (
+            <div className="gtd-project-info">
+              {projectTask.area && (
+                <span className="gtd-meta gtd-meta--area">{projectTask.area}</span>
+              )}
+              {projectTask.deadline && (
+                <span className="gtd-date gtd-date--due">
+                  <i className="fas fa-flag" /> {fmtDate(projectTask.deadline)}
+                </span>
+              )}
+              {projectState(projectTask, today) === 'sleep' && (
+                <span className="gtd-badge gtd-badge--sleep" data-testid="gtd-project-sleeping">
+                  <i className="fas fa-bed" /> Dormido
+                </span>
+              )}
+              {projectState(projectTask, today) === 'scheduled' && (
+                <span className="gtd-badge" data-testid="gtd-project-scheduled">
+                  <i className="far fa-calendar-alt" /> Empieza el{' '}
+                  {fmtDate(projectTask.scheduled || projectTask.projectStart)}
+                </span>
+              )}
+            </div>
+          )}
         {projectTask && projectTask.description.trim() && openKey !== projectTask.key && (
           <div className="gtd-project-notes" data-testid="gtd-project-notes">
             <button
@@ -3987,7 +4178,104 @@ export default function GtdView() {
           </div>
         )}
 
-        {/* (3.0) Entrada rápida (Mayús+E la muestra u oculta; e pone el cursor en ella) */}
+        {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
+        {hasFacets && view.id !== 'projects' && (
+          <div className="gtd-filterbar" data-testid="gtd-filters">
+            {Array.from(new Set([...facets.tags, ...filters.notTags]))
+              .filter((t) => t !== NO_TAGS)
+              .map((t) => (
+                <button
+                  key={t}
+                  className={
+                    'gtd-chip' +
+                    (filters.tags.includes(t) ? ' is-on' : '') +
+                    (filters.notTags.includes(t) ? ' is-not' : '')
+                  }
+                  onClick={(e) => filterChip('tag', t, e)}
+                  title={
+                    filters.notTags.includes(t)
+                      ? 'Tachada: fuera las que la llevan (clic: quitar el filtro)'
+                      : filters.tags.includes(t)
+                      ? 'Solo las que la llevan (clic: tacharla)'
+                      : 'Clic: solo esta · otro clic: tachada · Ctrl/⌘+clic: añadir'
+                  }
+                  data-testid="gtd-chip-tag"
+                >
+                  {t}
+                </button>
+              ))}
+            {/* (3.05) «Sin etiquetas»: igual que las demás (solo esas, o tachada: fuera) */}
+            {((facets.hasUntagged && facets.tags.length > 0) ||
+              filters.tags.includes(NO_TAGS) ||
+              filters.notTags.includes(NO_TAGS)) && (
+              <button
+                className={
+                  'gtd-chip gtd-chip--untagged' +
+                  (filters.tags.includes(NO_TAGS) ? ' is-on' : '') +
+                  (filters.notTags.includes(NO_TAGS) ? ' is-not' : '')
+                }
+                onClick={(e) => filterChip('tag', NO_TAGS, e)}
+                title={
+                  filters.notTags.includes(NO_TAGS)
+                    ? 'Tachada: fuera las que no tienen etiquetas (clic: quitar el filtro)'
+                    : filters.tags.includes(NO_TAGS)
+                    ? 'Solo las que no tienen etiquetas (clic: tacharla)'
+                    : 'Clic: solo las que no tienen etiquetas · otro clic: tachada · Ctrl/⌘+clic: añadir'
+                }
+                data-testid="gtd-chip-untagged"
+              >
+                Sin etiquetas
+              </button>
+            )}
+            {facets.energy.map((en) => (
+              <button
+                key={'e' + en}
+                className={'gtd-chip gtd-chip--energy' + (filters.energy === en ? ' is-on' : '')}
+                onClick={(e) => filterChip('energy', en, e)}
+              >
+                <i className="fas fa-bolt" /> {en}
+              </button>
+            ))}
+            {facets.hasEffort &&
+              TIME_BUCKETS.map((tb) => (
+                <button
+                  key={tb.id}
+                  className={'gtd-chip gtd-chip--time' + (filters.time === tb.id ? ' is-on' : '')}
+                  onClick={(e) => filterChip('time', tb.id, e)}
+                >
+                  <i className="far fa-clock" /> {tb.label}
+                </button>
+              ))}
+            {facets.hasDates && (
+              <button
+                className={'gtd-chip' + (filters.dated ? ' is-on' : '')}
+                onClick={(e) => filterChip('dated', true, e)}
+              >
+                <i className="fas fa-flag" /> Con fecha
+              </button>
+            )}
+            {(facets.hasBadProject || filters.badProject) && (
+              <button
+                className={'gtd-chip gtd-chip--bad' + (filters.badProject ? ' is-on' : '')}
+                onClick={(e) => filterChip('badProject', true, e)}
+                title="Tareas con un proyecto asignado que no se encuentra"
+                data-testid="gtd-chip-bad-project"
+              >
+                <i className="fas fa-unlink" /> Proyecto no encontrado
+              </button>
+            )}
+            {activeFilterCount > 0 && (
+              <button
+                className="gtd-chip gtd-chip--clear"
+                onClick={() => setFilters({ ...EMPTY_FILTERS })}
+              >
+                × Quitar
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* (3.0) Entrada rápida — (3.05) después de los filtros (Mayús+E la muestra u oculta; e pone el cursor en ella) */}
         {canCreate && rapidOn && (
           <div className="gtd-rapid">
             <i className="fas fa-plus" />
@@ -4056,78 +4344,6 @@ export default function GtdView() {
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
-        {hasFacets && view.id !== 'projects' && (
-          <div className="gtd-filterbar" data-testid="gtd-filters">
-            {Array.from(new Set([...facets.tags, ...filters.notTags])).map((t) => (
-              <button
-                key={t}
-                className={
-                  'gtd-chip' +
-                  (filters.tags.includes(t) ? ' is-on' : '') +
-                  (filters.notTags.includes(t) ? ' is-not' : '')
-                }
-                onClick={(e) => filterChip('tag', t, e)}
-                title={
-                  filters.notTags.includes(t)
-                    ? 'Tachada: fuera las que la llevan (clic: quitar el filtro)'
-                    : filters.tags.includes(t)
-                    ? 'Solo las que la llevan (clic: tacharla)'
-                    : 'Clic: solo esta · otro clic: tachada · Ctrl/⌘+clic: añadir'
-                }
-                data-testid="gtd-chip-tag"
-              >
-                {t}
-              </button>
-            ))}
-            {facets.energy.map((en) => (
-              <button
-                key={'e' + en}
-                className={'gtd-chip gtd-chip--energy' + (filters.energy === en ? ' is-on' : '')}
-                onClick={(e) => filterChip('energy', en, e)}
-              >
-                <i className="fas fa-bolt" /> {en}
-              </button>
-            ))}
-            {facets.hasEffort &&
-              TIME_BUCKETS.map((tb) => (
-                <button
-                  key={tb.id}
-                  className={'gtd-chip gtd-chip--time' + (filters.time === tb.id ? ' is-on' : '')}
-                  onClick={(e) => filterChip('time', tb.id, e)}
-                >
-                  <i className="far fa-clock" /> {tb.label}
-                </button>
-              ))}
-            {facets.hasDates && (
-              <button
-                className={'gtd-chip' + (filters.dated ? ' is-on' : '')}
-                onClick={(e) => filterChip('dated', true, e)}
-              >
-                <i className="fas fa-flag" /> Con fecha
-              </button>
-            )}
-            {(facets.hasBadProject || filters.badProject) && (
-              <button
-                className={'gtd-chip gtd-chip--bad' + (filters.badProject ? ' is-on' : '')}
-                onClick={(e) => filterChip('badProject', true, e)}
-                title="Tareas con un proyecto asignado que no se encuentra"
-                data-testid="gtd-chip-bad-project"
-              >
-                <i className="fas fa-unlink" /> Proyecto no encontrado
-              </button>
-            )}
-            {activeFilterCount > 0 && (
-              <button
-                className="gtd-chip gtd-chip--clear"
-                onClick={() => setFilters({ ...EMPTY_FILTERS })}
-              >
-                × Quitar
-              </button>
             )}
           </div>
         )}
@@ -4218,6 +4434,7 @@ export default function GtdView() {
                   className={
                     'gtd-section gtd-section--group' +
                     (item.projectKey ? ' is-project' : '') +
+                    (item.psec ? ' is-psec' : '') +
                     (item.section === 'done-group' ? ' is-done-group' : '') +
                     (reorderingKey && dropSection === item.section ? ' is-drop' : '')
                   }

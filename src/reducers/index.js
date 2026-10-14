@@ -9,6 +9,7 @@ import { setDirty, sync } from '../actions/org';
 
 const UNDOABLE_ACTIONS = [
   'ELI_IN_FILE',
+  'ELI_TIDY_STATE_LOG',
   'ELI_BATCH',
   'ELI_MOVE_HEADER_LINE',
   'ADD_HEADER',

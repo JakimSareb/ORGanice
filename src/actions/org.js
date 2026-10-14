@@ -29,6 +29,7 @@ import {
   closePopup,
 } from './base';
 import { exportOrg, createRawDescriptionText, generateTitleLine } from '../lib/export_org';
+import { tidyStateLog } from '../lib/eli_state_log';
 import { uploadAssets, openInNewTab } from '../lib/eli_media';
 import { getCurrentTimestampAsText } from '../lib/timestamps';
 import { toggledPriorityATitle } from '../lib/eli_priority';
@@ -506,6 +507,39 @@ export const selectPreviousVisibleHeader = (headerId) => ({
   type: 'SELECT_PREVIOUS_VISIBLE_HEADER',
   headerId,
 });
+
+// (3.05) Herramientas › «Ordenar historial»: en el fichero abierto, las líneas «- State …»
+// sueltas pasan al cajón :LOGBOOK: de su entrada (deshacible)
+export const eliTidyStateLog = () => (dispatch, getState) => {
+  const org = getState().org.present;
+  const path = org.get('path');
+  const headers = (path && org.getIn(['files', path, 'headers'])) || List();
+  let moved = 0;
+  let entries = 0;
+  headers.forEach((h) => {
+    const body = createRawDescriptionText(h, false, true);
+    if (!/- State\s+"/.test(body)) return;
+    const r = tidyStateLog(body);
+    if (r.moved) {
+      moved += r.moved;
+      entries += 1;
+    }
+  });
+  if (!moved) {
+    dispatch(setDisappearingLoadingMessage('El historial ya está ordenado', 2500));
+    return 0;
+  }
+  dispatch({ type: 'ELI_TIDY_STATE_LOG', dirtying: true });
+  dispatch(
+    setDisappearingLoadingMessage(
+      `Historial ordenado: ${moved} línea${moved === 1 ? '' : 's'} en ${entries} entrada${
+        entries === 1 ? '' : 's'
+      } (se puede deshacer)`,
+      3500
+    )
+  );
+  return moved;
+};
 
 export const removeHeader = (headerId) => ({
   type: 'REMOVE_HEADER',

@@ -3,6 +3,29 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.05 (octubre de 2026)
+** Temas
+- Tema nuevo *Nirvana* (claro y oscuro), inspirado en NirvanaHQ. En la vista GTD: fondo gris claro, menú lateral blanco, listas en tarjetas blancas con separadores finos, filtros en píldoras, entrada rápida en una sola línea y el proyecto en una tarjeta. En el móvil, etiquetas, tiempo y fechas van debajo del título.
+** Vista GTD
+- *Ratón*: clic en la fila selecciona, doble clic edita (como siempre) y ahora también *clic sobre el texto del título* edita (se subraya al pasar por encima). Igual en el título del proyecto.
+- *Móvil*: un toque abre la tarea en *vista previa*; el título y las notas se editan al tocarlos (fechas, etiquetas, estado… siguen a mano). Seleccionar (para mover o arrastrar) = *pulsación larga*.
+- *Proyectos*: ya no salen «Editar el proyecto» ni «Abrir en su fichero» bajo el título (se edita con clic en el título; los dos siguen en ⋯). Las divisiones por estado no llevan línea y *Referencias* va la primera, justo después de las notas.
+- *Acciones siguientes secuenciales*: en la lista de cada proyecto, las tareas *en espera* y las *programadas* van mezcladas con las Next (marcadas con una E o una P pequeñas) y se ordenan entre ellas. Si una queda antes, *bloquea*: las de después no salen en Next hasta que se resuelva.
+- Filtro *Sin etiquetas* (solo esas, o tachado: fuera).
+- La *entrada rápida* va después de los filtros; desactivada, la tecla «e» ya no la muestra.
+- Tareas *vencidas*: además de «Atrasada», cuánto llevan (3 d, 2 sem, 4 meses…).
+- *Notas* de la fila: los adjuntos ([[file:…]] y [[attachment:…]] de org-attach) se ven como vista previa en lugar del texto del enlace.
+- Menú lateral: *separadores* desde Ajustes (línea simple o línea con cabecera; lo de debajo de una cabecera se pliega y se recuerda).
+** Documentos
+- El *primer toque* en una cabecera solo la selecciona; el *segundo* la despliega (doble toque sigue editando el título).
+- Un clic o toque en las *notas* selecciona su encabezado.
+- El *historial de estados* (- State "X" from "Y" [fecha]) va siempre dentro de :LOGBOOK: (se crea si falta), nunca suelto en las notas. Herramientas › *Ordenar historial* mueve las líneas sueltas del fichero abierto a su cajón (se puede deshacer).
+** Adjuntos
+- Al *terminar una tarea con adjuntos* (enlaces a ficheros o carpeta de org-attach con :ATTACH:), pregunta si se borran. Dropbox los guarda un tiempo en «Archivos eliminados»; en la carpeta del ordenador se borran del todo.
+** Emacs
+- =M-x eli/estados-a-logbook= (u =organice-tidy-state-log=): lo mismo que «Ordenar historial».
+- Al terminar una tarea con adjuntos, pregunta si se borran (=organice-attach-ask-on-done=).
+
 * 3.04 (octubre de 2026)
 ** Documentos
 - *Arriba*, solo atrás/adelante, sincronizar, la lupa y el ⋯. El *candado* y los *ficheros principales* pasan a ⋯ › Fichero; con el candado puesto se ve un candadito junto al nombre. *Deshacer* ya no está arriba (sigue en la barra flotante).

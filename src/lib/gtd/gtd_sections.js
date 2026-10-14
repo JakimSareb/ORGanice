@@ -51,6 +51,13 @@ export const CUSTOM_ICONS = [
   'fas fa-flag',
 ];
 
+// (3.05) Separadores del menú lateral (Ajustes): línea simple (sin nombre) o línea con cabecera
+// (con nombre; lo que cuelga de ella, hasta el siguiente separador, se pliega)
+export const SEP_PREFIX = 's_';
+export const isSepId = (id) => typeof id === 'string' && id.startsWith(SEP_PREFIX);
+export const separatorOf = (id, cfg) =>
+  ((cfg || current || {}).separators || []).find((x) => x.id === id) || null;
+
 // Definición de una sección (las de siempre, o una propia de la configuración `cfg`)
 export const sectionDef = (id, cfg) => {
   const fixed = SECTION_DEFS.find((s) => s.id === id);
@@ -114,8 +121,14 @@ export const normalizeGtdSections = (stored) => {
       label: String(c.label || 'Sección').trim() || 'Sección',
       icon: CUSTOM_ICONS.includes(c.icon) ? c.icon : CUSTOM_ICONS[0],
     }));
+  const separators = (Array.isArray(raw.separators) ? raw.separators : [])
+    .filter((x) => x && isSepId(x.id))
+    .map((x) => ({ id: x.id, label: String(x.label || '').trim() }));
   const allIds = [...SECTION_IDS, ...custom.map((c) => c.id)];
-  const savedOrder = Array.isArray(raw.order) ? raw.order.filter((id) => allIds.includes(id)) : [];
+  const sepIds = separators.map((x) => x.id);
+  const savedOrder = Array.isArray(raw.order)
+    ? raw.order.filter((id) => allIds.includes(id) || sepIds.includes(id))
+    : [];
   // Las que falten (p. ej. secciones nuevas de una versión futura) van en su sitio por defecto
   const order = [...savedOrder];
   SECTION_IDS.forEach((id, i) => {
@@ -127,6 +140,7 @@ export const normalizeGtdSections = (stored) => {
   });
   // Las propias que no estén en el orden guardado, al final
   custom.forEach((c) => !order.includes(c.id) && order.push(c.id));
+  separators.forEach((x) => !order.includes(x.id) && order.push(x.id));
   // (2.17) Ficheros de la vista GTD (Ajustes): el de entrada, el de tareas y los que se archivan
   const rf = raw.files || {};
   const normPath = (v) => {
@@ -154,7 +168,7 @@ export const normalizeGtdSections = (stored) => {
     merged.label = typeof merged.label === 'string' ? merged.label : '';
     sections[id] = merged;
   });
-  return { order, sections, custom, files };
+  return { order, sections, custom, files, separators };
 };
 
 export const DEFAULT_GTD_CONFIG = normalizeGtdSections(null);

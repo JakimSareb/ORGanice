@@ -340,3 +340,23 @@
     margin-left: 0;
   }
 }
+
+/* (3.05) Separadores del menú lateral GTD */
+.eli-gtdsec__row--sep .eli-gtdsec__line {
+  gap: 6px;
+}
+.eli-gtdsec__sep-line {
+  flex: 0 0 16px;
+  height: 1px;
+  background: var(--base1);
+}
+.eli-gtdsec__sep-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  padding: 3px 6px;
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+  background: var(--base3);
+  color: var(--base01);
+}

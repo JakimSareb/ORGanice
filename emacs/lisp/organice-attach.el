@@ -472,5 +472,44 @@ RET/o abrir · t ir a la tarea · d borrar · D borrar todos · g actualizar · 
           (message "Se conservan (enlazados en tareas abiertas o notas): %s"
                    (mapconcat (lambda (p) (file-relative-name p organice-directory)) kept ", ")))))))
 
+;;;; (3.05) Al terminar una tarea con adjuntos, preguntar si se borran (como la app) ---------
+;; Vale para los enlaces file: de la tarea y para la carpeta de org-attach (etiqueta :ATTACH:).
+;; Las que se repiten (vuelven a TODO) no preguntan.
+
+(require 'org-attach)
+
+(defcustom organice-attach-ask-on-done t
+  "Al marcar como terminada una tarea con adjuntos, preguntar si se borran."
+  :type 'boolean :group 'organice)
+
+(defun organice--offer-delete-attachments-on-done ()
+  "En `org-after-todo-state-change-hook': ofrece borrar los adjuntos de la tarea terminada."
+  (when (and organice-attach-ask-on-done
+             (derived-mode-p 'org-mode)
+             (member org-state org-done-keywords)
+             (not (member (bound-and-true-p org-last-state) org-done-keywords)))
+    (let* ((links (seq-filter (lambda (a) (file-exists-p (cdr a))) (organice-entry-attachments)))
+           (dir (and (member "ATTACH" (org-get-tags nil t))
+                     (ignore-errors (org-attach-dir))))
+           (dir (and dir (file-directory-p dir) dir)))
+      (when (or links dir)
+        (when (yes-or-no-p
+               (format "¿Borrar los adjuntos de la tarea terminada? %s%s %s "
+                       (mapconcat (lambda (a) (file-name-nondirectory (cdr a))) links ", ")
+                       (if dir (format "%s[carpeta org-attach %s]"
+                                       (if links ", " "")
+                                       (abbreviate-file-name dir))
+                         "")
+                       (organice--trash-note)))
+          (dolist (a links)
+            (organice--delete-file (cdr a))
+            (organice--remove-links-in-entry (car a)))
+          (when dir
+            ;; borra la carpeta y quita la etiqueta :ATTACH:
+            (let ((delete-by-moving-to-trash organice-attach-use-trash))
+              (org-attach-delete-all t)))
+          (organice-attach-refresh-indicators))))))
+(add-hook 'org-after-todo-state-change-hook #'organice--offer-delete-attachments-on-done)
+
 (provide 'organice-attach)
 ;;; organice-attach.el ends here

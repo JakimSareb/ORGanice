@@ -173,12 +173,28 @@ export default () => {
     }
   };
 
+  // (3.05) borrar una carpeta con todo lo que tenga (carpeta de adjuntos de org-attach)
+  const deleteFolder = async (path) => {
+    const parts = splitPath(path);
+    const name = parts.pop();
+    const dir = await dirHandle(parts);
+    await dir.removeEntry(name, { recursive: true });
+  };
+
   const pathExists = async (path) => {
     try {
       await fileHandle(path);
       return true;
     } catch (e) {
-      if (e && e.notFound) return false;
+      if (!(e && e.notFound)) throw e;
+    }
+    // (3.05) …o una carpeta (la de adjuntos de org-attach)
+    try {
+      await dirHandle(splitPath(path));
+      return true;
+    } catch (e) {
+      if (e && (e.notFound || e.name === 'NotFoundError' || e.name === 'TypeMismatchError'))
+        return false;
       throw e;
     }
   };
@@ -230,6 +246,7 @@ export default () => {
 
   return {
     type: 'LocalFolder',
+    deleteFolder,
     isSignedIn,
     getDirectoryListing,
     getMoreDirectoryListing,

@@ -4,6 +4,7 @@ import EliFormatBar from '../EliFormatBar';
 import { continueListOnEnter } from '../../lib/eli_format';
 import ScheduleField from './ScheduleField';
 import { fileLinkTarget } from '../../lib/eli_media';
+import { linkTargetFor } from '../../lib/eli_org_attach';
 import { removeLinksToTarget, fileTargetsInText } from '../../lib/eli_attachments';
 import EliMedia from '../OrgFile/components/EliMedia';
 import EliOrgTable from '../EliOrgTable';
@@ -82,15 +83,26 @@ export const linksOf = (text) => {
 };
 const isWebLink = (target) => /^(https?:|mailto:)/i.test(target);
 // ORG Mode para Eli (2.11): enlaces a archivos adjuntos (se ven en «Adjuntos») y el resto
-const fileLinksOf = (text) => {
+// (3.05) …y los de org-attach ([[attachment:x]], en la carpeta de adjuntos de la tarea)
+const isAttachLink = (target) => /^attachment:/i.test(target || '');
+const fileLinksOf = (text, header = null) => {
   const labelled = linksOf(text);
-  return fileTargetsInText(text).map((file) => {
+  const files = fileTargetsInText(text).map((file) => {
     const l = labelled.find((x) => !isWebLink(x.target) && fileLinkTarget(x.target) === file);
     return l ? { ...l, file } : { target: `file:${file}`, label: file, file };
   });
+  labelled
+    .filter((l) => isAttachLink(l.target))
+    .forEach((l) => {
+      const file = linkTargetFor(l.target, header);
+      if (file && !files.some((x) => x.file === file)) files.push({ ...l, file, orgAttach: true });
+    });
+  return files;
 };
 const otherLinksOf = (text) =>
-  linksOf(text).filter((l) => isWebLink(l.target) || !fileLinkTarget(l.target));
+  linksOf(text).filter(
+    (l) => isWebLink(l.target) || (!fileLinkTarget(l.target) && !isAttachLink(l.target))
+  );
 
 // (2.16) lista de antes de terminarla, por tarea (para reabrirla en la misma)
 const reopenMemory = new Map();
@@ -134,7 +146,21 @@ export default function TaskEditor({
   onGoToParent,
   noAutoFocus = false,
   inTrash = false,
+  // (3.05) móvil: se abre en vista previa; título y notas se editan al tocarlos
+  preview = false,
 }) {
+  const [editingText, setEditingText] = useState(!preview);
+  // Al tocar el título o las notas en vista previa: editable y con el teclado (en el mismo toque,
+  // para que iOS lo saque)
+  const startEditing = (e) => {
+    if (editingText) return;
+    const el = e.currentTarget;
+    el.readOnly = false;
+    try {
+      el.focus();
+    } catch (err) {}
+    setEditingText(true);
+  };
   const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
   const [notes, setNotes] = useState(task.description || '');
   const [list, setList] = useState(currentListOf(task));
@@ -171,7 +197,7 @@ export default function TaskEditor({
 
   useEffect(() => {
     // (2.18) al llegar desde «↳ tarea madre» no se pone el cursor en el título: así Alt+← vuelve
-    if (noAutoFocus) {
+    if (noAutoFocus || preview) {
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       return;
     }
@@ -547,7 +573,9 @@ export default function TaskEditor({
           )}
           <input
             ref={titleRef}
-            className="gtd-editor__title"
+            className={'gtd-editor__title' + (editingText ? '' : ' is-preview')}
+            readOnly={!editingText}
+            onPointerUp={startEditing}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -679,7 +707,9 @@ export default function TaskEditor({
         )}
         <textarea
           ref={notesRef}
-          className="gtd-editor__notes"
+          className={'gtd-editor__notes' + (editingText ? '' : ' is-preview')}
+          readOnly={!editingText}
+          onPointerUp={startEditing}
           value={encrypted ? '(contenido cifrado: ábrelo en su fichero para verlo)' : notes}
           disabled={encrypted}
           onChange={(e) => setNotes(e.target.value)}
@@ -741,20 +771,20 @@ export default function TaskEditor({
         )}
 
         {/* ORG Mode para Eli (2.11): adjuntos a la vista (miniaturas, vídeo, audio y ficheros) */}
-        {!encrypted && fileLinksOf(notes).length > 0 && (
+        {!encrypted && fileLinksOf(notes, task.header).length > 0 && (
           <div className="gtd-attachments" data-testid="gtd-attachments">
             <span className="gtd-editor__label">
               <i className="fas fa-paperclip" /> Adjuntos
             </span>
             <div className="gtd-attachments__grid">
-              {fileLinksOf(notes).map((l) => (
+              {fileLinksOf(notes, task.header).map((l) => (
                 <div key={l.target} className="gtd-attachment" data-testid="gtd-attachment">
                   <EliMedia
                     target={l.file}
                     title={l.label !== l.target ? l.label : null}
                     orgPath={task.path}
                   />
-                  {onDeleteFile && (
+                  {onDeleteFile && !l.orgAttach && (
                     <button
                       type="button"
                       className="gtd-link-delete"

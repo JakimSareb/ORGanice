@@ -267,16 +267,20 @@ class HeaderContent extends PureComponent {
   // (3.04) Doble clic (o doble toque) en las notas: editarlas en su sitio
   eliNotesClick = (event) => {
     const { header, shouldDisableActions } = this.props;
-    if (shouldDisableActions || isDocLocked()) return;
     const t = event.target;
-    if (
+    const onInner =
       t &&
       t.closest &&
       t.closest(
         'a, button, input, textarea, select, table, .timestamp, .eli-org-table, ' +
           '.list-part__checkbox, .checkbox, .eli-crypt-box'
-      )
-    ) {
+      );
+    // (3.05) un clic / toque en las notas selecciona su encabezado (el bloque), como en el título
+    if (!onInner && !shouldDisableActions) {
+      this.props.org.selectHeader(header.get('id'));
+    }
+    if (shouldDisableActions || isDocLocked()) return;
+    if (onInner) {
       this.eliLastNotesTap = 0;
       return;
     }

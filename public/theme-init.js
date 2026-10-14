@@ -7,4 +7,10 @@ try {
     var s = document.documentElement.style;
     for (var k in vars) s.setProperty(k, vars[k]);
   }
+  // (3.05) nombre del tema y claro/oscuro (retoques propios de cada tema en CSS)
+  var a = JSON.parse(localStorage.getItem('themeAttrs') || 'null');
+  if (a && a.length === 2) {
+    document.documentElement.setAttribute('data-eli-theme', a[0]);
+    document.documentElement.setAttribute('data-eli-scheme', a[1]);
+  }
 } catch (e) {}

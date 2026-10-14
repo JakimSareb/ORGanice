@@ -1034,10 +1034,10 @@ describe('org reducer', () => {
       assertLogNotesDidNotChangeForHeaderIds(oldHeaders, newHeaders, unchangedHeaders);
       assertPlanningItemsDidNotChangeForHeaderIds(oldHeaders, newHeaders, unchangedHeaders);
 
-      // logNotes and planningItems of header with repeater should chnage
-      expect(headerWithId(newHeaders, repeatingHeaderId).get('logNotes').size).toBeGreaterThan(
-        headerWithId(oldHeaders, repeatingHeaderId).get('logNotes').size
-      );
+      // (3.05) the state change goes into the LOGBOOK drawer, never into the notes
+      expect(
+        headerWithId(newHeaders, repeatingHeaderId).get('logBookEntries').size
+      ).toBeGreaterThan(headerWithId(oldHeaders, repeatingHeaderId).get('logBookEntries').size);
       expect(headerWithId(newHeaders, repeatingHeaderId).get('planningItems')).not.toEqual(
         headerWithId(oldHeaders, repeatingHeaderId).get('planningItems')
       );
@@ -1072,9 +1072,9 @@ describe('org reducer', () => {
         headerWithId(intermHeaders, repeatingHeaderId).get('description').size
       );
 
-      expect(headerWithId(newHeaders, repeatingHeaderId).get('logNotes').size).toBeGreaterThan(
-        headerWithId(intermHeaders, repeatingHeaderId).get('logNotes').size
-      );
+      expect(
+        headerWithId(newHeaders, repeatingHeaderId).get('logBookEntries').size
+      ).toBeGreaterThan(headerWithId(intermHeaders, repeatingHeaderId).get('logBookEntries').size);
 
       expect(headerWithId(newHeaders, repeatingHeaderId).get('planningItems')).not.toEqual(
         headerWithId(intermHeaders, repeatingHeaderId).get('planningItems')
@@ -1107,9 +1107,9 @@ describe('org reducer', () => {
       check_todo_keyword_kept(oldHeaders, newHeaders, activeTimestampWithRepeaterHeaderId);
 
       expect(
-        headerWithId(newHeaders, activeTimestampWithRepeaterHeaderId).get('logNotes').size
+        headerWithId(newHeaders, activeTimestampWithRepeaterHeaderId).get('logBookEntries').size
       ).toBeGreaterThan(
-        headerWithId(oldHeaders, activeTimestampWithRepeaterHeaderId).get('logNotes').size
+        headerWithId(oldHeaders, activeTimestampWithRepeaterHeaderId).get('logBookEntries').size
       );
 
       expect(

@@ -65,9 +65,9 @@ class TitleLine extends PureComponent {
       onClick();
       return;
     }
-    // (3.02) Un toque / clic = seleccionar Y plegar/desplegar; dos toques / doble clic = editar
-    // el título en su sitio (con el candado puesto, no). Sustituye a lo de la 3.01 (tocar el ya
-    // seleccionado = editar).
+    // (3.02) Dos toques / doble clic = editar el título en su sitio (con el candado puesto, no).
+    // (3.05) Un toque en uno no seleccionado = solo seleccionarlo; en el ya seleccionado =
+    // plegar/desplegar (antes, el primer toque ya plegaba).
     const onInner =
       event &&
       event.target &&
@@ -89,6 +89,11 @@ class TitleLine extends PureComponent {
       if (!this.props.shouldDisableActions && !onInner && !isDocLocked()) {
         this.props.base.activatePopup('title-editor');
       }
+      return;
+    }
+    // (3.05) el primer toque solo selecciona (sin plegar ni desplegar); el segundo, despliega
+    if (!isSelected) {
+      this.props.org.selectHeader(header.get('id'));
       return;
     }
     if (hasContent && !onInner) {

@@ -32,7 +32,8 @@ import {
   _updateHeaderFromDescription,
 } from '../lib/parse_org';
 import { PRIORITY_RE as ELI_PRIORITY_RE } from '../lib/eli_priority';
-import { attributedStringToRawText } from '../lib/export_org';
+import { attributedStringToRawText, createRawDescriptionText } from '../lib/export_org';
+import { tidyStateLog } from '../lib/eli_state_log';
 import {
   indexOfHeaderWithId,
   indexAndHeaderWithId,
@@ -468,6 +469,37 @@ const updateHeaderDescription = (state, action) => {
   return state.updateIn(['headers', headerIndex], (header) =>
     _updateHeaderFromDescription(header, action.newRawDescription)
   );
+};
+
+// (3.05) «Ordenar historial»: las líneas «- State …» sueltas de cada encabezado del fichero pasan
+// a su cajón :LOGBOOK: (se crea si falta). La continuación de las notas de varias líneas conserva
+// su sangría relativa.
+const eliTidyStateLog = (state) => {
+  let moved = 0;
+  const headers = state.get('headers') || List();
+  const next = headers.map((header) => {
+    const body = createRawDescriptionText(header, false, true);
+    if (!/- State\s+"/.test(body)) return header;
+    const r = tidyStateLog(body);
+    if (!r.moved) return header;
+    moved += r.moved;
+    const updated = _updateHeaderFromDescription(header, r.text);
+    // el analizador quita la sangría de las líneas del cajón: se recupera la de las notas
+    const indents = {};
+    r.text.split('\n').forEach((l) => {
+      const m = /^(\s+)(\S.*)$/.exec(l);
+      if (m && !/^- State/.test(m[2]) && !/^:/.test(m[2])) indents[m[2]] = m[1];
+    });
+    return updated.update('logBookEntries', (entries) =>
+      (entries || List()).map((e) => {
+        const raw = e.get('raw');
+        return typeof raw === 'string' && Object.prototype.hasOwnProperty.call(indents, raw)
+          ? e.set('raw', indents[raw] + raw)
+          : e;
+      })
+    );
+  });
+  return moved ? state.set('headers', next) : state;
 };
 
 const addHeader = (state, action) => {
@@ -2370,6 +2402,8 @@ const reducer = (state, action) => {
       return inFile(exitEditMode);
     case 'UPDATE_HEADER_TITLE':
       return inFile(updateHeaderTitle);
+    case 'ELI_TIDY_STATE_LOG':
+      return inFile(eliTidyStateLog);
     case 'UPDATE_HEADER_DESCRIPTION':
       return inFile(updateHeaderDescription);
     case 'ADD_HEADER':
@@ -2743,20 +2777,17 @@ function addTodoStateChangeLogItem(
   const inactiveTimestamp = getTimestampAsText(timestamp, { isActive: false, withStartTime: true });
   const newStateChangeLogText = `- State "${newTodoState}"       from "${currentTodoState}"       ${inactiveTimestamp}`;
 
-  if (logIntoDrawer) {
-    // Prepend this single item to the :LOGBOOK: drawer, same as org-log-into-drawer setting
-    // https://www.gnu.org/software/emacs/manual/html_node/org/Tracking-TODO-state-changes.html
-    const newEntry = fromJS({
-      id: generateId(),
-      raw: newStateChangeLogText,
-    });
-    return state.updateIn(['headers', headerIndex, 'logBookEntries'], (entries) =>
-      entries.unshift(newEntry)
-    );
-  } else {
-    // When org-log-into-drawer not set, prepend state change log text to log notes
-    return addNoteGeneric(state, { noteText: newStateChangeLogText });
-  }
+  // (3.05) ORG Mode para Eli: siempre en :LOGBOOK: (se crea si no existe), nunca suelto en las
+  // notas (como org-log-into-drawer t)
+  // Prepend this single item to the :LOGBOOK: drawer, same as org-log-into-drawer setting
+  // https://www.gnu.org/software/emacs/manual/html_node/org/Tracking-TODO-state-changes.html
+  const newEntry = fromJS({
+    id: generateId(),
+    raw: newStateChangeLogText,
+  });
+  return state.updateIn(['headers', headerIndex, 'logBookEntries'], (entries) =>
+    (entries || List()).unshift(newEntry)
+  );
 }
 
 function updatePlanningItemsWithRepeaters({
