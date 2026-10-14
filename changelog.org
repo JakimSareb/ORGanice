@@ -3,6 +3,9 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.08 (octubre de 2026)
+- Vista GTD, móvil: el cuadro «Fecha de inicio» ya no se sale por la derecha de la pantalla.
+
 * 3.07 (octubre de 2026)
 - Ajustes: cuatro opciones nuevas, por separado en el *móvil* y en el *ordenador*:
   - *Al tocar una tarea (móvil)*: «Abrirla» (como hasta ahora) o «Seleccionarla» (el primer toque la selecciona y muestra su barra; tocarla otra vez o el doble toque la abre).
