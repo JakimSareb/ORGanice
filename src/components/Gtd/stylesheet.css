@@ -3422,3 +3422,82 @@ button.gtd-ed__file--move {
   border: 0;
   overflow: hidden;
 }
+
+/* (3.11) notas debajo de la fila: la fila no cambia; sangradas al nivel del título, con una
+   línea gris a la izquierda (como Nirvana); listas con casillas */
+.gtd-task__below {
+  margin: -2px 14px 0 0;
+  padding: 0 0 9px;
+}
+.gtd-task__below > .gtd-task__notes {
+  margin-top: 0;
+  padding: 1px 0 1px 10px;
+  border-left: 2px solid var(--base2);
+}
+html[data-eli-theme] .gtd-task__below {
+  margin-top: -6px;
+  padding-bottom: 12px;
+}
+html[data-eli-theme] .gtd-task__below > .gtd-task__notes {
+  border-left-color: var(--nv-line, var(--base2));
+}
+.gtd-task__below .gtd-task__note-check {
+  align-items: baseline;
+}
+/* el icono de notas, pegado al final del título */
+.gtd-task__title > .gtd-notes-btn {
+  margin-left: 4px;
+  vertical-align: baseline;
+}
+/* (3.11) ventana de PROPERTIES */
+.eli-prompt__box.gtd-props {
+  max-width: 520px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+.gtd-props__task {
+  font-size: 0.9em;
+  opacity: 0.75;
+  word-break: break-word;
+}
+.gtd-props__empty {
+  font-size: 0.9em;
+  opacity: 0.7;
+}
+.gtd-props__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gtd-props__row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.gtd-props__row input {
+  min-width: 0;
+  font-size: 16px; /* sin zoom en iOS */
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--base1, #93a1a1);
+  background: var(--base3, #fff);
+  color: inherit;
+}
+.gtd-props__name {
+  flex: 0 0 38%;
+  font-family: monospace;
+  text-transform: uppercase;
+}
+.gtd-props__value {
+  flex: 1 1 auto;
+}
+.gtd-props__del {
+  border: 0;
+  background: transparent;
+  color: var(--base1);
+  padding: 6px;
+  cursor: pointer;
+}
+.gtd-props__add {
+  align-self: flex-start;
+}

@@ -1,6 +1,6 @@
 // ORG Mode para Eli: vista GTD al estilo de Nirvana (menú lateral de listas y proyectos; las
 // tareas, filtradas, a la derecha). Trabaja sobre los mismos ficheros Org.
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { List } from 'immutable';
@@ -63,6 +63,8 @@ import {
   gtdUndo,
   gtdRedo,
   gtdRefileInbox,
+  gtdSetProperties,
+  gtdRefileTo,
   tasksFileForRefile,
   gtdSetParent,
   canBeParentOf,
@@ -126,6 +128,7 @@ import {
   askCloseProject,
   askText,
   askChoice,
+  askPick,
 } from '../../lib/eli_prompt';
 import {
   defaultTags,
@@ -151,7 +154,7 @@ import { createRawDescriptionText } from '../../lib/export_org';
 import { getShowArchived, setShowArchived, isArchiveFile } from '../../lib/eli_archived';
 import { Map as IMap } from 'immutable';
 import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
-import { headerWithPath } from '../../lib/org_utils';
+import { headerWithPath, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
@@ -494,8 +497,32 @@ function TaskRow({
       : [];
   const shownNotes =
     notesMode === 'partial' ? notes.filter((l) => l.text.trim() || l.media).slice(0, 2) : notes;
+  // (3.11) las notas de debajo empiezan donde empieza el título
+  const taskRef = useRef(null);
+  const mainRef = useRef(null);
+  const [notesIndent, setNotesIndent] = useState(null);
+  const hasBelow = shownNotes.length > 0;
+  useLayoutEffect(() => {
+    if (!hasBelow) return undefined;
+    const measure = () => {
+      const t = taskRef.current;
+      const m = mainRef.current;
+      if (!t || !m) return;
+      const left = Math.max(
+        0,
+        Math.round(
+          m.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientLeft || 0)
+        )
+      );
+      setNotesIndent((cur) => (cur === left ? cur : left));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [hasBelow, depth, hideActions, isProjectRow]);
   return (
     <div
+      ref={taskRef}
       className={
         'gtd-task' +
         (task.isDone ? ' is-done' : '') +
@@ -588,7 +615,7 @@ function TaskRow({
             </button>
           </>
         )}
-        <div className="gtd-task__main">
+        <div className="gtd-task__main" ref={mainRef}>
           <div className={'gtd-task__title' + (wrapTitle ? '' : ' is-nowrap')}>
             {/* (3.05) proyecto secuencial: en espera (E) o programada (P) mezclada con las Next */}
             {seqMark && (
@@ -612,6 +639,30 @@ function TaskRow({
             >
               {task.title || '(sin título)'}
             </span>
+            {/* (3.01) icono de notas: cambia Ocultas → Parciales → Completas solo en esta fila;
+                (3.11) pegado al final del título */}
+            {!isProjectRow && task.description.trim() && notesLinesOf(task.description).length > 0 && (
+              <button
+                type="button"
+                className={'gtd-meta gtd-notes-btn' + (notesMode !== 'none' ? ' is-on' : '')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCycleNotes && onCycleNotes();
+                }}
+                onDoubleClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                title={
+                  notesMode === 'none'
+                    ? 'Tiene notas (clic: verlas en parte)'
+                    : notesMode === 'partial'
+                    ? 'Notas parciales (clic: completas)'
+                    : 'Notas completas (clic: ocultarlas)'
+                }
+                data-testid="gtd-notes-toggle"
+              >
+                <i className={notesMode === 'none' ? 'far fa-sticky-note' : 'fas fa-sticky-note'} />
+              </button>
+            )}
             {task.cookie && (
               <span
                 className="gtd-task__cookie"
@@ -690,15 +741,6 @@ function TaskRow({
               </span>
             )}
           </div>
-          {shownNotes.length > 0 && (
-            <NotesLines
-              task={task}
-              lines={shownNotes}
-              notesMode={notesMode}
-              onToggleCheck={onToggleCheck}
-              onOpenLink={onOpenLink}
-            />
-          )}
         </div>
         <div className="gtd-task__right">
           {(showTags ? task.tags : [])
@@ -724,29 +766,6 @@ function TaskRow({
             <span className="gtd-meta gtd-meta--effort" title="Tiempo">
               <i className="far fa-clock" /> {task.effort}
             </span>
-          )}
-          {/* (3.01) icono de notas: cambia Ocultas → Parciales → Completas solo en esta fila */}
-          {!isProjectRow && task.description.trim() && notesLinesOf(task.description).length > 0 && (
-            <button
-              type="button"
-              className={'gtd-meta gtd-notes-btn' + (notesMode !== 'none' ? ' is-on' : '')}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCycleNotes && onCycleNotes();
-              }}
-              onDoubleClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              title={
-                notesMode === 'none'
-                  ? 'Tiene notas (clic: verlas en parte)'
-                  : notesMode === 'partial'
-                  ? 'Notas parciales (clic: completas)'
-                  : 'Notas completas (clic: ocultarlas)'
-              }
-              data-testid="gtd-notes-toggle"
-            >
-              <i className={notesMode === 'none' ? 'far fa-sticky-note' : 'fas fa-sticky-note'} />
-            </button>
           )}
           {task.attachmentCount > 0 && (
             <span
@@ -801,6 +820,27 @@ function TaskRow({
           </button>
         )}
       </div>
+      {/* (3.11) notas DEBAJO de la fila (la fila no se mueve), sangradas y con una línea gris
+          a la izquierda, como en Nirvana */}
+      {shownNotes.length > 0 && (
+        <div
+          className="gtd-task__below"
+          style={notesIndent != null ? { marginLeft: notesIndent } : undefined}
+          onClick={onRowClick}
+          onDoubleClick={onRowDoubleClick}
+          onPointerDown={onPointerDown}
+          onContextMenu={onContextMenu}
+          data-testid="gtd-task-below"
+        >
+          <NotesLines
+            task={task}
+            lines={shownNotes}
+            notesMode={notesMode}
+            onToggleCheck={onToggleCheck}
+            onOpenLink={onOpenLink}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -3151,6 +3191,58 @@ export default function GtdView() {
         )
       );
   };
+  // (3.11) «Mover a otro fichero…»: cualquier fichero cargado (nivel superior) o una de sus
+  // cabeceras, con buscador
+  const refileElsewhere = async (list) => {
+    const present = store.getState().org.present;
+    const items = [];
+    const isMoved = (path, id) => list.some((t) => t.path === path && t.id === id);
+    Array.from(present.get('files').keys())
+      .filter((p) => p && !p.startsWith(STATIC_FILE_PREFIX) && !/\.org_archive$/i.test(p))
+      .sort((a, b) => fileDisplayName(a).localeCompare(fileDisplayName(b)))
+      .forEach((p) => {
+        const headers = present.getIn(['files', p, 'headers']);
+        if (!headers) return;
+        const name = fileDisplayName(p);
+        items.push({ id: JSON.stringify([p, null]), label: `📄 ${name}`, hint: 'nivel superior' });
+        let skipBelow = null;
+        headers.forEach((h) => {
+          const lvl = h.get('nestingLevel');
+          if (skipBelow !== null) {
+            if (lvl > skipBelow) return;
+            skipBelow = null;
+          }
+          // no dentro de sí misma
+          if (isMoved(p, h.get('id'))) {
+            skipBelow = lvl;
+            return;
+          }
+          const title = (h.getIn(['titleLine', 'rawTitle']) || '').trim() || '(sin título)';
+          items.push({
+            id: JSON.stringify([p, h.get('id')]),
+            label: `${'\u2003'.repeat(Math.min(lvl - 1, 6))}${title}`,
+            hint: name,
+          });
+        });
+      });
+    const picked = await askPick({
+      title: 'Mover a otro fichero',
+      message:
+        list.length === 1
+          ? `«${list[0].title}» (con sus subtareas)`
+          : `${list.length} tareas (con sus subtareas)`,
+      placeholder: 'Buscar fichero o cabecera…',
+      items,
+      emptyText: 'No hay ficheros cargados.',
+    });
+    if (!picked) return;
+    const [path, headerId] = JSON.parse(picked);
+    const n = dispatch(gtdRefileTo(list, path, headerId));
+    if (n) {
+      setSel([]);
+      setSelKey(null);
+    }
+  };
   const taskMenuItems = (list) => {
     const single = list.length === 1 ? list[0] : null;
     const save = (fn) => () => dispatch(gtdSaveMany(list.map((t) => [t, fn(t)])));
@@ -3311,6 +3403,12 @@ export default function GtdView() {
           ]),
       { sep: true },
       { label: 'Mover a', icon: 'fas fa-share', sub: moveSub, testId: 'gtd-menu-move' },
+      {
+        label: 'Mover a otro fichero…',
+        icon: 'far fa-file-alt',
+        onClick: () => refileElsewhere(list),
+        testId: 'gtd-menu-refile-file',
+      },
       ...(list.some((t) => t.isProject)
         ? []
         : [
@@ -3599,6 +3697,7 @@ export default function GtdView() {
       contextTags={contextTags}
       onOpenLink={(target) => openLink(task, target)}
       onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
+      onSaveProperties={(rows) => dispatch(gtdSetProperties(task, rows))}
       onClose={() => {
         setOpenKey(null);
         if (newKey === task.key) setNewKey(null);

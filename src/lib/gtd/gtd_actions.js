@@ -1,9 +1,13 @@
 // ORG Mode para Eli: acciones de la vista GTD. Cada cambio se aplica al fichero de la tarea
 // (aunque no sea el abierto) con ELI_IN_FILE y después se sincroniza ese fichero.
-import { fromJS, List } from 'immutable';
+import Immutable, { fromJS, List } from 'immutable';
 import formatDate from 'date-fns/format';
 import { ActionTypes } from 'redux-undo';
-import { createRawDescriptionText, generateTitleLine } from '../export_org';
+import {
+  createRawDescriptionText,
+  generateTitleLine,
+  attributedStringToRawText,
+} from '../export_org';
 import { timestampForDate } from '../timestamps';
 import generateId from '../id_generator';
 import { sync, setDirty, archiveSubtree } from '../../actions/org';
@@ -375,6 +379,72 @@ export const gtdSaveTask = (task, changes) => (dispatch, getState) => {
   dispatch(inFile(r.path, r.inner));
   syncFile(dispatch, r.path);
   if (r.refileTo) syncFile(dispatch, r.refileTo);
+};
+
+// (3.11) Ver y editar el cajón PROPERTIES entero: rows = [{ name, value }] en su orden. Las que
+// no cambian se quedan tal cual (con sus enlaces o fechas); sin nombre, se quitan.
+export const propertyRowsOf = (task) =>
+  ((task.header && task.header.get('propertyListItems')) || List())
+    .map((p) => ({
+      id: p.get('id'),
+      name: p.get('property') || '',
+      value: p.get('value') ? attributedStringToRawText(p.get('value')) : '',
+    }))
+    .toArray();
+
+export const propertyListFromRows = (oldItems, rows) => {
+  const old = oldItems || List();
+  const byId = {};
+  old.forEach((p) => {
+    byId[p.get('id')] = p;
+  });
+  const seen = new Set();
+  return List(
+    rows
+      .map((r) => ({
+        id: r.id,
+        name: String(r.name || '')
+          .trim()
+          .replace(/^:+|:+$/g, '')
+          .replace(/\s+/g, '_'),
+        value: String(r.value || '').trim(),
+      }))
+      .filter((r) => {
+        if (!r.name) return false;
+        const k = r.name.toUpperCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .map((r) => {
+        const prev = r.id !== undefined ? byId[r.id] : null;
+        const prevValue =
+          prev && prev.get('value') ? attributedStringToRawText(prev.get('value')).trim() : null;
+        if (prev && prev.get('property') === r.name && prevValue === r.value) return prev;
+        return fromJS({
+          id: prev ? prev.get('id') : generateId(),
+          property: r.name,
+          value: r.value ? [{ type: 'text', contents: r.value }] : [],
+        });
+      })
+  );
+};
+
+export const gtdSetProperties = (task, rows) => (dispatch, getState) => {
+  const header = headerOf(getState, task.path, task.id);
+  if (!header) return false;
+  const next = propertyListFromRows(header.get('propertyListItems'), rows);
+  if (Immutable.is(next, header.get('propertyListItems') || List())) return false;
+  dispatch(
+    inFile(task.path, {
+      type: 'UPDATE_PROPERTY_LIST_ITEMS',
+      headerId: task.id,
+      newPropertyListItems: next,
+      dirtying: true,
+    })
+  );
+  syncFile(dispatch, task.path);
+  return true;
 };
 
 // (3.0) Varias tareas a la vez (selección múltiple, Limpieza, Papelera…): un solo paso de
@@ -780,6 +850,52 @@ export const gtdMoveToProject = (task, project) => (dispatch, getState) => {
   });
   syncFile(dispatch, task.path);
   if (targetPath !== task.path) syncFile(dispatch, targetPath);
+};
+
+// (3.11) «Mover a otro fichero…»: refile de las tareas (con sus subtareas) bajo una cabecera de
+// cualquier fichero cargado, o a su nivel superior (targetHeaderId = null). No se mueve una tarea
+// dentro de sí misma ni las que ya van dentro de otra de las movidas.
+export const gtdRefileTo = (tasks, targetPath, targetHeaderId = null) => (dispatch, getState) => {
+  const files = getState().org.present.get('files');
+  if (!files.getIn([targetPath, 'headers'])) return 0;
+  const inside = (t, other) => {
+    if (t.path !== other.path || t.key === other.key) return false;
+    const headers = files.getIn([t.path, 'headers']) || List();
+    const i = headers.findIndex((h) => h.get('id') === other.id);
+    const j = headers.findIndex((h) => h.get('id') === t.id);
+    if (i < 0 || j <= i) return false;
+    const lvl = headers.getIn([i, 'nestingLevel']);
+    for (let k = i + 1; k <= j; k++) {
+      if (headers.getIn([k, 'nestingLevel']) <= lvl) return false;
+    }
+    return true;
+  };
+  const roots = tasks.filter((t) => !tasks.some((o) => inside(t, o)));
+  const ok = roots.filter((t) => {
+    if (!targetHeaderId || t.path !== targetPath) return true;
+    if (t.id === targetHeaderId) return false;
+    return !inside({ path: targetPath, id: targetHeaderId, key: '__target__' }, t);
+  });
+  // bajo una cabecera, cada una va justo detrás: se mueven al revés para conservar el orden
+  const order = targetHeaderId ? [...ok].reverse() : ok;
+  if (!order.length) return 0;
+  const paths = new Set();
+  const actions = order.map((t) => {
+    paths.add(t.path);
+    return {
+      type: 'REFILE_SUBTREE',
+      sourcePath: t.path,
+      sourceHeaderId: t.id,
+      targetPath,
+      targetHeaderId,
+      dirtying: true,
+    };
+  });
+  // un solo paso de Deshacer
+  dispatch(actions.length === 1 ? actions[0] : { type: 'ELI_BATCH', actions, dirtying: true });
+  paths.add(targetPath);
+  paths.forEach((p) => syncFile(dispatch, p));
+  return order.length;
 };
 
 // Deshacer/rehacer en la vista GTD: los cambios pueden estar en varios ficheros, así que se
