@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.10 (octubre de 2026)
+** Documentos
+- Arreglado: un *elemento de lista* bajo una cabecera (con sus notas debajo) vuelve a poder *seleccionarse* y *moverse arriba/abajo* dentro de la cabecera (desde la 3.05 el toque seleccionaba la cabecera y perdía el elemento).
+- iPhone: al editar notas o cabeceras en la vista normal, la *barra de herramientas sube por encima del teclado* (antes solo en narrow; en documentos largos se quedaba debajo).
+- Arreglado: los correos con mayúsculas (=GileadGraduation@…=) se subrayan enteros.
+** Vista GTD
+- La fecha de creación de las tareas nuevas va como propiedad =:CREATED:= dentro del cajón =:PROPERTIES:= (antes, una línea =:Created:= en las notas). Las que ya tenían esa línea (de la app o de las plantillas de Emacs) se leen igual y, al guardar el fichero desde la app, pasa al cajón.
+- Móvil: la *hoja de la tarea* es una pestaña como las de iOS: sube casi hasta arriba (se ve la lista oscurecida detrás), con un asa y *sin* el botón «Hecho». Se cierra (y guarda) *deslizando hacia abajo* o *tocando fuera*.
+
 * 3.09 (octubre de 2026)
 ** Vista GTD
 - Editor de tareas: botón *Hoy* junto a la fecha límite («vence»): el «Restablecer» del selector del iPhone solo la borraba.

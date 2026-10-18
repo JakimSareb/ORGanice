@@ -3045,6 +3045,11 @@ html[data-eli-theme] .gtd-overview__row:last-child {
 .gtd-editor.gtd-editor--nirvana.gtd-editor--sheet {
   position: fixed;
   inset: 0;
+  /* (3.10) pestaña tipo iOS: sube casi hasta arriba (se ve un poco la lista, oscurecida) */
+  top: calc(env(safe-area-inset-top, 0px) + 36px);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35), 0 -2px 12px rgba(0, 0, 0, 0.2) !important;
+  overscroll-behavior: contain;
   z-index: 2500; /* por encima de la vista; por debajo de los menús (3100) y avisos */
   display: flex;
   flex-direction: column;
@@ -3052,7 +3057,6 @@ html[data-eli-theme] .gtd-overview__row:last-child {
   padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px));
   margin: 0;
   border: 0;
-  box-shadow: none;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--base2);
@@ -3063,18 +3067,17 @@ html[data-eli-theme] .gtd-overview__row:last-child {
   top: 0;
   z-index: 2;
   display: flex;
-  justify-content: flex-end;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 6px;
+  justify-content: center;
+  padding: 8px 14px 10px;
   background: var(--base2);
+  border-radius: 12px 12px 0 0;
 }
-.gtd-sheet__done {
-  border: 0;
-  background: transparent;
-  color: var(--blue);
-  font-size: 17px;
-  font-weight: 600;
-  padding: 6px 4px;
-  cursor: pointer;
+/* (3.10) el asa de la pestaña (deslizar hacia abajo = cerrar); sin botón «Hecho» */
+.gtd-sheet__grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--base1) 45%, transparent);
 }
 .gtd-editor--sheet .gtd-ed__main {
   display: flex;

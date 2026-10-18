@@ -292,8 +292,11 @@ class HeaderContent extends PureComponent {
         'a, button, input, textarea, select, table, .timestamp, .eli-org-table, ' +
           '.list-part__checkbox, .checkbox, .eli-crypt-box'
       );
+    // (3.10) en un elemento de lista NO: selectHeader borraba la selección del elemento
+    // (modo `list` de 3.04: seleccionarlo con sus notas y moverlo arriba/abajo)
+    const onListItem = !!(t && t.closest && t.closest('.attributed-string__list-part li'));
     // (3.05) un clic / toque en las notas selecciona su encabezado (el bloque), como en el título
-    if (!onInner && !shouldDisableActions) {
+    if (!onInner && !onListItem && !shouldDisableActions) {
       this.props.org.selectHeader(header.get('id'));
     }
     if (shouldDisableActions || isDocLocked()) return;

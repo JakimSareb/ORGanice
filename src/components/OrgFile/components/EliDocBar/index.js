@@ -136,16 +136,50 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   useLayoutEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return undefined;
+    // (3.10) En el iPhone, con un documento largo (vista normal), al abrir el teclado Safari
+    // desplaza la página y window.innerHeight puede encogerse como el visualViewport: el
+    // cálculo daba 0 y la barra se quedaba debajo del teclado (en narrow, página corta, iba
+    // bien). Se usa la altura de la ventana medida SIN teclado (por ancho de pantalla) y se
+    // recalcula también al desplazar la ventana y al entrar/salir de un campo.
+    const base = { w: 0, h: 0 };
+    const typing = () => {
+      const a = document.activeElement;
+      return !!(
+        a &&
+        (a.tagName === 'TEXTAREA' ||
+          (a.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|range|file)$/i.test(a.type)) ||
+          a.isContentEditable)
+      );
+    };
     const update = () => {
-      const covered = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+      const w = window.innerWidth;
+      if (w !== base.w) {
+        base.w = w;
+        base.h = 0;
+      }
+      if (!typing() || !base.h) base.h = window.innerHeight;
+      const fullH = typing() ? Math.max(base.h, window.innerHeight) : window.innerHeight;
+      const covered = Math.max(0, fullH - (vv.height + vv.offsetTop));
       setBottom(covered > 40 ? covered : 0);
+    };
+    const timers = [];
+    const later = () => {
+      update();
+      [80, 250, 500, 900].forEach((ms) => timers.push(setTimeout(update, ms)));
     };
     update();
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
+    window.addEventListener('scroll', update, { passive: true });
+    document.addEventListener('focusin', later);
+    document.addEventListener('focusout', later);
     return () => {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
+      window.removeEventListener('scroll', update);
+      document.removeEventListener('focusin', later);
+      document.removeEventListener('focusout', later);
+      timers.forEach(clearTimeout);
     };
   }, []);
 

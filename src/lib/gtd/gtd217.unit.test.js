@@ -126,9 +126,12 @@ describe('2.17: tareas repetitivas al marcarlas hechas', () => {
   });
 
   test('sin repetición, WAITING → DONE sigue terminando la tarea (CLOSED)', () => {
-    const plain = ['#+TODO: TODO NEXT | DONE', '#+TODO: WAITING MAYBE | CANCELLED', '* WAITING A', ''].join(
-      '\n'
-    );
+    const plain = [
+      '#+TODO: TODO NEXT | DONE',
+      '#+TODO: WAITING MAYBE | CANCELLED',
+      '* WAITING A',
+      '',
+    ].join('\n');
     const { task, out } = doneOf(plain, 'A');
     expect(task.isDone).toBe(true);
     expect(out).toMatch(/\* DONE A\n\s+CLOSED: \[/);
@@ -142,14 +145,19 @@ describe('2.17: fecha de creación en tareas nuevas', () => {
     expect(createdLine(new Date(2026, 9, 3, 19, 55))).toBe(':Created: [2026-10-03 Sat 19:55]');
   });
 
-  test('una tarea nueva lleva :Created: y sus notas', () => {
+  // (3.10) ahora como propiedad :CREATED: dentro del cajón
+  test('una tarea nueva lleva :CREATED: y sus notas', () => {
     const store = makeStore();
-    store.dispatch(gtdAddTask({ path: P }, { title: 'Nueva', keyword: 'TODO', created: true, notes: 'algo' }));
+    store.dispatch(
+      gtdAddTask({ path: P }, { title: 'Nueva', keyword: 'TODO', created: true, notes: 'algo' })
+    );
     const out = textOf(store.state());
-    expect(out).toMatch(/\* TODO Nueva\n:Created: \[\d{4}-\d\d-\d\d \w{3} \d\d:\d\d\]\nalgo/);
+    expect(out).toMatch(
+      /\* TODO Nueva\n\s*:PROPERTIES:\n\s*:CREATED: \[\d{4}-\d\d-\d\d \w{3} \d\d:\d\d\]\n\s*:END:\nalgo/
+    );
   });
 
-  test('con fecha programada, la planificación va antes de :Created:', () => {
+  test('con fecha programada, la planificación va antes de :PROPERTIES: (:CREATED:)', () => {
     const store = makeStore();
     store.dispatch(
       gtdAddTask(
@@ -158,13 +166,15 @@ describe('2.17: fecha de creación en tareas nuevas', () => {
       )
     );
     const out = textOf(store.state());
-    expect(out).toMatch(/\* TODO Con fecha\n\s*SCHEDULED: <2026-10-20 Tue>\n:Created:/);
+    expect(out).toMatch(
+      /\* TODO Con fecha\n\s*SCHEDULED: <2026-10-20 Tue>\n\s*:PROPERTIES:\n\s*:CREATED:/
+    );
   });
 
   test('sin created no se añade nada', () => {
     const store = makeStore();
     store.dispatch(gtdAddTask({ path: P }, { title: 'Sin', keyword: 'TODO' }));
-    expect(textOf(store.state())).not.toMatch(/:Created:/);
+    expect(textOf(store.state())).not.toMatch(/:Created:|:CREATED:/);
   });
 });
 
@@ -174,7 +184,10 @@ describe('2.17: «Abrir» muestra el encabezado con los subencabezados plegados'
     let state = Map({ path: P, files: Map({ [P]: parseOrg(nested) }), fileSettings: List() });
     const id = state.getIn(['files', P, 'headers', 0, 'id']);
     state = rootOrgReducer(state, { type: 'ELI_OPEN_SUBTREE', headerId: id, titlesOnly });
-    return state.getIn(['files', P, 'headers']).map((h) => !!h.get('opened')).toJS();
+    return state
+      .getIn(['files', P, 'headers'])
+      .map((h) => !!h.get('opened'))
+      .toJS();
   };
   test('solo títulos: se abre el padre y nada más', () => {
     expect(run(true)).toEqual([true, false, false, false, false]);
@@ -293,7 +306,8 @@ describe('2.17: subtareas asociadas (anidado visual)', () => {
   const tasks = buildTasks(Map({ [P]: parseOrg(nested) }), []);
   const item = (t, section = 'list') => ({ kind: 'task', task: t, section });
   const by = (title) => tasks.find((t) => t.title === title);
-  const names = (list) => list.map((i) => `${'-'.repeat(i.depth || 0)}${i.task ? i.task.title : i.header}`);
+  const names = (list) =>
+    list.map((i) => `${'-'.repeat(i.depth || 0)}${i.task ? i.task.title : i.header}`);
 
   test('las hijas van justo debajo de su tarea, con su profundidad', () => {
     // orden «desordenado»: B primero, las hijas separadas del padre
@@ -307,11 +321,7 @@ describe('2.17: subtareas asociadas (anidado visual)', () => {
   });
 
   test('las cabeceras de sección separan los tramos', () => {
-    const items = [
-      item(by('A'), 's1'),
-      { kind: 'header', header: 'H' },
-      item(by('A1'), 's2'),
-    ];
+    const items = [item(by('A'), 's1'), { kind: 'header', header: 'H' }, item(by('A1'), 's2')];
     expect(names(nestSubtasks(items))).toEqual(['A', 'H', 'A1']);
   });
 

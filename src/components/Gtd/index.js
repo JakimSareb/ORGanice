@@ -56,7 +56,6 @@ import {
   gtdToggleStar,
   gtdAddTask,
   capturedTitle,
-  createdLine,
   gtdDeleteTask,
   gtdMoveToProject,
   gtdArchiveTask,
@@ -1881,10 +1880,7 @@ export default function GtdView() {
         };
       }
     }
-    // (2.17) las notas escritas en el editor no pisan la fecha de creación
-    if (!d.templateHeader && typeof rest.notes === 'string' && !/^:Created:/m.test(rest.notes)) {
-      rest.notes = [createdLine(), rest.notes].filter(Boolean).join('\n');
-    }
+    // (3.10) la fecha de creación ya va en :PROPERTIES: (:CREATED:): las notas no la llevan
     const created = () =>
       buildTasks(
         IMap({ [target.path]: store.getState().org.present.getIn(['files', target.path]) }),
