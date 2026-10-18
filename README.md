@@ -1,4 +1,4 @@
-# ORGanice 3.11
+# ORGanice 3.13
 
 <img src="src/images/logo-unicornio.svg" alt="" width="96" align="right">
 
@@ -22,6 +22,7 @@ App publicada: **https://jakimsareb.github.io/ORGanice/**
   agrupar por proyecto, ordenar arrastrando y atajos de teclado como Nirvana.
 - Agenda con vencidas, prioritarias, hábitos y registro de lo terminado.
 - Calendario para consultar (tres meses o el año, semanas, festivos de España, Luna) y calculadora.
+- Guiones en Fountain (.fountain): vista con formato de guion, editor con atajos de inserción y manual de referencia.
 - Todo Org Mode: estados, prioridades, etiquetas, fechas y repeticiones, tablas (vistas como tabla y
   editables en la celda, alineadas como en Emacs), listas con casillas, reloj, adjuntos, enlaces, búsqueda, refile y archivado.
 - Sincronización con avisos de conflicto y diferencias; uso sin conexión; copias de seguridad.

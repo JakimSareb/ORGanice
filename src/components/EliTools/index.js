@@ -685,6 +685,18 @@ function FavoritesPopup({ currentPath, onClose }) {
             <i className="fas fa-plus" /> Nuevo fichero Org
           </button>
         )}
+        {inFolder && (
+          <button
+            className="btn eli-fav__toggle"
+            data-testid="eli-fav-new-fountain"
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new CustomEvent('eli:new-fountain'));
+            }}
+          >
+            <i className="fas fa-film" /> Nuevo guion (Fountain)
+          </button>
+        )}
         {canToggleCurrent && (
           <button
             className="btn eli-fav__toggle"

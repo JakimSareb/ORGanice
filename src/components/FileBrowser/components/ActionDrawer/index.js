@@ -11,6 +11,7 @@ import { bindActionCreators } from 'redux';
 import './../../../OrgFile/components/ActionDrawer/stylesheet.css';
 
 import * as orgActions from '../../../../actions/org';
+import { createPlainFile } from '../../../../actions/org';
 import * as syncActions from '../../../../actions/sync_backend';
 
 import ActionButton from '../../../OrgFile/components/ActionDrawer/components/ActionButton';
@@ -26,12 +27,14 @@ import {
 } from '../../../../lib/eli_hotkeys';
 import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
 import { newFileHeaderLines } from '../../../../lib/eli_todo_defaults';
+import { newFountainTemplate } from '../../../../lib/eli_fountain';
 
 const ensureCompleteFilename = (fileName) => {
   return /\.org(\.gpg|\.asc)?$/.test(fileName) ? fileName : `${fileName}.org`;
 };
 
 const ActionDrawer = ({
+  createFountainFile,
   org,
   files,
   syncBackend,
@@ -82,10 +85,16 @@ const ActionDrawer = ({
   const latest = useRef();
   latest.current = { openAgenda, startCapture, showAgenda, customKeybindings };
   const newFileRef = useRef();
+  const newFountainRef = useRef();
   useEffect(() => {
     const onNewFile = () => newFileRef.current && newFileRef.current();
+    const onNewFountain = () => newFountainRef.current && newFountainRef.current();
     window.addEventListener('eli:new-file', onNewFile);
-    return () => window.removeEventListener('eli:new-file', onNewFile);
+    window.addEventListener('eli:new-fountain', onNewFountain);
+    return () => {
+      window.removeEventListener('eli:new-file', onNewFile);
+      window.removeEventListener('eli:new-fountain', onNewFountain);
+    };
   }, []);
   useEffect(() => {
     const onKey = notWhileTyping((event) => {
@@ -136,6 +145,33 @@ const ActionDrawer = ({
   };
 
   newFileRef.current = handleAddNewOrgFileClick;
+
+  // (3.13) Nuevo guion Fountain: se crea con una plantilla y se abre en su editor
+  const handleAddNewFountainClick = async () => {
+    const name = await askText({
+      title: 'Nuevo guion',
+      message: `Se creará en ${path || '/'}`,
+      placeholder: 'título (se añade .fountain)',
+      okLabel: 'Crear',
+    });
+    if (!name) return;
+    const clean = name.trim().replace(/[\\/:*?"<>|]/g, '-');
+    const fileName = /\.fountain$/i.test(clean) ? clean : `${clean}.fountain`;
+    const newPath = `${path}/${fileName}`;
+    if (files.includes(newPath.toLowerCase())) {
+      showMessage('Ya existe', `Ya hay un fichero llamado ${fileName} en esta carpeta.`);
+      return;
+    }
+    const ok = await createFountainFile(
+      newPath,
+      newFountainTemplate(fileName.replace(/\.fountain$/i, ''))
+    );
+    if (ok) {
+      syncBackend.getDirectoryListing(path);
+      history.push(`/fountain${newPath}`);
+    }
+  };
+  newFountainRef.current = handleAddNewFountainClick;
 
   const mainButtonStyle = {
     opacity: 1,
@@ -220,6 +256,7 @@ const mapDispatchToProps = (dispatch) => {
   return {
     org: bindActionCreators(orgActions, dispatch),
     syncBackend: bindActionCreators(syncActions, dispatch),
+    createFountainFile: (path, content) => dispatch(createPlainFile(path, content)),
   };
 };
 

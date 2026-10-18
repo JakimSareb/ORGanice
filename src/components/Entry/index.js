@@ -1,4 +1,5 @@
 import React, { PureComponent, Fragment } from 'react';
+import EliFountain from '../EliFountain';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -322,6 +323,10 @@ class Entry extends PureComponent {
               {shouldRedirectToCapturePath && <Redirect to={pendingCapturePath} />}
               <Route path="/privacy-policy" exact component={PrivacyPolicy} />
               <Route path="/file/:path+" render={this.renderFile} />
+              <Route
+                path="/fountain/:path+"
+                render={({ match }) => <EliFountain path={'/' + match.params.path} />}
+              />
               <Route path="/files/:path*" render={this.renderFileBrowser} />
               <Route path="/sample" exact={true} render={this.renderSampleFile} />
               <Route path="/changelog" exact={true} render={this.renderChangelogFile} />

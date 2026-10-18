@@ -477,6 +477,14 @@ Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
 - Los nombres se comparan sin acentos ni mayúsculas, con alias: =#+ACOM_ALIAS: Toni=Antonio Vilchez; Miguel Angel Lliteras=Miguel Lliteras=. Avisa de los nombres que no están en la lista.
 - La rueda ⚙: nº de semanas (por defecto 5) y días de reunión (por defecto jueves y sábado), guardados en el fichero (=#+ACOM_SEMANAS=, =#+ACOM_DIAS=) para que Emacs use lo mismo.
 
+* Guiones (Fountain)
+Los guiones se escriben en ficheros =.fountain= aparte (formato abierto de texto, el mismo de Highland, Beat o Slugline).
+- Crear: botón de ficheros principales → *Nuevo guion (Fountain)*; sale con una portada y una escena de ejemplo. Los =.fountain= aparecen en el explorador con el icono de película.
+- *Guion* lo enseña con el formato de guion (Courier, márgenes de guion); tocar cualquier elemento lleva a su línea en *Texto*. En el ordenador, *Ambos*: texto a la izquierda y guion a la derecha, que sigue al cursor.
+- En *Texto*, la fila de botones inserta escena, personaje, acotación, transición o nota, y los personajes ya usados con un toque. Tab pasa la línea a mayúsculas.
+- Arriba: lista de *escenas* para saltar, el ojo oculta notas, secciones y sinopsis, y *?* abre el *manual de Fountain* con ejemplos (lo que se escribe y cómo queda).
+- Se guarda solo (≈1,5 s después de escribir, y al salir); Ctrl/⌘+S lo guarda ya.
+
 * Calculadora
 ⋯ → *Calculadora* (en todas las vistas) o la paleta. Escribe la operación con el teclado o con sus botones: + − × ÷, paréntesis, decimales con coma y porcentajes (200 + 10% = 220). Debajo se ve el resultado según escribes; Intro (o =) lo deja para seguir calculando, el botón de copiar lo copia y Esc borra o cierra.
 

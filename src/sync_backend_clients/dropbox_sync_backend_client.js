@@ -23,7 +23,8 @@ export const filterAndSortDirectoryListing = (listing) => {
     // Show all folders
     if (file['.tag'] === 'folder') return true;
     // Filter out all non-org files
-    return file.name.match(orgFileExtensions);
+    // (3.13) …y los guiones Fountain
+    return file.name.match(orgFileExtensions) || /\.fountain$/i.test(file.name);
   });
   return filteredListing.sort((a, b) => {
     // Folders before files
