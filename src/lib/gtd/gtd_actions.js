@@ -606,6 +606,10 @@ export const gtdToggleStar = (task) => (dispatch) =>
 export const createdLine = (date = new Date()) =>
   `:Created: [${formatDate(date, 'yyyy-MM-dd eee HH:mm')}]`;
 
+// (3.09) Título de una tarea nueva que se guarda sin título: «Capturado [2026-10-18 Sun]»
+export const capturedTitle = (date = new Date()) =>
+  `Capturado [${formatDate(date, 'yyyy-MM-dd eee')}]`;
+
 export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (!target || !target.path || !getState().org.present.getIn(['files', target.path, 'headers']))
     return null;

@@ -8,7 +8,9 @@ import _ from 'lodash';
 // TODO: Extract all match groups of `beginningRegexp` (for example
 // like `emailRegexp`), so that they can be documented and are less
 // unwieldly.
-const beginningRegexp = /(\[\[([^\]]*)\]\]|\[\[([^\]]*)\]\[([^\]]*)\]\])|(\[((\d*%)|(\d*\/\d*))\])|((^|\s|[({'"])([*/~=_+])([^\s,'](.*?))\11([\s\-.,:;!?'")}]?))/;
+// ORG Mode para Eli (3.09): en la parte del enlace, «\[» y «\]» son corchetes escapados (como
+// org-link-escape: [[file:x.org::*\[2026-10-14 Wed\] JW][…]])
+const beginningRegexp = /(\[\[((?:\\[[\]]|[^\]])*)\]\]|\[\[((?:\\[[\]]|[^\]])*)\]\[([^\]]*)\]\])|(\[((\d*%)|(\d*\/\d*))\])|((^|\s|[({'"])([*/~=_+])([^\s,'](.*?))\11([\s\-.,:;!?'")}]?))/;
 
 // Regexp taken from https://stackoverflow.com/a/3809435/999007
 const httpUrlRegexp = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*))/;
@@ -673,8 +675,22 @@ export const _parseLogNotes = (rawText) => {
 export const parseDescriptionPrefixElements = (rawText) => {
   const planningItemsParse = _parsePlanningItems(rawText);
 
-  const planningItems = planningItemsParse.planningItems;
-  const propertyListParse = parsePropertyList(planningItemsParse.strippedDescription);
+  let planningItems = planningItemsParse.planningItems;
+  let propertyListParse = parsePropertyList(planningItemsParse.strippedDescription);
+  // ORG Mode para Eli (3.09): línea de planificación mal colocada JUSTO debajo del cajón
+  // :PROPERTIES: (en Org debe ir tras el título): se lee como planificación y, al guardar, vuelve
+  // a su sitio (antes del cajón).
+  if (
+    planningItems.size === 0 &&
+    propertyListParse.propertyListItems.size > 0 &&
+    /^[ \t]*(SCHEDULED|DEADLINE|CLOSED):/.test(propertyListParse.strippedDescription)
+  ) {
+    const late = _parsePlanningItems(propertyListParse.strippedDescription);
+    if (late.planningItems.size > 0) {
+      planningItems = late.planningItems;
+      propertyListParse = { ...propertyListParse, strippedDescription: late.strippedDescription };
+    }
+  }
   // In Orgmode, notes are added below properties and before
   // logbook. However, logbook is added directly below properties if
   // it does not exist.

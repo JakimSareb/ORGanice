@@ -28,12 +28,23 @@ export const relativePath = (fromPath, toPath) => {
  * Enlace a un encabezado para escribir en el fichero `fromPath` (null = portapapeles, con la
  * ruta relativa a la carpeta del propio fichero).
  */
+// (3.09) Como org-link-escape: en la parte del enlace los corchetes (y la barra que los precede)
+// van escapados con «\\»; en la descripción, sin corchetes
+export const escapeLinkPart = (text) =>
+  (text || '').replace(/(\\*)([[\]])/g, (m, bs, br) => `${bs}${bs}\\${br}`);
+export const unescapeLinkPart = (text) =>
+  (text || '').replace(
+    /(\\+)([[\]])/g,
+    (m, bs, br) => `${'\\'.repeat(Math.floor(bs.length / 2))}${br}`
+  );
+
 export const headingLink = ({ path, title }, fromPath = null) => {
   const text = cleanHeadingText(title);
-  const safe = text.replace(/[[\]]/g, '');
-  if (fromPath && fromPath === path) return `[[*${safe}][${safe}]]`;
+  const target = escapeLinkPart(text);
+  const desc = text.replace(/[[\]]/g, '').replace(/\s+/g, ' ').trim();
+  if (fromPath && fromPath === path) return `[[*${target}][${desc}]]`;
   const rel = fromPath ? relativePath(fromPath, path) : path.split('/').pop();
-  return `[[file:${rel}::*${safe}][${safe}]]`;
+  return `[[file:${rel}::*${target}][${desc}]]`;
 };
 
 // Último enlace guardado (como org-stored-links), para insertarlo con la ruta correcta
@@ -50,7 +61,7 @@ export const storedHeadingLink = () => stored;
  * { path: 'ruta' | null (este fichero), search: '*Título' | '#id' | 'texto' | null, id }
  */
 export const parseOrgLink = (uri) => {
-  const u = (uri || '').trim();
+  const u = unescapeLinkPart((uri || '').trim());
   if (!u) return null;
   if (/^id:/i.test(u)) return { path: null, search: null, id: u.slice(3).trim() };
   if (u.startsWith('*') || u.startsWith('#')) return { path: null, search: u, id: null };
@@ -85,10 +96,20 @@ export const findLinkedHeader = (headers, search) => {
   const wanted = cleanHeadingText(search.startsWith('*') ? search.slice(1) : search).toLowerCase();
   if (!wanted) return null;
   const title = (h) => cleanHeadingText(h.getIn(['titleLine', 'rawTitle'])).toLowerCase();
+  // (3.09) tolerante: sin corchetes ni <> (enlaces antiguos a títulos con fecha, que perdían los
+  // corchetes: «*2026-10-14 Wed JW» para «[2026-10-14 Wed] JW»)
+  const loose = (t) =>
+    t
+      .replace(/[[\]<>]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  const wantedLoose = loose(wanted);
   return (
     headers.find((h) => title(h) === wanted) ||
+    headers.find((h) => loose(title(h)) === wantedLoose) ||
     headers.find((h) => title(h).startsWith(wanted)) ||
     headers.find((h) => title(h).includes(wanted)) ||
+    (wantedLoose ? headers.find((h) => loose(title(h)).includes(wantedLoose)) : null) ||
     (search.startsWith('*')
       ? null
       : headers.find((h) => (h.get('rawDescription') || '').toLowerCase().includes(wanted))) ||

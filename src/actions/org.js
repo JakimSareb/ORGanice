@@ -1977,6 +1977,17 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
       titlesOnly: true,
       hideBody: true,
     });
+    // (3.09) que la cabecera de destino quede marcada aunque la vista se vuelva a pintar después
+    // (al abrir otro fichero, al cerrar menús…)
+    const targetId = header.get('id');
+    setTimeout(() => {
+      const present = getState().org.present;
+      if (
+        present.get('path') === targetPath &&
+        present.getIn(['files', targetPath, 'selectedHeaderId']) !== targetId
+      )
+        dispatch(selectHeader(targetId));
+    }, 450);
   } else {
     dispatch(setPath(targetPath));
   }
