@@ -605,6 +605,9 @@ export const gtdToggleStar = (task) => (dispatch) =>
 // (2.17) Línea con la fecha de creación de una tarea nueva: «:Created: [2026-10-03 Sat 19:55]»
 export const createdLine = (date = new Date()) =>
   `:Created: [${formatDate(date, 'yyyy-MM-dd eee HH:mm')}]`;
+// (3.10) Ahora va como propiedad :CREATED: dentro del cajón :PROPERTIES:
+export const CREATED_PROPERTY = 'CREATED';
+export const createdStamp = (date = new Date()) => `[${formatDate(date, 'yyyy-MM-dd eee HH:mm')}]`;
 
 // (3.09) Título de una tarea nueva que se guarda sin título: «Capturado [2026-10-18 Sun]»
 export const capturedTitle = (date = new Date()) =>
@@ -636,6 +639,7 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (fields.area) props = setProperty(props, 'AREA', fields.area);
   if (fields.energy) props = setProperty(props, ENERGY_PROPERTY, fields.energy);
   if (fields.effort) props = setProperty(props, EFFORT_PROPERTY, fields.effort);
+  if (fields.created) props = setProperty(props, CREATED_PROPERTY, createdStamp());
   let planning = List();
   if (fields.scheduled)
     planning = setPlanning(planning, 'SCHEDULED', fields.scheduled, fields.scheduledRepeat);
@@ -653,10 +657,7 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   })
     .set('propertyListItems', props)
     .set('planningItems', planning)
-    .set(
-      'rawDescription',
-      [fields.created ? createdLine() : '', fields.notes || ''].filter(Boolean).join('\n')
-    );
+    .set('rawDescription', fields.notes || '');
   // (2.15) fields.rawDescription: el cuerpo tal cual (p. ej. el de una plantilla de captura)
   const description =
     fields.rawDescription !== undefined

@@ -369,6 +369,7 @@ export default function TaskEditor({
   const editorRef = useRef(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const sheetCloseRef = useRef(null);
   const modeRef = useRef({ mustDecide, replacesRow });
   modeRef.current = { mustDecide, replacesRow };
   // ORG Mode para Eli: una tarea recién creada no se cierra al tocar fuera: el editor se «agita»
@@ -391,7 +392,8 @@ export default function TaskEditor({
       if (e.target.closest && e.target.closest('.eli-prompt__overlay, .eli-palette__overlay')) {
         return false;
       }
-      if (!modeRef.current.replacesRow) {
+      // (3.10) la hoja del móvil va en un portal: su «hermano» es toda la app, no la fila
+      if (!modeRef.current.replacesRow && !sheet) {
         const row = el.previousElementSibling;
         if (row && row.contains(e.target)) return false;
       }
@@ -410,6 +412,19 @@ export default function TaskEditor({
       pending = null;
       if (!p || e.pointerId !== p.id) return;
       if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 10) return;
+      // (3.10) hoja del móvil: tocar fuera = guardar y cerrar (lo que hacía «Hecho»)
+      if (sheet && sheetCloseRef.current) {
+        e.preventDefault();
+        // que ese mismo toque no abra/seleccione lo que hay debajo
+        const eat = (ev) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+        };
+        document.addEventListener('click', eat, { capture: true, once: true });
+        setTimeout(() => document.removeEventListener('click', eat, true), 450);
+        sheetCloseRef.current();
+        return;
+      }
       if (modeRef.current.mustDecide) {
         attention();
         return;
@@ -463,6 +478,7 @@ export default function TaskEditor({
   // como las hojas de iOS
   const closeEditorRef = useRef(closeEditor);
   closeEditorRef.current = closeEditor;
+  sheetCloseRef.current = closeEditor;
   useEffect(() => {
     const el = editorRef.current;
     if (!sheet || !el) return undefined;
@@ -723,16 +739,11 @@ export default function TaskEditor({
       onKeyDown={onKeyDown}
       data-testid="gtd-editor"
     >
+      {/* (3.10) pestaña tipo iOS: sin «Hecho»; se cierra (y guarda) deslizando hacia abajo o
+          tocando fuera */}
       {sheet && (
-        <div className="gtd-sheet__top">
-          <button
-            type="button"
-            className="gtd-sheet__done"
-            onClick={() => closeEditor()}
-            data-testid="gtd-sheet-done"
-          >
-            Hecho
-          </button>
+        <div className="gtd-sheet__top" data-testid="gtd-sheet-grabber">
+          <span className="gtd-sheet__grabber" aria-hidden="true" />
         </div>
       )}
       <div className="gtd-ed__main">

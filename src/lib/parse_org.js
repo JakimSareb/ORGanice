@@ -16,7 +16,8 @@ const beginningRegexp = /(\[\[((?:\\[[\]]|[^\]])*)\]\]|\[\[((?:\\[[\]]|[^\]])*)\
 const httpUrlRegexp = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*))/;
 
 // Regexp taken from https://stackoverflow.com/a/1373724/999007
-const urlRegexp = /([a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)/;
+// (3.10) también con mayúsculas (antes «GileadGraduation@…» se subrayaba desde «raduation»)
+const urlRegexp = /([a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)/;
 
 const internationalPhoneRegexp = /((\+|00)\d{8,30})/;
 
@@ -689,6 +690,45 @@ export const parseDescriptionPrefixElements = (rawText) => {
     if (late.planningItems.size > 0) {
       planningItems = late.planningItems;
       propertyListParse = { ...propertyListParse, strippedDescription: late.strippedDescription };
+    }
+  }
+  // ORG Mode para Eli (3.10): la línea «:Created: [fecha]» (la escribían la app y las plantillas
+  // de Emacs) al principio de las notas, antes o después del cajón :PROPERTIES:, pasa a ser la
+  // propiedad :CREATED: (al guardar, el fichero queda con ella dentro del cajón).
+  const createdRe = /^[ \t]*:Created:[ \t]*(.*?)[ \t]*(?:\n|$)/i;
+  let createdValue = null;
+  const takeCreated = (text) => {
+    const m = text.match(createdRe);
+    if (!m) return text;
+    if (createdValue === null) createdValue = m[1];
+    return text.slice(m[0].length);
+  };
+  if (
+    propertyListParse.propertyListItems.size === 0 &&
+    createdRe.test(planningItemsParse.strippedDescription)
+  ) {
+    const rest = takeCreated(planningItemsParse.strippedDescription);
+    const again = parsePropertyList(rest);
+    propertyListParse =
+      again.propertyListItems.size > 0
+        ? again
+        : { ...propertyListParse, strippedDescription: rest };
+  } else if (createdRe.test(propertyListParse.strippedDescription)) {
+    propertyListParse = {
+      ...propertyListParse,
+      strippedDescription: takeCreated(propertyListParse.strippedDescription),
+    };
+  }
+  if (createdValue !== null) {
+    const items = propertyListParse.propertyListItems;
+    if (!items.some((p) => String(p.get('property')).toUpperCase() === 'CREATED')) {
+      let value = createdValue ? parseMarkupAndCookies(createdValue) : null;
+      if (value && value[0].type !== 'timestamp')
+        value = [{ contents: createdValue, type: 'text' }];
+      propertyListParse = {
+        ...propertyListParse,
+        propertyListItems: items.push(fromJS({ property: 'CREATED', value, id: generateId() })),
+      };
     }
   }
   // In Orgmode, notes are added below properties and before
