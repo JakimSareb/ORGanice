@@ -68,12 +68,16 @@ const FileBrowser = ({
           const isBackupFile = file.get('name').endsWith('.organice-bak');
           const isOrgFile = /\.org(\.gpg|\.asc)?$/.test(file.get('name'));
           const isEncryptedFile = /\.(gpg|asc)$/.test(file.get('name'));
+          // (3.13) guiones Fountain: se abren con su propio editor
+          const isFountain = /\.fountain$/i.test(file.get('name'));
           const isSettingsFile = file.get('name') === '.organice-config.json';
 
           const iconClass = classNames('file-browser__file-list__icon fas', {
             'fa-folder': isDirectory,
             'file-browser__file-list__icon--directory': isDirectory,
-            'fa-file': !isDirectory && !isBackupFile && !isSettingsFile,
+            'fa-file': !isDirectory && !isBackupFile && !isSettingsFile && !isFountain,
+            'fa-film': isFountain,
+            'file-browser__file-list__icon--fountain': isFountain,
             'file-browser__file-list__icon--not-org': !isOrgFile,
             'fa-copy': isBackupFile,
             'fa-cogs': isSettingsFile,
@@ -89,7 +93,10 @@ const FileBrowser = ({
             );
           } else {
             return (
-              <Link to={`/file${file.get('path')}`} key={file.get('id')}>
+              <Link
+                to={`${isFountain ? '/fountain' : '/file'}${file.get('path')}`}
+                key={file.get('id')}
+              >
                 <li className="file-browser__file-list__element">
                   <i className={iconClass} /> {file.get('name')}
                   {isEncryptedFile && (

@@ -15,7 +15,7 @@ export const filterAndSortDirectoryListing = (listing) => {
       // Show all folders
       if (file.type === 'directory') return true;
       // And only file with the 'org' extension
-      return file.basename.match(/org$|org_archive$/);
+      return file.basename.match(/org$|org_archive$|\.fountain$/i);
     })
     .sort((a, b) => {
       // Folders before files

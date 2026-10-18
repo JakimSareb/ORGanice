@@ -82,7 +82,7 @@ class HeaderBar extends PureComponent {
     if (!isAuthenticated || activeModalPage) return null;
     const root = this.getPathRoot();
     if (root === 'gtd') return 'gtd';
-    if (root === 'files') return 'docs';
+    if (root === 'files' || root === 'fountain') return 'docs';
     if (root === 'file' && !isStaticFile(this.props.path)) return 'docs';
     return null;
   }
@@ -92,7 +92,7 @@ class HeaderBar extends PureComponent {
     const { location, path, selectedHeaderId, narrowedHeaderId, isAuthenticated } = this.props;
     if (!isAuthenticated) return;
     const root = this.getPathRoot();
-    if (root === 'files') {
+    if (root === 'files' || root === 'fountain') {
       rememberDoc({ route: location.pathname });
     } else if (
       root === 'file' &&
@@ -123,8 +123,8 @@ class HeaderBar extends PureComponent {
     const root = this.getPathRoot();
     const { pathname } = this.props.location;
     let up = null;
-    if (root === 'file') {
-      const filePath = pathname.substr('/file'.length).replace(/\/$/, '');
+    if (root === 'file' || root === 'fountain') {
+      const filePath = pathname.substr(root.length + 1).replace(/\/$/, '');
       const dir = filePath.split('/').slice(0, -1).join('/');
       up = { to: `/files${dir}`, label: 'Ficheros' };
     } else if (root === 'files') {

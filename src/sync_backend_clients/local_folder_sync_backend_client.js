@@ -55,7 +55,7 @@ export const requestFolderPermission = async () => {
   return handle.requestPermission({ mode: 'readwrite' });
 };
 
-const ORG_FILE = /\.(org|org_archive)(\.gpg|\.asc)?$/i;
+const ORG_FILE = /\.(org|org_archive)(\.gpg|\.asc)?$|\.fountain$/i; // (3.13) + guiones
 
 const splitPath = (path) =>
   String(path || '')
