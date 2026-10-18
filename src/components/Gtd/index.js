@@ -55,6 +55,7 @@ import {
   gtdPlaceNextTo,
   gtdToggleStar,
   gtdAddTask,
+  capturedTitle,
   createdLine,
   gtdDeleteTask,
   gtdMoveToProject,
@@ -113,6 +114,7 @@ import { parseOrgLink } from '../../lib/eli_org_links';
 import { followOrgLinkSplitAware, openSplitAware } from '../../lib/eli_split_links';
 import { declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
+import { noteTextParts, isWebUri } from '../../lib/eli_note_links';
 import TaskEditor from './TaskEditor';
 import Drawer from '../UI/Drawer';
 import AgendaModal from '../OrgFile/components/AgendaModal';
@@ -271,10 +273,65 @@ const noteLineWithMedia = (index, line, linkTarget) => {
     }
     return desc || uri;
   });
-  return media.length
+  // (3.09) `raw`: la línea con los enlaces que no son adjuntos (para pintarlos clicables)
+  const raw = line.replace(NOTE_LINK_RE, (m, uri) => (linkTarget && linkTarget(uri) ? '' : m));
+  const out = media.length
     ? { index, text: rest.replace(/\s+$/, '').replace(/^\s*[-+]\s*$/, ''), media }
     : { index, text: rest };
+  if (/\[\[|https?:\/\//.test(line)) {
+    const r = media.length ? raw.replace(/\s+$/, '').replace(/^\s*[-+]\s*$/, '') : raw;
+    if (r !== out.text) out.raw = r;
+  }
+  return out;
 };
+
+// (3.09) Texto de las notas con los enlaces clicables (web, file:, id:, cabeceras…), sin entrar
+// en edición
+export function NoteText({ text, onOpenLink }) {
+  const parts = noteTextParts(text);
+  if (!parts.some((p) => p.link)) return text || ' ';
+  const stop = (e) => e.stopPropagation();
+  return parts.map((p, i) =>
+    !p.link ? (
+      <React.Fragment key={i}>{p.text}</React.Fragment>
+    ) : isWebUri(p.link) ? (
+      <a
+        key={i}
+        className="gtd-note-link"
+        href={p.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={p.link}
+        onClick={stop}
+        onDoubleClick={stop}
+        onPointerDown={stop}
+        onPointerUp={stop}
+        data-testid="gtd-note-link"
+      >
+        {p.text}
+      </a>
+    ) : (
+      <span
+        key={i}
+        className="gtd-note-link"
+        role="link"
+        tabIndex={0}
+        title={p.link}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (onOpenLink) onOpenLink(p.link);
+        }}
+        onDoubleClick={stop}
+        onPointerDown={stop}
+        onPointerUp={stop}
+        data-testid="gtd-note-link"
+      >
+        {p.text}
+      </span>
+    )
+  );
+}
 export const notesLinesOf = (text, linkTarget = null) => {
   const out = [];
   let inDrawer = false;
@@ -322,6 +379,78 @@ const groupNoteTables = (lines) => {
   return out;
 };
 
+// (3.09) Notas de una fila (o de un proyecto) a la vista: tablas, casillas, adjuntos y enlaces
+function NotesLines({
+  task,
+  lines,
+  notesMode = 'full',
+  onToggleCheck,
+  onOpenLink,
+  className = '',
+}) {
+  return (
+    <div
+      className={
+        'gtd-task__notes' +
+        (notesMode === 'partial' ? ' is-partial' : '') +
+        (className ? ` ${className}` : '')
+      }
+      data-testid="gtd-task-notes"
+    >
+      {groupNoteTables(lines).map((l) =>
+        l.table ? (
+          // (3.02) tablas Org vistas como tabla (solo lectura)
+          <EliOrgTable key={`t${l.index}`} lines={l.table} testId="gtd-note-table" />
+        ) : l.check && notesMode === 'full' ? (
+          <label
+            key={l.index}
+            className={'gtd-task__note-check' + (l.checked ? ' is-done' : '')}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={l.checked}
+              onChange={() => onToggleCheck && onToggleCheck(l.index)}
+            />
+            <span>
+              <NoteText text={l.text} onOpenLink={onOpenLink} />
+            </span>
+          </label>
+        ) : l.media ? (
+          <div
+            key={l.index}
+            className="gtd-task__note-line gtd-task__note-media"
+            data-testid="gtd-note-media"
+          >
+            {(l.raw !== undefined ? l.raw : l.text).trim() ? (
+              <span>
+                <NoteText text={l.raw !== undefined ? l.raw : l.text} onOpenLink={onOpenLink} />
+              </span>
+            ) : null}
+            {l.media.map((m) => (
+              <span
+                key={m.target}
+                className="gtd-task__note-attach"
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <EliMedia target={m.target} title={m.label} orgPath={task.path} />
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div key={l.index} className="gtd-task__note-line">
+            {l.check ? `${l.checked ? '☑' : '☐'} ` : null}
+            <NoteText text={l.raw !== undefined ? l.raw : l.text} onOpenLink={onOpenLink} />
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 function TaskRow({
   task,
   today,
@@ -355,6 +484,7 @@ function TaskRow({
   onToggleFold = null,
   onTitleClick = null,
   seqMark = null,
+  onOpenLink = null,
 }) {
   const due = dueInfo(task.deadline, today);
   const isProjectRow = !!task.isProject;
@@ -562,54 +692,13 @@ function TaskRow({
             )}
           </div>
           {shownNotes.length > 0 && (
-            <div
-              className={'gtd-task__notes' + (notesMode === 'partial' ? ' is-partial' : '')}
-              data-testid="gtd-task-notes"
-            >
-              {groupNoteTables(shownNotes).map((l) =>
-                l.table ? (
-                  // (3.02) tablas Org vistas como tabla (solo lectura)
-                  <EliOrgTable key={`t${l.index}`} lines={l.table} testId="gtd-note-table" />
-                ) : l.check && notesMode === 'full' ? (
-                  <label
-                    key={l.index}
-                    className={'gtd-task__note-check' + (l.checked ? ' is-done' : '')}
-                    onClick={(e) => e.stopPropagation()}
-                    onDoubleClick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={l.checked}
-                      onChange={() => onToggleCheck && onToggleCheck(l.index)}
-                    />
-                    <span>{l.text}</span>
-                  </label>
-                ) : l.media ? (
-                  <div
-                    key={l.index}
-                    className="gtd-task__note-line gtd-task__note-media"
-                    data-testid="gtd-note-media"
-                  >
-                    {l.text.trim() ? <span>{l.text}</span> : null}
-                    {l.media.map((m) => (
-                      <span
-                        key={m.target}
-                        className="gtd-task__note-attach"
-                        onClick={(e) => e.stopPropagation()}
-                        onDoubleClick={(e) => e.stopPropagation()}
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        <EliMedia target={m.target} title={m.label} orgPath={task.path} />
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div key={l.index} className="gtd-task__note-line">
-                    {l.check ? `${l.checked ? '☑' : '☐'} ${l.text}` : l.text || ' '}
-                  </div>
-                )
-              )}
-            </div>
+            <NotesLines
+              task={task}
+              lines={shownNotes}
+              notesMode={notesMode}
+              onToggleCheck={onToggleCheck}
+              onOpenLink={onOpenLink}
+            />
           )}
         </div>
         <div className="gtd-task__right">
@@ -981,8 +1070,11 @@ export default function GtdView() {
     // (3.01) «Acciones siguientes secuenciales» (como Nirvana): en Next, solo la primera acción
     // de cada proyecto
     // (3.05) las en espera / programadas del proyecto que vayan antes la bloquean
-    if (view.id === 'next' && groupMode === 'sequential')
+    if (view.id === 'next' && groupMode === 'sequential') {
       list = firstPerProject(list, tasks, today);
+      // (3.09) en dos partes: «Sin proyecto» (sueltas) y «Proyectos» (la siguiente de cada uno)
+      list = [...list.filter((t) => !t.project), ...list.filter((t) => !!t.project)];
+    }
     if (freshKeys.length) {
       const fresh = freshKeys.map((k) => list.find((t) => t.key === k)).filter(Boolean);
       if (fresh.length) list = [...fresh, ...list.filter((t) => !freshKeys.includes(t.key))];
@@ -998,6 +1090,18 @@ export default function GtdView() {
         out[firstRep.key] = { id: 'repeats', label: 'Se repiten', icon: 'fas fa-sync-alt' };
       const first = rendered.find((t) => !isFresh(t) && t.isHabit);
       if (first) out[first.key] = { id: 'habits', label: 'Hábitos', icon: 'fas fa-redo-alt' };
+    } else if (view.id === 'next' && groupMode === 'sequential') {
+      const isFresh = (t) => freshKeys.includes(t.key);
+      const firstLoose = rendered.find((t) => !isFresh(t) && !t.project);
+      const firstProj = rendered.find((t) => !isFresh(t) && !!t.project);
+      if (firstLoose)
+        out[firstLoose.key] = { id: 'seq-loose', label: 'Sin proyecto', icon: 'fas fa-inbox' };
+      if (firstProj)
+        out[firstProj.key] = {
+          id: 'seq-projects',
+          label: 'Proyectos',
+          icon: 'fas fa-project-diagram',
+        };
     } else if (view.id === 'logbook') {
       let prev = null;
       rendered.forEach((t) => {
@@ -1007,7 +1111,7 @@ export default function GtdView() {
       });
     }
     return out;
-  }, [rendered, splitHabits, view.id, today, freshKeys]);
+  }, [rendered, splitHabits, view.id, today, freshKeys, groupMode]);
 
   // ORG Mode para Eli (2.15): lo que se pinta en la lista: cabeceras y filas. En un proyecto, por
   // secciones de estado (como Nirvana); en las listas, opcionalmente agrupado por proyecto.
@@ -1464,6 +1568,15 @@ export default function GtdView() {
     showMessage('Enlace', target);
   };
 
+  // (3.09) enlaces de las notas a la vista (web o de la app)
+  const openLinkAny = (task, target) => {
+    if (/^(https?:|mailto:)/i.test(target || '')) {
+      window.open(target, '_blank', 'noopener');
+      return;
+    }
+    openLink(task, target);
+  };
+
   const allTags = useMemo(() => {
     const declared = declaredTags;
     const used = new Set();
@@ -1720,8 +1833,9 @@ export default function GtdView() {
   const createFromDraft = (changes, projectKey, fromRapid = null) => {
     const d = fromRapid || draft;
     if (!d) return;
-    const title = (changes.rawTitle !== undefined ? changes.rawTitle : d.title || '').trim();
-    if (!title) return;
+    // (3.09) sin título (pero con algo rellenado): «Capturado [fecha de hoy]»
+    const title =
+      (changes.rawTitle !== undefined ? changes.rawTitle : d.title || '').trim() || capturedTitle();
     const pk = projectKey !== undefined ? projectKey : d.projectKey;
     const parent = pk ? allProjects.find((p) => p.key === pk) : null;
     const target = parent ? { path: parent.path, parentId: parent.id } : d.target;
@@ -3951,6 +4065,7 @@ export default function GtdView() {
       showTags={details.tags}
       showEffort={details.effort}
       wrapTitle={details.wrap}
+      onOpenLink={(target) => openLinkAny(item.task, target)}
     />
   );
 
@@ -4006,6 +4121,24 @@ export default function GtdView() {
             placeholder="Buscar"
             data-testid="gtd-search"
           />
+          {/* (3.09) ✕ para borrar la búsqueda */}
+          {text && (
+            <button
+              type="button"
+              className="gtd-side__search-clear"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setText('');
+                const el = document.querySelector('[data-testid="gtd-search"]');
+                if (el) el.focus();
+              }}
+              title="Borrar la búsqueda"
+              aria-label="Borrar la búsqueda"
+              data-testid="gtd-search-clear"
+            >
+              <i className="fas fa-times-circle" />
+            </button>
+          )}
         </div>
         {sidebarBlocks()}
         {sideTags.length > 0 && (
@@ -4212,7 +4345,23 @@ export default function GtdView() {
               <i className="far fa-sticky-note" /> Notas
             </button>
             {projNotesOpen && (
-              <div className="gtd-project-notes__body">{projectTask.description.trim()}</div>
+              // (3.09) como en las tareas: enlaces clicables, imágenes y adjuntos a la vista
+              <NotesLines
+                task={projectTask}
+                lines={notesLinesOf(projectTask.description, (uri) =>
+                  linkTargetFor(uri, projectTask.header)
+                )}
+                notesMode="full"
+                onToggleCheck={(index) =>
+                  dispatch(
+                    gtdSaveTask(projectTask, {
+                      notes: toggleCheckboxLine(projectTask.description, index),
+                    })
+                  )
+                }
+                onOpenLink={(target) => openLinkAny(projectTask, target)}
+                className="gtd-project-notes__body"
+              />
             )}
           </div>
         )}

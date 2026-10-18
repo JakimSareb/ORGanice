@@ -3,6 +3,22 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.09 (octubre de 2026)
+** Vista GTD
+- Editor de tareas: botón *Hoy* junto a la fecha límite («vence»): el «Restablecer» del selector del iPhone solo la borraba.
+- Móvil: *arrastrar hacia abajo la hoja de la tarea* (desde arriba del todo) la guarda y la cierra, como las hojas de iOS.
+- Editor de tareas: el *nombre del fichero* abre «Mover a» (refile). En el ordenador se subraya al pasar el ratón; en el móvil está en ⋯.
+- Arreglado (móvil): pulsar Intro dos veces en las notas ya no cierra la edición (el teclado del iPhone mandaba el 2.º Intro con Mayúsculas): solo hace el salto de línea.
+- El cuadro de notas del editor lleva un *marco fino y discreto*, en todos los temas.
+- Con *Acciones siguientes secuenciales*, Next va en dos partes: *Sin proyecto* (las sueltas) y *Proyectos* (la siguiente acción de cada uno).
+- *Enlaces clicables en las notas a la vista* (las desplegadas en la lista, las del proyecto y la vista previa del editor en el móvil), sin entrar en edición. Las notas de los *proyectos* muestran también las imágenes y adjuntos, como las tareas.
+- Arreglado: tareas con SCHEDULED que salían en Todo. Era una línea =SCHEDULED:= colocada *debajo* del cajón =:PROPERTIES:= (en Org va justo tras el título, y ni Emacs la veía): ahora se reconoce y, al guardar, vuelve a su sitio.
+- Buscador: botón ✕ para borrar la búsqueda.
+- Una tarea nueva que se guarda *sin título* (con notas u otra cosa rellenada) se llama =Capturado [2026-10-18 Sun]= (la fecha de hoy). Sin nada rellenado, no se crea.
+** Documentos y enlaces
+- Arreglado: los enlaces a una cabecera con fecha en el título (=[2026-10-14 Wed] JW=) perdían los corchetes y luego no la encontraban. Ahora se escriben como Org (=[[file:Meetings.org::*\[2026-10-14 Wed\] JW][…]]=, que Emacs también abre) y los enlaces ya creados la encuentran igualmente.
+- Al seguir un enlace a una cabecera, la de destino queda marcada.
+
 * 3.08 (octubre de 2026)
 - Vista GTD, móvil: el cuadro «Fecha de inicio» ya no se sale por la derecha de la pantalla.
 

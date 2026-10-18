@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import EliFormatBar from '../EliFormatBar';
 import { continueListOnEnter } from '../../lib/eli_format';
+import { noteTextParts, hasNoteLinks, isWebUri } from '../../lib/eli_note_links';
 import ScheduleField from './ScheduleField';
 import { fileLinkTarget } from '../../lib/eli_media';
 import { linkTargetFor } from '../../lib/eli_org_attach';
@@ -115,6 +116,22 @@ export const currentListOf = (task) => {
   return (
     { NEXT: 'next', TODO: 'later', WAITING: 'waiting', MAYBE: 'someday' }[task.keyword] || 'later'
   );
+};
+
+// (3.09) hoy, como valor de un <input type=date> (AAAA-MM-DD, hora local)
+const todayInput = () => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
+// (3.09) pantalla táctil (móvil o tableta)
+const isCoarsePointer = () => {
+  try {
+    return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  } catch (e) {
+    return false;
+  }
 };
 
 export default function TaskEditor({
@@ -237,6 +254,8 @@ export default function TaskEditor({
     });
   };
   const checkboxes = encrypted ? [] : checkboxesOf(notes);
+  // (3.09) en la vista previa, las notas con enlaces se pintan aparte (enlaces clicables)
+  const notesPreviewLinks = !editingText && !encrypted && hasNoteLinks(notes);
 
   const addTag = (raw) => {
     const t = (raw || '').trim().replace(/[\s:]+/g, '');
@@ -440,6 +459,72 @@ export default function TaskEditor({
     onClose();
   };
 
+  // (3.09) Hoja del móvil: arrastrarla hacia abajo (desde arriba del todo) = guardar y cerrar,
+  // como las hojas de iOS
+  const closeEditorRef = useRef(closeEditor);
+  closeEditorRef.current = closeEditor;
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!sheet || !el) return undefined;
+    let start = null;
+    let dy = 0;
+    let dragging = false;
+    const reset = () => {
+      el.style.transition = 'transform 0.2s ease';
+      el.style.transform = '';
+      start = null;
+      dy = 0;
+      dragging = false;
+    };
+    const onStart = (e) => {
+      if (e.touches.length !== 1 || el.scrollTop > 0) return;
+      const t = e.target;
+      // no al escribir (el campo con el foco) ni en menús, tablas o selectores
+      if (t && t.closest && t.closest('select, .eli-org-table, .gtd-sched__menu')) return;
+      if (t && t === document.activeElement && /^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
+      start = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      dy = 0;
+      dragging = false;
+    };
+    const onMove = (e) => {
+      if (!start) return;
+      const mx = e.touches[0].clientX - start.x;
+      const my = e.touches[0].clientY - start.y;
+      if (!dragging) {
+        if (my < 8 && Math.abs(mx) < 8) return;
+        if (my < 8 || Math.abs(mx) > my || el.scrollTop > 0) {
+          start = null;
+          return;
+        }
+        dragging = true;
+      }
+      dy = Math.max(0, my);
+      if (e.cancelable) e.preventDefault();
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${dy}px)`;
+    };
+    const onEnd = () => {
+      if (!start) return;
+      const close = dragging && dy > Math.min(140, window.innerHeight * 0.18);
+      if (close) {
+        el.style.transition = 'transform 0.18s ease';
+        el.style.transform = `translateY(${window.innerHeight}px)`;
+        start = null;
+        setTimeout(() => closeEditorRef.current(), 160);
+      } else reset();
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', reset);
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', reset);
+    };
+  }, [sheet]);
+
   // (3.0) Como Nirvana: Intro (en el título) o Mayús+Intro (en cualquier campo) guardan; Esc
   // cancela (descarta lo cambiado; una tarea nueva no se crea)
   const cancelEditor = () => {
@@ -491,6 +576,17 @@ export default function TaskEditor({
       cancelEditor();
     } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey || e.shiftKey)) {
       if (e.nativeEvent && e.nativeEvent.isComposing) return;
+      // (3.09) en el móvil, el teclado pone Mayúsculas tras un salto de línea y el 2.º Intro
+      // llega como Mayús+Intro: dentro de las notas solo es un salto de línea
+      if (
+        e.shiftKey &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        e.target &&
+        e.target.tagName === 'TEXTAREA' &&
+        isCoarsePointer()
+      )
+        return;
       e.preventDefault();
       e.stopPropagation();
       closeEditor();
@@ -527,6 +623,22 @@ export default function TaskEditor({
         onChange={(e) => onChange(e.target.value)}
         data-testid={testId}
       />
+      {/* (3.09) «Hoy» al lado (el «Restablecer» del selector de iOS solo la borra) */}
+      {value !== todayInput() && (
+        <button
+          type="button"
+          className="gtd-ed__today"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onChange(todayInput());
+          }}
+          title={`${label}: hoy`}
+          data-testid={testId + '-today'}
+        >
+          Hoy
+        </button>
+      )}
       {value && (
         <button
           type="button"
@@ -861,9 +973,75 @@ export default function TaskEditor({
             }
           />
         )}
+        {/* (3.09) vista previa (móvil) con enlaces: se pueden pulsar sin entrar en edición; un
+            toque en el resto edita, con el cursor donde se ha tocado */}
+        {notesPreviewLinks && (
+          <div
+            className="gtd-editor__notes gtd-editor__notes-preview is-preview"
+            onClick={(e) => {
+              if (e.target.closest && e.target.closest('.gtd-note-link')) return;
+              let pos = notes.length;
+              try {
+                const r = document.caretRangeFromPoint
+                  ? document.caretRangeFromPoint(e.clientX, e.clientY)
+                  : null;
+                const node = r && r.startContainer;
+                const seg =
+                  node && (node.nodeType === 3 ? node.parentElement : node).closest('[data-raw]');
+                if (seg) pos = Number(seg.dataset.raw) + (r ? r.startOffset : 0);
+              } catch (err) {}
+              const el = notesRef.current;
+              if (!el) return;
+              el.readOnly = false;
+              try {
+                el.focus();
+                el.setSelectionRange(pos, pos);
+              } catch (err) {}
+              setEditingText(true);
+            }}
+            data-testid="gtd-editor-notes-preview"
+          >
+            {noteTextParts(notes).map((p, i) =>
+              !p.link ? (
+                <span key={i} data-raw={p.start}>
+                  {p.text}
+                </span>
+              ) : isWebUri(p.link) ? (
+                <a
+                  key={i}
+                  className="gtd-note-link"
+                  href={p.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="gtd-note-link"
+                >
+                  {p.text}
+                </a>
+              ) : (
+                <span
+                  key={i}
+                  className="gtd-note-link"
+                  role="link"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onOpenLink) onOpenLink(p.link);
+                  }}
+                  data-testid="gtd-note-link"
+                >
+                  {p.text}
+                </span>
+              )
+            )}
+          </div>
+        )}
         <textarea
           ref={notesRef}
-          className={'gtd-editor__notes' + (editingText ? '' : ' is-preview')}
+          className={
+            'gtd-editor__notes' +
+            (editingText ? '' : ' is-preview') +
+            (notesPreviewLinks ? ' is-behind-preview' : '')
+          }
           readOnly={!editingText}
           onPointerUp={startEditing}
           value={encrypted ? '(contenido cifrado: ábrelo en su fichero para verlo)' : notes}
@@ -1124,13 +1302,29 @@ export default function TaskEditor({
       </div>
 
       <div className="gtd-editor__actions">
-        <span
-          className="gtd-ed__file"
-          title={`Fichero: ${task.path}`}
-          data-testid="gtd-editor-file"
-        >
-          <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
-        </span>
+        {/* (3.09) el nombre del fichero abre «Mover a» (refile) */}
+        {onMove && !isNew ? (
+          <button
+            type="button"
+            className="gtd-ed__file gtd-ed__file--move"
+            title={`Fichero: ${task.path} · Mover a…`}
+            onClick={(e) => {
+              commit();
+              onMove(e);
+            }}
+            data-testid="gtd-editor-file"
+          >
+            <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
+          </button>
+        ) : (
+          <span
+            className="gtd-ed__file"
+            title={`Fichero: ${task.path}`}
+            data-testid="gtd-editor-file"
+          >
+            <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
+          </span>
+        )}
         {!isNew && (
           <button
             type="button"

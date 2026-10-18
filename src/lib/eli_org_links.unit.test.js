@@ -76,3 +76,31 @@ test('rutas de Emacs fuera de la app', () => {
     '/proyectos/web.org'
   );
 });
+
+// (3.09) títulos con corchetes (fechas inactivas)
+describe('enlaces a títulos con fecha', () => {
+  const { headingLink, parseOrgLink, findLinkedHeader } = require('./eli_org_links');
+  const { parseOrg, parseMarkupAndCookies } = require('./parse_org');
+  const headers = parseOrg('* [2026-10-14 Wed] JW\n* Otra\n').get('headers');
+  test('el enlace escapa los corchetes como Org', () => {
+    expect(headingLink({ path: '/Meetings.org', title: '[2026-10-14 Wed] JW' }, '/a.org')).toBe(
+      '[[file:Meetings.org::*\\[2026-10-14 Wed\\] JW][2026-10-14 Wed JW]]'
+    );
+  });
+  test('se lee como un solo enlace y encuentra la cabecera', () => {
+    const link = '[[file:Meetings.org::*\\[2026-10-14 Wed\\] JW][2026-10-14 Wed JW]]';
+    const parts = parseMarkupAndCookies(link);
+    expect(parts.length).toBe(1);
+    expect(parts[0].type).toBe('link');
+    const parsed = parseOrgLink(parts[0].contents.uri);
+    expect(parsed.search).toBe('*[2026-10-14 Wed] JW');
+    expect(findLinkedHeader(headers, parsed.search).getIn(['titleLine', 'rawTitle'])).toBe(
+      '[2026-10-14 Wed] JW'
+    );
+  });
+  test('los enlaces antiguos (sin corchetes) también la encuentran', () => {
+    expect(findLinkedHeader(headers, '*2026-10-14 Wed JW').getIn(['titleLine', 'rawTitle'])).toBe(
+      '[2026-10-14 Wed] JW'
+    );
+  });
+});

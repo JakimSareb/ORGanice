@@ -146,7 +146,7 @@ describe('3.05: adjuntos de org-attach', () => {
       text: '',
       media: [{ target: 'data/3f/2a9c1e-0000/foto.png', label: 'La foto' }],
     });
-    expect(lines[2]).toEqual({ index: 2, text: 'web' });
+    expect(lines[2]).toEqual({ index: 2, text: 'web', raw: '[[https://a.b][web]]' });
     // sin resolutor, como antes
     expect(notesLinesOf('[[file:a/b.png][B]]')[0]).toEqual({ index: 0, text: 'B' });
   });
