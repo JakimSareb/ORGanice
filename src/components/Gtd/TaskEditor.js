@@ -5,6 +5,7 @@ import EliFormatBar from '../EliFormatBar';
 import { continueListOnEnter } from '../../lib/eli_format';
 import { noteTextParts, hasNoteLinks, isWebUri } from '../../lib/eli_note_links';
 import ScheduleField from './ScheduleField';
+import GtdPropertiesDialog from './GtdPropertiesDialog';
 import { fileLinkTarget } from '../../lib/eli_media';
 import { linkTargetFor } from '../../lib/eli_org_attach';
 import { removeLinksToTarget, fileTargetsInText } from '../../lib/eli_attachments';
@@ -167,7 +168,9 @@ export default function TaskEditor({
   // (3.05) móvil: se abre en vista previa; título y notas se editan al tocarlos
   preview = false,
   onMove = null, // (3.06) hoja del móvil: «→ Mover» (abre el menú Mover a)
+  onSaveProperties = null, // (3.11) ver y editar PROPERTIES
 }) {
+  const [propsOpen, setPropsOpen] = useState(false);
   const [editingText, setEditingText] = useState(!preview);
   // (3.06) en el móvil, la vista previa es una hoja a pantalla completa, como Nirvana
   const [sheet] = useState(
@@ -1349,6 +1352,21 @@ export default function TaskEditor({
             <i className="fas fa-external-link-alt" /> Abrir
           </button>
         )}
+        {/* (3.11) ver y editar las PROPERTIES de la tarea */}
+        {!isNew && onSaveProperties && (
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--link"
+            onClick={() => {
+              commit();
+              setPropsOpen(true);
+            }}
+            title="Ver y editar las propiedades (PROPERTIES)"
+            data-testid="gtd-editor-props"
+          >
+            <i className="fas fa-list-ul" /> Propiedades
+          </button>
+        )}
         {onAttachFiles && !encrypted && (
           <label className="gtd-btn gtd-btn--link gtd-ed__attach" title="Adjuntar archivos">
             <i className="fas fa-paperclip" /> Adjuntar
@@ -1425,6 +1443,13 @@ export default function TaskEditor({
           </div>
         )}
       </div>
+      {propsOpen && (
+        <GtdPropertiesDialog
+          task={task}
+          onSave={(rows) => onSaveProperties(rows)}
+          onClose={() => setPropsOpen(false)}
+        />
+      )}
       {sheet && (
         <div className="gtd-sheet__bar" data-testid="gtd-sheet-bar">
           {onMove && !isNew && (

@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.11 (octubre de 2026)
+** Vista GTD
+- Las *notas* de una tarea se despliegan *por debajo* de la fila: la fila (asa, casilla, ★, título, duración, energía, etiquetas…) se queda igual arriba. Van sangradas al nivel del título y con una línea gris a la izquierda, como en Nirvana (las listas, con sus casillas).
+- El *icono de notas* va pegado al final del título.
+- Editor de tareas: botón *Propiedades* (en el móvil, en ⋯) para *ver y editar el cajón =:PROPERTIES:=*: cambiar nombres y valores, añadir y quitar.
+- Menú de la tarea: *Mover a otro fichero…*: lleva la tarea (con sus subtareas; también varias seleccionadas) a cualquier fichero cargado, a su nivel superior o *bajo una de sus cabeceras*, con buscador.
+
 * 3.10 (octubre de 2026)
 ** Documentos
 - Arreglado: un *elemento de lista* bajo una cabecera (con sus notas debajo) vuelve a poder *seleccionarse* y *moverse arriba/abajo* dentro de la cabecera (desde la 3.05 el toque seleccionaba la cabecera y perdía el elemento).
