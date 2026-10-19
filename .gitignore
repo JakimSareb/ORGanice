@@ -44,3 +44,7 @@ eli/dist/
 eli/cert.pem
 eli/key.pem
 eli/codigo-fuente/
+
+# ORG Mode para Eli: pruebas E2E propias (yarn e2e)
+/build-e2e
+/.parcel-cache-e2e

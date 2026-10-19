@@ -1,4 +1,4 @@
-# ORGanice 3.17
+# ORGanice 3.18
 
 <img src="src/images/logo-unicornio.svg" alt="" width="96" align="right">
 
@@ -147,7 +147,16 @@ Dropbox (WebDAV y GitLab, que organice también admite, quedan bloqueados).
 yarn install --ignore-engines
 yarn --ignore-engines build      # compila en dist/ para /ORGanice/
 npx jest src/lib                 # pruebas (incluye interoperabilidad con GnuPG si está instalado)
+yarn --ignore-engines e2e        # pruebas E2E en el navegador (compila en build-e2e/ y las lanza)
 ```
+
+Pruebas E2E (`e2e/eli/`): Playwright con un WebDAV simulado (los ficheros de cada prueba viven
+en memoria y se puede comprobar lo que escribe la app), en dos tamaños: `ordenador` y `movil`.
+El arnés (`e2e/eli/harness.js`) da `app.open(ficheros, ruta)`, `app.press`, `app.touchDrag`,
+`app.fileAfterSync` y ayudas de GTD. La primera vez: `npx playwright install chromium` (o
+indicar otro Chromium con `E2E_CHROME=/ruta/al/chrome`). `yarn e2e:run` las repite sin volver a
+compilar; `yarn e2e:run -g Fountain` lanza solo las que coinciden. No entran en el build ni en
+jest. Las de la carpeta `e2e/tests` son las del organice original (no se usan).
 
 Cada cambio visible para quien usa la app se documenta en el manual (`sample.org`) y en las
 novedades (`changelog.org`). El manual admite fechas relativas a hoy (`%HOY%`, `%HOY+3%`,
