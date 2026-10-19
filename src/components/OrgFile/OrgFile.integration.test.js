@@ -11,10 +11,10 @@ import readFixture from '../../../test_helpers/index';
 import rootReducer from '../../reducers/';
 
 import { setPath, parseFile } from '../../actions/org';
-import { setShouldLogIntoDrawer } from '../../actions/base';
+import { setShouldLogIntoDrawer, activatePopup } from '../../actions/base';
 import { getCurrentTimestampAsText } from '../../lib/timestamps';
 import { Map, Set, fromJS, List } from 'immutable';
-import { formatDistanceToNow } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
 import { property, pipe, map, over, curry, times } from 'lodash/fp';
 
 import { render, fireEvent, cleanup, within } from '@testing-library/react';
@@ -22,7 +22,11 @@ import { render, fireEvent, cleanup, within } from '@testing-library/react';
 // console.log(prettyDOM(container, 999999999999999999999999));
 import { STATIC_FILE_PREFIX } from '../../lib/org_utils';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  jest.restoreAllMocks();
+  localStorage.clear();
+});
 
 describe('Render all views', () => {
   const testOrgFile = readFixture('main_test_file');
@@ -32,6 +36,16 @@ describe('Render all views', () => {
   beforeEach(() => {
     // Set global variable which can also be read from application code
     window.testRunner = true;
+    // (3.21b) Como en el organice original: un clic en una cabecera la pliega/despliega (en
+    // ORGanice el primero solo selecciona; se elige en Ajustes, lib/eli_tap_mode).
+    localStorage.setItem(
+      'eliTapMode',
+      JSON.stringify({ 'header-desktop': 'open', 'header-mobile': 'open' })
+    );
+    // (3.21b) Dos clics seguidos en la misma cabecera = editar el título en su sitio (doble
+    // toque, < 380 ms). En las pruebas cada llamada a Date.now avanza 1 s para que no lo sean.
+    let fakeNow = Date.now();
+    jest.spyOn(Date, 'now').mockImplementation(() => (fakeNow += 1000));
 
     let capture = Map();
     capture = capture.set('captureTemplates', []);
@@ -80,9 +94,11 @@ describe('Render all views', () => {
       getAllByText,
       getByTitle,
       getByTestId,
+      queryByTestId,
       queryByText,
       queryAllByText,
-      getByPlaceholderText;
+      getByPlaceholderText,
+      openSearch;
 
     beforeEach(() => {
       let res = render(
@@ -95,13 +111,20 @@ describe('Render all views', () => {
       );
 
       container = res.container;
-      getByText = res.getByText;
-      getAllByText = res.getAllByText;
+      // (3.21b) La barra de abajo (EliDocBar) y sus menús repiten textos del documento
+      // («TODO», «DONE»…): las búsquedas por texto no miran dentro de ellos.
+      const ignore = { ignore: 'script, style, .eli-docbar *, .eli-docbar-menu *' };
+      getByText = (t, o) => res.getByText(t, { ...ignore, ...o });
+      getAllByText = (t, o) => res.getAllByText(t, { ...ignore, ...o });
       getByTitle = res.getByTitle;
       getByTestId = res.getByTestId;
-      queryByText = res.queryByText;
-      queryAllByText = res.queryAllByText;
+      queryByTestId = res.queryByTestId;
+      queryByText = (t, o) => res.queryByText(t, { ...ignore, ...o });
+      queryAllByText = (t, o) => res.queryAllByText(t, { ...ignore, ...o });
       getByPlaceholderText = res.getByPlaceholderText;
+      // (3.21b) Buscar / Lista de tareas ya no tiene botón propio arriba (se abre desde la
+      // paleta o con la tecla del atajo): se abre la misma ventana directamente.
+      openSearch = () => store.dispatch(activatePopup('search'));
     });
 
     describe('Works with Org files without headlines', () => {
@@ -109,8 +132,8 @@ describe('Render all views', () => {
         store.dispatch(
           parseFile(STATIC_FILE_PREFIX + 'fixtureTestFile.org', readFixture('empty_file'))
         );
-        expect(queryByText('This file has no headlines')).toBeTruthy();
-        expect(queryAllByText('Yes, your file has content.').length).toEqual(0);
+        expect(queryByText('Este fichero no tiene encabezados')).toBeTruthy();
+        expect(queryAllByText(/Sí, tu fichero tiene contenido/).length).toEqual(0);
         // Sanity check, ensure that not the regular test file is loaded.
         expect(queryByText('Top level header')).toBeFalsy();
       });
@@ -118,11 +141,12 @@ describe('Render all views', () => {
 
     describe('Actions within an Org file', () => {
       test('Can select a header in an org file', () => {
-        expect(container.querySelector("[data-testid='org-clock-in']")).toBeFalsy();
+        // (3.21b) Con una cabecera seleccionada, la barra de abajo enseña sus acciones
+        expect(container.querySelector("[data-testid='eli-docbar-row-main']")).toBeFalsy();
 
         fireEvent.click(getByText('Top level header'));
 
-        expect(container.querySelector("[data-testid='org-clock-in']")).toBeTruthy();
+        expect(container.querySelector("[data-testid='eli-docbar-row-main']")).toBeTruthy();
       });
 
       // Org Mode has keywords as workflow states and can cycle through
@@ -152,55 +176,49 @@ describe('Render all views', () => {
 
       // Same behaviour has `S-C-RET` in Emacs Org mode.
       test('Can create a new header with an inherited todoKeyword', () => {
+        // (3.21b) «Encabezado nuevo debajo» (＋) de la barra de abajo; se edita en su sitio
+        const headerAfter = (title) => {
+          const headers = store
+            .getState()
+            .org.present.getIn(['files', STATIC_FILE_PREFIX + 'fixtureTestFile.org', 'headers']);
+          const i = headers.findIndex((h) => h.getIn(['titleLine', 'rawTitle']) === title);
+          return headers.get(i + 1);
+        };
         fireEvent.click(queryByText('Top level header'));
-        // Click 'plus' on the first header which is _not_ a todoKeyword header
-        fireEvent.click(container.querySelectorAll("[data-testid='header-action-plus']")[0]);
-        // "edit title" view has buttons to choose TODO or DONE
-        let drawerElem = getByTestId('drawer');
-        expect(drawerElem).toHaveTextContent('DONE');
-        // switch to "edit full title", which has no such buttons
-        fireEvent.click(getByTitle('Edit title'));
-        drawerElem = getByTestId('drawer');
-        expect(drawerElem).not.toHaveTextContent('DONE');
+        // 'plus' on the first header which is _not_ a todoKeyword header
+        fireEvent.click(getByTestId('eli-docbar-new'));
         expect(getByTestId('titleLineInput').value).toEqual('');
+        expect(headerAfter('Top level header').getIn(['titleLine', 'todoKeyword'])).toBeFalsy();
 
-        // switch back to "edit title"
-        // TODO: Find out why resetting "editRawValues" is broken here
-        // maybe the popup is not closed properly? how to simulate that?
-        // clicking the top of the screen with
-        // fireEvent.click(container.querySelector('.header-bar__title'));
-        // crashes the tests
-        fireEvent.click(getByTitle('Edit title'));
-
-        // Click 'plus' on the second header which _is_ a todoKeyword header
+        // 'plus' on a header which _is_ a todoKeyword header
         fireEvent.click(queryByText('A todo item with schedule and deadline'));
-        fireEvent.click(container.querySelectorAll("[data-testid='header-action-plus']")[1]);
+        fireEvent.click(getByTestId('eli-docbar-new'));
         expect(getByTestId('titleLineInput').value).toEqual('');
-        // switch to "edit full title"
-        fireEvent.click(getByTitle('Edit title'));
-        expect(getByTestId('titleLineInput').value).toEqual('TODO ');
+        expect(
+          headerAfter('A todo item with schedule and deadline').getIn(['titleLine', 'todoKeyword'])
+        ).toEqual('TODO');
       });
 
       test('Can clock in & out of an event', () => {
-        expect(queryByText('Clock In')).toBeFalsy();
-        expect(queryByText('Clock Out')).toBeFalsy();
-
+        // (3.21b) Iniciar/Parar reloj está en el menú ⋯ de la barra de abajo
+        const clockItem = () => {
+          if (!container.querySelector("[data-testid='eli-docbar-clock']"))
+            fireEvent.click(getByTestId('eli-docbar-more'));
+          return getByTestId('eli-docbar-clock');
+        };
         fireEvent.click(getByText('Top level header'));
 
-        expect(container.querySelector("[data-testid='org-clock-in']")).toBeTruthy();
-        expect(container.querySelector("[data-testid='org-clock-out']")).toBeFalsy();
+        expect(clockItem()).toHaveTextContent('Iniciar reloj');
         expect(queryByText(':LOGBOOK:...')).toBeFalsy();
 
-        fireEvent.click(container.querySelector("[data-testid='org-clock-in']"));
+        fireEvent.click(clockItem());
 
-        expect(container.querySelector("[data-testid='org-clock-in']")).toBeFalsy();
-        expect(container.querySelector("[data-testid='org-clock-out']")).toBeTruthy();
+        expect(clockItem()).toHaveTextContent('Parar reloj');
         expect(queryByText(':LOGBOOK:...')).toBeTruthy();
 
-        fireEvent.click(container.querySelector("[data-testid='org-clock-out']"));
+        fireEvent.click(getByTestId('eli-docbar-clock'));
 
-        expect(container.querySelector("[data-testid='org-clock-in']")).toBeTruthy();
-        expect(container.querySelector("[data-testid='org-clock-out']")).toBeFalsy();
+        expect(clockItem()).toHaveTextContent('Iniciar reloj');
         expect(queryByText(':LOGBOOK:...')).toBeTruthy();
 
         fireEvent.click(getByText(':LOGBOOK:...'));
@@ -264,8 +282,8 @@ describe('Render all views', () => {
           expect(queryByText(':LOGBOOK:...')).toBeFalsy();
 
           expect(queryByText('<2020-04-05 Sun +1d>')).toBeTruthy();
+          // (3.21b) sin volver a hacer clic en el título: ahora lo plegaría
           fireEvent.click(queryByText('TODO'));
-          fireEvent.click(getByText('A repeating todo'));
 
           // After the TODO is toggled, it's still just TODO, because
           // the state got tracked
@@ -304,29 +322,32 @@ describe('Render all views', () => {
       });
 
       describe('Undo / Redo', () => {
+        // (3.21b) Deshacer/Rehacer están en la barra de abajo
         test('On loading an Org file, both are disabled', () => {
-          expect(getByTitle('Undo').classList.contains('header-bar__actions__item--disabled')).toBe(
-            true
-          );
-          expect(getByTitle('Redo').classList.contains('header-bar__actions__item--disabled')).toBe(
-            true
-          );
+          expect(getByTestId('eli-docbar-undo').disabled).toBe(true);
+          expect(getByTestId('eli-docbar-redo').disabled).toBe(true);
         });
 
         test('Undo becomes available on "edit header"', () => {
           fireEvent.click(queryByText('Top level header'));
           fireEvent.click(queryByText('TODO'));
-
-          // Open the the title edit textarea
-          fireEvent.click(container.querySelector("[data-testid='edit-header-title']"));
-
-          // Close the title edit textarea
-          fireEvent.click(queryByText('DONE'));
+          expect(queryByText('DONE')).toBeTruthy();
 
           // Undo should become available
-          expect(getByTitle('Undo').classList.contains('header-bar__actions__item--disabled')).toBe(
-            false
-          );
+          expect(getByTestId('eli-docbar-undo').disabled).toBe(false);
+          expect(getByTestId('eli-docbar-redo').disabled).toBe(true);
+
+          // …and undo the change
+          fireEvent.click(getByTestId('eli-docbar-undo'));
+          expect(queryByText('DONE')).toBeFalsy();
+          const todo = store
+            .getState()
+            .org.present.getIn(['files', STATIC_FILE_PREFIX + 'fixtureTestFile.org', 'headers'])
+            .find(
+              (h) => h.getIn(['titleLine', 'rawTitle']) === 'A todo item with schedule and deadline'
+            );
+          expect(todo.getIn(['titleLine', 'todoKeyword'])).toEqual('TODO');
+          expect(getByTestId('eli-docbar-redo').disabled).toBe(false);
         });
       });
 
@@ -400,7 +421,9 @@ describe('Render all views', () => {
 
         test('sends the selected header and its body as an email', () => {
           fireEvent.click(queryByText('Another top level header'));
-          fireEvent.click(getByTestId('share'));
+          // (3.21b) Compartir › Compartir / correo, en la barra de abajo
+          fireEvent.click(getByTestId('eli-docbar-share'));
+          fireEvent.click(getByTestId('eli-docbar-mail'));
           expect(global.open).toBeCalledWith(
             `mailto:?subject=${encodeURIComponent(
               'Another top level header'
@@ -416,16 +439,16 @@ describe('Render all views', () => {
           expect(queryByText('Search')).toBeFalsy();
           expect(queryByText('A todo item with schedule and deadline')).toBeFalsy();
 
-          fireEvent.click(getByTitle('Show Search / Task List'));
+          openSearch();
           const drawerElem = getByTestId('drawer');
           expect(drawerElem).toHaveTextContent('A todo item with schedule and deadline');
         });
 
         test('searches in all headers', () => {
-          fireEvent.click(getByTitle('Show Search / Task List'));
+          openSearch();
           const drawerElem = getByTestId('drawer');
           const input = getByPlaceholderText(
-            'e.g. -DONE doc|man :simple|easy :assignee:nobody|none'
+            'p. ej. -DONE doc|man :simple|easy :assignee:nobody|none'
           );
 
           // All kinds of headers are visible
@@ -443,9 +466,10 @@ describe('Render all views', () => {
         test('searches in sub-headers when narrowed', () => {
           // Click 'narrow' on the first header
           fireEvent.click(queryByText('Top level header'));
-          fireEvent.click(container.querySelectorAll("[data-testid='header-action-narrow']")[0]);
+          fireEvent.click(getByTestId('eli-docbar-more'));
+          fireEvent.click(getByTestId('eli-docbar-narrow'));
 
-          fireEvent.click(getByTitle('Show Search / Task List'));
+          openSearch();
           const drawerElem = getByTestId('drawer');
 
           // Only sub-headers are visible
@@ -459,7 +483,8 @@ describe('Render all views', () => {
       describe('Refile', () => {
         test('removes selected header and subheader from search', () => {
           fireEvent.click(queryByText('Top level header'));
-          fireEvent.click(getByTestId('org-refile'));
+          fireEvent.click(getByTestId('eli-docbar-move'));
+          fireEvent.click(getByTestId('eli-docbar-refile'));
 
           const drawerElem = getByTestId('drawer');
           expect(drawerElem).not.toHaveTextContent('Top level header');
@@ -472,8 +497,12 @@ describe('Render all views', () => {
           expect(queryByText('Task list')).toBeFalsy();
           expect(queryByText('A todo item with schedule and deadline')).toBeFalsy();
 
-          fireEvent.click(getByTitle('Show Search / Task List'));
-          fireEvent.click(getByText('Task List'));
+          openSearch();
+          fireEvent.click(
+            [...document.querySelectorAll('.tab-buttons__btn')].find(
+              (e) => e.textContent === 'Tareas'
+            )
+          );
           const drawerElem = getByTestId('drawer');
           expect(drawerElem).not.toHaveTextContent('Top level header');
           expect(drawerElem).toHaveTextContent('A todo item with schedule and deadline');
@@ -482,16 +511,16 @@ describe('Render all views', () => {
         // Order by state first and then by date. Ergo TODO is before
         // DONE and yesterday is before today.
         test('orders tasks for an Org file', () => {
-          fireEvent.click(getByTitle('Show Search / Task List'));
+          openSearch();
           const drawerElem = getByTestId('drawer');
           expect(drawerElem).toMatchSnapshot();
         });
 
         test('search in TaskList filters headers (by default only with todoKeywords)', () => {
-          fireEvent.click(getByTitle('Show Search / Task List'));
+          openSearch();
           const drawerElem = getByTestId('drawer');
           const input = getByPlaceholderText(
-            'e.g. -DONE doc|man :simple|easy :assignee:nobody|none'
+            'p. ej. -DONE doc|man :simple|easy :assignee:nobody|none'
           );
           fireEvent.change(input, { target: { value: 'a search with no results' } });
 
@@ -504,10 +533,14 @@ describe('Render all views', () => {
         // More rigorous testing of the search parser is here:
         // headline_filter_parser.unit.test.js
         test('search in TaskList filters headers (on demand without todoKeywords)', () => {
-          fireEvent.click(getByTitle('Show Search / Task List'));
-          fireEvent.click(getByText('Task List'));
+          openSearch();
+          fireEvent.click(
+            [...document.querySelectorAll('.tab-buttons__btn')].find(
+              (e) => e.textContent === 'Tareas'
+            )
+          );
           const drawerElem = getByTestId('drawer');
-          getByPlaceholderText('e.g. -DONE doc|man :simple|easy :assignee:nobody|none');
+          getByPlaceholderText('p. ej. -DONE doc|man :simple|easy :assignee:nobody|none');
 
           // Is a regular header without TODO keyword
           expect(drawerElem).not.toHaveTextContent('Another top level header');
@@ -520,47 +553,45 @@ describe('Render all views', () => {
         test('renders Agenda for an Org file', () => {
           // Agenda is not visible by default
           expect(queryByText('Agenda')).toBeFalsy();
-          expect(queryByText('Day')).toBeFalsy();
-          expect(queryByText('Month')).toBeFalsy();
+          expect(queryByText('Día')).toBeFalsy();
+          expect(queryByText('Mes')).toBeFalsy();
           expect(queryByText('A scheduled todo item')).toBeFalsy();
 
-          fireEvent.click(getByTitle('Show agenda'));
+          fireEvent.click(getByTestId('eli-docbar-agenda'));
 
           expect(queryByText('Agenda')).toBeTruthy();
-          expect(queryByText('Day')).toBeTruthy();
-          expect(queryByText('Month')).toBeTruthy();
+          expect(queryByText('Día')).toBeTruthy();
+          expect(queryByText('Mes')).toBeTruthy();
           expect(queryAllByText('A todo item with schedule and deadline')).toBeTruthy();
         });
 
         test('Agenda starts on Monday by default', () => {
-          fireEvent.click(getByTitle('Show agenda'));
+          fireEvent.click(getByTestId('eli-docbar-agenda'));
           expect(container.querySelectorAll('.agenda-day__title__day-name')[0]).toHaveTextContent(
-            'Monday'
+            'lunes'
           );
         });
 
         test('Clicking a TODO within the agenda highlights it in the main view', () => {
           expect(queryByText('A todo item with schedule and deadline')).toBeFalsy();
-          fireEvent.click(getByTitle('Show agenda'));
+          fireEvent.click(getByTestId('eli-docbar-agenda'));
           expect(queryByText('Agenda')).toBeTruthy();
           fireEvent.click(queryAllByText('A todo item with schedule and deadline')[0]);
           expect(queryByText('Agenda')).toBeFalsy();
           expect(queryByText('A todo item with schedule and deadline')).toBeTruthy();
         });
 
-        test('Clicking the Timestamp in a TODO within the agenda toggles from the date to the time', () => {
+        // (3.21b) Ya no se alterna fecha/tiempo al tocarla: las vencidas enseñan a la vez los
+        // días que han pasado, el tipo y la fecha (dd/MM)
+        test('Shows the date and the days since it for an overdue TODO within the agenda', () => {
           const expectedDate = new Date(2019, 8, 19, 12, 0);
-          fireEvent.click(getByTitle('Show agenda'));
-          const timeSinceScheduled = formatDistanceToNow(expectedDate);
-          expect(queryByText(timeSinceScheduled)).toBeFalsy();
-          expect(queryByText('09/19')).toBeTruthy();
-          fireEvent.click(queryByText('09/19'));
-          expect(queryByText('09/19')).toBeFalsy();
-          expect(queryByText(`${timeSinceScheduled} ago`)).toBeTruthy();
+          fireEvent.click(getByTestId('eli-docbar-agenda'));
+          const days = differenceInCalendarDays(new Date(), expectedDate);
+          expect(getByTestId('drawer')).toHaveTextContent(`${days} díasprogramada 19/09`);
         });
 
         test('Agenda shows only actionable TODOs, not with a DONE state', () => {
-          fireEvent.click(getByTitle('Show agenda'));
+          fireEvent.click(getByTestId('eli-docbar-agenda'));
 
           const drawerElem = getByTestId('drawer');
           expect(drawerElem).not.toHaveTextContent("A headline that's done since a loong time");
@@ -571,402 +602,154 @@ describe('Render all views', () => {
         });
       });
 
+      // (3.21b) En ORGanice las tablas se editan en su sitio (EliOrgTable): un clic en una celda
+      // la edita y la barra de abajo pasa a tener los botones de filas y columnas (tbl-*); ✓
+      // guarda. Ya no hay ventana «Edit table» (ni botón para insertar la fecha en la celda).
       describe('TableEditor', () => {
-        let testOrgFileWithTable;
-
-        const drawerWithTable = 'drawer';
-        const editCellButtonId = 'edit-cell-button';
-        const editCellContainerId = 'edit-cell-container';
-
-        const convertToSet = (collection) => new Set(collection);
-        const getTableRows = property(['rows']);
-
-        const getContentOfTableColumn = curry((columnNumber, table) => {
-          return pipe([getTableRows, map(property(['cells', columnNumber, 'textContent']))])(table);
-        });
-
-        const getTableColumnsCount = property(['rows', 0, 'cells', 'length']);
-
-        const getAllTableColumnsAsListOfLists = (table) => {
-          return pipe([
-            getTableColumnsCount,
-            times((columnNumber) => getContentOfTableColumn(columnNumber, table)),
-          ])(table);
-        };
-
-        const getTableRowsCount = property(['rows', 'length']);
-
-        const getContentOfTableRow = curry((rowNumber, table) => {
-          return pipe([property(['rows', rowNumber, 'cells']), map(property(['textContent']))])(
-            table
+        const tableRows = () =>
+          [...document.querySelectorAll('.eli-table tr:not(.eli-table__sep)')].map((tr) =>
+            [...tr.querySelectorAll('td')].map((td) => td.textContent.trim())
           );
-        });
-
-        const getAllTableRowsAsListOfLists = (table) => {
-          return pipe([
-            getTableRowsCount,
-            times((rowNumber) => getContentOfTableRow(rowNumber, table)),
-          ])(table);
+        const column = (rows, c) => rows.map((r) => r[c]);
+        const editCell = (text) => {
+          fireEvent.click(
+            [...document.querySelectorAll('[data-testid=eli-table-cell]')].find(
+              (td) => td.textContent.trim() === text
+            )
+          );
+          return getByTestId('eli-table-cell-input');
         };
+        const tableAction = (id) => fireEvent.click(getByTestId(`eli-docbar-tbl-${id}`));
+        const rawDescription = () =>
+          store
+            .getState()
+            .org.present.getIn(['files', STATIC_FILE_PREFIX + 'fixtureTestFile.org', 'headers'])
+            .get(0)
+            .get('rawDescription');
 
         beforeEach(() => {
-          testOrgFileWithTable = readFixture('large_table');
           store.dispatch(
-            parseFile(STATIC_FILE_PREFIX + 'fixtureTestFile.org', testOrgFileWithTable)
+            parseFile(STATIC_FILE_PREFIX + 'fixtureTestFile.org', readFixture('large_table'))
           );
           store.dispatch(setPath(STATIC_FILE_PREFIX + 'fixtureTestFile.org'));
+          // open the header with the table
+          fireEvent.click(getByText('Dogs'));
         });
 
         test('opens when a table cell is clicked on', () => {
-          // click table
-          fireEvent.click(getByText('Dogs'));
-          // click cell to open table ediotr
-          fireEvent.click(getByText('Argos'));
-          // assert edit table component
-          expect(getByTestId(drawerWithTable)).toHaveTextContent('Edit table');
+          expect(editCell('Argos').value).toEqual('Argos');
+          expect(getByTestId('eli-docbar-row-table')).toBeTruthy();
+          expect(getByTestId('eli-docbar-tbl-done')).toBeTruthy();
         });
 
         test('can edit cell value', () => {
-          const cellToClick = 'Bauschan';
-          // click table
-          fireEvent.click(getByText('Dogs'));
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert pencil edit button exists
-          expect(getByTestId(editCellButtonId)).toBeTruthy();
+          const input = editCell('Bauschan');
+          fireEvent.change(input, { target: { value: 'Motz' } });
+          tableAction('done');
 
-          // click cell again
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // // click pencil to edit cell
-          fireEvent.click(getByTestId(editCellButtonId));
-
-          expect(getByTestId(editCellContainerId)).toBeTruthy();
-
-          const newValue = 'Motz';
-          fireEvent.change(getByTestId(editCellContainerId), { target: { value: newValue } });
-          fireEvent.click(getByText('Edit table'));
-          expect(getAllByText(newValue)).toBeTruthy();
-        });
-
-        test('can insert timestamp in a cell', () => {
-          const cellToClick = 'Luster';
-          // click table
-          fireEvent.click(getByText('Dogs'));
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert pencil edit button exists
-          expect(getByTestId(editCellButtonId)).toBeTruthy();
-
-          // click cell again
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // // click pencil to edit cell
-          fireEvent.click(getByTestId(editCellButtonId));
-
-          const expectedDate = getCurrentTimestampAsText({ isActive: false, withStartTime: false });
-
-          const newValue = `${expectedDate} ${cellToClick}`;
-          // click insert timestamp
-          fireEvent.click(document.querySelector('.table-cell__insert-timestamp-button'));
-          fireEvent.click(getByText('Edit table'));
-
-          expect(getByText(newValue)).toBeTruthy();
+          expect(queryByTestId('eli-table-cell-input')).toBeFalsy();
+          expect(column(tableRows(), 0)).toContain('Motz');
+          expect(column(tableRows(), 0)).not.toContain('Bauschan');
+          expect(rawDescription()).toMatch(/\| Motz +\|/);
         });
 
         test('can move row up', () => {
-          const cellToClick = '6';
-          // click table
-          fireEvent.click(getByText('Dogs'));
+          const before = tableRows();
+          const i = before.findIndex((r) => r[1] === '6');
+          editCell('6');
+          tableAction('row-up');
+          tableAction('done');
 
-          const tableBeforeMove = document.querySelector('.table-part');
-
-          const [firstTestRowBeforeEdit, secondTestRowBeforeEdit] = over([
-            getContentOfTableRow(4),
-            getContentOfTableRow(5),
-          ])(tableBeforeMove);
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the move right button exists
-          expect(document.querySelector('.table-action-movement__up')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // move row up
-          fireEvent.click(document.querySelector('.table-action-movement__up'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [firstTestRowAfterEdit, secondTestRowAfterEdit] = over([
-            getContentOfTableRow(4),
-            getContentOfTableRow(5),
-          ])(tableAfterMove);
-
-          expect(firstTestRowBeforeEdit).toStrictEqual(secondTestRowAfterEdit);
-          expect(secondTestRowBeforeEdit).toStrictEqual(firstTestRowAfterEdit);
+          const after = tableRows();
+          expect(after[i - 1]).toStrictEqual(before[i]);
+          expect(after[i]).toStrictEqual(before[i - 1]);
         });
 
         test('can move row down', () => {
-          const cellToClick = '17';
-          // click table
-          fireEvent.click(getByText('Dogs'));
+          const before = tableRows();
+          const i = before.findIndex((r) => r[2] === '17');
+          editCell('17');
+          tableAction('row-down');
+          tableAction('done');
 
-          const tableBeforeMove = document.querySelector('.table-part');
-
-          const [firstTestRowBeforeEdit, secondTestRowBeforeEdit] = over([
-            getContentOfTableRow(9),
-            getContentOfTableRow(10),
-          ])(tableBeforeMove);
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the move right button exists
-          expect(document.querySelector('.table-action-movement__down')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // move row down
-          fireEvent.click(document.querySelector('.table-action-movement__down'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [firstTestRowAfterEdit, secondTestRowAfterEdit] = over([
-            getContentOfTableRow(9),
-            getContentOfTableRow(10),
-          ])(tableAfterMove);
-          expect(firstTestRowBeforeEdit).toStrictEqual(secondTestRowAfterEdit);
-          expect(secondTestRowBeforeEdit).toStrictEqual(firstTestRowAfterEdit);
+          const after = tableRows();
+          expect(after[i + 1]).toStrictEqual(before[i]);
+          expect(after[i]).toStrictEqual(before[i + 1]);
         });
 
         test('can move column to the right', () => {
-          const cellToClick = 'Rufus';
+          const before = tableRows();
+          editCell('Luster');
+          tableAction('col-right');
+          tableAction('done');
 
-          fireEvent.click(getByText('Dogs'));
-
-          const tableBeforeMove = document.querySelector('.table-part');
-          // get the first column
-
-          const [firstTestColumnBeforeEdit, secondTestColumnBeforeEdit] = over([
-            getContentOfTableColumn(0),
-            getContentOfTableColumn(1),
-          ])(tableBeforeMove);
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the move right button exists
-          expect(document.querySelector('.table-action-movement__right')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // move column to the right
-          fireEvent.click(document.querySelector('.table-action-movement__right'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [firstTestColumnAfterEdit, secondTestColumnAfterMove] = over([
-            getContentOfTableColumn(0),
-            getContentOfTableColumn(1),
-          ])(tableAfterMove);
-
-          expect(firstTestColumnBeforeEdit).toStrictEqual(secondTestColumnAfterMove);
-          expect(secondTestColumnBeforeEdit).toStrictEqual(firstTestColumnAfterEdit);
+          const after = tableRows();
+          expect(column(after, 4)).toStrictEqual(column(before, 3));
+          expect(column(after, 3)).toStrictEqual(column(before, 4));
         });
 
         test('can move column to the left', () => {
-          const cellToClick = 'Edward Rochester';
-          // click table
-          fireEvent.click(getByText('Dogs'));
+          const before = tableRows();
+          editCell('Luster');
+          tableAction('col-left');
+          tableAction('done');
 
-          const tableBeforeMove = document.querySelector('.table-part');
-
-          const [firstTestColumnBeforeEdit, secondTestColumnBeforeEdit] = over([
-            getContentOfTableColumn(2),
-            getContentOfTableColumn(3),
-          ])(tableBeforeMove);
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the move right button exists
-          expect(document.querySelector('.table-action-movement__left')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // move column to the left
-          fireEvent.click(document.querySelector('.table-action-movement__left'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [firstTestColumnAfterEdit, secondTestColumnAfterMove] = over([
-            getContentOfTableColumn(2),
-            getContentOfTableColumn(3),
-          ])(tableAfterMove);
-
-          expect(firstTestColumnBeforeEdit).toStrictEqual(secondTestColumnAfterMove);
-          expect(secondTestColumnBeforeEdit).toStrictEqual(firstTestColumnAfterEdit);
+          const after = tableRows();
+          expect(column(after, 2)).toStrictEqual(column(before, 3));
+          expect(column(after, 3)).toStrictEqual(column(before, 2));
         });
 
         test('can add row', () => {
-          const cellToClick = 'Anika R.';
-          // click table
-          fireEvent.click(getByText('Dogs'));
+          const before = tableRows();
+          const i = before.findIndex((r) => r[0] === 'Pilot');
+          editCell('Pilot');
+          tableAction('row-add');
+          tableAction('done');
 
-          const tableBeforeMove = document.querySelector('.table-part');
-
-          const [firstTestRowBeforeEdit, secondTestRowBeforeEdit, rowCountBeforeEdit] = over([
-            getContentOfTableRow(7),
-            getContentOfTableRow(8),
-            getTableRowsCount,
-          ])(tableBeforeMove);
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the add row button exists
-          expect(getByTestId('add-row-button')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // add row
-          fireEvent.click(getByTestId('add-row-button'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [
-            firstTestRowAfterEdit,
-            secondTestRowAfterEdit,
-            thirdTestRowAfterEdit,
-            rowCountAfterEdit,
-          ] = over([
-            getContentOfTableRow(7),
-            getContentOfTableRow(8),
-            getContentOfTableRow(9),
-            getTableRowsCount,
-          ])(tableAfterMove);
-
-          expect(rowCountAfterEdit).toEqual(rowCountBeforeEdit + 1);
-          expect(firstTestRowAfterEdit).toStrictEqual(firstTestRowBeforeEdit);
-          expect(thirdTestRowAfterEdit).toStrictEqual(secondTestRowBeforeEdit);
-          expect(secondTestRowAfterEdit.length).toEqual(firstTestRowBeforeEdit.length);
-          expect(secondTestRowAfterEdit).not.toEqual(secondTestRowBeforeEdit);
+          const after = tableRows();
+          expect(after.length).toEqual(before.length + 1);
+          expect(after[i]).toStrictEqual(before[i]);
+          expect(after[i + 1].every((v) => v === '')).toBe(true);
+          expect(after[i + 1].length).toEqual(before[i].length);
+          expect(after[i + 2]).toStrictEqual(before[i + 1]);
         });
 
         test('can add column', () => {
-          const cellToClick = '45';
-          // click table
-          fireEvent.click(getByText('Dogs'));
+          const before = tableRows();
+          editCell('45');
+          tableAction('col-add');
+          tableAction('done');
 
-          const tableBeforeMove = document.querySelector('.table-part');
-
-          const [
-            firstTestColumnBeforeEdit,
-            secondTestColumnBeforeEdit,
-            columnCountBeforeEdit,
-          ] = over([getContentOfTableColumn(2), getContentOfTableColumn(3), getTableColumnsCount])(
-            tableBeforeMove
-          );
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the add column button exists
-          expect(getByTestId('add-column-button')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // add column
-          fireEvent.click(getByTestId('add-column-button'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [
-            firstTestColumnAfterEdit,
-            secondTestColumnAfterEdit,
-            thirdTestColumnAfterEdit,
-            columnCountAfterEdit,
-          ] = over([
-            getContentOfTableColumn(2),
-            getContentOfTableColumn(3),
-            getContentOfTableColumn(4),
-            getTableColumnsCount,
-          ])(tableAfterMove);
-
-          expect(columnCountAfterEdit).toEqual(columnCountBeforeEdit + 1);
-          expect(firstTestColumnAfterEdit).toStrictEqual(firstTestColumnBeforeEdit);
-          expect(thirdTestColumnAfterEdit).toStrictEqual(secondTestColumnBeforeEdit);
-          expect(secondTestColumnAfterEdit.length).toEqual(firstTestColumnBeforeEdit.length);
-          expect(secondTestColumnAfterEdit).not.toEqual(secondTestColumnBeforeEdit);
+          const after = tableRows();
+          expect(after[0].length).toEqual(before[0].length + 1);
+          expect(column(after, 2)).toStrictEqual(column(before, 2));
+          expect(column(after, 3).every((v) => v === '')).toBe(true);
+          expect(column(after, 4)).toStrictEqual(column(before, 3));
         });
 
         test('can delete row', () => {
-          const cellToClick = 'Gyp';
-          // click table
-          fireEvent.click(getByText('Dogs'));
+          const before = tableRows();
+          const gyp = before.find((r) => r[0] === 'Gyp');
+          editCell('Gyp');
+          tableAction('row-del');
+          tableAction('done');
 
-          const tableBeforeMove = document.querySelector('.table-part');
-
-          const [testRowToDelete, rowCountBeforeEdit] = over([
-            getContentOfTableRow(6),
-            getTableRowsCount,
-          ])(tableBeforeMove);
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the delete row button exists
-          expect(getByTestId('delete-row-button')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // delete row
-          fireEvent.click(getByTestId('delete-row-button'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [tableRowsAfterEdit, rowCountAfterEdit] = over([
-            getAllTableRowsAsListOfLists,
-            getTableRowsCount,
-          ])(tableAfterMove);
-          const setOfTableRowsAfterEdit = convertToSet(tableRowsAfterEdit);
-
-          expect(rowCountAfterEdit).toEqual(rowCountBeforeEdit - 1);
-          expect(setOfTableRowsAfterEdit.has(testRowToDelete)).toBeFalsy();
+          const after = tableRows();
+          expect(after.length).toEqual(before.length - 1);
+          expect(after).not.toContainEqual(gyp);
+          expect(rawDescription()).not.toContain('Gyp');
         });
 
         test('can delete column', () => {
-          const cellToClick = 'Score';
-          // click table
-          fireEvent.click(getByText('Dogs'));
+          const before = tableRows();
+          editCell('Score');
+          tableAction('col-del');
+          tableAction('done');
 
-          const tableBeforeMove = document.querySelector('.table-part');
-
-          const [testColumnToDelete, columnCountBeforeEdit] = over([
-            getContentOfTableColumn(4),
-            getTableColumnsCount,
-          ])(tableBeforeMove);
-
-          // click cell to open table editor
-          fireEvent.click(getByText(cellToClick));
-          // assert the delete column button exists
-          expect(getByTestId('delete-column-button')).toBeTruthy();
-          // click cell in table editor
-          fireEvent.click(getAllByText(cellToClick)[1]);
-          // delete column
-          fireEvent.click(getByTestId('delete-column-button'));
-          // exit table editor
-          fireEvent.click(getByText('Dogs'));
-
-          const tableAfterMove = document.querySelector('.table-part');
-
-          const [tableColumnsAfterEdit, columnCountAfterEdit] = over([
-            getAllTableColumnsAsListOfLists,
-            getTableColumnsCount,
-          ])(tableAfterMove);
-          const setOfTableColumnsAfterEdit = convertToSet(tableColumnsAfterEdit);
-          expect(columnCountAfterEdit).toEqual(columnCountBeforeEdit - 1);
-          expect(setOfTableColumnsAfterEdit.has(testColumnToDelete)).toBeFalsy();
+          const after = tableRows();
+          expect(after[0].length).toEqual(before[0].length - 1);
+          expect(after[0]).not.toContain('Score');
+          expect(rawDescription()).not.toContain('Score');
         });
       });
 
@@ -1051,10 +834,9 @@ describe('Render all views', () => {
             // There's exactly one such URL
             expect(elem.length).toEqual(1);
             // And it renders as such
-            expect(elem[0]).toHaveAttribute(
-              'data-target',
-              '/dir1/dir2/schedule_and_timestamps.org'
-            );
+            // (3.21b) los enlaces a ficheros .org se resuelven al tocarlos (eliFollowOrgLink)
+            expect(elem[0]).toHaveClass('eli-org-link');
+            expect(elem[0]).toHaveAttribute('title', 'file:schedule_and_timestamps.org');
             expect(elem[0]).toHaveTextContent('an existing .org file in the same directory');
           });
 
@@ -1075,14 +857,18 @@ describe('Render all views', () => {
           test('relative link to fictitious .org file in subdir', () => {
             const elem = getAllByText('a fictitious .org file in a sub-directory');
             expect(elem.length).toEqual(1);
-            expect(elem[0]).toHaveAttribute('data-target', '/dir1/dir2/subdir/foo.org');
+            // (3.21b) los enlaces a ficheros .org se resuelven al tocarlos (eliFollowOrgLink)
+            expect(elem[0]).toHaveClass('eli-org-link');
+            expect(elem[0]).toHaveAttribute('title', 'file:subdir/foo.org');
             expect(elem[0]).toHaveTextContent('a fictitious .org file in a sub-directory');
           });
 
           test('relative link to fictitious .org file in a parent directory', () => {
             const elem = getAllByText('a fictitious .org file in a parent directory');
             expect(elem.length).toEqual(1);
-            expect(elem[0]).toHaveAttribute('data-target', '/dir1/foo.org_archive');
+            // (3.21b) los enlaces a ficheros .org se resuelven al tocarlos (eliFollowOrgLink)
+            expect(elem[0]).toHaveClass('eli-org-link');
+            expect(elem[0]).toHaveAttribute('title', 'file:../foo.org_archive');
             expect(elem[0]).toHaveTextContent('a fictitious .org file in a parent directory');
           });
 
@@ -1103,16 +889,20 @@ describe('Render all views', () => {
           test('relative link to fictitious .org file in a grand-parent directory', () => {
             const elem = getAllByText('a fictitious .org file in a grand-parent directory');
             expect(elem.length).toEqual(1);
-            expect(elem[0]).toHaveAttribute('data-target', '/foo.org');
+            // (3.21b) los enlaces a ficheros .org se resuelven al tocarlos (eliFollowOrgLink)
+            expect(elem[0]).toHaveClass('eli-org-link');
+            expect(elem[0]).toHaveAttribute('title', 'file:../../foo.org');
             expect(elem[0]).toHaveTextContent('a fictitious .org file in a grand-parent directory');
           });
 
           test('relative link to fictitious .org file in a too-high ancestor directory', () => {
             const elem = getAllByText('a fictitious .org file in a too-high ancestor directory');
             expect(elem.length).toEqual(1);
+            // (3.21b) los enlaces a ficheros .org se resuelven al tocarlos (eliFollowOrgLink)
+            expect(elem[0]).toHaveClass('eli-org-link');
             expect(elem[0]).toHaveAttribute(
-              'data-target',
-              '../../../../too-high-to-access-file.org'
+              'title',
+              'file:../../../../too-high-to-access-file.org'
             );
             expect(elem[0]).toHaveTextContent(
               'a fictitious .org file in a too-high ancestor directory'
@@ -1134,7 +924,9 @@ describe('Render all views', () => {
           test('absolute link to fictitious .org file in home directory', () => {
             const elem = getAllByText('a fictitious .org file in home directory');
             expect(elem.length).toEqual(1);
-            expect(elem[0]).toHaveAttribute('data-target', '~/foo/bar/baz.org');
+            // (3.21b) los enlaces a ficheros .org se resuelven al tocarlos (eliFollowOrgLink)
+            expect(elem[0]).toHaveClass('eli-org-link');
+            expect(elem[0]).toHaveAttribute('title', 'file:~/foo/bar/baz.org');
             // INFO: This file cannot really be opened, because
             // organice doesn't know the directory structure of the
             // user. I.e. the file link might be
@@ -1147,7 +939,9 @@ describe('Render all views', () => {
           test('absolute link to fictitious .org file', () => {
             const elem = getAllByText('a fictitious .org file');
             expect(elem.length).toEqual(1);
-            expect(elem[0]).toHaveAttribute('data-target', '/foo/bar/baz.org');
+            // (3.21b) los enlaces a ficheros .org se resuelven al tocarlos (eliFollowOrgLink)
+            expect(elem[0]).toHaveClass('eli-org-link');
+            expect(elem[0]).toHaveAttribute('title', 'file:/foo/bar/baz.org');
             expect(elem[0]).toHaveTextContent('a fictitious .org file');
           });
         });
