@@ -1,6 +1,6 @@
 {
   "name": "organice",
-  "version": "3.17.0",
+  "version": "3.18.0",
   "private": true,
   "engines": {
     "node": "^20.17.0"
@@ -60,6 +60,9 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
+    "e2e:build": "rm -rf build-e2e .parcel-cache-e2e && parcel build public/index.html --dist-dir build-e2e --cache-dir .parcel-cache-e2e --public-url / --no-source-maps",
+    "e2e:run": "playwright test -c playwright.eli.config.js",
+    "e2e": "rm -rf build-e2e .parcel-cache-e2e && parcel build public/index.html --dist-dir build-e2e --cache-dir .parcel-cache-e2e --public-url / --no-source-maps && playwright test -c playwright.eli.config.js",
     "test:e2e:auth": "playwright test --project=chromium-authenticated",
     "test:all": "yarn test && yarn test:e2e",
     "ci": "yarn eslint && yarn prettier-eslint --list-different && yarn test",

@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.18 (octubre de 2026)
+** Desarrollo
+- Pruebas automáticas en el navegador dentro del proyecto (=yarn e2e=): GTD, Documentos y guiones Fountain, en tamaño ordenador y móvil. No cambia nada al usar la app.
+
 * 3.17 (octubre de 2026)
 ** Vista GTD
 - Al añadir una tarea (también desde una plantilla de captura), el cursor va directo al título: escribe sin tocar nada (en el iPhone, con el teclado ya abierto).
