@@ -1,0 +1,63 @@
+# ORG Mode para Eli: pruebas automáticas en cada PR (y a mano desde Actions).
+# Jest y las E2E propias (e2e/eli) corren aquí, en GitHub, para no tener que
+# instalarlo todo en cada sesión. Si algo falla, el informe de Playwright queda
+# como artefacto «e2e-informe» de la ejecución.
+name: Pruebas
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pruebas-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  jest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Instalar dependencias
+        run: yarn install --frozen-lockfile --ignore-engines --ignore-scripts
+      - name: Jest
+        run: yarn --ignore-engines test --ci
+        env:
+          CI: true
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Instalar dependencias
+        run: yarn install --frozen-lockfile --ignore-engines --ignore-scripts
+      - name: Instalar Chromium de Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Compilar y lanzar E2E (ordenador + móvil)
+        run: ./bin/compile_search_parser.sh && yarn -s --ignore-engines e2e
+        env:
+          CI: true
+      - name: Guardar informe si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-informe
+          path: test-results/e2e-eli
+          retention-days: 7
