@@ -29,7 +29,7 @@ const LIST_OPTIONS = [
   { id: 'later', label: 'Todo' },
   { id: 'waiting', label: 'Waiting' },
   { id: 'someday', label: 'Someday' },
-  { id: 'reference', label: 'No task' },
+  { id: 'reference', label: 'Reference' },
   // Estados terminados
   { id: 'done', label: 'Done', done: true },
   { id: 'cancelled', label: 'Cancelled', done: true },
