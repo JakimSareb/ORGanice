@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.25 (octubre de 2026)
+** GTD
+- *Avisos de fechas* (Ajustes → Apariencia, «Avisos de fechas»): las tareas con fecha y hora (vence o programada) avisan a esa hora; las que no tienen hora entran en un resumen diario (lo de hoy y lo vencido) a la hora que elijas (09:00 por defecto). Sin hábitos, proyectos ni aparcadas. Tocar el aviso abre GTD.
+- Solo funcionan con la app abierta o en segundo plano reciente (no hay servidor de avisos). En el iPhone hace falta abrir la app desde la pantalla de inicio (iOS 16.4 o posterior).
+
 * 3.24 (octubre de 2026)
 ** GTD
 - *Revisión semanal* guiada (menú lateral, junto a Agenda, o ⋯ de arriba): una tarjeta encima de la lista va paso a paso por el Inbox, los proyectos activos sin acción Next, los dormidos, lo atrasado y lo de los próximos 7 días, y «Algún día». Cada elemento se toca para ir a él; la tarjeta se queda abierta al cambiar de vista. Se recuerda el paso y la fecha de la última revisión.
