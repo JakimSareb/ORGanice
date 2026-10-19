@@ -164,3 +164,37 @@ test('GTD (3.30): flechas ← → entre vistas', async ({ app }) => {
   expect(await on()).toBe('Next');
   expect(app.errors).toEqual([]);
 });
+
+test('GTD (3.33): editor — título sin espacios de etiquetas; cerrar arrastrando desde un campo', async ({
+  app,
+  isMobile,
+}) => {
+  await app.open(
+    {
+      '/tasks.org': '* NEXT Con etiquetas                                   :casa:\n',
+      '/inbox.org': '',
+    },
+    '/gtd'
+  );
+  await gtd.ready(app);
+  await gtd.openList(app, 'Next');
+  const row = app.page
+    .locator('[data-testid=gtd-task-title]', { hasText: 'Con etiquetas' })
+    .first();
+  if (isMobile) await app.press(row);
+  else await row.dblclick();
+  const title = app.page.locator('[data-testid=gtd-editor-title]');
+  await expect(title).toHaveValue('Con etiquetas');
+  if (isMobile) {
+    const box = await app.page
+      .locator('.gtd-ed__field--date', {
+        has: app.page.locator('[data-testid=gtd-editor-deadline]'),
+      })
+      .boundingBox();
+    const from = { x: box.x + 20, y: box.y + box.height / 2 };
+    await app.touchDrag(from, { x: from.x, y: from.y + 260 }, { hold: 0 });
+    await expect(app.page.locator('.gtd-editor')).toHaveCount(0, { timeout: 3000 });
+  }
+  expect(await app.fileAfterSync('/tasks.org')).toMatch(/NEXT Con etiquetas +:casa:/);
+  expect(app.errors).toEqual([]);
+});

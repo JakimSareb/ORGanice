@@ -13,6 +13,7 @@ import { removeLinksToTarget, fileTargetsInText } from '../../lib/eli_attachment
 import EliMedia from '../OrgFile/components/EliMedia';
 import EliOrgTable from '../EliOrgTable';
 import { tableBlocks, tableLinesAt, replaceTableAt } from '../../lib/eli_org_table';
+import { textareaOffsetAt } from '../../lib/eli_notes_caret';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -183,16 +184,32 @@ export default function TaskEditor({
   );
   // Al tocar el título o las notas en vista previa: editable y con el teclado (en el mismo toque,
   // para que iOS lo saque)
+  // (3.33) el cursor va siempre donde se ha tocado (antes, tras desplazar la hoja, iOS lo dejaba
+  // en el 1.er carácter): se calcula el carácter bajo el dedo y se pone a mano
+  const pendingCaret = useRef(null);
   const startEditing = (e) => {
     if (editingText) return;
     const el = e.currentTarget;
+    const pos = el.tagName === 'TEXTAREA' ? textareaOffsetAt(el, e.clientX, e.clientY) : null;
     el.readOnly = false;
     try {
       el.focus();
     } catch (err) {}
+    if (pos !== null) {
+      pendingCaret.current = { pos, at: Date.now() };
+      const put = () => {
+        try {
+          if (document.activeElement === el) el.setSelectionRange(pos, pos);
+        } catch (err) {}
+      };
+      put();
+      requestAnimationFrame(put);
+      setTimeout(put, 60);
+    }
     setEditingText(true);
   };
-  const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, ''));
+  // (3.33) sin los espacios del final (los del alineado de etiquetas de Documentos)
+  const [title, setTitle] = useState((task.rawTitle || '').replace(PRIORITY_RE, '').trimEnd());
   const [notes, setNotes] = useState(task.description || '');
   const [list, setList] = useState(currentListOf(task));
   // Lista a la que vuelve al reabrirla (se recuerda aunque el editor se vuelva a crear al guardar)
@@ -246,6 +263,14 @@ export default function TaskEditor({
   // Clic sobre "[ ]" dentro del cuadro de notas: marcar/desmarcar (como en la vista de hoja)
   const onNotesClick = (e) => {
     const el = e.target;
+    // (3.33) el clic que sigue al toque que empezó a editar: el cursor, donde se tocó
+    const pc = pendingCaret.current;
+    pendingCaret.current = null;
+    if (pc && Date.now() - pc.at < 800) {
+      try {
+        el.setSelectionRange(pc.pos, pc.pos);
+      } catch (err) {}
+    }
     if (el.selectionStart !== el.selectionEnd) return;
     const pos = el.selectionStart;
     const before = notes.slice(0, pos);
@@ -508,9 +533,16 @@ export default function TaskEditor({
     const onStart = (e) => {
       if (e.touches.length !== 1 || el.scrollTop > 0) return;
       const t = e.target;
-      // no al escribir (el campo con el foco) ni en menús, tablas o selectores
-      if (t && t.closest && t.closest('select, .eli-org-table, .gtd-sched__menu')) return;
-      if (t && t === document.activeElement && /^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
+      // no al escribir (el campo de texto con el foco) ni en menús o tablas. (3.33) Sí desde los
+      // campos que se eligen (fecha, proyecto, lista…): un toque los abre; arrastrar cierra
+      if (t && t.closest && t.closest('.eli-org-table, .gtd-sched__menu')) return;
+      if (
+        t &&
+        t === document.activeElement &&
+        (t.tagName === 'TEXTAREA' ||
+          (t.tagName === 'INPUT' && !/^(date|datetime-local|time|checkbox|radio)$/i.test(t.type)))
+      )
+        return;
       start = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       dy = 0;
       dragging = false;

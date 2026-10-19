@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.33 (octubre de 2026)
+** GTD
+- *Editor de tarea* (móvil): la hoja se cierra arrastrándola hacia abajo aunque se empiece sobre un campo como la fecha o el proyecto (antes no cerraba y se movía la lista de debajo).
+- Al tocar las notas para escribir, el cursor queda siempre donde se ha tocado (antes, tras desplazar la hoja, se iba al principio).
+- El título de una tarea con etiquetas ya no muestra al editarlo los espacios del final que pone Documentos para alinear las etiquetas (y no se escriben).
+
 * 3.32 (octubre de 2026)
 ** GTD
 - *Editor de tarea*: el estado, las etiquetas y el área tienen ya el mismo aspecto que los campos de fecha y proyecto, y el cuadro de notas el mismo fondo.
