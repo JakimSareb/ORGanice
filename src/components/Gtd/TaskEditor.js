@@ -1,6 +1,7 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { focusField } from '../../lib/eli_keyboard_bridge';
 import EliFormatBar from '../EliFormatBar';
 import { continueListOnEnter } from '../../lib/eli_format';
 import { noteTextParts, hasNoteLinks, isWebUri } from '../../lib/eli_note_links';
@@ -18,8 +19,8 @@ import {
   PRIORITY_RE,
   hasInboxTag,
   tagsForList,
-  hasSleepTag,
-  SLEEP_TAG,
+  STATUS_PROPERTY,
+  SLEEP_STATUS,
 } from '../../lib/gtd/gtd_model';
 
 const LIST_OPTIONS = [
@@ -198,12 +199,10 @@ export default function TaskEditor({
   const reopenList = useRef(reopenMemory.get(task.key) || currentListOf(task));
   const [area, setArea] = useState(task.ownArea || '');
   const [editingArea, setEditingArea] = useState(false);
-  // ORG Mode para Eli: en un proyecto, la etiqueta :sleep: se maneja con «Activo / Dormido»
+  // ORG Mode para Eli: en un proyecto, «Activo / Dormido» = propiedad «:STATUS: sleep» (3.17)
   const isProject = !!task.isProject;
-  const [sleep, setSleep] = useState(isProject && hasSleepTag(task.ownTags));
-  const [tags, setTags] = useState(
-    isProject ? task.ownTags.filter((t) => t.toLowerCase() !== SLEEP_TAG) : task.ownTags
-  );
+  const [sleep, setSleep] = useState(isProject && !!task.ownSleep);
+  const [tags, setTags] = useState(task.ownTags);
   const [tagInput, setTagInput] = useState('');
   const [energy, setEnergy] = useState(task.energy || '');
   const [effort, setEffort] = useState(task.effort || '');
@@ -226,7 +225,15 @@ export default function TaskEditor({
   const notesRef = useRef(null);
   const encrypted = /-----BEGIN PGP MESSAGE-----/.test(task.description || '');
 
+  // (3.17) tarea o proyecto nuevo (también desde una plantilla): el cursor va directo al título,
+  // al final de lo que traiga, en el mismo paso en que aparece (así iOS mantiene el teclado)
+  useLayoutEffect(() => {
+    if (isNew && !noAutoFocus && !preview) focusField(titleRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
+    if (isNew && !noAutoFocus && !preview) return;
     // (2.18) al llegar desde «↳ tarea madre» no se pone el cursor en el título: así Alt+← vuelve
     if (noAutoFocus || preview) {
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -308,8 +315,7 @@ export default function TaskEditor({
     let finalTags = c.tagInput.trim()
       ? Array.from(new Set([...c.tags, c.tagInput.trim()]))
       : c.tags;
-    if (isProject && c.sleep && c.convert !== 'task') finalTags = [...finalTags, SLEEP_TAG];
-    const baseTags = isProject && b.sleep ? [...b.tags, SLEEP_TAG] : b.tags;
+    const baseTags = b.tags;
     const targetList =
       c.convert === 'project' ? 'project' : c.convert === 'task' ? 'later' : c.list;
     if (
@@ -331,6 +337,11 @@ export default function TaskEditor({
       }
     }
     if (c.area !== b.area) changes.area = c.area.trim() || null;
+    if (isProject) {
+      const wantSleep = c.sleep && c.convert !== 'task';
+      if (wantSleep !== (b.sleep && b.convert !== 'task'))
+        changes.props = { [STATUS_PROPERTY]: wantSleep ? SLEEP_STATUS : null };
+    }
     if (c.energy !== b.energy) changes.energy = c.energy || null;
     if (c.effort !== b.effort) changes.effort = c.effort || null;
     if (c.scheduled !== b.scheduled) changes.scheduled = fromDateInput(c.scheduled);
@@ -1239,7 +1250,7 @@ export default function TaskEditor({
               data-testid="gtd-editor-project-state"
             >
               <option value="active">Proyecto activo</option>
-              <option value="sleep">Proyecto dormido (:sleep:)</option>
+              <option value="sleep">Proyecto dormido</option>
             </select>
           </label>
         ) : sheet ? null : (

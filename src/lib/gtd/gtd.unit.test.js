@@ -435,19 +435,19 @@ describe('proyectos dormidos y programados', () => {
   const { isParked, projectState } = require('./gtd_model');
   const today = new Date(2026, 8, 27);
   test('estado del proyecto', () => {
-    expect(projectState({ tags: ['sleep'] }, today)).toBe('sleep');
+    expect(projectState({ tags: [], sleeping: true }, today)).toBe('sleep');
     expect(projectState({ tags: [], scheduled: new Date(2026, 9, 1) }, today)).toBe('scheduled');
     expect(projectState({ tags: [], scheduled: new Date(2026, 8, 20) }, today)).toBe('active');
   });
   test('tareas aparcadas', () => {
-    expect(isParked({ tags: ['sleep'], keyword: 'NEXT' }, today)).toBe(true);
+    expect(isParked({ tags: [], sleeping: true, keyword: 'NEXT' }, today)).toBe(true);
     expect(isParked({ tags: [], keyword: 'NEXT', projectStart: new Date(2027, 0, 1) }, today)).toBe(
       true
     );
     expect(isParked({ tags: [], keyword: 'NEXT', projectStart: new Date(2026, 0, 1) }, today)).toBe(
       false
     );
-    expect(isParked({ tags: ['sleep'], isProject: true }, today)).toBe(false);
+    expect(isParked({ tags: [], sleeping: true, isProject: true }, today)).toBe(false);
   });
 });
 

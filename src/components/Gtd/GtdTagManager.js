@@ -33,7 +33,7 @@ export default function GtdTagManager({
     const n = {};
     tasks.forEach((t) =>
       (t.ownTags || []).forEach((x) => {
-        if (['sleep', 'trash'].includes(x.toLowerCase())) return;
+        if (['trash'].includes(x.toLowerCase())) return;
         n[x] = (n[x] || 0) + 1;
       })
     );
@@ -77,7 +77,11 @@ export default function GtdTagManager({
     if (contextTags.includes(tag)) onRemoveDefaultTag(tag);
   };
   const newTag = async () => {
-    const to = await askText({ title: 'Etiqueta nueva', placeholder: '@contexto', okLabel: 'Crear' });
+    const to = await askText({
+      title: 'Etiqueta nueva',
+      placeholder: '@contexto',
+      okLabel: 'Crear',
+    });
     const name = String(to || '')
       .trim()
       .replace(/[\s:]+/g, '');
@@ -115,7 +119,8 @@ export default function GtdTagManager({
             <h3>Áreas</h3>
             {areas.length === 0 && (
               <div className="gtd-tagman__note">
-                Aún no hay áreas. Un área aparece al ponérsela a una tarea o proyecto (campo «Área»).
+                Aún no hay áreas. Un área aparece al ponérsela a una tarea o proyecto (campo
+                «Área»).
               </div>
             )}
             {areas.map((a, i) => (
@@ -159,9 +164,7 @@ export default function GtdTagManager({
                   // (en un grupo aparte, debajo de las acciones)
                   <button
                     type="button"
-                    className={
-                      'gtd-tagman__btn' + (headingTags.includes(tag) ? ' is-on' : '')
-                    }
+                    className={'gtd-tagman__btn' + (headingTags.includes(tag) ? ' is-on' : '')}
                     onClick={() => onToggleHeadings(tag)}
                     aria-pressed={headingTags.includes(tag)}
                     title={

@@ -156,6 +156,7 @@ import { Map as IMap } from 'immutable';
 import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import { headerWithPath, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
+import { primeKeyboard } from '../../lib/eli_keyboard_bridge';
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
@@ -744,7 +745,7 @@ function TaskRow({
         </div>
         <div className="gtd-task__right">
           {(showTags ? task.tags : [])
-            .filter((t) => !['sleep', 'trash'].includes(t.toLowerCase()))
+            .filter((t) => !['trash'].includes(t.toLowerCase()))
             .map((t) => {
               const inherited = !(task.ownTags || []).includes(t);
               return (
@@ -1071,7 +1072,7 @@ export default function GtdView() {
         : { active: [], scheduled: [], sleep: [] },
     [view.id, tasks, area, today]
   );
-  // ORG Mode para Eli: proyectos activos, programados (SCHEDULED a futuro) y dormidos (:sleep:)
+  // ORG Mode para Eli: proyectos activos, programados (SCHEDULED a futuro) y dormidos (:STATUS: sleep)
   const projectGroups = useMemo(() => {
     const g = { active: [], scheduled: [], sleep: [] };
     projects.forEach((p) => g[projectState(p, today)].push(p));
@@ -1783,6 +1784,7 @@ export default function GtdView() {
       addProject();
       return;
     }
+    primeKeyboard(); // (3.17) teclado ya en el toque; el foco pasa al título al aparecer
     setOpenKey(null);
     setNewProject(null);
     setDraft(d);
@@ -1799,6 +1801,7 @@ export default function GtdView() {
     }
     const t = await chooseCaptureTemplate(list);
     if (!t) return;
+    primeKeyboard(); // (3.17) el foco irá al título de la tarea nueva
     const path = t.get('file') ? norm(t.get('file')) : tasksFile;
     const file = files.get(path);
     if (!file || !file.get('headers')) {
@@ -2034,9 +2037,7 @@ export default function GtdView() {
   const acToken = rapidOn && !acClosed ? rapidTokenAt(rapidText, rapidCaret) : null;
   const acList = acToken
     ? rapidSuggestions(acToken, {
-        tags: Array.from(new Set([...contextTags, ...allTags])).filter(
-          (t) => !hasTrashTag([t]) && t.toLowerCase() !== 'sleep'
-        ),
+        tags: Array.from(new Set([...contextTags, ...allTags])).filter((t) => !hasTrashTag([t])),
         projects: projectGroups.active.concat(projectGroups.scheduled, projectGroups.sleep),
       })
     : [];
@@ -3298,7 +3299,7 @@ export default function GtdView() {
       { label: 'Quitar', icon: 'fas fa-times', onClick: save(() => ({ energy: null })) },
     ];
     const tagNames = Array.from(new Set([...contextTags, ...allTags])).filter(
-      (t) => !hasTrashTag([t]) && t.toLowerCase() !== 'sleep'
+      (t) => !hasTrashTag([t])
     );
     const tagSub = [
       ...tagNames.map((tag) => {
@@ -4038,7 +4039,7 @@ export default function GtdView() {
     tasks.forEach((t) => {
       if (t.isDone || t.isTrashed) return;
       (t.ownTags || []).forEach((x) => {
-        if (['sleep', 'trash'].includes(x.toLowerCase())) return;
+        if (['trash'].includes(x.toLowerCase())) return;
         n[x] = (n[x] || 0) + 1;
       });
     });

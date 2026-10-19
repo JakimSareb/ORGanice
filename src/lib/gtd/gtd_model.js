@@ -116,10 +116,16 @@ export const parseRepeat = (text) => {
 
 const laterDate = (a, b) => (!a ? b || null : !b ? a : a > b ? a : b);
 
-// ORG Mode para Eli: proyectos dormidos (etiqueta :sleep:, se hereda como en Org) y programados
-// (PROJECT con SCHEDULED a futuro). Sus tareas no salen en las listas hasta que despiertan.
-export const SLEEP_TAG = 'sleep';
-export const hasSleepTag = (tags) => (tags || []).some((t) => t.toLowerCase() === SLEEP_TAG);
+// ORG Mode para Eli: proyectos dormidos y programados (PROJECT con SCHEDULED a futuro). Sus
+// tareas no salen en las listas hasta que despiertan. (3.17) Dormido = propiedad «:STATUS: sleep»
+// en el cajón PROPERTIES (se hereda: lo que cuelga de algo dormido también duerme). La antigua
+// etiqueta :sleep: ya no significa nada: es una etiqueta más.
+export const STATUS_PROPERTY = 'STATUS';
+export const SLEEP_STATUS = 'sleep';
+export const isSleepStatus = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase() === SLEEP_STATUS;
 // (3.0) Papelera (como Nirvana): la etiqueta :trash: (se hereda: lo que cuelga de algo tirado a la
 // papelera también está en ella). «Vaciar papelera» borra esos encabezados de verdad.
 export const TRASH_TAG = 'trash';
@@ -133,7 +139,7 @@ export const doneInLists = (task) =>
     .toLowerCase()
     .split(/[\s,]+/)
     .filter(Boolean);
-export const isSleeping = (task) => hasSleepTag(task.tags);
+export const isSleeping = (task) => !!(task && task.sleeping);
 const isFutureDate = (d, today) => !!d && startOfDay(d) > startOfDay(today);
 // Tarea (no proyecto) aparcada: dentro de algo dormido o de un proyecto que aún no empieza
 export const isParked = (task, today = new Date()) =>
@@ -233,7 +239,7 @@ const resolveProjectLinks = (tasks) => {
       project: { id: p.id, path: p.path, title: p.title },
       projectExternal: true,
       projectStart: laterDate(p.scheduled, p.projectStart),
-      projectSleeping: hasSleepTag(p.tags),
+      projectSleeping: !!p.sleeping,
     };
   });
 };
@@ -271,6 +277,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
       const ownTags = (header.getIn(['titleLine', 'tags']) || List()).toArray().filter(Boolean);
       const inheritedTags = parent ? parent.tags : [];
       const ownArea = propertyValue(header, 'AREA');
+      const ownSleep = isSleepStatus(propertyValue(header, STATUS_PROPERTY));
       const area = ownArea || (parent ? parent.area : null);
       const rawTitle = header.getIn(['titleLine', 'rawTitle']) || '';
       const pm = PRIORITY_RE.exec(rawTitle);
@@ -295,6 +302,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         isTrashed: hasTrashTag(inheritedTags) || hasTrashTag(ownTags),
         ownTrash: hasTrashTag(ownTags),
         parentTrashed: hasTrashTag(inheritedTags),
+        ownSleep,
+        sleeping: ownSleep || (parent ? !!parent.sleeping : false),
         area,
         ownArea,
         energy: propertyValue(header, 'ENERGY'),
@@ -333,6 +342,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         level,
         index,
         tags: task.tags,
+        sleeping: task.sleeping,
         area,
         project: isProject ? { id: header.get('id'), path, title: task.title } : task.project,
         projectStart: isProject ? laterDate(task.scheduled, task.projectStart) : task.projectStart,
@@ -488,11 +498,11 @@ export const isFocus = (task, today = new Date()) => {
 // (3.05) Filtro «Sin etiquetas»
 export const NO_TAGS = '\u2205sin-etiquetas';
 export const isUntagged = (task) =>
-  !(task.tags || []).some((t) => !['sleep', 'trash'].includes(String(t).toLowerCase()));
+  !(task.tags || []).some((t) => !['trash'].includes(String(t).toLowerCase()));
 export const matchesFilters = (task, filters) => {
   const { area, tags = [], energy, time, dated, text } = filters || {};
   if (area && area !== '*' && (task.area || '') !== (area === '-' ? '' : area)) return false;
-  // (3.05) NO_TAGS = «Sin etiquetas» (ninguna, salvo :sleep:/:trash:): filtrar por ella o tacharla
+  // (3.05) NO_TAGS = «Sin etiquetas» (ninguna, salvo :trash:): filtrar por ella o tacharla
   const has = (t) => (t === NO_TAGS ? isUntagged(task) : task.tags.includes(t));
   if (tags.length && !tags.every(has)) return false;
   // (3.01) etiquetas tachadas en la barra de filtros: fuera las que las llevan
@@ -779,7 +789,7 @@ export const facetsFor = (tasks) => {
   tasks.forEach((t) => {
     if (t.badProject) hasBadProject = true;
     if (isUntagged(t)) hasUntagged = true;
-    t.tags.forEach((x) => x.toLowerCase() !== SLEEP_TAG && tags.add(x));
+    t.tags.forEach((x) => tags.add(x));
     if (t.energy) energy.add(t.energy);
     if (t.effort) hasEffort = true;
     if (t.deadline || t.scheduled) hasDates = true;
