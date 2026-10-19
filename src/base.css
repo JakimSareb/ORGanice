@@ -32,6 +32,12 @@ body,
   height: 100%;
 }
 
+/* 3.28: en iOS, al girar el móvil Safari agrandaba la letra de las notas */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body,
 .App:not(.landing-page) {

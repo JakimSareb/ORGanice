@@ -4,7 +4,13 @@ import { openAcomodadores } from '../EliAcomodadores';
 import { openPalette } from '../../lib/eli_palette';
 import { openCalendar } from '../EliCalendar';
 import { openCalculator } from '../EliCalculator';
-import { installNavHistory, canGoBack, canGoForward } from '../../lib/eli_nav_history';
+import {
+  installNavHistory,
+  canGoBack,
+  canGoForward,
+  goBack,
+  goForward,
+} from '../../lib/eli_nav_history';
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
@@ -219,8 +225,8 @@ class HeaderBar extends PureComponent {
     }
     if (!dir) return;
     e.preventDefault();
-    if (dir < 0 && canGoBack()) this.props.history.goBack();
-    if (dir > 0 && canGoForward()) this.props.history.goForward();
+    if (dir < 0) goBack(this.props.history);
+    if (dir > 0) goForward(this.props.history);
   };
 
   componentWillUnmount() {
@@ -808,14 +814,14 @@ class HeaderBar extends PureComponent {
           )}
 
           {/* ORG Mode para Eli (2.15): atrás / adelante (como en el navegador) */}
-          {isAuthenticated && (inFile || inGtd) && (
+          {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
             <>
               <i
                 className={
                   'fas fa-arrow-left header-bar__actions__item eli-nav-btn' +
                   (canGoBack() ? '' : ' header-bar__actions__item--disabled')
                 }
-                onClick={() => canGoBack() && this.props.history.goBack()}
+                onClick={() => goBack(this.props.history)}
                 title="Atrás (Alt+←)"
                 aria-label="Atrás"
                 data-testid="eli-nav-back"
@@ -826,7 +832,7 @@ class HeaderBar extends PureComponent {
                   'fas fa-arrow-right header-bar__actions__item eli-nav-btn' +
                   (canGoForward() ? '' : ' header-bar__actions__item--disabled')
                 }
-                onClick={() => canGoForward() && this.props.history.goForward()}
+                onClick={() => goForward(this.props.history)}
                 title="Adelante (Alt+→)"
                 aria-label="Adelante"
                 data-testid="eli-nav-forward"
