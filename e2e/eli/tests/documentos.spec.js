@@ -33,3 +33,9 @@ test('Explorador: lista los ficheros de la carpeta', async ({ app }) => {
   await expect(app.page.locator('text=notas.org').first()).toBeVisible({ timeout: 20000 });
   await expect(app.page.locator('text=guion.fountain').first()).toBeVisible();
 });
+
+test('Flechas ← →: se ven en la lista de Ficheros (3.28)', async ({ app }) => {
+  await app.open({ '/notas.org': DOC, '/tasks.org': '', '/inbox.org': '' }, '/files');
+  await expect(app.page.locator('[data-testid=eli-nav-back]')).toBeVisible({ timeout: 20000 });
+  await expect(app.page.locator('[data-testid=eli-nav-forward]')).toBeVisible();
+});
