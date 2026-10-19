@@ -49,3 +49,30 @@ test('GTD (3.22): /capture?text=… añade al Inbox', async ({ app }) => {
   expect(inbox).toContain('integral\nhttps://a.es');
   expect(app.errors).toEqual([]);
 });
+
+test('GTD (3.24): revisión semanal paso a paso', async ({ app }) => {
+  await app.open({
+    '/tasks.org': TASKS + '* PROJECT Atascado\n** TODO Algo\n',
+    '/inbox.org': '* Idea\n',
+  });
+  await gtd.ready(app);
+  const p = app.page;
+  await app.press(p.locator('[data-testid=gtd-view-menu-button]'));
+  await app.press(p.locator('[data-testid=gtd-menu-review]'));
+  await p.waitForSelector('[data-testid=gtd-review]');
+  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Inbox');
+  expect(await gtd.titles(app)).toContain('Idea');
+  await app.press(p.locator('[data-testid=gtd-review-next]'));
+  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('sin acción');
+  await expect(p.locator('[data-testid=gtd-review-item]')).toHaveText(['Atascado']);
+  await app.press(p.locator('[data-testid=gtd-review-item]'));
+  await expect(p.locator('[data-testid=gtd-title]')).toContainText('Atascado');
+  await expect(p.locator('[data-testid=gtd-review]')).toBeVisible();
+  await app.press(p.locator('[data-testid=gtd-review-next]'));
+  await expect(p.locator('[data-testid=gtd-review-item]')).toHaveText(['Dormido']);
+  for (let i = 0; i < 3; i++) await app.press(p.locator('[data-testid=gtd-review-next]'));
+  await p.waitForSelector('[data-testid=gtd-review-done]');
+  await app.press(p.locator('[data-testid=gtd-review-finish]'));
+  await expect(p.locator('[data-testid=gtd-review]')).toHaveCount(0);
+  expect(app.errors).toEqual([]);
+});
