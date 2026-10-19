@@ -2658,6 +2658,21 @@ export default function GtdView() {
     if (cmd.focusAdd) setTimeout(() => openDraft('inbox'), 50);
     if (cmd.cleanup) cleanupNow();
     if (cmd.emptyTrash) emptyTrash();
+    // (3.29) «Abrir en GTD» desde Documentos: se va a la tarea y se abre su editor (si GTD aún
+    // está cargando los ficheros, se reintenta una vez)
+    if (cmd.openTask) {
+      const key = `${cmd.openTask.path}::${cmd.openTask.id}`;
+      const target = tasksByKey.get(key);
+      if (target) goToTask(target);
+      else if (!cmd.retried) {
+        setTimeout(() => gtdCmdRef.current({ openTask: cmd.openTask, retried: true }), 600);
+      } else {
+        showMessage(
+          'No está en GTD',
+          'Esta tarea no aparece en la vista GTD (su fichero no está entre los que GTD carga: Ajustes → Vista GTD).'
+        );
+      }
+    }
   };
   useEffect(() => {
     const onCmd = (e) => gtdCmdRef.current(e.detail);

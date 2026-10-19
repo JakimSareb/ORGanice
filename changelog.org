@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.29 (octubre de 2026)
+** Documentos
+- *Abrir en GTD*: con un encabezado seleccionado, el botón de la diana de la barra lo abre en la vista GTD (selecciona la tarea y abre su editor). Si el encabezado no tiene estado (TODO, NEXT…), avisa de que no es una tarea.
+- *Sin ningún fichero abierto* (lista de ficheros y carpetas), ahora sale la misma barra de herramientas de los documentos, solo con lo que tiene sentido ahí: ficheros principales, nuevo (fichero Org o guion Fountain), agenda y capturar. Sustituye a los botones de antes.
+
 * 3.28 (octubre de 2026)
 ** Documentos
 - *Flechas ← →* separadas: en Documentos solo van y vienen entre pantallas de Documentos (ficheros, carpetas, guiones) y ya no saltan a GTD; GTD tiene su propio historial. También se ven al navegar por la lista de ficheros y carpetas.

@@ -2,7 +2,7 @@
 // component, as well.
 
 import { openFavorites } from '../../../EliTools';
-import React, { Fragment, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Map, List } from 'immutable';
 import { connect } from 'react-redux';
@@ -14,7 +14,7 @@ import * as orgActions from '../../../../actions/org';
 import { createPlainFile } from '../../../../actions/org';
 import * as syncActions from '../../../../actions/sync_backend';
 
-import ActionButton from '../../../OrgFile/components/ActionDrawer/components/ActionButton';
+import EliDocBar from '../../../OrgFile/components/EliDocBar';
 import Drawer from '../../../UI/Drawer';
 import AgendaModal from '../../../OrgFile/components/AgendaModal';
 import EliErrorBoundary from '../../../EliErrorBoundary';
@@ -173,54 +173,47 @@ const ActionDrawer = ({
   };
   newFountainRef.current = handleAddNewFountainClick;
 
-  const mainButtonStyle = {
-    opacity: 1,
-    position: 'relative',
-    zIndex: 1,
+  // (3.29) Sin fichero abierto: la misma barra de herramientas que dentro de un documento, con solo
+  // lo que tiene sentido aquí (antes eran botones propios en la parte de arriba)
+  const browserBar = {
+    items: [
+      {
+        id: 'favorites',
+        icon: 'fas fa-copy',
+        title: 'Ficheros principales',
+        onClick: openFavorites,
+      },
+      { id: 'new', icon: 'fas fa-plus', title: 'Nuevo fichero', sub: 'new' },
+      { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
+      {
+        id: 'capture',
+        icon: 'fas fa-inbox',
+        badge: '+',
+        title: 'Capturar (plantillas de captura)',
+        onClick: startCapture,
+      },
+    ],
+    subs: {
+      new: [
+        {
+          id: 'new-org',
+          icon: 'far fa-file-alt',
+          label: 'Fichero Org',
+          onClick: handleAddNewOrgFileClick,
+        },
+        {
+          id: 'new-fountain',
+          icon: 'fas fa-film',
+          label: 'Guion Fountain',
+          onClick: handleAddNewFountainClick,
+        },
+      ],
+    },
   };
 
   return (
     <>
-      <div className="action-drawer-container nice-scroll">
-        {
-          <Fragment>
-            <ActionButton
-              iconName="copy"
-              isDisabled={false}
-              onClick={openFavorites}
-              dataTestId="eli-favorites"
-              style={mainButtonStyle}
-              tooltip="Ficheros principales"
-            />
-            <div
-              className="action-drawer__capture-buttons-container"
-              style={{
-                marginLeft: 'auto',
-                marginRight: 0,
-              }}
-            >
-              <ActionButton
-                iconName="calendar-alt"
-                isDisabled={false}
-                onClick={openAgenda}
-                dataTestId="eli-browser-agenda"
-                style={{ ...mainButtonStyle, marginRight: 14 }}
-                tooltip="Mostrar agenda"
-              />
-              {/* (2.17) «+» abre siempre las plantillas de captura; «Nuevo fichero Org» está en el menú
-                  de ficheros principales. La vista GTD se abre con el conmutador de arriba. */}
-              <ActionButton
-                iconName="plus"
-                isDisabled={false}
-                onClick={startCapture}
-                dataTestId="eli-browser-capture"
-                style={mainButtonStyle}
-                tooltip="Capturar con una plantilla"
-              />
-            </div>
-          </Fragment>
-        }
-      </div>
+      <EliDocBar external={browserBar} hidden={showAgenda} />
       {showAgenda && (
         <Drawer onClose={() => setShowAgenda(false)} maxSize>
           <EliErrorBoundary label="la agenda" onClose={() => setShowAgenda(false)}>
