@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.21a (octubre de 2026)
+** Desarrollo
+- Primera parte del arreglo de las pruebas automáticas (jest): 19 de los 75 fallos que venían de antes eran por el entorno de pruebas (cogía otra versión de React que había en el ordenador), no por la app. Arreglado; quedan los de la prueba grande de ficheros Org para la 3.21b. No cambia nada al usar la app.
+
 * 3.20 (octubre de 2026)
 ** Guiones (Fountain)
 - Antes de guardar se comprueba si el guion ha cambiado en otro sitio desde que lo abriste. Si es así, te pregunta qué hacer: guardar tu versión como copia (con la fecha en el nombre) y cargar la otra, cargar la otra o mantener la tuya. Así ya no se pierde lo escrito en otro dispositivo.
