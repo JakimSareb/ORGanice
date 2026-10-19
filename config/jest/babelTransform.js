@@ -8,6 +8,8 @@
 // @remove-on-eject-end
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const babelJest = require('babel-jest');
 
 const hasJsxRuntime = (() => {
@@ -15,9 +17,16 @@ const hasJsxRuntime = (() => {
     return false;
   }
 
+  // Only the project's own React counts: a react/jsx-runtime reachable through
+  // NODE_PATH (e.g. a global React 19) would produce elements this React can't render.
   try {
-    require.resolve('react/jsx-runtime');
-    return true;
+    const reactDir = path.dirname(
+      require.resolve('react/package.json', { paths: [path.resolve(__dirname, '../..')] })
+    );
+    return (
+      reactDir.startsWith(path.resolve(__dirname, '../..')) &&
+      fs.existsSync(path.join(reactDir, 'jsx-runtime.js'))
+    );
   } catch (e) {
     return false;
   }
