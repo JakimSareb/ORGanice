@@ -161,7 +161,13 @@ import { peekQuickCapture, takeQuickCapture } from '../../lib/eli_quick_capture'
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
-import { pushModalPage, setDisappearingLoadingMessage, setEliSetting } from '../../actions/base';
+import {
+  pushModalPage,
+  setDisappearingLoadingMessage,
+  setEliSetting,
+  setLoadingMessage,
+  hideLoadingMessage,
+} from '../../actions/base';
 import { getTapMode } from '../../lib/eli_tap_mode';
 
 const selectClient = (s) => s.syncBackend.get('client');
@@ -3232,13 +3238,36 @@ export default function GtdView() {
   };
   // (3.11) «Mover a otro fichero…»: cualquier fichero cargado (nivel superior) o una de sus
   // cabeceras, con buscador
-  const refileElsewhere = async (list) => {
+  // (3.23) También los ficheros .org NO cargados (de Dropbox/carpeta): al elegir uno se carga y se
+  // vuelve a preguntar con sus cabeceras.
+  const refileElsewhere = async (list, onlyPath = null) => {
     const present = store.getState().org.present;
     const items = [];
     const isMoved = (path, id) => list.some((t) => t.path === path && t.id === id);
-    Array.from(present.get('files').keys())
-      .filter((p) => p && !p.startsWith(STATIC_FILE_PREFIX) && !/\.org_archive$/i.test(p))
-      .sort((a, b) => fileDisplayName(a).localeCompare(fileDisplayName(b)))
+    const usable = (p) =>
+      p && !p.startsWith(STATIC_FILE_PREFIX) && !p.startsWith('/__') && !/\.org_archive$/i.test(p);
+    const loadedPaths = Array.from(present.get('files').keys()).filter(
+      (p) => usable(p) && present.getIn(['files', p, 'headers'])
+    );
+    let unloaded = [];
+    if (!onlyPath) {
+      const client = store.getState().syncBackend.get('client');
+      if (client && client.listOrgFiles) {
+        try {
+          const all = await Promise.race([
+            client.listOrgFiles(),
+            new Promise((resolve) => setTimeout(() => resolve(null), 8000)),
+          ]);
+          unloaded = (all || []).filter((p) => usable(p) && !loadedPaths.includes(p));
+        } catch (e) {
+          unloaded = [];
+        }
+      }
+    }
+    const byName = (a, b) => fileDisplayName(a).localeCompare(fileDisplayName(b));
+    loadedPaths
+      .filter((p) => !onlyPath || p === onlyPath)
+      .sort(byName)
       .forEach((p) => {
         const headers = present.getIn(['files', p, 'headers']);
         if (!headers) return;
@@ -3264,6 +3293,13 @@ export default function GtdView() {
           });
         });
       });
+    unloaded.sort(byName).forEach((p) => {
+      items.push({
+        id: JSON.stringify([p, null, 'load']),
+        label: `📁 ${fileDisplayName(p)}`,
+        hint: 'sin cargar: ver sus cabeceras',
+      });
+    });
     const picked = await askPick({
       title: 'Mover a otro fichero',
       message:
@@ -3272,10 +3308,20 @@ export default function GtdView() {
           : `${list.length} tareas (con sus subtareas)`,
       placeholder: 'Buscar fichero o cabecera…',
       items,
-      emptyText: 'No hay ficheros cargados.',
+      emptyText: 'No hay ficheros.',
     });
     if (!picked) return;
-    const [path, headerId] = JSON.parse(picked);
+    const [path, headerId, mode] = JSON.parse(picked);
+    if (mode === 'load') {
+      dispatch(setLoadingMessage(`Cargando ${fileDisplayName(path)}…`));
+      await Promise.resolve(dispatch(loadFileQuietly(path))).catch(() => null);
+      dispatch(hideLoadingMessage());
+      if (!store.getState().org.present.getIn(['files', path, 'headers'])) {
+        dispatch(setDisappearingLoadingMessage(`No se pudo cargar ${fileDisplayName(path)}`, 2500));
+        return;
+      }
+      return refileElsewhere(list, path);
+    }
     const n = dispatch(gtdRefileTo(list, path, headerId));
     if (n) {
       setSel([]);
