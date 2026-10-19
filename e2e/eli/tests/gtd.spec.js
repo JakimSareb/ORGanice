@@ -139,6 +139,11 @@ test('GTD (3.26): tirar hacia abajo de la lista = sincronizar', async ({ app, is
   await app.touchDrag(from, { x: from.x, y: from.y + 220 }, { hold: 0 });
   await expect(app.page.locator('[data-testid=gtd-pull]')).toContainText('Sincronizando');
   await expect.poll(() => asked, { timeout: 8000 }).toBeGreaterThan(0);
+  // 3.27: al terminar la ronda, un solo aviso con el resultado (y el título de la barra oculto)
+  await expect(
+    app.page.locator('.loading-indicator')
+  ).toContainText(/Nada que sincronizar|Última versión|Cambios subidos/, { timeout: 8000 });
   await expect(app.page.locator('[data-testid=gtd-pull]')).toHaveCount(0);
+  await expect(app.page.locator('.gtd-main')).not.toHaveClass(/is-pulling/, { timeout: 3000 });
   expect(app.errors).toEqual([]);
 });

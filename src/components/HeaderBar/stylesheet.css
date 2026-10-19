@@ -296,3 +296,9 @@
 .header-bar:has(.eli-more__menu) {
   z-index: 3200;
 }
+
+/* 3.27: el aviso de sincronización va en el centro de la barra, justo encima del título
+   («GTD» y «Nada que sincronizar» se montaban): mientras se ve el aviso, el título se oculta */
+body:has(.loading-indicator) .header-bar__title {
+  visibility: hidden;
+}
