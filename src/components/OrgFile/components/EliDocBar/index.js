@@ -90,7 +90,14 @@ const useLongPress = () => {
   });
 };
 
-export default function EliDocBar({ editing = false, commitEditing = null, hidden = false }) {
+// (3.29) `external` = {items, subs}: la barra del explorador de ficheros (sin fichero abierto), con
+// solo lo que tiene sentido ahí (ficheros principales, nuevo, agenda, capturar).
+export default function EliDocBar({
+  editing = false,
+  commitEditing = null,
+  hidden = false,
+  external = null,
+}) {
   const dispatch = useDispatch();
   const path = useSelector((s) => s.org.present.get('path'));
   const file = useSelector((s) =>
@@ -130,7 +137,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   // (3.04) Siempre a la vista en el documento: sin nada seleccionado, una píldora pequeña con
   // Agenda, Capturar y deshacer/rehacer (antes, botones redondos grandes abajo).
   const idle = !header && !table && !(listItemId && !locked);
-  const visible = !hidden && !!path && file.has('headers');
+  const visible = !hidden && (!!external || (!!path && file.has('headers')));
 
   // Encima del teclado (visualViewport): lo que tapa el teclado por abajo
   useLayoutEffect(() => {
@@ -202,7 +209,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
 
   // Tocar en el hueco (fuera de los encabezados, de la barra y de las ventanas) quita la selección
   useEffect(() => {
-    if (!visible || editing) return undefined;
+    if (!visible || editing || external) return undefined;
     const onClick = (e) => {
       const t = e.target;
       if (!t || !t.closest || !t.isConnected) return;
@@ -221,7 +228,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
-  }, [visible, editing, dispatch, listItemId]);
+  }, [visible, editing, external, dispatch, listItemId]);
 
   // Al cambiar de encabezado o de modo, se cierra el submenú
   useEffect(() => setSub(null), [headerId, editing, locked, !!table, listItemId]);
@@ -323,6 +330,20 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   };
   // (3.04) Agenda y plantillas de captura (antes, botones redondos grandes)
   const openAgenda = () => base('activatePopup', 'agenda');
+  // (3.29) Abrir el encabezado seleccionado en la vista GTD (si es una tarea, es decir, tiene
+  // estado); GTD lo selecciona y abre su editor (orden `openTask`, ver Gtd/index.js)
+  const openInGtd = () => {
+    if (!header || !path) return;
+    if (!keyword) {
+      showMessage(
+        'No es una tarea',
+        'Solo se puede abrir en GTD un encabezado con estado (TODO, NEXT…). Ponle uno y vuelve a probar.'
+      );
+      return;
+    }
+    window.__eliGtdPending = { openTask: { path, id } };
+    window.dispatchEvent(new CustomEvent('eli:open-gtd'));
+  };
   const openCapture = () => window.dispatchEvent(new CustomEvent('eli:capture-menu'));
   // (3.03) Editar las notas (descripción) en el sitio
   const editNotes = () => {
@@ -874,6 +895,13 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
         { id: 'more', icon: 'fas fa-ellipsis-h', title: 'Más', sub: 'more' },
         { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
         { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
+        // (3.29) Abrir la tarea en GTD
+        {
+          id: 'gtd',
+          icon: 'fas fa-bullseye',
+          title: 'Abrir en GTD (la tarea seleccionada)',
+          onClick: openInGtd,
+        },
         // (3.16) Agenda y Capturar también con una cabecera seleccionada
         { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
         {
@@ -970,6 +998,12 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
         },
         { id: 'mail', icon: 'fas fa-share', title: 'Correo', onClick: share },
         { id: 'pdf', icon: 'fas fa-file-pdf', title: 'PDF', onClick: () => openPrintPreview(id) },
+        {
+          id: 'gtd',
+          icon: 'fas fa-bullseye',
+          title: 'Abrir en GTD (la tarea seleccionada)',
+          onClick: openInGtd,
+        },
         { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
         {
           id: 'unlock',
@@ -1153,7 +1187,9 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
         ]),
   ];
-  const rowItems = table
+  const rowItems = external
+    ? external.items
+    : table
     ? tableMain
     : listItemId && !locked
     ? listMain
@@ -1162,7 +1198,9 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
     : locked
     ? lockedMain
     : main;
-  const mode = table
+  const mode = external
+    ? 'browser'
+    : table
     ? 'table'
     : listItemId && !locked
     ? 'list'
@@ -1312,7 +1350,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
   };
 
   // Submenú: lista vertical encima del botón (lo del ⋯ incluye lo que no cabe en la fila)
-  let menuItems = sub ? subs[sub] || [] : null;
+  let menuItems = sub ? (external ? external.subs || {} : subs)[sub] || [] : null;
   if (sub === 'more' && overflow.length) {
     menuItems = [
       ...overflow.map((b) => ({

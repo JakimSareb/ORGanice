@@ -287,6 +287,7 @@ body.eli-docbar-on .action-drawer-container {
 }
 
 /* (3.04) sin nada seleccionado: píldora pequeña (Agenda, Capturar, deshacer, rehacer) */
-.eli-docbar.is-idle {
+.eli-docbar.is-idle,
+.eli-docbar.is-browser {
   width: auto;
 }
