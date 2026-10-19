@@ -120,3 +120,25 @@ test('GTD: avisos de fechas (hora exacta + resumen)', async ({ app }) => {
   expect(notes.some((n) => n.startsWith('Tareas:') && n.includes('• Llamar al médico'))).toBe(true);
   expect(app.errors).toEqual([]);
 });
+
+test('GTD (3.26): tirar hacia abajo de la lista = sincronizar', async ({ app, isMobile }) => {
+  test.skip(!isMobile, 'solo con el dedo');
+  await app.open({ '/tasks.org': TASKS, '/inbox.org': '' }, '/gtd');
+  await gtd.ready(app);
+  await gtd.openList(app, 'Next');
+  const box = await app.page.locator('.gtd-main').boundingBox();
+  const from = { x: box.x + box.width / 2, y: box.y + 90 };
+  // pulsación larga + bajar = arrastre de fila, no sincroniza
+  await app.touchDrag(from, { x: from.x, y: from.y + 220 }, { hold: 700 });
+  await expect(app.page.locator('[data-testid=gtd-pull]')).toHaveCount(0);
+  // tirón rápido: se pregunta al servidor (el arnés no cambia la fecha, así que solo se mira la petición)
+  let asked = 0;
+  app.page.on('request', (r) => {
+    if (/tasks\.org/.test(r.url())) asked++;
+  });
+  await app.touchDrag(from, { x: from.x, y: from.y + 220 }, { hold: 0 });
+  await expect(app.page.locator('[data-testid=gtd-pull]')).toContainText('Sincronizando');
+  await expect.poll(() => asked, { timeout: 8000 }).toBeGreaterThan(0);
+  await expect(app.page.locator('[data-testid=gtd-pull]')).toHaveCount(0);
+  expect(app.errors).toEqual([]);
+});

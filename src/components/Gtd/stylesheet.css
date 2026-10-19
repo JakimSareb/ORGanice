@@ -3661,3 +3661,30 @@ html[data-eli-theme] .gtd-task__below > .gtd-task__notes {
   background: var(--green);
   color: #fff;
 }
+
+/* 3.26: tirar hacia abajo = sincronizar */
+.gtd-pull {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--base1);
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+.gtd-pull__arrow {
+  transition: transform 0.15s;
+}
+.gtd-pull.is-ready {
+  color: var(--blue, #268bd2);
+}
+.gtd-pull.is-ready .gtd-pull__arrow {
+  transform: rotate(180deg);
+}
+@media (pointer: coarse) {
+  .gtd-main {
+    overscroll-behavior-y: contain;
+  }
+}
