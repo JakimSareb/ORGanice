@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.31 (octubre de 2026)
+** Documentos
+- *Sin conexión*: el explorador de ficheros ya abre las carpetas. Antes salía «Error al obtener los ficheros» y no se veía nada (solo se podía abrir desde la lupa). Ahora enseña la última lista vista de cada carpeta, junto con los ficheros guardados en el dispositivo; si de una carpeta no se sabe nada, lo dice.
+
 * 3.30 (octubre de 2026)
 ** General
 - *Flechas ← →*: arreglado. Al abrir y cerrar ventanas (agenda, búsqueda…) o al capturar, el historial se descuadraba y las flechas no hacían nada o llevaban a otro sitio. Ahora además aguantan una recarga de la página.

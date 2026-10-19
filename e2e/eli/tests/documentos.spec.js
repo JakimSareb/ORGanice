@@ -101,3 +101,28 @@ test('Flechas (3.30): atrás funciona tras abrir y cerrar la Agenda', async ({ a
   await expect(app.page).toHaveURL(/notas\.org/);
   expect(app.errors).toEqual([]);
 });
+
+test('Explorador sin conexión: abre una carpeta ya vista (3.31)', async ({ app }) => {
+  const alerts = [];
+  app.page.on('dialog', (d) => {
+    alerts.push(d.message());
+    d.dismiss().catch(() => {});
+  });
+  await app.open(
+    { '/notas.org': DOC, '/Viaje/plan.org': '* Plan\n', '/tasks.org': '', '/inbox.org': '' },
+    '/files'
+  );
+  const folder = app.page.locator('text=Viaje').first();
+  await expect(folder).toBeVisible({ timeout: 20000 });
+  await folder.click();
+  await expect(app.page.locator('text=plan.org').first()).toBeVisible({ timeout: 20000 });
+  await app.page.goBack();
+  await expect(app.page.locator('text=notas.org').first()).toBeVisible({ timeout: 20000 });
+  await app.page.context().setOffline(true);
+  await app.page.locator('text=Viaje').first().click();
+  await expect(app.page.locator('text=plan.org').first()).toBeVisible({ timeout: 20000 });
+  await app.page.goBack();
+  await expect(app.page.locator('text=notas.org').first()).toBeVisible({ timeout: 20000 });
+  await app.page.context().setOffline(false);
+  expect(alerts).toEqual([]);
+});

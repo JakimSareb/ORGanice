@@ -6,6 +6,7 @@
 //   para los que no están cifrados; «ficheros cifrados sin conexión» para los cifrados).
 // - Sin conexión (o si el servidor no responde), se entrega esa copia.
 // - Igual con las listas de ficheros y, si se han guardado, con los adjuntos.
+import { fromJS, Map } from 'immutable';
 import { isEncryptedPath } from './eli_crypto';
 import { getPersistPlainFiles, getOfflineEncrypted } from './eli_security';
 import {
@@ -15,6 +16,8 @@ import {
   kvGet,
   kvSet,
   getOfflineBlob,
+  serverCopyPaths,
+  plainCopyPaths,
 } from './eli_offline_store';
 
 export const canKeepOffline = (path) =>
@@ -110,6 +113,66 @@ export const offlineError = (path) => {
 const WAIT_WITH_COPY = 12000;
 // …y cuando no la hay (Dropbox a veces no responde nunca sin conexión)
 const WAIT_WITHOUT_COPY = 60000;
+
+// (3.31) Carpetas del explorador sin conexión: ficheros que se ven en una carpeta
+const LISTABLE_FILE = /\.org(_archive)?(\.gpg|\.asc)?$|\.fountain$/i;
+const dirKey = (path) => {
+  const p = (path || '').replace(/\/+$/, '');
+  return p === '' ? '' : p.startsWith('/') ? p : `/${p}`;
+};
+const baseName = (p) => p.substring(p.lastIndexOf('/') + 1);
+const sortEntries = (entries) =>
+  entries.sort((a, b) => {
+    if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+// Lo que hay DIRECTAMENTE en la carpeta `dirPath`, deducido de rutas conocidas (copias del
+// dispositivo y la última lista completa de ficheros). Las carpetas salen de cualquier ruta;
+// los ficheros, solo los que enseña el explorador (.org, .org.gpg, .fountain…).
+export const listingFromPaths = (dirPath, paths) => {
+  const dir = dirKey(dirPath);
+  const prefix = `${dir.toLowerCase()}/`;
+  const seen = new Set();
+  const entries = [];
+  (paths || []).forEach((raw) => {
+    if (typeof raw !== 'string' || !raw) return;
+    const path = raw.startsWith('/') ? raw : `/${raw}`;
+    if (!path.toLowerCase().startsWith(prefix)) return;
+    const rest = path.substring(prefix.length);
+    if (!rest) return;
+    const slash = rest.indexOf('/');
+    const isDirectory = slash >= 0;
+    const name = isDirectory ? rest.substring(0, slash) : rest;
+    if (!name || /^backups$/i.test(name)) return;
+    if (!isDirectory && !LISTABLE_FILE.test(name)) return;
+    const full = `${dir}/${name}`;
+    const key = `${isDirectory ? 'd' : 'f'}:${full.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    entries.push({ id: full, name, isDirectory, path: full });
+  });
+  return sortEntries(entries);
+};
+
+// Une la última lista guardada de la carpeta con lo deducido (sin repetir)
+export const mergeListings = (saved, derived) => {
+  const out = [];
+  const seen = new Set();
+  [...(saved || []), ...(derived || [])].forEach((e) => {
+    if (!e || !e.path) return;
+    const key = `${e.isDirectory ? 'd' : 'f'}:${e.path.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({
+      id: e.id || e.path,
+      name: e.name || baseName(e.path),
+      isDirectory: !!e.isDirectory,
+      path: e.path,
+    });
+  });
+  return sortEntries(out);
+};
 
 export const withOfflineCache = (client) => {
   if (!client || client.__eliOffline) return client;
@@ -232,6 +295,52 @@ export const withOfflineCache = (client) => {
       }
     });
 
+  // (3.31) Carpetas: la última lista vista de cada una + lo que se sabe de las copias
+  const knownPaths = () => {
+    const paths = [...serverCopyPaths(), ...plainCopyPaths()];
+    const entries = kvGet('list:listAllFileEntries');
+    if (Array.isArray(entries)) entries.forEach((e) => e && paths.push(e.path));
+    ['list:listAllFiles', 'list:listOrgFiles'].forEach((k) => {
+      const l = kvGet(k);
+      if (Array.isArray(l)) paths.push(...l);
+    });
+    return paths;
+  };
+  const offlineListing = (path) => {
+    const saved = kvGet(`dir:${dirKey(path).toLowerCase()}`);
+    const derived = listingFromPaths(path, knownPaths());
+    if (!Array.isArray(saved) && derived.length === 0) return null;
+    return {
+      listing: fromJS(mergeListings(saved, derived)),
+      hasMore: false,
+      additionalSyncBackendState: Map(),
+      eliFromCache: true,
+    };
+  };
+  const getDirectoryListing =
+    client.getDirectoryListing &&
+    (async (path) => {
+      if (!isOnline()) {
+        const cached = offlineListing(path);
+        if (cached) return cached;
+        throw offlineError(path || '/');
+      }
+      const fallback = offlineListing(path);
+      try {
+        const run = client.getDirectoryListing(path);
+        const result = await (fallback ? withTimeout(run, WAIT_WITH_COPY) : run);
+        try {
+          const list = result && result.listing;
+          const plain = list && typeof list.toJS === 'function' ? list.toJS() : list;
+          if (Array.isArray(plain)) kvSet(`dir:${dirKey(path).toLowerCase()}`, plain);
+        } catch (e) {}
+        return result;
+      } catch (e) {
+        if (fallback && isNetworkError(e)) return fallback;
+        throw e;
+      }
+    });
+
   const wrapped = {
     ...client,
     __eliOffline: true,
@@ -261,6 +370,7 @@ export const withOfflineCache = (client) => {
     },
     eliRawClient: client,
   };
+  if (getDirectoryListing) wrapped.getDirectoryListing = getDirectoryListing;
   ['listOrgFiles', 'listAllFiles', 'listAllFileEntries'].forEach((name) => {
     if (client[name]) wrapped[name] = cachedList(name, client[name]);
   });
