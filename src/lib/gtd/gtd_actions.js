@@ -24,6 +24,7 @@ import {
   PROJECT_LINK_PROPERTY,
   projectLinkFor,
   newOrgId,
+  STATUS_PROPERTY,
 } from './gtd_model';
 import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
@@ -768,19 +769,17 @@ export const gtdCloseProject = (project, state, openTasks = []) => (dispatch, ge
     });
     needed[t.path] = [...(needed[t.path] || []), 'CANCELLED'];
   });
-  // Un proyecto cerrado ya no está dormido
-  if ((project.ownTags || []).some((t) => t.toLowerCase() === 'sleep')) {
-    add(project.path, {
-      type: 'UPDATE_HEADER_TITLE',
-      headerId: project.id,
-      newRawTitle: titleLineFrom({
-        keyword: project.keyword,
-        priority: project.priority,
-        rawTitle: project.rawTitle,
-        tags: project.ownTags.filter((t) => t.toLowerCase() !== 'sleep'),
-      }),
-      dirtying: true,
-    });
+  // Un proyecto cerrado ya no está dormido (3.17: se quita «:STATUS: sleep»)
+  if (project.ownSleep) {
+    const ph = headerOf(getState, project.path, project.id);
+    if (ph) {
+      add(project.path, {
+        type: 'UPDATE_PROPERTY_LIST_ITEMS',
+        headerId: project.id,
+        newPropertyListItems: setProperty(ph.get('propertyListItems'), STATUS_PROPERTY, null),
+        dirtying: true,
+      });
+    }
   }
   add(project.path, {
     type: 'SET_TODO_STATE',

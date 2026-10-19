@@ -22,6 +22,8 @@ import {
   gtdSaveMany,
   gtdRenameTag,
   untrashChanges,
+  gtdSaveTask,
+  gtdCloseProject,
 } from './gtd_actions';
 import { parseRapidEntry, parseRapidDate } from './gtd_rapid';
 
@@ -104,9 +106,7 @@ describe('3.0: grupo «Hecho» y Limpieza', () => {
 
 describe('3.0: Papelera', () => {
   test('tirar: sale de todas las listas (con lo que cuelga) y entra en la Papelera', () => {
-    const store = makeStore(
-      '* PROJECT Proy\n** NEXT Paso\n* NEXT Suelta\n* TODO Queda\n'
-    );
+    const store = makeStore('* PROJECT Proy\n** NEXT Paso\n* NEXT Suelta\n* TODO Queda\n');
     store.dispatch(gtdTrash([find(store.state(), 'Proy'), find(store.state(), 'Suelta')]));
     const all = tasksOf(store.state());
     expect(textOf(store.state())).toMatch(/\* PROJECT Proy +:trash:/);
@@ -149,10 +149,37 @@ describe('3.0: copia, etiquetas, Focus de proyectos', () => {
 
   test('un proyecto con ★ sale en Focus; sin ★ o dormido, no', () => {
     const store = makeStore(
-      '* PROJECT [#A] Con estrella\n* PROJECT Sin estrella\n* PROJECT [#A] Dormido :sleep:\n'
+      '* PROJECT [#A] Con estrella\n* PROJECT Sin estrella\n* PROJECT [#A] Dormido\n:PROPERTIES:\n:STATUS: sleep\n:END:\n'
     );
     const focus = tasksForView(tasksOf(store.state()), { id: 'focus' }, {}, TODAY);
     expect(titles(focus)).toEqual(['Con estrella']);
+  });
+
+  test('3.17: dormido = :STATUS: sleep (se hereda); la etiqueta :sleep: no cuenta', () => {
+    const store = makeStore(
+      '* PROJECT Dormido\n:PROPERTIES:\n:STATUS: sleep\n:END:\n** NEXT Debajo\n' +
+        '* PROJECT Viejo :sleep:\n** NEXT Despierta\n'
+    );
+    const next = tasksForView(tasksOf(store.state()), { id: 'next' }, {}, TODAY);
+    expect(titles(next)).toEqual(['Despierta']);
+    const byTitle = (t) => tasksOf(store.state()).find((x) => x.title === t);
+    expect(byTitle('Dormido').ownSleep).toBe(true);
+    expect(byTitle('Debajo').sleeping).toBe(true);
+    expect(byTitle('Viejo').sleeping).toBe(false);
+  });
+
+  test('3.17: dormir/despertar escribe o quita :STATUS: sleep; cerrar el proyecto lo despierta', () => {
+    const store = makeStore('* PROJECT Casa :hogar:\n** NEXT Pintar\n');
+    store.dispatch(gtdSaveTask(find(store.state(), 'Casa'), { props: { STATUS: 'sleep' } }));
+    expect(textOf(store.state())).toMatch(/:STATUS: +sleep/);
+    expect(textOf(store.state())).toMatch(/PROJECT Casa +:hogar:/);
+    expect(find(store.state(), 'Pintar').sleeping).toBe(true);
+    store.dispatch(gtdSaveTask(find(store.state(), 'Casa'), { props: { STATUS: null } }));
+    expect(textOf(store.state())).not.toMatch(/STATUS/);
+    store.dispatch(gtdSaveTask(find(store.state(), 'Casa'), { props: { STATUS: 'sleep' } }));
+    store.dispatch(gtdCloseProject(find(store.state(), 'Casa'), 'done', []));
+    expect(textOf(store.state())).not.toMatch(/STATUS/);
+    expect(textOf(store.state())).toMatch(/DONE Casa/);
   });
 
   test('vista de una etiqueta: lo abierto que la lleva (también proyectos)', () => {
@@ -166,16 +193,20 @@ describe('3.0: copia, etiquetas, Focus de proyectos', () => {
   test('Inbox no se filtra por área', () => {
     const store = makeStore('* Idea\n:PROPERTIES:\n:AREA: Trabajo\n:END:\n');
     const all = buildTasks(store.state().get('files'), [P]);
-    expect(titles(tasksForView(all, { id: 'inbox' }, { area: 'Hogar' }, TODAY))).toEqual([
-      'Idea',
-    ]);
+    expect(titles(tasksForView(all, { id: 'inbox' }, { area: 'Hogar' }, TODAY))).toEqual(['Idea']);
   });
 });
 
 describe('3.0: fechas, copiar y tiempo total', () => {
   test('fecha límite como Nirvana', () => {
-    expect(dueInfo(new Date(2026, 9, 12), TODAY)).toMatchObject({ level: 'overdue', text: 'Atrasada' });
-    expect(dueInfo(new Date(2026, 9, 13), TODAY)).toMatchObject({ level: 'today', text: 'Vence hoy' });
+    expect(dueInfo(new Date(2026, 9, 12), TODAY)).toMatchObject({
+      level: 'overdue',
+      text: 'Atrasada',
+    });
+    expect(dueInfo(new Date(2026, 9, 13), TODAY)).toMatchObject({
+      level: 'today',
+      text: 'Vence hoy',
+    });
     expect(dueInfo(new Date(2026, 9, 14), TODAY)).toMatchObject({ level: 'soon', text: 'Mañana' });
     expect(dueInfo(new Date(2026, 9, 16), TODAY).text).toBe('en 3 días');
     expect(dueInfo(new Date(2026, 11, 1), TODAY).level).toBe('later');
@@ -194,7 +225,15 @@ describe('3.0: fechas, copiar y tiempo total', () => {
         ownTags: ['@casa'],
         deadline: new Date(2026, 9, 20),
       },
-      { key: 'a::2', path: 'a', id: '2', parentId: '1', title: 'Dos', rawTitle: 'Dos', keyword: 'DONE' },
+      {
+        key: 'a::2',
+        path: 'a',
+        id: '2',
+        parentId: '1',
+        title: 'Dos',
+        rawTitle: 'Dos',
+        keyword: 'DONE',
+      },
     ]);
     expect(org).toBe(
       '#+TITLE: Next\n\n* NEXT [#A] Uno :@casa:\nDEADLINE: <2026-10-20>\n** DONE Dos'
@@ -230,6 +269,9 @@ describe('3.0: Entrada rápida', () => {
   });
 
   test('sin #: todo es el título', () => {
-    expect(parseRapidEntry('Llamar a Ana', TODAY)).toMatchObject({ title: 'Llamar a Ana', tags: [] });
+    expect(parseRapidEntry('Llamar a Ana', TODAY)).toMatchObject({
+      title: 'Llamar a Ana',
+      tags: [],
+    });
   });
 });

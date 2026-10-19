@@ -69,7 +69,7 @@ describe('3.05: proyecto secuencial con en espera y programadas', () => {
 });
 
 describe('3.05: filtro «Sin etiquetas»', () => {
-  const tasks = tasksFrom('* NEXT Una :casa:\n* NEXT Dos\n* NEXT Tres :sleep:\n');
+  const tasks = tasksFrom('* NEXT Una :casa:\n* NEXT Dos\n* NEXT Tres :trash:\n');
   test('solo esas, o tachada', () => {
     const only = tasks.filter((t) => matchesFilters(t, { tags: [NO_TAGS] }));
     expect(titles(only)).toEqual(['Dos', 'Tres']);
