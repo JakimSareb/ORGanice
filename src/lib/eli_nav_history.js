@@ -3,9 +3,25 @@
 // historial (location.key) de React Router.
 // 3.28: historial separado por zona: GTD (/gtd…) y Documentos (todo lo demás: ficheros,
 // carpetas, guiones). Atrás/Adelante saltan solo entre entradas de la zona en la que se está.
+// 3.30: la lista se guarda en sessionStorage (sobrevive a recargar la página) y, si al volver
+// atrás con el navegador sale una entrada desconocida, se empieza de cero en vez de saltar mal.
 let entries = []; // { key, area }
 let index = -1;
 let installed = null;
+const SS_KEY = 'eliNavHistory';
+
+const save = () => {
+  try {
+    window.sessionStorage.setItem(SS_KEY, JSON.stringify({ entries, index }));
+  } catch (e) {}
+};
+const load = () => {
+  try {
+    const v = JSON.parse(window.sessionStorage.getItem(SS_KEY) || 'null');
+    if (v && Array.isArray(v.entries)) return v;
+  } catch (e) {}
+  return null;
+};
 
 export const areaOf = (pathname) => (/^\/gtd(\/|$)/.test(pathname || '') ? 'gtd' : 'docs');
 
@@ -24,8 +40,18 @@ const entryFor = (location) => ({
 export const installNavHistory = (history) => {
   if (!history || installed === history) return;
   installed = history;
-  entries = [entryFor(history.location)];
-  index = 0;
+  const first = entryFor(history.location);
+  const saved = first.key !== 'inicio' ? load() : null;
+  const at = saved ? saved.entries.findIndex((e) => e.key === first.key) : -1;
+  if (at >= 0) {
+    entries = saved.entries;
+    entries[at] = first;
+    index = at;
+  } else {
+    entries = [first];
+    index = 0;
+  }
+  save();
   history.listen((location, action) => {
     const entry = entryFor(location);
     if (action === 'PUSH') {
@@ -34,9 +60,24 @@ export const installNavHistory = (history) => {
     } else if (action === 'REPLACE') {
       entries[index] = entry;
     } else {
-      const i = entries.findIndex((e) => e.key === entry.key);
-      if (i >= 0) index = i;
+      // Se busca primero cerca de la posición actual (la clave 'inicio' puede repetirse)
+      let i = -1;
+      let best = Infinity;
+      entries.forEach((e, j) => {
+        if (e.key === entry.key && Math.abs(j - index) < best) {
+          best = Math.abs(j - index);
+          i = j;
+        }
+      });
+      if (i >= 0) {
+        index = i;
+        entries[i] = entry;
+      } else {
+        entries = [entry];
+        index = 0;
+      }
     }
+    save();
     notify();
   });
   notify();

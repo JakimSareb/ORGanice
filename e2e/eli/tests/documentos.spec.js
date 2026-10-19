@@ -82,3 +82,22 @@ test('Abrir en GTD: una tarea se abre en GTD; un encabezado sin estado avisa (3.
   await expect(app.page.locator('.gtd-editor').first()).toBeVisible({ timeout: 20000 });
   expect(app.errors).toEqual([]);
 });
+
+test('Flechas (3.30): atrás funciona tras abrir y cerrar la Agenda', async ({ app }) => {
+  await app.open(
+    { '/notas.org': DOC, '/otra.org': DOC, '/tasks.org': '', '/inbox.org': '' },
+    '/files'
+  );
+  await app.page.locator('text=notas.org').first().click();
+  await expect(app.page).toHaveURL(/notas\.org/, { timeout: 20000 });
+  // Abrir y cerrar la Agenda (ventana que reescribía la entrada del historial y la estropeaba)
+  await app.page.locator('[data-testid=eli-docbar-agenda]').first().click();
+  await expect(app.page).toHaveURL(/#agenda/);
+  await app.page.keyboard.press('Escape');
+  await app.page.waitForTimeout(500);
+  await app.page.locator('[data-testid=eli-nav-back]').click();
+  await expect(app.page).toHaveURL(/\/files/);
+  await app.page.locator('[data-testid=eli-nav-forward]').click();
+  await expect(app.page).toHaveURL(/notas\.org/);
+  expect(app.errors).toEqual([]);
+});

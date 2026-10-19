@@ -147,3 +147,20 @@ test('GTD (3.26): tirar hacia abajo de la lista = sincronizar', async ({ app, is
   await expect(app.page.locator('.gtd-main')).not.toHaveClass(/is-pulling/, { timeout: 3000 });
   expect(app.errors).toEqual([]);
 });
+
+test('GTD (3.30): flechas ← → entre vistas', async ({ app }) => {
+  await app.open({ '/tasks.org': '* TODO Algo\n', '/inbox.org': '' }, '/gtd');
+  await gtd.ready(app);
+  await gtd.openList(app, 'Inbox');
+  await gtd.openList(app, 'Next');
+  const on = () =>
+    app.page.$eval('.gtd-side .gtd-side__item.is-on .gtd-side__label', (x) => x.textContent.trim());
+  expect(await on()).toBe('Next');
+  await app.page.locator('[data-testid=eli-nav-back]').click();
+  await app.page.waitForTimeout(500);
+  expect(await on()).toBe('Inbox');
+  await app.page.locator('[data-testid=eli-nav-forward]').click();
+  await app.page.waitForTimeout(500);
+  expect(await on()).toBe('Next');
+  expect(app.errors).toEqual([]);
+});

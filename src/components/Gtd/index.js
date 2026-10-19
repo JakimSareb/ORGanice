@@ -872,7 +872,13 @@ export default function GtdView() {
   const canRedo = useSelector(selectCanRedo);
   const client = useSelector(selectClient);
 
-  const [view, setView] = useState(() => readLS(LS_VIEW, { id: 'focus' }));
+  // 3.30: cada vista es una entrada del historial (estado `eliGtdView`), para las flechas ← →
+  const [view, setView] = useState(() => {
+    const st = history.location && history.location.state;
+    return (st && st.eliGtdView) || readLS(LS_VIEW, { id: 'focus' });
+  });
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const [area, setArea] = useState(() => readLS(LS_AREA, '*'));
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS });
   const activeFilterCount =
@@ -1647,7 +1653,7 @@ export default function GtdView() {
     return Array.from(new Set([...declared, ...Array.from(used).sort()]));
   }, [tasks, declaredTags]);
 
-  const selectView = useCallback((v) => {
+  const applyView = useCallback((v) => {
     setView(v);
     writeLS(LS_VIEW, v);
     setFilters({ ...EMPTY_FILTERS }); // como Nirvana
@@ -1656,6 +1662,32 @@ export default function GtdView() {
     setSideOpen(false);
     setSelKey(null);
   }, []);
+  const selectView = useCallback(
+    (v) => {
+      const same = JSON.stringify(v) === JSON.stringify(viewRef.current);
+      applyView(v);
+      if (!same && /^\/gtd(\/|$)/.test(history.location.pathname)) {
+        const l = history.location;
+        history.push(l.pathname + (l.search || ''), { ...(l.state || {}), eliGtdView: v });
+      }
+    },
+    [applyView, history]
+  );
+  // La entrada actual guarda la vista; al ir atrás/adelante (POP) se recupera la de esa entrada
+  useEffect(() => {
+    const l = history.location;
+    if (!(l.state && l.state.eliGtdView)) {
+      history.replace(l.pathname + (l.search || '') + (l.hash || ''), {
+        ...(l.state || {}),
+        eliGtdView: viewRef.current,
+      });
+    }
+    return history.listen((location, action) => {
+      if (action !== 'POP' || !/^\/gtd(\/|$)/.test(location.pathname)) return;
+      const v = location.state && location.state.eliGtdView;
+      if (v && JSON.stringify(v) !== JSON.stringify(viewRef.current)) applyView(v);
+    });
+  }, [history, applyView]);
   const selectArea = (a) => {
     setArea(a);
     writeLS(LS_AREA, a);

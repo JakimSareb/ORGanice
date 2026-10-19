@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.30 (octubre de 2026)
+** General
+- *Flechas ← →*: arreglado. Al abrir y cerrar ventanas (agenda, búsqueda…) o al capturar, el historial se descuadraba y las flechas no hacían nada o llevaban a otro sitio. Ahora además aguantan una recarga de la página.
+- *En GTD*, las flechas recorren las listas y proyectos que has ido abriendo (Inbox, Next, un proyecto…); antes solo saltaban entre visitas a GTD y parecía que no funcionaban. El gesto de volver del navegador hace lo mismo.
+
 * 3.29 (octubre de 2026)
 ** Documentos
 - *Abrir en GTD*: con un encabezado seleccionado, el botón de la diana de la barra lo abre en la vista GTD (selecciona la tarea y abre su editor). Si el encabezado no tiene estado (TODO, NEXT…), avisa de que no es una tarea.
