@@ -78,3 +78,81 @@ export const takeNotesCaret = (headerId) => {
   if (!p || p.headerId !== headerId || Date.now() - p.at > 5000) return null;
   return p;
 };
+
+// (3.33) Posición (carácter) de un textarea en el punto x, y de la pantalla. Se pinta un doble
+// invisible del textarea con el mismo estilo, encima y con el mismo desplazamiento, y se mira qué
+// carácter hay debajo del punto. null si no se puede saber.
+const MIRROR_PROPS = [
+  'boxSizing',
+  'width',
+  'height',
+  'paddingTop',
+  'paddingRight',
+  'paddingBottom',
+  'paddingLeft',
+  'borderTopWidth',
+  'borderRightWidth',
+  'borderBottomWidth',
+  'borderLeftWidth',
+  'borderStyle',
+  'fontFamily',
+  'fontSize',
+  'fontWeight',
+  'fontStyle',
+  'fontVariant',
+  'fontStretch',
+  'lineHeight',
+  'letterSpacing',
+  'wordSpacing',
+  'textTransform',
+  'textIndent',
+  'textAlign',
+  'tabSize',
+  'direction',
+];
+
+export const textareaOffsetAt = (el, x, y) => {
+  if (!el || typeof document === 'undefined' || !document.body) return null;
+  if (!document.caretRangeFromPoint && !document.caretPositionFromPoint) return null;
+  const value = String(el.value || '');
+  let mirror = null;
+  try {
+    const rect = el.getBoundingClientRect();
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return null;
+    const cs = window.getComputedStyle(el);
+    mirror = document.createElement('div');
+    const s = mirror.style;
+    MIRROR_PROPS.forEach((p) => {
+      s[p] = cs[p];
+    });
+    s.position = 'fixed';
+    s.left = rect.left + 'px';
+    s.top = rect.top + 'px';
+    s.width = rect.width + 'px';
+    s.height = rect.height + 'px';
+    s.boxSizing = 'border-box';
+    s.margin = '0';
+    s.borderColor = 'transparent';
+    s.whiteSpace = 'pre-wrap';
+    s.overflowWrap = 'break-word';
+    s.wordWrap = 'break-word';
+    s.overflow = 'hidden';
+    s.color = 'transparent';
+    s.background = 'transparent';
+    s.opacity = '0';
+    s.zIndex = '2147483647';
+    // el espacio final hace que una última línea vacía también ocupe su sitio
+    mirror.textContent = value + ' ';
+    document.body.appendChild(mirror);
+    mirror.scrollTop = el.scrollTop;
+    mirror.scrollLeft = el.scrollLeft;
+    const r = caretRangeAt(x, y);
+    if (!r || !mirror.contains(r.startContainer)) return null;
+    if (r.startContainer.nodeType !== 3) return value.length;
+    return Math.max(0, Math.min(value.length, r.startOffset));
+  } catch (e) {
+    return null;
+  } finally {
+    if (mirror && mirror.parentNode) mirror.parentNode.removeChild(mirror);
+  }
+};
