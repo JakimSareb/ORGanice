@@ -1,5 +1,5 @@
 // ORG Mode para Eli (3.13): editor de guiones Fountain (.fountain). 3.14: exportar a PDF/Fountain.
-// 3.15: exportar a Final Draft (.fdx).
+// 3.15: exportar a Final Draft (.fdx). 3.20: detectar conflictos al guardar.
 // El fichero se lee y se guarda tal cual (texto), sin pasar por el analizador de Org.
 // Vistas: «Guion» (formato de guion; tocar un elemento lleva a su línea), «Texto» (editar)
 // y, en pantallas anchas, «Ambos» (texto a la izquierda, guion a la derecha).
@@ -14,7 +14,7 @@ import Drawer from '../UI/Drawer';
 import { parseFountain, fountainStats } from '../../lib/eli_fountain';
 import { fountainToPdf, titleFields } from '../../lib/eli_fountain_pdf';
 import { fountainToFdx } from '../../lib/eli_fountain_fdx';
-import { showMessage } from '../../lib/eli_prompt';
+import { showMessage, askChoice } from '../../lib/eli_prompt';
 
 const MODE_KEY = 'eliFountainMode';
 const NOTES_KEY = 'eliFountainNotes';
@@ -84,6 +84,25 @@ const lineOffset = (text, line) => {
   }
   return pos;
 };
+// (3.20) Nombre de la copia de seguridad ante un conflicto: «guion (copia 2026-10-19 17.03).fountain»
+export const conflictCopyPath = (path, now = new Date()) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(
+    now.getHours()
+  )}.${pad(now.getMinutes())}`;
+  const slash = path.lastIndexOf('/');
+  const dir = path.slice(0, slash + 1);
+  const name = path.slice(slash + 1);
+  const dot = name.lastIndexOf('.');
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  return `${dir}${stem} (copia ${stamp})${ext}`;
+};
+
+// (3.20) ¿Lo que hay en el servidor cambió desde que se leyó (o se guardó) aquí?
+export const isConflict = (remote, base, mine) =>
+  typeof remote === 'string' && base !== null && remote !== base && remote !== mine;
+
 const lineAt = (text, pos) => text.slice(0, pos).split('\n').length - 1;
 
 // Fragmentos de la barra de inserción: [etiqueta, texto antes, texto a seleccionar, texto después]
@@ -98,7 +117,7 @@ const SNIPPETS = [
 const EliFountain = ({ path, client }) => {
   const [text, setText] = useState(null);
   const [loadError, setLoadError] = useState(null);
-  const [saveState, setSaveState] = useState('saved'); // saved | dirty | saving | error
+  const [saveState, setSaveState] = useState('saved'); // saved | dirty | saving | error | conflict
   const [mode, setMode] = useState(() => {
     const m = lsGet(MODE_KEY, '');
     if (m === 'both' && !isWide()) return 'script';
@@ -111,6 +130,15 @@ const EliFountain = ({ path, client }) => {
   const taRef = useRef(null);
   const paperRef = useRef(null);
   const latest = useRef({ text: null, dirty: false, saving: false });
+  // (3.20) Texto del servidor la última vez que se leyó o se guardó: para detectar conflictos
+  const base = useRef(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const timer = useRef(null);
   const pendingLine = useRef(null);
   const pendingSel = useRef(null);
@@ -134,6 +162,7 @@ const EliFountain = ({ path, client }) => {
       .then((contents) => {
         const t = typeof contents === 'string' ? contents : '';
         latest.current = { text: t, dirty: false, saving: false };
+        base.current = t;
         setText(t);
         setSaveState('saved');
       })
@@ -149,24 +178,66 @@ const EliFountain = ({ path, client }) => {
     const cur = latest.current;
     if (!cur.dirty || cur.saving || cur.text === null) return;
     cur.saving = true;
-    const contents = cur.text;
-    setSaveState('saving');
+    let contents = cur.text;
+    const setState = (st) => mounted.current && setSaveState(st);
+    setState('saving');
     try {
+      // (3.20) Antes de escribir: ¿alguien cambió el fichero en otro sitio?
+      let remote = null;
+      try {
+        remote = await client.getFileContents(path);
+      } catch (e) {
+        remote = null; // no se puede leer (p. ej. borrado): se guarda como antes
+      }
+      if (isConflict(remote, base.current, contents)) {
+        const choice = await askChoice({
+          title: 'El guion ha cambiado en otro sitio',
+          message: `${fileName} se ha modificado fuera de aquí desde que lo abriste. ¿Qué hago?`,
+          choices: [
+            { id: 'copy', label: 'Guardar mi versión como copia y cargar la otra' },
+            { id: 'theirs', label: 'Cargar la otra (perder mis cambios)', danger: true },
+            { id: 'mine', label: 'Mantener la mía (sobrescribir la otra)', danger: true },
+          ].reverse(),
+        });
+        contents = latest.current.text;
+        if (choice === 'mine') {
+          // sigue abajo: se escribe la mía
+        } else if (choice === 'theirs' || choice === 'copy') {
+          if (choice === 'copy') {
+            const copyPath = conflictCopyPath(path);
+            await client.createFile(copyPath, contents);
+            showMessage('Copia guardada', `Tu versión está en ${copyPath}.`);
+          }
+          cur.saving = false;
+          cur.dirty = false;
+          cur.text = remote;
+          base.current = remote;
+          if (mounted.current) setText(remote);
+          setState('saved');
+          return;
+        } else {
+          // Cancelar: no se guarda; se volverá a preguntar al guardar otra vez
+          cur.saving = false;
+          setState('conflict');
+          return;
+        }
+      }
       await client.updateFile(path, contents);
+      base.current = contents;
       cur.saving = false;
       if (latest.current.text === contents) {
         cur.dirty = false;
-        setSaveState('saved');
+        setState('saved');
       } else {
-        setSaveState('dirty');
+        setState('dirty');
         timer.current = setTimeout(() => save(), SAVE_DELAY);
       }
     } catch (e) {
       cur.saving = false;
-      setSaveState('error');
+      setState('error');
       showMessage('No se pudo guardar el guion', `${path}: ${errorText(e)}`);
     }
-  }, [client, path]);
+  }, [client, path, fileName]);
 
   // Guardar al salir (cambiar de pantalla o cerrar la pestaña)
   useEffect(() => {
@@ -316,6 +387,7 @@ const EliFountain = ({ path, client }) => {
     dirty: 'Sin guardar…',
     saving: 'Guardando…',
     error: 'Error al guardar',
+    conflict: 'Sin guardar (conflicto)',
   }[saveState];
 
   if (loadError) {
