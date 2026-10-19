@@ -145,14 +145,71 @@ export const sync = (options) => (dispatch, getState) => {
       const files = getState().org.present.get('files');
       // sync all files on manual sync. (2.16) Los *.org_archive leídos para verlos
       // («Archivadas») solo si tienen cambios
-      files
+      const paths = files
         .keySeq()
         .filter((path) => !isArchiveFile(path) || files.getIn([path, 'isDirty']))
-        .forEach((path) => dispatch(doSync({ ...options, path })));
+        .filter((path) => !path.startsWith(STATIC_FILE_PREFIX))
+        .toArray();
+      if (options.shouldSuppressMessages || !paths.length) {
+        paths.forEach((path) => dispatch(doSync({ ...options, path })));
+      } else {
+        // ORG Mode para Eli 3.27: una ronda = un solo aviso. Mientras se revisan los ficheros,
+        // «Sincronizando…»; al terminar todos, un único aviso con el resultado (antes salía
+        // uno por fichero: «Nada que sincronizar» cuatro veces seguidas).
+        dispatch(setLoadingMessage('Sincronizando…'));
+        const results = [];
+        let left = paths.length;
+        let finished = false;
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          dispatch(reportSyncRound(results, options.successMessage));
+        };
+        const onDone = (result) => {
+          results.push(result || { kind: 'nothing' });
+          left -= 1;
+          if (left === 0) finish();
+        };
+        // si algún fichero no contesta, el aviso no se queda para siempre
+        setTimeout(finish, 45000);
+        paths.forEach((path) => dispatch(doSync({ ...options, path, onDone })));
+      }
     } else {
       syncDebounced(dispatch, getState, options);
     }
   }
+};
+
+// ORG Mode para Eli 3.27: el aviso único al terminar una ronda de sincronización manual
+export const syncRoundMessage = (results, successMessage = 'Cambios subidos') => {
+  const of = (kind) => results.filter((r) => r && r.kind === kind);
+  const errors = of('error');
+  if (errors.length) {
+    return {
+      text:
+        errors.length === 1
+          ? errors[0].text || 'Error al sincronizar'
+          : `Error al sincronizar ${errors.length} ficheros`,
+      ms: 5000,
+    };
+  }
+  if (of('conflict').length) return null; // ya sale el diálogo del conflicto
+  const offline = of('offline');
+  if (offline.length) return { text: offline[0].text, ms: 3000 };
+  const up = of('uploaded');
+  const down = of('downloaded');
+  if (up.length && down.length)
+    return { text: 'Sincronizado: cambios subidos y descargados', ms: 2500 };
+  if (up.length) return { text: successMessage || 'Cambios subidos', ms: 2000 };
+  if (down.length === 1) return { text: `Última versión descargada: ${down[0].path}`, ms: 2000 };
+  if (down.length) return { text: `Última versión descargada (${down.length} ficheros)`, ms: 2000 };
+  return { text: 'Nada que sincronizar', ms: 2000 };
+};
+
+const reportSyncRound = (results, successMessage) => (dispatch) => {
+  const msg = syncRoundMessage(results, successMessage);
+  if (msg) dispatch(setDisappearingLoadingMessage(msg.text, msg.ms));
+  else dispatch(hideLoadingMessage());
 };
 
 // doSync is the actual sync action synchronizing/persisting the Org
@@ -174,11 +231,22 @@ const doSync = ({
   successMessage = 'Cambios subidos',
   shouldSuppressMessages = false,
   path,
+  onDone = null,
 } = {}) => (dispatch, getState) => {
+  // ORG Mode para Eli 3.27: con `onDone` (ronda manual) este fichero no muestra avisos propios:
+  // devuelve el resultado y la ronda muestra uno solo al final
+  const quiet = !!onDone;
+  let reported = false;
+  const done = (result) => {
+    if (reported || !onDone) return;
+    reported = true;
+    onDone(result);
+  };
   const client = getState().syncBackend.get('client');
   const currentPath = getState().org.present.get('path');
   path = path || currentPath;
   if (!path || path.startsWith(STATIC_FILE_PREFIX)) {
+    done(null);
     return;
   }
 
@@ -205,7 +273,7 @@ const doSync = ({
     return;
   }
 
-  if (!shouldSuppressMessages) {
+  if (!shouldSuppressMessages && !quiet) {
     dispatch(setLoadingMessage(`Sincronizando…`));
   }
   dispatch(setIsLoading(true, path));
@@ -219,7 +287,15 @@ const doSync = ({
       if (eliFromCache) {
         dispatch(setIsLoading(false, path));
         const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-        if (!shouldSuppressMessages) {
+        if (quiet) {
+          done({
+            kind: 'offline',
+            path,
+            text: offline
+              ? 'Sin conexión: se sincronizará al volver'
+              : 'El servidor no responde: se volverá a intentar',
+          });
+        } else if (!shouldSuppressMessages) {
           dispatch(
             setDisappearingLoadingMessage(
               offline
@@ -256,7 +332,9 @@ const doSync = ({
           client
             .updateFile(path, contents)
             .then(() => {
-              if (!shouldSuppressMessages) {
+              if (quiet) {
+                done({ kind: 'uploaded', path });
+              } else if (!shouldSuppressMessages) {
                 dispatch(setDisappearingLoadingMessage(successMessage, 2000));
               } else {
                 setTimeout(() => dispatch(hideLoadingMessage()), 2000);
@@ -286,14 +364,20 @@ const doSync = ({
             .catch((error) => {
               const err = `Error al subir el fichero ${path}: ${error.toString()}`;
               console.error(err);
-              dispatch(setDisappearingLoadingMessage(err, 5000));
-              dispatch(hideLoadingMessage());
+              if (quiet) {
+                done({ kind: 'error', path, text: err });
+              } else {
+                dispatch(setDisappearingLoadingMessage(err, 5000));
+                dispatch(hideLoadingMessage());
+              }
               dispatch(setIsLoading(false, path));
               // Re-enqueue the file to be synchronized again
               dispatch(sync({ path }));
             });
         } else {
-          if (!shouldSuppressMessages) {
+          if (quiet) {
+            done({ kind: 'nothing', path });
+          } else if (!shouldSuppressMessages) {
             dispatch(setDisappearingLoadingMessage('Nada que sincronizar', 2000));
           } else {
             setTimeout(() => dispatch(hideLoadingMessage()), 2000);
@@ -302,7 +386,7 @@ const doSync = ({
         }
       } else {
         if (isDirty && forceAction !== 'pull') {
-          dispatch(hideLoadingMessage());
+          if (!quiet) dispatch(hideLoadingMessage());
           dispatch(setIsLoading(false, path));
           // ORG Mode para Eli: conflicto. Si las dos versiones son iguales no hay nada que
           // decidir; si no, se muestra el diálogo propio (qué fichero, cuál quedarse, diferencias)
@@ -318,7 +402,9 @@ const doSync = ({
           if (typeof contents === 'string' && sameContents(localContents, contents)) {
             dispatch(setDirty(false, path));
             dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+            done({ kind: 'nothing', path });
           } else {
+            done({ kind: 'conflict', path });
             addConflict({
               path,
               mine: localContents,
@@ -331,7 +417,9 @@ const doSync = ({
           dispatch(parseFile(path, contents));
           dispatch(setDirty(false, path));
           dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
-          if (!shouldSuppressMessages) {
+          if (quiet) {
+            done({ kind: 'downloaded', path });
+          } else if (!shouldSuppressMessages) {
             dispatch(setDisappearingLoadingMessage(`Última versión descargada: ${path}`, 2000));
           } else {
             setTimeout(() => dispatch(hideLoadingMessage()), 2000);
@@ -341,7 +429,17 @@ const doSync = ({
       }
     })
     .catch((error) => {
-      dispatch(hideLoadingMessage());
+      if (quiet) {
+        done({
+          kind: 'error',
+          path,
+          text: `No se pudo sincronizar ${path}${
+            error && error.message ? `: ${error.message}` : ''
+          }`,
+        });
+      } else {
+        dispatch(hideLoadingMessage());
+      }
       dispatch(setIsLoading(false, path));
       // ORG Mode para Eli: mostrar el motivo real (p. ej. frase de paso incorrecta)
       dispatch(

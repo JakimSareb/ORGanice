@@ -2,15 +2,18 @@
 // Solo con el dedo (táctil), solo si la lista está arriba del todo.
 import { useEffect, useRef, useState } from 'react';
 
-export const PULL_THRESHOLD = 70; // px de tirón (ya amortiguado) para sincronizar
-export const PULL_MAX = 110;
+// 3.27: goma como la de iOS (cuanto más se tira, menos baja) y hueco más pequeño
+export const PULL_THRESHOLD = 50; // px de tirón (ya amortiguado) para sincronizar
+export const PULL_MAX = 100; // límite al que tiende el tirón (no se llega nunca)
+export const PULL_HOLD = 44; // altura en la que se queda mientras sincroniza
+export const PULL_RELEASE_MS = 450; // vuelta con muelle al soltar
 // Si el dedo se queda quieto más que esto antes de tirar, es una pulsación larga (arrastrar fila)
 export const PULL_HOLD_MS = 400;
 
 // Amortigua el desplazamiento del dedo (se siente como una goma).
 export const dampPull = (dy) => {
   if (!(dy > 0)) return 0;
-  return Math.min(PULL_MAX, dy * 0.5);
+  return PULL_MAX * (1 - 1 / ((dy * 0.7) / PULL_MAX + 1));
 };
 
 export const pullReady = (pull) => pull >= PULL_THRESHOLD;
@@ -21,6 +24,10 @@ const IGNORE =
 export const usePullToRefresh = (ref, onRefresh, { enabled = true } = {}) => {
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // 3.27: `dragging` = el dedo está tirando (sin transición); al soltar, la lista vuelve con
+  // muelle; `settling` = mientras dura esa vuelta (luego se quita el transform del todo)
+  const [dragging, setDragging] = useState(false);
+  const [settling, setSettling] = useState(false);
   const cb = useRef(onRefresh);
   cb.current = onRefresh;
 
@@ -31,11 +38,20 @@ export const usePullToRefresh = (ref, onRefresh, { enabled = true } = {}) => {
     let active = false;
     let current = 0;
 
+    let settleTimer = null;
+    const settle = () => {
+      setSettling(true);
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => setSettling(false), PULL_RELEASE_MS + 50);
+    };
     const reset = () => {
+      const wasActive = active;
       start = null;
       active = false;
       current = 0;
+      setDragging(false);
       setPull(0);
+      if (wasActive) settle();
     };
 
     const onStart = (e) => {
@@ -66,6 +82,7 @@ export const usePullToRefresh = (ref, onRefresh, { enabled = true } = {}) => {
           return;
         }
         active = true;
+        setDragging(true);
       }
       current = dampPull(dy);
       setPull(current);
@@ -79,7 +96,10 @@ export const usePullToRefresh = (ref, onRefresh, { enabled = true } = {}) => {
         try {
           cb.current && cb.current();
         } finally {
-          setTimeout(() => setRefreshing(false), 900);
+          setTimeout(() => {
+            setRefreshing(false);
+            settle();
+          }, 900);
         }
       }
     };
@@ -93,8 +113,11 @@ export const usePullToRefresh = (ref, onRefresh, { enabled = true } = {}) => {
       el.removeEventListener('touchmove', onMove);
       el.removeEventListener('touchend', onEnd);
       el.removeEventListener('touchcancel', reset);
+      clearTimeout(settleTimer);
     };
   }, [ref, enabled]);
 
-  return { pull, refreshing };
+  // desplazamiento que se aplica a la lista (con transform)
+  const offset = refreshing ? PULL_HOLD : pull;
+  return { pull, refreshing, dragging, settling, offset };
 };

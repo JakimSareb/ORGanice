@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.27 (octubre de 2026)
+** GTD
+- *Tirar para sincronizar*, más natural: la lista baja con el dedo como una goma (cuanto más tiras, menos baja) y al soltar vuelve con un pequeño rebote. El hueco que abre es más pequeño y el texto «Suelta para sincronizar» ya no sale cortado.
+** Sincronizar
+- Un solo aviso por sincronización: mientras se revisan los ficheros sale «Sincronizando…» y, al terminar todos, un único aviso con el resultado («Nada que sincronizar», «Cambios subidos», «Última versión descargada» o el error). Antes salía uno por fichero (p. ej. «Nada que sincronizar» cuatro veces).
+- Mientras se ve el aviso, el título de la barra de arriba (p. ej. «GTD») se oculta para que no se monten.
+
 * 3.26 (octubre de 2026)
 ** GTD
 - En el móvil, *tirar hacia abajo* de la lista de tareas (estando arriba del todo) sincroniza, como el botón de sincronizar. Una pulsación larga antes de bajar el dedo sigue siendo arrastrar la fila.

@@ -2636,9 +2636,15 @@ export default function GtdView() {
   const gtdMainRef = useRef(null);
   const syncAllRef = useRef();
   syncAllRef.current = syncAll;
-  const { pull: pullDist, refreshing: pullRefreshing } = usePullToRefresh(gtdMainRef, () =>
-    syncAllRef.current()
-  );
+  const {
+    pull: pullDist,
+    refreshing: pullRefreshing,
+    dragging: pullDragging,
+    settling: pullSettling,
+    offset: pullOffset,
+  } = usePullToRefresh(gtdMainRef, () => syncAllRef.current());
+  // 3.27: la lista baja con el dedo (goma) y vuelve con muelle; el aviso queda en el hueco
+  const pullMoving = pullOffset > 0 || pullSettling;
 
   // ORG Mode para Eli: órdenes de la paleta de comandos (ver EliCommandPalette)
   const gtdCmdRef = useRef();
@@ -4444,11 +4450,19 @@ export default function GtdView() {
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
 
-      <main className={'gtd-main' + (projectTask ? ' is-project-view' : '')} ref={gtdMainRef}>
+      <main
+        className={
+          'gtd-main' +
+          (projectTask ? ' is-project-view' : '') +
+          (pullMoving ? ' is-pulling' : '') +
+          (pullDragging ? ' is-pull-drag' : '')
+        }
+        style={pullMoving ? { '--gtd-pull': `${pullOffset}px` } : undefined}
+        ref={gtdMainRef}
+      >
         {(pullDist > 0 || pullRefreshing) && (
           <div
             className={'gtd-pull' + (pullReady(pullDist) || pullRefreshing ? ' is-ready' : '')}
-            style={{ height: pullRefreshing ? 40 : pullDist }}
             data-testid="gtd-pull"
           >
             <i
