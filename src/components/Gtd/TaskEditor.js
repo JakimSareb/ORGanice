@@ -180,7 +180,6 @@ export default function TaskEditor({
       !!window.matchMedia &&
       window.matchMedia('(max-width: 720px)').matches
   );
-  const [sheetMore, setSheetMore] = useState(false);
   // Al tocar el título o las notas en vista previa: editable y con el teclado (en el mismo toque,
   // para que iOS lo saque)
   const startEditing = (e) => {
@@ -732,7 +731,6 @@ export default function TaskEditor({
       className={
         'gtd-editor gtd-editor--nirvana' +
         (sheet ? ' gtd-editor--sheet' : '') +
-        (sheetMore ? ' is-sheet-more' : '') +
         (editingText ? ' is-editing-text' : '') +
         (replacesRow ? ' gtd-editor--inline' : '') +
         (mustDecide ? ' gtd-editor--new' : '') +
@@ -1449,42 +1447,6 @@ export default function TaskEditor({
           onSave={(rows) => onSaveProperties(rows)}
           onClose={() => setPropsOpen(false)}
         />
-      )}
-      {sheet && (
-        <div className="gtd-sheet__bar" data-testid="gtd-sheet-bar">
-          {onMove && !isNew && (
-            <button
-              type="button"
-              onClick={(e) => {
-                commit();
-                onMove(e);
-              }}
-              data-testid="gtd-sheet-move"
-            >
-              <i className="fas fa-arrow-right" /> Mover
-            </button>
-          )}
-          {!isNew && (
-            <button
-              type="button"
-              onClick={onDelete}
-              data-testid="gtd-sheet-trash"
-              title={inTrash ? 'Borrar para siempre' : 'A la Papelera'}
-            >
-              <i className="fas fa-trash" /> {inTrash ? 'Borrar' : 'Papelera'}
-            </button>
-          )}
-          <button
-            type="button"
-            className={sheetMore ? 'is-on' : ''}
-            onClick={() => setSheetMore(!sheetMore)}
-            aria-label="Más"
-            aria-expanded={sheetMore}
-            data-testid="gtd-sheet-more"
-          >
-            <i className="fas fa-ellipsis-h" />
-          </button>
-        </div>
       )}
     </div>
   );

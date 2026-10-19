@@ -12,6 +12,8 @@ const MOUSE_SLOP = 6;
 const TOUCH_SLOP = 10;
 const SWIPE_RATIO = 1.5;
 const EDGE = 60;
+// (3.16) con el dedo, el menú lateral (listas) solo se abre al acercar la tarea al borde izquierdo
+const SIDE_EDGE = 40;
 const SPEED = 14;
 
 const dropIdAt = (x, y) => {
@@ -39,6 +41,7 @@ export default function useRowDrag({
   onDrop,
   onReorder,
   onStart,
+  onNearEdge,
   canSwipe,
   onSwipe,
   dragSet,
@@ -47,7 +50,16 @@ export default function useRowDrag({
   const drag = useRef(null);
   const activateRef = useRef(null);
   const handlers = useRef({});
-  handlers.current = { onDrop, onReorder, onStart, canSwipe, onSwipe, dragSet, canReorder };
+  handlers.current = {
+    onDrop,
+    onReorder,
+    onStart,
+    onNearEdge,
+    canSwipe,
+    onSwipe,
+    dragSet,
+    canReorder,
+  };
   const suppressClickUntil = useRef(0);
   const [dragging, setDragging] = useState(null); // claves que se arrastran
   const [dropTarget, setDropTarget] = useState(null);
@@ -121,6 +133,15 @@ export default function useRowDrag({
       if (d.ghost) {
         d.ghost.style.left = `${d.x}px`;
         d.ghost.style.top = `${d.y}px`;
+      }
+      if (
+        !d.edgeDone &&
+        d.pointerType !== 'mouse' &&
+        d.x <= SIDE_EDGE &&
+        handlers.current.onNearEdge
+      ) {
+        d.edgeDone = true;
+        handlers.current.onNearEdge(d.task);
       }
       const id = dropIdAt(d.x, d.y);
       if (id !== d.over) {
@@ -248,7 +269,8 @@ export default function useRowDrag({
       suppressClickUntil.current = Date.now() + 400;
       cleanup();
       if (over && handlers.current.onDrop) handlers.current.onDrop(tasks, over);
-      else if (pos && !pos.same && handlers.current.onReorder) handlers.current.onReorder(task, pos);
+      else if (pos && !pos.same && handlers.current.onReorder)
+        handlers.current.onReorder(task, pos);
     };
     const cancel = () => cleanup();
     const touchMove = (e) => {
@@ -309,7 +331,10 @@ export default function useRowDrag({
       canSwipe: !!(handlers.current.canSwipe && handlers.current.canSwipe(task)),
     };
     if (drag.current.pointerType !== 'mouse') {
-      drag.current.timer = setTimeout(() => activateRef.current && activateRef.current(), LONG_PRESS_MS);
+      drag.current.timer = setTimeout(
+        () => activateRef.current && activateRef.current(),
+        LONG_PRESS_MS
+      );
     }
   };
 

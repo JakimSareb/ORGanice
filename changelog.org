@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.16 (octubre de 2026)
+** Vista GTD
+- La *Agenda* abierta desde GTD ya no queda tapada por la cabecera de la sección.
+- Móvil, editor de tarea: las acciones (Abrir, Propiedades, Adjuntar, Archivar, Papelera) están siempre a la vista y desaparece la barra flotante *Mover | Papelera | ⋯* (Mover = el nombre del fichero).
+- Móvil, arrastrar una tarea: el menú lateral con las listas solo sale al acercarla al borde izquierdo; si no, solo se reordena.
+- Las notas mostradas debajo de la tarea ya no salen cortadas por arriba.
+** Documentos
+- iPhone: la barra flotante (Agenda, Capturar, ↶ ↷) va pegada abajo; solo sube con el teclado abierto.
+- *Agenda* y *Capturar* también con una cabecera seleccionada (al final de la barra).
+
 * 3.15 (octubre de 2026)
 ** Guiones (Fountain)
 - Nuevo: en *Exportar*, *Final Draft (.fdx)*: escenas (con su número), acción, personajes, acotaciones, diálogo (también doble), transiciones, texto centrado, saltos de página, negrita/cursiva/subrayado y portada. Como en el PDF, las notas, secciones y sinopsis no se exportan; las letras de canción salen como diálogo en cursiva.

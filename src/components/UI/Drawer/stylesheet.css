@@ -10,6 +10,12 @@
   z-index: 3;
 }
 
+/* 3.16: la agenda abierta desde GTD va por encima de la cabecera de la sección (z 5),
+   que antes tapaba su parte de arriba; por debajo de la hoja de tarea (2500) y los menús */
+.drawer-outer-container--over-gtd {
+  z-index: 2400;
+}
+
 .drawer-outer-container--visible {
   background-color: var(--base1-soft);
 }
