@@ -25,7 +25,11 @@ addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
       clients.claim(),
-      caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== version).map((k) => caches.delete(k)))),
+      caches
+        .keys()
+        .then((keys) =>
+          Promise.all(keys.filter((k) => k !== version).map((k) => caches.delete(k)))
+        ),
     ])
   );
 });
@@ -52,4 +56,17 @@ addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+});
+
+// (3.25) tocar un aviso de fecha: abre (o enfoca) la app en GTD
+addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || self.registration.scope;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => c.url.startsWith(self.registration.scope));
+      if (open) return open.focus();
+      return self.clients.openWindow(url);
+    })
+  );
 });

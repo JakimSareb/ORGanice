@@ -76,3 +76,47 @@ test('GTD (3.24): revisión semanal paso a paso', async ({ app }) => {
   await expect(p.locator('[data-testid=gtd-review]')).toHaveCount(0);
   expect(app.errors).toEqual([]);
 });
+
+// (3.25) avisos de fechas: se activan en Ajustes y la tarea con hora avisa
+test('GTD: avisos de fechas (hora exacta + resumen)', async ({ app }) => {
+  await app.page.addInitScript(() => {
+    window.__notes = [];
+    class FakeNotification {
+      constructor(title, opts) {
+        window.__notes.push(title + '|' + ((opts && opts.body) || ''));
+      }
+      close() {}
+    }
+    FakeNotification.permission = 'default';
+    FakeNotification.requestPermission = async () => {
+      FakeNotification.permission = 'granted';
+      return 'granted';
+    };
+    window.Notification = FakeNotification;
+    if (window.ServiceWorkerRegistration)
+      window.ServiceWorkerRegistration.prototype.showNotification = async (title, opts) => {
+        window.__notes.push(title + '|' + ((opts && opts.body) || ''));
+      };
+  });
+  const d = new Date(Date.now() - 60000);
+  const p = (n) => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} Mon ${p(
+    d.getHours()
+  )}:${p(d.getMinutes())}`;
+  const tasks = `* TODO Llamar al médico\nDEADLINE: <${stamp}>\n* TODO Otra sin fecha\n`;
+  await app.open({ '/tasks.org': tasks, '/inbox.org': '' }, '/settings');
+  const row = app.page.locator('[data-testid=eli-setting-reminders]');
+  await row.waitFor();
+  await row.locator('.switch').click();
+  await app.page.waitForSelector('[data-testid=eli-setting-reminders-hour]');
+  await app.page.selectOption('[data-testid=eli-setting-reminders-hour]', '0');
+  // los ficheros se cargan al abrir GTD (se mantiene lo guardado en este navegador)
+  await app.open({ '/tasks.org': tasks, '/inbox.org': '' }, '/gtd');
+  await gtd.ready(app);
+  await app.page.evaluate(() => (window.Notification.permission = 'granted'));
+  await app.page.waitForFunction(() => window.__notes.length >= 2, null, { timeout: 15000 });
+  const notes = await app.page.evaluate(() => window.__notes);
+  expect(notes.some((n) => n.startsWith('Llamar al médico|Vence a las'))).toBe(true);
+  expect(notes.some((n) => n.startsWith('Tareas:') && n.includes('• Llamar al médico'))).toBe(true);
+  expect(app.errors).toEqual([]);
+});

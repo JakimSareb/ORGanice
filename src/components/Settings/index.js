@@ -24,6 +24,12 @@ import {
   parseTagsLine,
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
+import {
+  getReminderSettings,
+  setReminderSettings,
+  notificationPermission,
+  requestReminderPermission,
+} from '../../lib/eli_reminders';
 
 // ORG Mode para Eli: campo de texto que se guarda al salir de él (o con Intro)
 
@@ -72,6 +78,57 @@ const EliTapModeSettings = () => {
           />
         </div>
       ))}
+    </>
+  );
+};
+
+// (3.25) avisos de fechas (vence/programada) con notificaciones, en este dispositivo
+const EliRemindersSettings = () => {
+  const [s, setS] = React.useState(getReminderSettings());
+  const [perm, setPerm] = React.useState(notificationPermission());
+  const update = (changes) => {
+    setReminderSettings(changes);
+    setS(getReminderSettings());
+  };
+  const toggle = async () => {
+    if (s.on) return update({ on: false });
+    const p = await requestReminderPermission();
+    setPerm(p);
+    update({ on: p === 'granted' });
+  };
+  let note =
+    'A la hora exacta las fechas con hora; el resto, en un resumen diario. Solo con la app abierta o en segundo plano reciente.';
+  if (perm === 'unsupported')
+    note =
+      'Este navegador no admite avisos. En el iPhone: añade la app a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde allí.';
+  else if (perm === 'denied')
+    note = 'Los avisos están bloqueados para esta web: permítelos en los ajustes del navegador.';
+  return (
+    <>
+      <div className="setting-container" data-testid="eli-setting-reminders">
+        <div className="setting-label">
+          Avisos de fechas (vence / programada)
+          <div className="setting-label__description">{note}</div>
+        </div>
+        <Switch isEnabled={s.on && perm === 'granted'} onToggle={toggle} />
+      </div>
+      {s.on && perm === 'granted' && (
+        <div className="setting-container">
+          <div className="setting-label">Hora del resumen diario</div>
+          <select
+            className="textfield"
+            value={s.hour}
+            onChange={(e) => update({ hour: Number(e.target.value) })}
+            data-testid="eli-setting-reminders-hour"
+          >
+            {Array.from({ length: 24 }, (_, h) => (
+              <option key={h} value={h}>
+                {`${String(h).padStart(2, '0')}:00`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </>
   );
 };
@@ -258,6 +315,7 @@ const Settings = ({
 
         <EliReadabilitySetting />
         <EliTapModeSettings />
+        <EliRemindersSettings />
 
         <div className="setting-container">
           <div className="setting-label">Estilo de viñetas</div>

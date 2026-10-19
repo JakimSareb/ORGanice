@@ -100,6 +100,13 @@ const planningDate = (header, type) => {
   }
 };
 
+// (3.25) ¿la fecha lleva hora? (<2026-10-19 lun 10:30>)
+const planningHasTime = (header, type) => {
+  const item = (header.get('planningItems') || List()).find((p) => p.get('type') === type);
+  const ts = item && item.get('timestamp');
+  return !!(ts && ts.get('startHour') && ts.get('startMinute'));
+};
+
 // ORG Mode para Eli: repetición de una fecha como texto de Org («+1w», «.+2d», «++1m») o ''
 const planningRepeat = (header, type) => {
   const item = (header.get('planningItems') || List()).find((p) => p.get('type') === type);
@@ -312,6 +319,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         effort: propertyValue(header, 'EFFORT'),
         scheduled: planningDate(header, 'SCHEDULED'),
         deadline: planningDate(header, 'DEADLINE'),
+        scheduledTimed: planningHasTime(header, 'SCHEDULED'),
+        deadlineTimed: planningHasTime(header, 'DEADLINE'),
         scheduledRepeat: planningRepeat(header, 'SCHEDULED'),
         deadlineRepeat: planningRepeat(header, 'DEADLINE'),
         closed: planningDate(header, 'CLOSED'),
