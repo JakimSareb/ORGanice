@@ -1,0 +1,67 @@
+# ORG Mode para Eli (3.19): crea el tag vX.YY y su Release al publicar en main.
+# Lee APP_VERSION de src/lib/eli_app_name.js; si el tag ya existe, no hace nada.
+# Las notas de la Release salen de la sección de esa versión en changelog.org.
+# También crea (una sola vez) los tags atrasados de la lista ATRASADOS, sin marcarlos como «Latest».
+name: Tags y Releases
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: releases
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      # versión=commit (los commits pueden ir abreviados: la API de GitHub los completa)
+      ATRASADOS: >-
+        2.18=6570d10 3.0=92a5eab 3.01=0c9de8b 3.02=f6b1205 3.03=9195eaf 3.04=277d4f4
+        3.05=a0342b6 3.06=a8c94b2 3.07=5354c47 3.08=23c153d 3.09=f348523 3.10=ebc0937
+        3.11=382ae5a 3.13=990eef2 3.14=d10c02a 3.15=7141d53 3.16=8c417db 3.17=7115ab8
+        3.18=e36d966
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Crear tags y Releases que falten
+        run: |
+          set -euo pipefail
+
+          notas() { # notas VERSIÓN FICHERO: sección del changelog en Markdown
+            awk -v v="$1" '
+              index($0, "* " v " ") == 1 { f = 1; next }
+              f && /^\* / { exit }
+              f { print }
+            ' changelog.org | sed -e 's/^\*\* /### /' > "$2"
+            if [ ! -s "$2" ]; then echo "Versión $1 de ORGanice." > "$2"; fi
+          }
+
+          crear() { # crear VERSIÓN COMMIT LATEST
+            local tag="v$1"
+            if gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+              echo "$tag: ya existe"; return 0
+            fi
+            local sha
+            sha=$(gh api "repos/$REPO/commits/$2" --jq .sha)
+            notas "$1" notas.md
+            gh release create "$tag" --repo "$REPO" --target "$sha" \
+              --title "ORGanice $1" --notes-file notas.md --latest="$3"
+            echo "$tag: creada ($sha)"
+          }
+
+          for par in $ATRASADOS; do
+            crear "${par%%=*}" "${par#*=}" false || echo "::warning::No se pudo crear v${par%%=*}"
+          done
+
+          VERSION=$(sed -n "s/^export const APP_VERSION = '\([^']*\)'.*/\1/p" src/lib/eli_app_name.js)
+          if [ -z "$VERSION" ]; then echo "::error::No encuentro APP_VERSION"; exit 1; fi
+          crear "$VERSION" "$GITHUB_SHA" true
