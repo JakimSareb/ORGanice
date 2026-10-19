@@ -1,4 +1,5 @@
 // ORG Mode para Eli (3.13): editor de guiones Fountain (.fountain). 3.14: exportar a PDF/Fountain.
+// 3.15: exportar a Final Draft (.fdx).
 // El fichero se lee y se guarda tal cual (texto), sin pasar por el analizador de Org.
 // Vistas: «Guion» (formato de guion; tocar un elemento lleva a su línea), «Texto» (editar)
 // y, en pantallas anchas, «Ambos» (texto a la izquierda, guion a la derecha).
@@ -12,6 +13,7 @@ import FountainManual from './FountainManual';
 import Drawer from '../UI/Drawer';
 import { parseFountain, fountainStats } from '../../lib/eli_fountain';
 import { fountainToPdf, titleFields } from '../../lib/eli_fountain_pdf';
+import { fountainToFdx } from '../../lib/eli_fountain_fdx';
 import { showMessage } from '../../lib/eli_prompt';
 
 const MODE_KEY = 'eliFountainMode';
@@ -351,6 +353,15 @@ const EliFountain = ({ path, client }) => {
     }
   };
 
+  const exportFdx = () => {
+    setShowExport(false);
+    try {
+      deliverFile(fountainToFdx(parsed), baseName + '.fdx', 'application/xml');
+    } catch (e) {
+      showMessage('No se pudo crear el fichero de Final Draft', errorText(e));
+    }
+  };
+
   const showText = mode === 'text' || mode === 'both';
   const showScript = mode === 'script' || mode === 'both';
 
@@ -426,6 +437,9 @@ const EliFountain = ({ path, client }) => {
                   </button>
                   <button onClick={exportFountain} data-testid="eli-ftn-export-fountain">
                     <i className="far fa-file-alt" /> Fountain (.fountain)
+                  </button>
+                  <button onClick={exportFdx} data-testid="eli-ftn-export-fdx">
+                    <i className="far fa-file-code" /> Final Draft (.fdx)
                   </button>
                 </div>
               </>
