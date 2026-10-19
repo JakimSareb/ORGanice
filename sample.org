@@ -359,6 +359,22 @@ Formato › *Lista ›* pone Casilla, Guion, Más, Numerada o lo quita en la lí
 - Las plantillas se configuran en Ajustes → Plantillas de captura. La «ruta de encabezado» es opcional: sin ella, lo capturado va al principio o al final del fichero; si pones una que no existe, se guarda igualmente al principio o al final y la app te avisa.
 - Captura rápida desde el iPhone o un marcador del navegador: ver el README del proyecto.
 
+** Captura rápida al Inbox (dirección /capture)
+Abrir la dirección =https://jakimsareb.github.io/ORGanice/capture?text=Comprar pan= añade «Comprar pan» al Inbox de GTD (sin plantilla, con su fecha de creación) y abre la lista Inbox. Funciona con cualquier sincronización (Dropbox o carpeta), porque usa la sesión normal de la app.
+- *text*: el título. Si tiene varias líneas, la primera es el título y el resto va a las notas.
+- *notes*: notas. *url*: un enlace (va a las notas; sin texto, es el título).
+- *editar=1*: en vez de guardarla sola, abre el editor de la tarea nueva para completarla.
+- Si hay que iniciar sesión primero, la captura espera (15 minutos como mucho) y se añade al entrar en GTD.
+
+*** Atajo de iOS «Al Inbox» (también en la hoja de compartir)
+1. App Atajos → *＋* → nombre «Al Inbox». En la «i» (detalles): *Mostrar en la hoja de compartir*, tipos *Texto* y *URL*.
+2. Acción *Si* «Entrada del atajo» *tiene algún valor*: usar la entrada; *De lo contrario*: *Pedir entrada* (Texto, «¿Qué quieres capturar?»).
+3. *Codificar URL* del texto del paso anterior.
+4. *Texto*: =https://jakimsareb.github.io/ORGanice/capture?text== seguido de la variable «Texto codificado».
+5. *Abrir URLs* con ese texto.
+Desde Safari u otra app: Compartir → «Al Inbox». Desde la pantalla de inicio o Siri: «Al Inbox» pregunta qué apuntar.
+Nota: iOS abre las direcciones en Safari (no en la app de la pantalla de inicio), así que hay que tener la sesión iniciada también en Safari. Para revisarla sin escribir, añade =&editar=1= al final de la dirección.
+
 * El reloj (tiempo dedicado)
 ** TODO Escribir el informe
 :LOGBOOK:

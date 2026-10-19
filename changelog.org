@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.22 (octubre de 2026)
+** GTD
+- Captura rápida al Inbox: abrir la dirección =…/ORGanice/capture?text=…= añade la tarea al Inbox (las notas con =notes=, un enlace con =url=; con =editar=1= abre el editor para completarla). Sirve con Dropbox y con carpeta.
+- El manual explica cómo hacer un Atajo de iOS «Al Inbox» que sale también en la hoja de compartir.
+
 * 3.21b (octubre de 2026)
 ** Desarrollo
 - Segunda parte del arreglo de las pruebas automáticas (jest): la prueba grande de ficheros Org (56 fallos) estaba escrita para la interfaz del organice original (botones y textos en inglés, ventana para editar tablas…). Ahora prueba lo mismo con la interfaz de ORGanice: barra de abajo, menús ⋯, tablas editables en su sitio y textos en español. Ya pasan todas las pruebas (755). No cambia nada al usar la app.

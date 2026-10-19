@@ -1,4 +1,4 @@
-# ORGanice 3.21b
+# ORGanice 3.22
 
 <img src="src/images/logo-unicornio.svg" alt="" width="96" align="right">
 
@@ -69,6 +69,13 @@ Funciona en Microsoft Edge y Google Chrome de ordenador (Windows, Mac, Linux); S
 no lo permiten. La app guarda en el navegador solo la referencia a la carpeta (IndexedDB), nunca su
 contenido; al volver a abrirla, el navegador puede pedir confirmar el permiso (botón *Permitir
 acceso*). La captura rápida (capture.html) sigue siendo solo para Dropbox.
+
+## Captura rápida al Inbox (`/capture`)
+
+`https://jakimsareb.github.io/ORGanice/capture?text=…` añade una tarea al Inbox de GTD con la
+sesión normal de la app (Dropbox o carpeta). Parámetros: `text` (1.ª línea = título, resto =
+notas) · `notes` · `url` · `editar=1` (abre el editor en vez de guardar). Atajo de iOS: ver el
+manual (*Capturar ideas rápido*).
 
 ## Captura rápida desde el iPhone (menú Compartir)
 
