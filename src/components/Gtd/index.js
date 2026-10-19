@@ -171,6 +171,7 @@ import {
   hideLoadingMessage,
 } from '../../actions/base';
 import { getTapMode } from '../../lib/eli_tap_mode';
+import { usePullToRefresh, pullReady } from '../../lib/eli_pull_refresh';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -2631,6 +2632,14 @@ export default function GtdView() {
     dispatch(sync({ forceAction: 'manual' }));
   };
 
+  // 3.26: tirar hacia abajo de la lista (con el dedo) = sincronizar
+  const gtdMainRef = useRef(null);
+  const syncAllRef = useRef();
+  syncAllRef.current = syncAll;
+  const { pull: pullDist, refreshing: pullRefreshing } = usePullToRefresh(gtdMainRef, () =>
+    syncAllRef.current()
+  );
+
   // ORG Mode para Eli: órdenes de la paleta de comandos (ver EliCommandPalette)
   const gtdCmdRef = useRef();
   gtdCmdRef.current = (cmd) => {
@@ -4435,7 +4444,27 @@ export default function GtdView() {
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
 
-      <main className={'gtd-main' + (projectTask ? ' is-project-view' : '')}>
+      <main className={'gtd-main' + (projectTask ? ' is-project-view' : '')} ref={gtdMainRef}>
+        {(pullDist > 0 || pullRefreshing) && (
+          <div
+            className={'gtd-pull' + (pullReady(pullDist) || pullRefreshing ? ' is-ready' : '')}
+            style={{ height: pullRefreshing ? 40 : pullDist }}
+            data-testid="gtd-pull"
+          >
+            <i
+              className={
+                'fas ' + (pullRefreshing ? 'fa-sync-alt fa-spin' : 'fa-arrow-down gtd-pull__arrow')
+              }
+            />
+            <span>
+              {pullRefreshing
+                ? 'Sincronizando…'
+                : pullReady(pullDist)
+                ? 'Suelta para sincronizar'
+                : 'Tira para sincronizar'}
+            </span>
+          </div>
+        )}
         <header className="gtd-main__head">
           <button className="gtd-main__menu" onClick={() => setSideOpen(true)} aria-label="Menú">
             <i className="fas fa-bars" />
