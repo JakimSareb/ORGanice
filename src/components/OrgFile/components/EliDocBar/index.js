@@ -158,6 +158,12 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
         base.h = 0;
       }
       if (!typing() || !base.h) base.h = window.innerHeight;
+      // (3.16) sin un campo de texto activo no hay teclado: la barra va pegada abajo (en el
+      // iPhone, sin teclado, a veces salía hacia la mitad de la pantalla)
+      if (!typing()) {
+        setBottom(0);
+        return;
+      }
       const fullH = typing() ? Math.max(base.h, window.innerHeight) : window.innerHeight;
       const covered = Math.max(0, fullH - (vv.height + vv.offsetTop));
       setBottom(covered > 40 ? covered : 0);
@@ -773,16 +779,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
           },
         ],
         more: [
-          // (3.04) Agenda y Capturar (antes, botones redondos grandes abajo)
-          { id: 'agenda', icon: 'far fa-calendar-check', label: 'Agenda', onClick: openAgenda },
-          {
-            id: 'capture',
-            icon: 'fas fa-inbox',
-            label: 'Capturar (plantillas)',
-            hint: 'c',
-            onClick: openCapture,
-          },
-          { id: 'sep-capture', sep: true },
+          // (3.16) Agenda y Capturar ya van en la fila (al final)
           {
             id: 'clock',
             icon: hasClock ? 'fas fa-hourglass-end' : 'fas fa-hourglass-start',
@@ -877,6 +874,15 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
         { id: 'more', icon: 'fas fa-ellipsis-h', title: 'Más', sub: 'more' },
         { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
         { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
+        // (3.16) Agenda y Capturar también con una cabecera seleccionada
+        { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
+        {
+          id: 'capture',
+          icon: 'fas fa-inbox',
+          badge: '+',
+          title: 'Capturar (plantillas de captura)',
+          onClick: openCapture,
+        },
         ...(editing
           ? [
               {
@@ -964,6 +970,7 @@ export default function EliDocBar({ editing = false, commitEditing = null, hidde
         },
         { id: 'mail', icon: 'fas fa-share', title: 'Correo', onClick: share },
         { id: 'pdf', icon: 'fas fa-file-pdf', title: 'PDF', onClick: () => openPrintPreview(id) },
+        { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
         {
           id: 'unlock',
           icon: 'fas fa-lock',

@@ -1175,6 +1175,7 @@ export default function GtdView() {
     onDrop: (list, id) => rowDragRef.current.onDrop(list, id),
     onReorder: (task, pos) => onReorderDropRef.current && onReorderDropRef.current(task, pos),
     onStart: (t) => rowDragRef.current.onStart(t),
+    onNearEdge: (t) => rowDragRef.current.onNearEdge(t),
     canSwipe: (task) => rowDragRef.current.canSwipe(task),
     onSwipe: (task, dir) => rowDragRef.current.onSwipe(task, dir),
     dragSet: (task) => rowDragRef.current.dragSet(task),
@@ -2519,6 +2520,10 @@ export default function GtdView() {
       setMenu(null);
       // (3.05) con el dedo, la pulsación larga también selecciona la tarea
       if (t && lastPointer.current !== 'mouse' && !sel.includes(t.key)) setSelKey(t.key);
+    },
+    // (3.16) móvil: el menú lateral con las listas solo sale al llevar la tarea al borde izquierdo;
+    // si no, el arrastre solo reordena dentro de la lista
+    onNearEdge: () => {
       if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
     },
     canSwipe: (task) => !noSwipeGtd && !task.isDone && !task.isProject && view.id !== 'logbook',
@@ -4919,7 +4924,11 @@ export default function GtdView() {
         />
       )}
       {showAgenda && (
-        <Drawer onClose={() => setShowAgenda(false)} maxSize>
+        <Drawer
+          onClose={() => setShowAgenda(false)}
+          maxSize
+          className="drawer-outer-container--over-gtd"
+        >
           <EliErrorBoundary label="la agenda" onClose={() => setShowAgenda(false)}>
             <AgendaModal
               onClose={() => setShowAgenda(false)}

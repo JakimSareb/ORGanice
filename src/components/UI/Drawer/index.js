@@ -5,7 +5,7 @@ import './stylesheet.css';
 import { Motion, spring } from 'react-motion';
 import classNames from 'classnames';
 
-export default ({ children, shouldIncludeCloseButton, onClose, maxSize = false }) => {
+export default ({ children, shouldIncludeCloseButton, onClose, maxSize = false, className }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [dragOffsetY, setDragOffsetY] = useState(null);
 
@@ -96,7 +96,7 @@ export default ({ children, shouldIncludeCloseButton, onClose, maxSize = false }
     }
   }, [innerContainer, dragOffsetY]);
 
-  const outerClassName = classNames('drawer-outer-container', {
+  const outerClassName = classNames('drawer-outer-container', className, {
     'drawer-outer-container--visible': isVisible,
   });
 

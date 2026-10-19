@@ -3054,7 +3054,7 @@ html[data-eli-theme] .gtd-overview__row:last-child {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px));
+  padding: 0 0 calc(16px + env(safe-area-inset-bottom, 0px));
   margin: 0;
   border: 0;
   overflow-y: auto;
@@ -3257,48 +3257,14 @@ html[data-eli-theme] .gtd-overview__row:last-child {
 .gtd-editor--sheet .gtd-ed__gap {
   display: none;
 }
-/* lo de abajo (Abrir, Adjuntar, Archivar, Cancelar, Guardar) solo con ⋯ */
+/* (3.16) acciones (Abrir, Propiedades, Adjuntar, Archivar, Papelera, Cancelar, Guardar) siempre a la
+   vista; ya no hay barra flotante «Mover | Papelera | ⋯» (Mover = el nombre del fichero) */
 .gtd-editor--sheet .gtd-editor__actions {
-  display: none;
-}
-.gtd-editor--sheet.is-sheet-more .gtd-editor__actions {
   display: flex;
   flex-wrap: wrap;
   padding: 12px 16px;
   margin-top: 8px;
   border-top: 1px solid var(--base1-soft, rgba(128, 128, 128, 0.25));
-}
-/* barra flotante en píldora: → Mover | 🗑 Papelera | ⋯ */
-.gtd-sheet__bar {
-  position: fixed;
-  left: 50%;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
-  z-index: 3;
-  display: flex;
-  align-items: stretch;
-  background: var(--base3);
-  border-radius: 999px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-}
-.gtd-sheet__bar button {
-  border: 0;
-  background: transparent;
-  color: var(--base00);
-  font-size: 15px;
-  padding: 12px 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.gtd-sheet__bar button + button {
-  border-left: 1px solid var(--base1-soft, rgba(128, 128, 128, 0.25));
-}
-.gtd-sheet__bar button.is-on {
-  color: var(--blue);
 }
 /* (3.06) hoja del móvil: retoques */
 .gtd-editor.gtd-editor--sheet .gtd-ed__title-row .gtd-editor__title {
@@ -3426,8 +3392,12 @@ button.gtd-ed__file--move {
 /* (3.11) notas debajo de la fila: la fila no cambia; sangradas al nivel del título, con una
    línea gris a la izquierda (como Nirvana); listas con casillas */
 .gtd-task__below {
-  margin: -2px 14px 0 0;
-  padding: 0 0 9px;
+  /* (3.16) sin margen negativo y por encima de la fila: antes la fila (con fondo) tapaba
+     la mitad de arriba de la 1.ª línea */
+  position: relative;
+  z-index: 2;
+  margin: 0 14px 0 0;
+  padding: 1px 0 9px;
 }
 .gtd-task__below > .gtd-task__notes {
   margin-top: 0;
@@ -3435,7 +3405,7 @@ button.gtd-ed__file--move {
   border-left: 2px solid var(--base2);
 }
 html[data-eli-theme] .gtd-task__below {
-  margin-top: -6px;
+  margin-top: 0;
   padding-bottom: 12px;
 }
 html[data-eli-theme] .gtd-task__below > .gtd-task__notes {
