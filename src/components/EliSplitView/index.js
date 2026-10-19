@@ -59,7 +59,7 @@ export default function EliSplitView() {
       if (current.left !== l || current.right !== r) {
         save({ ...current, left: l, right: r });
         const url = `${BASE_PATH}/split?l=${encodeURIComponent(l)}&r=${encodeURIComponent(r)}`;
-        window.history.replaceState(null, '', url);
+        window.history.replaceState(window.history.state, '', url);
       }
     }, 1000);
     return () => clearInterval(timer);

@@ -931,7 +931,8 @@ export const insertPendingCapture = () => async (dispatch, getState) => {
   const customCaptureVariables = pendingCapture.get('customCaptureVariables');
 
   dispatch(clearPendingCapture());
-  window.history.pushState({}, '', window.location.pathname);
+  // 3.30: replaceState conservando el estado del router (pushState a mano descuadraba las flechas)
+  window.history.replaceState(window.history.state, '', window.location.pathname);
 
   const template = getState()
     .capture.get('captureTemplates')

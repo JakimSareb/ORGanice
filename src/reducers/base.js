@@ -93,7 +93,12 @@ const activatePopup = (state, action) => {
   // identifiable (aka not related to a single header like tags,
   // properties or timestamps).
   if (['search', 'task-list', 'agenda'].includes(popupType)) {
-    window.history.replaceState({}, '', `${window.location.pathname}#${popupType}`);
+    // 3.30: se conserva el estado del router (su clave); si no, se pierde el historial de flechas
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${window.location.search}#${popupType}`
+    );
   }
 
   return state.set(
@@ -107,7 +112,7 @@ const activatePopup = (state, action) => {
 
 const closePopup = (state) => {
   window.history.replaceState(
-    '',
+    window.history.state,
     document.title,
     window.location.pathname + window.location.search
   );

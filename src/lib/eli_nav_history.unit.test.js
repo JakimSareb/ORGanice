@@ -23,7 +23,7 @@ const fakeHistory = () => {
       stack.splice(pos + 1);
       stack.push({ pathname, key: 'k' + ++n });
       pos++;
-      listener(stack[pos], 'PUSH');
+      if (listener) listener(stack[pos], 'PUSH');
     },
     go: (d) => {
       pos += d;
@@ -59,4 +59,28 @@ test('el historial de GTD y el de Documentos van por separado', () => {
   goBack(h);
   expect(h.location.pathname).toBe('/gtd');
   expect(canGoBack()).toBe(false);
+});
+
+test('3.30: se recupera tras recargar la página (sessionStorage)', () => {
+  const h = fakeHistory();
+  installNavHistory(h);
+  h.push('/file/a.org');
+  h.push('/file/b.org');
+  // «Recarga»: un history nuevo cuya entrada actual tiene la misma clave
+  const h2 = fakeHistory();
+  h2.push('/file/a.org');
+  h2.push('/file/b.org');
+  installNavHistory(h2);
+  expect(canGoBack()).toBe(true);
+  goBack(h2);
+  expect(h2.location.pathname).toBe('/file/a.org');
+});
+
+test('3.30: una entrada desconocida no hace saltar mal', () => {
+  const h = fakeHistory();
+  installNavHistory(h);
+  h.push('/file/a.org');
+  h.push('/file/b.org');
+  h.go(0); // clave conocida
+  expect(canGoBack()).toBe(true);
 });
