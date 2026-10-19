@@ -1,4 +1,4 @@
-// ORG Mode para Eli (3.13): editor de guiones Fountain (.fountain).
+// ORG Mode para Eli (3.13): editor de guiones Fountain (.fountain). 3.14: exportar a PDF/Fountain.
 // El fichero se lee y se guarda tal cual (texto), sin pasar por el analizador de Org.
 // Vistas: «Guion» (formato de guion; tocar un elemento lleva a su línea), «Texto» (editar)
 // y, en pantallas anchas, «Ambos» (texto a la izquierda, guion a la derecha).
@@ -11,6 +11,7 @@ import FountainScript from './FountainScript';
 import FountainManual from './FountainManual';
 import Drawer from '../UI/Drawer';
 import { parseFountain, fountainStats } from '../../lib/eli_fountain';
+import { fountainToPdf, titleFields } from '../../lib/eli_fountain_pdf';
 import { showMessage } from '../../lib/eli_prompt';
 
 const MODE_KEY = 'eliFountainMode';
@@ -36,6 +37,40 @@ const isWide = () => typeof window !== 'undefined' && window.innerWidth >= 900;
 const errorText = (e) =>
   (e && (e.message || e.error_summary || (e.error && e.error.error_summary))) ||
   (e ? String(e) : 'No existe o no se puede leer');
+
+// (3.14) Entregar un fichero exportado: en el móvil, la hoja de compartir del sistema
+// («Guardar en Archivos», imprimir, enviar…); si no se puede, se descarga.
+const downloadBlob = (blob, name) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+};
+const deliverFile = (data, name, mime) => {
+  const blob = new Blob([data], { type: mime });
+  let file = null;
+  try {
+    file = new File([blob], name, { type: mime });
+  } catch (e) {}
+  const touch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  if (touch && file && navigator.canShare && navigator.share) {
+    let ok = false;
+    try {
+      ok = navigator.canShare({ files: [file] });
+    } catch (e) {}
+    if (ok) {
+      navigator.share({ files: [file], title: name }).catch((err) => {
+        if (!err || err.name !== 'AbortError') downloadBlob(blob, name);
+      });
+      return;
+    }
+  }
+  downloadBlob(blob, name);
+};
 
 // Posición (carácter) del principio de una línea
 const lineOffset = (text, line) => {
@@ -70,6 +105,7 @@ const EliFountain = ({ path, client }) => {
   const [showNotes, setShowNotes] = useState(() => lsGet(NOTES_KEY, '1') === '1');
   const [showManual, setShowManual] = useState(false);
   const [showScenes, setShowScenes] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const taRef = useRef(null);
   const paperRef = useRef(null);
   const latest = useRef({ text: null, dirty: false, saving: false });
@@ -299,6 +335,22 @@ const EliFountain = ({ path, client }) => {
     );
   }
 
+  const baseName = fileName.replace(/\.(fountain|spmd)$/i, '') || 'guion';
+  const exportFountain = () => {
+    setShowExport(false);
+    deliverFile(text || '', baseName + '.fountain', 'text/plain');
+  };
+  const exportPdf = () => {
+    setShowExport(false);
+    try {
+      const f = titleFields(parsed.title);
+      const title = f.title ? f.title.join(' ').replace(/[*_]/g, '') : baseName;
+      deliverFile(fountainToPdf(parsed, { title }), baseName + '.pdf', 'application/pdf');
+    } catch (e) {
+      showMessage('No se pudo crear el PDF', errorText(e));
+    }
+  };
+
   const showText = mode === 'text' || mode === 'both';
   const showScript = mode === 'script' || mode === 'both';
 
@@ -356,6 +408,29 @@ const EliFountain = ({ path, client }) => {
           >
             <i className={showNotes ? 'far fa-eye' : 'far fa-eye-slash'} />
           </button>
+          <span className="eli-ftn__export">
+            <button
+              className={'eli-ftn__icon' + (showExport ? ' is-active' : '')}
+              title="Exportar"
+              onClick={() => setShowExport((v) => !v)}
+              data-testid="eli-ftn-export"
+            >
+              <i className="fas fa-file-export" />
+            </button>
+            {showExport && (
+              <>
+                <div className="eli-ftn__export-shade" onClick={() => setShowExport(false)} />
+                <div className="eli-ftn__export-menu" role="menu">
+                  <button onClick={exportPdf} data-testid="eli-ftn-export-pdf">
+                    <i className="far fa-file-pdf" /> PDF (A4)
+                  </button>
+                  <button onClick={exportFountain} data-testid="eli-ftn-export-fountain">
+                    <i className="far fa-file-alt" /> Fountain (.fountain)
+                  </button>
+                </div>
+              </>
+            )}
+          </span>
           <button
             className="eli-ftn__icon"
             title="Manual de Fountain"
