@@ -3714,3 +3714,104 @@ html[data-eli-theme] .gtd-task__below > .gtd-task__notes {
     overscroll-behavior-y: contain;
   }
 }
+
+/* (3.32) editor de tarea: estado, etiquetas y área con el mismo aspecto que los campos de
+   fecha y proyecto (marco fino, mismo fondo); el cuadro de notas, con ese fondo también */
+.gtd-editor.gtd-editor--nirvana .gtd-ed__tags {
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+  background: var(--base3);
+}
+.gtd-editor .gtd-ed__tags .gtd-chip.gtd-chip--area {
+  background: transparent;
+  border-color: transparent;
+  color: var(--base01);
+  font-weight: 400;
+}
+.gtd-editor .gtd-ed__tags .gtd-chip.gtd-chip--area .fa-folder {
+  color: var(--blue);
+}
+.gtd-editor .gtd-ed__tags .gtd-chip.gtd-chip--area.is-empty {
+  border-style: solid;
+  opacity: 0.6;
+}
+.gtd-editor .gtd-ed__tags .gtd-chip.gtd-chip--area.is-empty .fa-folder {
+  color: inherit;
+}
+.gtd-editor .gtd-editor__notes,
+.gtd-editor.gtd-editor--nirvana .gtd-editor__notes,
+.gtd-editor.gtd-editor--sheet .gtd-editor__notes,
+html[data-eli-theme] .gtd-editor .gtd-editor__notes {
+  background: var(--base3);
+}
+/* hoja del móvil: estado y etiquetas como campos (antes, filas planas con separador) */
+.gtd-editor.gtd-editor--sheet .gtd-sheet__row.gtd-sheet__status,
+.gtd-editor.gtd-editor--sheet .gtd-ed__main > .gtd-ed__tags {
+  min-height: 40px;
+  margin: 8px 0 0 40px;
+  padding: 0 8px 0 10px;
+  gap: 8px;
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+  background: var(--base3);
+  box-sizing: border-box;
+}
+.gtd-editor.gtd-editor--sheet .gtd-sheet__status .gtd-sheet__icon,
+.gtd-editor.gtd-editor--sheet .gtd-ed__tags > .gtd-sheet__icon {
+  width: 18px;
+  font-size: 15px;
+  color: var(--blue);
+}
+.gtd-editor.gtd-editor--sheet .gtd-sheet__status .gtd-sheet__icon.is-blue {
+  font-size: 18px;
+}
+.gtd-editor.gtd-editor--sheet .gtd-sheet__status select {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--base01);
+}
+.gtd-editor.gtd-editor--sheet .gtd-ed__tags input {
+  font-size: 15px;
+}
+
+/* proyecto y «subtarea de», alineados con las notas, el estado y las etiquetas */
+.gtd-editor.gtd-editor--sheet .gtd-ed__side {
+  margin-left: 0;
+}
+.gtd-editor.gtd-editor--sheet .gtd-ed__side > :nth-child(n + 5) {
+  margin-left: 40px;
+}
+
+/* (3.32) al abrir una tarea, animación rápida de «desplegar» */
+@keyframes gtd-ed-unfold {
+  from {
+    opacity: 0.2;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes gtd-sheet-rise {
+  from {
+    transform: translateY(40%);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.gtd-editor.gtd-editor--nirvana:not(.gtd-editor--sheet) {
+  animation: gtd-ed-unfold 0.18s ease-out;
+}
+.gtd-editor.gtd-editor--nirvana.gtd-editor--sheet {
+  animation: gtd-sheet-rise 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .gtd-editor.gtd-editor--nirvana,
+  .gtd-editor.gtd-editor--nirvana.gtd-editor--sheet {
+    animation: none;
+  }
+}

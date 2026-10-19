@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.32 (octubre de 2026)
+** GTD
+- *Editor de tarea*: el estado, las etiquetas y el área tienen ya el mismo aspecto que los campos de fecha y proyecto, y el cuadro de notas el mismo fondo.
+- El tipo «No task» se llama ahora *Reference*.
+- Al abrir una tarea, se despliega con una animación rápida (en el móvil, la hoja sube desde abajo).
+
 * 3.31 (octubre de 2026)
 ** Documentos
 - *Sin conexión*: el explorador de ficheros ya abre las carpetas. Antes salía «Error al obtener los ficheros» y no se veía nada (solo se podía abrir desde la lupa). Ahora enseña la última lista vista de cada carpeta, junto con los ficheros guardados en el dispositivo; si de una carpeta no se sabe nada, lo dice.
