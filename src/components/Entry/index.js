@@ -30,6 +30,7 @@ import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
 import { installFormatHotkeys } from '../EliFormatBar';
 import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
+import { captureFromLocation, peekQuickCapture } from '../../lib/eli_quick_capture';
 import {
   notWhileTyping,
   matchesBinding,
@@ -322,6 +323,15 @@ class Entry extends PureComponent {
             <Switch>
               {shouldRedirectToCapturePath && <Redirect to={pendingCapturePath} />}
               <Route path="/privacy-policy" exact component={PrivacyPolicy} />
+              {/* (3.22) captura rápida: se guarda lo que trae y se añade al Inbox desde GTD */}
+              <Route
+                path="/capture"
+                exact={true}
+                render={({ location }) => {
+                  captureFromLocation({ pathname: '/capture', search: location.search });
+                  return <Redirect to="/gtd" />;
+                }}
+              />
               <Route path="/file/:path+" render={this.renderFile} />
               <Route
                 path="/fountain/:path+"
@@ -339,7 +349,9 @@ class Entry extends PureComponent {
               <Route path="/settings" exact={true}>
                 <Settings />
               </Route>
-              {this.eliResume() ? (
+              {peekQuickCapture() ? (
+                <Redirect to="/gtd" />
+              ) : this.eliResume() ? (
                 <Redirect to={this.eliResume()} />
               ) : defaultFilePath ? (
                 <Redirect to={defaultFilePath} />

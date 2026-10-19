@@ -157,6 +157,7 @@ import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import { headerWithPath, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
 import { primeKeyboard } from '../../lib/eli_keyboard_bridge';
+import { peekQuickCapture, takeQuickCapture } from '../../lib/eli_quick_capture';
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
@@ -1969,6 +1970,38 @@ export default function GtdView() {
       setSelKey(key);
     } else if (!fromRapid || d.top) setFreshKeys((k) => [key, ...k.filter((x) => x !== key)]);
   };
+  // (3.22) captura rápida (/capture?text=…): en cuanto están cargados los ficheros, al Inbox
+  const quickCaptureDone = useRef(false);
+  useEffect(() => {
+    if (pendingLoads || quickCaptureDone.current || !tasksFile) return;
+    const c = peekQuickCapture();
+    if (!c) return;
+    const d = draftFor('inbox');
+    if (!d || !files.getIn([d.target.path, 'headers'])) return;
+    quickCaptureDone.current = true;
+    takeQuickCapture();
+    // Sin los filtros de la vista: solo la etiqueta del Inbox si hace falta
+    const base = {
+      ...d,
+      top: false,
+      before: null,
+      after: null,
+      tags: d.tags.filter((t) => t === inboxTag()),
+      area: null,
+      title: c.title,
+    };
+    if (view.id !== 'inbox') selectView({ id: 'inbox' });
+    if (c.edit) {
+      primeKeyboard();
+      setOpenKey(null);
+      setNewProject(null);
+      setDraft({ ...base, notes: c.notes || '' });
+      return;
+    }
+    createFromDraft(c.notes ? { notes: c.notes } : {}, '', base);
+    dispatch(setDisappearingLoadingMessage(`Añadido al Inbox: ${c.title}`, 2500));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingLoads, tasksFile, files]);
   // (3.0) Entrada rápida (como Nirvana): Intro añade al final de la lista, Mayús+Intro arriba;
   // «#etiqueta», «#due fecha», «#focus»/«#star», «#next»/«#someday», «#project»
   const addRapid = (top) => {

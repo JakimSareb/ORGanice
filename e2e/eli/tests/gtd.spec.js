@@ -35,3 +35,17 @@ test('GTD: «Nuevo elemento» pone el foco en el título y se guarda', async ({ 
   expect(await app.fileAfterSync('/tasks.org')).toMatch(/NEXT Escrita sin tocar/);
   expect(await app.page.locator('.eli-keyboard-bridge').count()).toBe(0);
 });
+
+test('GTD (3.22): /capture?text=… añade al Inbox', async ({ app }) => {
+  await app.open(
+    { '/tasks.org': TASKS, '/inbox.org': '' },
+    '/capture?text=' + encodeURIComponent('Comprar pan\nintegral') + '&url=https%3A%2F%2Fa.es'
+  );
+  await gtd.ready(app);
+  await app.page.waitForTimeout(1500);
+  expect(await gtd.titles(app)).toContain('Comprar pan');
+  const inbox = await app.fileAfterSync('/inbox.org');
+  expect(inbox).toMatch(/^\* .*Comprar pan/m);
+  expect(inbox).toContain('integral\nhttps://a.es');
+  expect(app.errors).toEqual([]);
+});
