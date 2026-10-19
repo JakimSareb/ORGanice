@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.20 (octubre de 2026)
+** Guiones (Fountain)
+- Antes de guardar se comprueba si el guion ha cambiado en otro sitio desde que lo abriste. Si es así, te pregunta qué hacer: guardar tu versión como copia (con la fecha en el nombre) y cargar la otra, cargar la otra o mantener la tuya. Así ya no se pierde lo escrito en otro dispositivo.
+
 * 3.19 (octubre de 2026)
 ** Desarrollo
 - Cada versión publicada crea sola su etiqueta (vX.YY) y su página en *Releases* de GitHub, con estas novedades. La primera vez también crea las de las versiones anteriores (2.18 y 3.0–3.18). No cambia nada al usar la app.
