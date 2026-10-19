@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.14 (octubre de 2026)
+** Guiones (Fountain)
+- Nuevo: *Exportar* en la barra del guion: *PDF en A4* con el formato estándar (Courier 12, portada, números de página y de escena, diálogo doble, «(MÁS)»/«(CONT.)» al partir un diálogo; las notas, secciones y sinopsis no salen) y copia *Fountain (.fountain)*. En el iPhone sale la hoja de compartir para guardarlo en Archivos, imprimirlo o enviarlo.
+
 * 3.13 (octubre de 2026)
 ** Guiones (Fountain)
 - Nuevo: *guiones en ficheros =.fountain=*. El explorador los muestra (icono de película) y los abre en su propio editor; *Nuevo guion (Fountain)* en el menú de ficheros principales crea uno con portada y escena de ejemplo.

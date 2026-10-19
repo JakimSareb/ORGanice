@@ -74,6 +74,59 @@
 .eli-ftn__icon:hover {
   background: var(--base2);
 }
+.eli-ftn__icon.is-active {
+  background: var(--base2);
+}
+/* 3.14: menú Exportar */
+.eli-ftn__export {
+  position: relative;
+  display: inline-flex;
+}
+.eli-ftn__export-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.eli-ftn__export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 41;
+  min-width: 200px;
+  margin-top: 4px;
+  padding: 4px;
+  background: var(--base3);
+  border: 1px solid var(--base2);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 600px) {
+  .eli-ftn__export-menu {
+    right: auto;
+    left: 0;
+  }
+}
+.eli-ftn__export-menu button {
+  border: 0;
+  background: transparent;
+  color: var(--base01);
+  text-align: left;
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.eli-ftn__export-menu button:hover {
+  background: var(--base2);
+}
+.eli-ftn__export-menu i {
+  width: 20px;
+  margin-right: 6px;
+  color: var(--blue);
+}
 .eli-ftn__icon.is-off {
   color: var(--base1);
 }
