@@ -93,6 +93,8 @@ import {
   applyRapidSuggestion,
 } from '../../lib/gtd/gtd_rapid';
 import GtdMenu from './GtdMenu';
+import GtdWeeklyReview from './GtdWeeklyReview';
+import { weeklyReview } from '../../lib/gtd/gtd_review';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
 import EliOrgTable from '../EliOrgTable';
@@ -985,6 +987,12 @@ export default function GtdView() {
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
   const [showAgenda, setShowAgenda] = useState(false);
+  // (3.24) Revisión semanal guiada: paso en curso (null = cerrada; se recuerda)
+  const [reviewStep, setReviewStep] = useState(() => {
+    const v = readLS('eliGtdReview', null);
+    return typeof v === 'number' ? v : null;
+  });
+  const [lastReview, setLastReview] = useState(() => readLS('eliGtdLastReview', null));
   const [today, setToday] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -1058,6 +1066,12 @@ export default function GtdView() {
     // eslint-disable-next-line
     [scopedFiles, inboxPaths, gtdCfg]
   );
+  // (3.24) lo que mira la revisión semanal (solo con ella abierta)
+  const reviewData = useMemo(() => (reviewStep !== null ? weeklyReview(tasks, today) : null), [
+    reviewStep,
+    tasks,
+    today,
+  ]);
   const counts = useMemo(() => {
     const c = countsFor(tasks, { area }, today);
     // (3.01) secuenciales: en Next cuenta solo la primera acción de cada proyecto
@@ -2677,6 +2691,30 @@ export default function GtdView() {
   const goList = (id) => {
     if (id === 'projects' || isSectionShown(id, gtdCfg)) selectView({ id });
   };
+  // (3.24) Revisión semanal
+  const setReview = (step) => {
+    setReviewStep(step);
+    writeLS('eliGtdReview', step);
+  };
+  const startReview = () => {
+    setSideOpen(false);
+    setReview(0);
+    goList('inbox');
+  };
+  const finishReview = () => {
+    const now = new Date().toISOString();
+    setLastReview(now);
+    writeLS('eliGtdLastReview', now);
+    setReview(5);
+  };
+  const reviewOpenTask = (t) => {
+    if (t.isProject) {
+      backRef.current = [...backRef.current, { view, selKey, openKey }].slice(-20);
+      selectView({ type: 'project', key: t.key });
+    } else {
+      goToTask(t);
+    }
+  };
   const toggleRapid = (focusIt) => {
     const v = focusIt ? true : !rapidOn;
     setRapidOn(v);
@@ -3601,7 +3639,15 @@ export default function GtdView() {
       writeLS('eliGtdNotes', m);
       setNotesOverride({});
     };
-    const out = [];
+    const out = [
+      {
+        label: 'Revisión semanal',
+        icon: 'fas fa-clipboard-check',
+        onClick: startReview,
+        testId: 'gtd-menu-review',
+      },
+      { sep: true },
+    ];
     // (3.05) en un proyecto: editarlo y abrirlo en su fichero (antes, botones bajo el título)
     if (projectTask) {
       out.push(
@@ -3967,6 +4013,18 @@ export default function GtdView() {
       <span className="gtd-side__label">Agenda</span>
     </button>
   );
+  // (3.24) junto a Agenda: Revisión semanal
+  const renderReviewButton = () => (
+    <button
+      className={'gtd-side__item gtd-side__item--review' + (reviewStep !== null ? ' is-on' : '')}
+      onClick={startReview}
+      title="Revisión semanal guiada"
+      data-testid="gtd-review-start"
+    >
+      <i className="fas fa-clipboard-check gtd-side__icon" />
+      <span className="gtd-side__label">Revisión semanal</span>
+    </button>
+  );
   const renderProjectsBlock = () => (
     <React.Fragment>
       <div className="gtd-side__section">
@@ -4093,7 +4151,12 @@ export default function GtdView() {
       if (!isSectionShown(id, gtdCfg)) return;
       if (id === 'agenda') {
         flush();
-        out.push(<React.Fragment key="agenda">{renderAgendaButton()}</React.Fragment>);
+        out.push(
+          <React.Fragment key="agenda">
+            {renderAgendaButton()}
+            {renderReviewButton()}
+          </React.Fragment>
+        );
       } else if (id === 'projects') {
         flush();
         out.push(<React.Fragment key="projects">{renderProjectsBlock()}</React.Fragment>);
@@ -4477,6 +4540,23 @@ export default function GtdView() {
           </button>
         </header>
 
+        {reviewStep !== null && (
+          <GtdWeeklyReview
+            review={reviewData}
+            step={reviewStep}
+            lastReview={lastReview}
+            today={today}
+            onStep={(i) => {
+              setReview(i);
+              if (i === 0) goList('inbox');
+              else if (i === 4) goList('someday');
+            }}
+            onClose={() => setReview(null)}
+            onFinish={finishReview}
+            onOpenView={goList}
+            onOpenTask={reviewOpenTask}
+          />
+        )}
         {newProject && renderNewProjectEditor()}
         {draft && renderDraftEditor()}
 
