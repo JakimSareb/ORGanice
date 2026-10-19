@@ -105,7 +105,8 @@ export const getDirectoryListing = (path) => (dispatch, getState) => {
       ) {
         dispatch(signOut());
       } else {
-        alert('¡Error al obtener los ficheros!');
+        // (3.31) sin conexión y sin nada guardado de esa carpeta: decirlo claro
+        alert(error && error.eliOffline ? error.message : '¡Error al obtener los ficheros!');
         console.error(error);
       }
     });

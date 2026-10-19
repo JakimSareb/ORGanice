@@ -411,7 +411,7 @@ Para trabajar sin Internet, por ejemplo en un vuelo largo, prepara la app antes,
   - *Ficheros cifrados*: se guarda solo su versión cifrada. Sin conexión te pide la frase de paso (o la clave), como siempre; el texto descifrado nunca se guarda.
   - *Adjuntos* (imágenes, PDF…) enlazados en tus notas: antes de descargarlos te dice cuántos son y cuánto ocupan.
 - Al terminar te dice qué se ha guardado; Ajustes → Usar sin conexión muestra cuándo se preparó.
-- Sin conexión aparece arriba la pastilla *Sin conexión* (con el número de ficheros con cambios pendientes). Puedes abrir la app, leer, editar, capturar y usar la vista GTD. Los adjuntos guardados se ven dentro de la app.
+- Sin conexión aparece arriba la pastilla *Sin conexión* (con el número de ficheros con cambios pendientes). Puedes abrir la app, leer, editar, capturar, usar la vista GTD y moverte por las carpetas del explorador (enseña la última lista que viste de cada una y los ficheros guardados en el dispositivo). Los adjuntos guardados se ven dentro de la app.
 - Lo que cambies se guarda en el dispositivo (también si el iPhone cierra la app; los cifrados, cifrados) y se sube solo en cuanto vuelve la conexión. Si mientras tanto el fichero cambió en Dropbox, sale el aviso de conflicto de siempre.
 - En el iPhone, usa la app desde su icono de la pantalla de inicio (Safari → Compartir → «Añadir a pantalla de inicio»): así el sistema no borra lo guardado.
 - *Borrar lo guardado* quita del dispositivo las copias y los adjuntos (conserva los cambios que aún no se han subido).
