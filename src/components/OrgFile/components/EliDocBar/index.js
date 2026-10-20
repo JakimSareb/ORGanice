@@ -95,6 +95,9 @@ const useLongPress = () => {
 export default function EliDocBar({
   editing = false,
   commitEditing = null,
+  // (4.04) qué se edita en su sitio (title-editor / description-editor) y cómo pasar al otro
+  editingKind = null,
+  switchEditor = null,
   hidden = false,
   external = null,
 }) {
@@ -663,7 +666,7 @@ export default function EliDocBar({
           onClick: () => withNotes((f) => sortListIn(f, mode)),
         })),
         todo: todoMenu(),
-        // (4.0) Nueva: debajo o como subcabecera; (4.03) también arriba, y se abre la hoja Editar
+        // (4.0) Nueva: debajo o como subcabecera; (4.03) también arriba; (4.04) en su sitio, sin hoja
         new: [
           {
             id: 'new-above',
@@ -942,12 +945,39 @@ export default function EliDocBar({
   // editando en el sitio, además el formato (Aa) y ocultar el teclado
   const main = header
     ? [
+        // (4.04) Editar, sin hoja: el título en su sitio; otra vez, las notas; otra vez, el
+        // título. El botón dice dónde se está (Título / Notas).
         {
           id: 'edit',
-          icon: 'fas fa-pencil-alt',
-          label: 'Editar',
-          title: 'Editar el título y el texto',
-          onClick: () => base('activatePopup', 'eli-edit-sheet'),
+          icon:
+            editingKind === 'title-editor'
+              ? 'fas fa-heading'
+              : editingKind === 'description-editor'
+              ? 'fas fa-align-left'
+              : 'fas fa-pencil-alt',
+          label:
+            editingKind === 'title-editor'
+              ? 'Título'
+              : editingKind === 'description-editor'
+              ? 'Notas'
+              : 'Editar',
+          title:
+            editingKind === 'title-editor'
+              ? 'Editando el título (pulsa para pasar a las notas)'
+              : editingKind === 'description-editor'
+              ? 'Editando las notas (pulsa para pasar al título)'
+              : 'Editar el título (otra vez: las notas)',
+          on: editingKind === 'title-editor' || editingKind === 'description-editor',
+          text: true,
+          onClick: () => {
+            if (editingKind === 'title-editor' && switchEditor) switchEditor('description-editor');
+            else if (editingKind === 'description-editor' && switchEditor)
+              switchEditor('title-editor');
+            else {
+              commit();
+              base('activatePopup', 'title-editor');
+            }
+          },
         },
         { id: 'new', icon: 'fas fa-plus', label: 'Nueva', title: 'Cabecera nueva', sub: 'new' },
         { id: 'insert', icon: 'fas fa-paperclip', label: 'Añadir', title: 'Añadir', sub: 'insert' },

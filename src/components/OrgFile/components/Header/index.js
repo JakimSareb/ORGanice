@@ -25,12 +25,22 @@ import { Map } from 'immutable';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
 import { isDocLocked } from '../../../../lib/eli_doc_lock';
-import { getTapMode, isTouchEvent } from '../../../../lib/eli_tap_mode';
+import { justDragged } from '../HeaderList/eliBulletDrag';
+import { legacyHeaderTapOpen } from '../../../../lib/eli_tap_mode';
 
 // ORG Mode para Eli: dentro de un cuadro de texto no se desliza ni se arrastra el encabezado
 const eliIsEditableTarget = (el) =>
   !!(el && el.closest && el.closest('textarea, input, select, [contenteditable="true"]'));
+const eliIsOnBullet = (el) => !!(el && el.closest && el.closest('.header__bullet'));
 const eliIsInTitleLine = (el) => !!(el && el.closest && el.closest('.title-line, .header__bullet'));
+
+// (4.04) estilos de viñeta que alternan el icono según el nivel (se repite el ciclo)
+export const BULLET_STYLES = {
+  Org: ['◉', '○', '✸', '✿'],
+  Squares: ['●', '○', '■', '□'],
+  Stars: ['★', '✦', '✧', '·'],
+  Diamonds: ['◆', '◇', '◈', '⬩'],
+};
 
 class Header extends PureComponent {
   SWIPE_ACTION_ACTIVATION_DISTANCE = 80;
@@ -43,6 +53,7 @@ class Header extends PureComponent {
       'handleRef',
       'handleMouseDown',
       'handleTouchStart',
+      'handleBulletPointerDown',
       'handleTouchCancel',
       'handleHeaderClick',
       'handleShowTitleModal',
@@ -196,11 +207,18 @@ class Header extends PureComponent {
     this.removeGlobalDragHandlers();
   }
 
+  // (4.04) la viñeta se arrastra (HeaderList); no desliza ni hace narrow
+  handleBulletPointerDown(event) {
+    if (this.props.shouldDisableActions || isDocLocked() || !this.props.onBulletPointerDown) return;
+    this.props.onBulletPointerDown(this.props.header.get('id'), event);
+  }
+
   handleMouseDown(event) {
     // ORG Mode para Eli: seleccionar texto con el ratón (en un editor o en el texto de un
     // encabezado) no debe arrastrar el encabezado. Con el ratón, el gesto solo empieza en la
     // línea del título.
     if (eliIsEditableTarget(event.target) || !eliIsInTitleLine(event.target)) return;
+    if (eliIsOnBullet(event.target)) return;
     this.pendingPointerStart = {
       x: event.clientX,
       y: event.clientY,
@@ -234,6 +252,7 @@ class Header extends PureComponent {
 
   handleTouchStart(event) {
     if (eliIsEditableTarget(event.target)) return;
+    if (eliIsOnBullet(event.target)) return;
     const touch = event.changedTouches[0];
     this.pendingPointerStart = {
       x: touch.clientX,
@@ -319,18 +338,20 @@ class Header extends PureComponent {
   }
 
   handleHeaderClick(event) {
+    // (4.04) el clic que llega al soltar un arrastre de la viñeta no pliega
+    if (justDragged()) return;
     const classList = event.target.classList;
-    if (classList.contains('header') || classList.contains('header__bullet')) {
+    const onBulletEl = eliIsOnBullet(event.target);
+    if (classList.contains('header') || onBulletEl) {
       const { header, hasContent, closeSubheadersRecursively } = this.props;
 
       // (3.05) el primer toque solo selecciona; en el ya seleccionado, plegar/desplegar
       // (3.47) salvo con «Plegar / desplegar» en Ajustes: entonces basta un toque también en la
       // viñeta o el margen (antes solo valía el título)
       const { isSelected } = this.props;
-      const tapMode = getTapMode(isTouchEvent(event) ? 'header-mobile' : 'header-desktop');
-      // (4.03) la viñeta (asterisco/punto) SIEMPRE pliega/despliega, sea cual sea el ajuste
-      const onBullet = classList.contains('header__bullet');
-      if (hasContent && (onBullet || isSelected || tapMode === 'open')) {
+      // (4.03) la viñeta (asterisco/punto) SIEMPRE pliega/despliega; (4.04) sin ajuste
+      const onBullet = onBulletEl;
+      if (hasContent && (onBullet || isSelected || legacyHeaderTapOpen())) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       }
       this.props.org.selectHeader(header.get('id'));
@@ -491,6 +512,13 @@ class Header extends PureComponent {
       showClockDisplay,
       showDeadlineDisplay,
     } = this.props;
+    const bulletCycle = BULLET_STYLES[bulletStyle];
+    const bulletGlyph = bulletCycle
+      ? bulletCycle[(Math.max(1, header.get('nestingLevel')) - 1) % bulletCycle.length]
+      : bulletStyle === 'Fancy'
+      ? '●'
+      : '*';
+    const bulletFolded = !!bulletCycle && hasContent && !header.get('opened');
     const indentLevel = !!narrowedHeader
       ? header.get('nestingLevel') - narrowedHeader.get('nestingLevel') + 1
       : header.get('nestingLevel');
@@ -666,8 +694,16 @@ class Header extends PureComponent {
                 }}
               </Motion>
 
-              <div style={{ marginLeft: -16, color }} className="header__bullet">
-                {bulletStyle === 'Fancy' ? '●' : '*'}
+              {/* (4.04) estilos que cambian el icono según el nivel; plegada = color de acento +
+                  triángulo. Arrastrar la viñeta = mover la cabecera (HeaderList) */}
+              <div
+                style={{ marginLeft: -16, color: bulletFolded ? 'var(--orange)' : color }}
+                className={'header__bullet' + (bulletFolded ? ' header__bullet--folded' : '')}
+                data-testid="header-bullet"
+                onPointerDown={this.handleBulletPointerDown}
+              >
+                {bulletGlyph}
+                {bulletFolded && <span className="header__bullet-fold">▸</span>}
               </div>
               <InlineOr kind="title" headerId={header.get('id')}>
                 <TitleLine

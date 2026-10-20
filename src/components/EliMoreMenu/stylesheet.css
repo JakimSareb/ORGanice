@@ -89,3 +89,14 @@
   border-radius: 6px 6px 0 0;
   margin-bottom: 4px;
 }
+
+/* (4.04) rótulo de grupo dentro de un menú (p. ej. Procesos › Diarios) */
+.eli-more__heading {
+  padding: 8px 14px 2px;
+  font-size: 0.75em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  white-space: nowrap;
+}

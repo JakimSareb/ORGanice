@@ -20,6 +20,7 @@ const UNDOABLE_ACTIONS = [
   'MOVE_HEADER_DOWN',
   'MOVE_HEADER_TO_POSITION',
   'ELI_MOVE_SUBTREE_NEXT_TO',
+  'ELI_DROP_SUBTREE',
   'MOVE_HEADER_LEFT',
   'MOVE_HEADER_RIGHT',
   'MOVE_SUBTREE_LEFT',
@@ -86,11 +87,29 @@ ActionCreators.redo = function () {
   };
 };
 
+// (4.04) «Nueva» que se deja vacía: se quita la cabecera y, si el último paso de deshacer es el de
+// haberla añadido (antes no existía), ese paso también se va: como si no se hubiera añadido.
+const eliDropNewHeader = (reducer) => (state, action) => {
+  const next = reducer(state, action);
+  if (action.type !== 'ELI_DROP_NEW_HEADER' || !state || !next || !next.past) return next;
+  const prev = next.past[next.past.length - 1];
+  const path = state.present.get('path');
+  const had = (s) => {
+    const hs = s && s.getIn(['files', path, 'headers']);
+    return !!hs && hs.some((h) => h.get('id') === action.headerId);
+  };
+  if (!prev || had(prev) || !had(state.present)) return next;
+  const past = next.past.slice(0, -1);
+  return { ...next, past, _latestUnfiltered: next.present, index: past.length };
+};
+
 export default combineReducers({
   base: baseReducer,
   syncBackend: syncBackendReducer,
-  org: undoable(orgReducer, {
-    filter: includeAction(UNDOABLE_ACTIONS),
-  }),
+  org: eliDropNewHeader(
+    undoable(orgReducer, {
+      filter: includeAction(UNDOABLE_ACTIONS),
+    })
+  ),
   capture: captureReducer,
 });

@@ -1,5 +1,5 @@
-// 4.03: «Nueva» abre la hoja Editar (y «Arriba»), Cancelar quita la nueva, ajuste «Editarla» y la
-// viñeta que siempre pliega/despliega
+// 4.03: «Nueva › Arriba» y la viñeta que siempre pliega/despliega. (4.04) Nueva en su sitio, sin
+// hoja; la que se deja vacía se borra sola. El ajuste «Editarla» ya no existe.
 const { test, expect } = require('../harness');
 
 const BASE = { '/tasks.org': '', '/inbox.org': '' };
@@ -19,52 +19,46 @@ const select = async (app, title) => {
   await app.page.waitForTimeout(500);
 };
 
-test('4.03: Nueva › Arriba abre la hoja Editar y añade antes', async ({ app }) => {
+test('4.03/4.04: Nueva › Arriba añade antes, con el título en edición en su sitio', async ({
+  app,
+}) => {
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org');
   await select(app, 'Segunda');
   await app.page.locator('[data-testid=eli-docbar-new]').click();
   await expect(app.page.locator('[data-testid=eli-docbar-new-below]')).toBeVisible();
   await expect(app.page.locator('[data-testid=eli-docbar-new-sub]')).toBeVisible();
   await app.page.locator('[data-testid=eli-docbar-new-above]').click();
-  const title = app.page.locator('[data-testid=eli-edit-sheet-title]');
+  const title = app.page.locator('[data-testid=titleLineInput]');
   await expect(title).toBeVisible();
   await expect(title).toHaveValue('');
+  await expect(app.page.locator('[data-testid=eli-edit-sheet]')).toHaveCount(0);
   await title.fill('Nueva arriba');
-  await app.page.locator('[data-testid=eli-edit-sheet-notes]').fill('Texto nuevo');
-  await app.page.locator('[data-testid=eli-edit-sheet-done]').click();
+  await title.press('Enter');
   const text = await app.fileAfterSync('/notas.org');
-  expect(text).toMatch(/\* Nueva arriba\nTexto nuevo\n\* Segunda/);
+  expect(text).toMatch(/\* Nueva arriba\n\* Segunda/);
   expect(text).toMatch(/^\* Primera\n/);
   expect(app.errors).toEqual([]);
 });
 
-test('4.03: Nueva › Debajo y Cancelar no deja la cabecera', async ({ app }) => {
+test('4.04: Nueva › Debajo que se deja vacía se borra sola (y no deja paso en deshacer)', async ({
+  app,
+}) => {
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org');
   await select(app, 'Primera');
   const headers = app.page.locator('.header');
   await expect(headers).toHaveCount(2);
+  const undo = app.page.locator('[data-testid=eli-undo]');
+  const undoBefore = await undo.getAttribute('aria-disabled');
   await app.page.locator('[data-testid=eli-docbar-new]').click();
   await app.page.locator('[data-testid=eli-docbar-new-below]').click();
-  await expect(app.page.locator('[data-testid=eli-edit-sheet-title]')).toBeVisible();
+  const title = app.page.locator('[data-testid=titleLineInput]');
+  await expect(title).toBeVisible();
   await expect(headers).toHaveCount(3);
-  await app.page.locator('[data-testid=eli-edit-sheet-cancel]').click();
-  await expect(app.page.locator('[data-testid=eli-edit-sheet]')).toHaveCount(0);
+  // salir sin escribir nada
+  await title.press('Escape');
+  await expect(title).toHaveCount(0);
   await expect(headers).toHaveCount(2);
-  expect(app.errors).toEqual([]);
-});
-
-test('4.03: con «Editarla», un toque pone el título en edición', async ({ app }) => {
-  await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org', {
-    localStorage: {
-      eliTapMode: JSON.stringify({ 'header-desktop': 'edit', 'header-mobile': 'edit' }),
-    },
-  });
-  const t = app.page.locator('text=Segunda').first();
-  await expect(t).toBeVisible({ timeout: 20000 });
-  await app.press(t);
-  const input = app.page.locator('[data-testid=titleLineInput]');
-  await expect(input).toBeVisible();
-  await expect(input).toHaveValue('Segunda');
+  await expect(undo).toHaveAttribute('aria-disabled', undoBefore);
   expect(app.errors).toEqual([]);
 });
 

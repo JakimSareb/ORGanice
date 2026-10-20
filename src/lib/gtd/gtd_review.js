@@ -16,6 +16,17 @@ import {
 export const REVIEW_PHASES = { clear: 'Despejar', current: 'Al día', creative: 'Crear' };
 
 export const REVIEW_STEPS = [
+  // (4.04) primero, lo terminado desde la última revisión (para verlo y celebrarlo; ¿pide algo?)
+  {
+    id: 'closed',
+    phase: 'clear',
+    label: 'Terminadas desde la última revisión',
+    icon: 'fas fa-check-double',
+    hint:
+      'Repasa lo que has terminado desde la última revisión semanal (sin revisión anterior, ' +
+      'los últimos 7 días). ¿Falta apuntar algún paso siguiente o avisar a alguien?',
+    view: 'logbook',
+  },
   {
     id: 'inbox',
     phase: 'clear',
@@ -106,9 +117,15 @@ const isStalled = (p, tasks, today) =>
       (t.isProject || (!!t.keyword && projectSectionOf(t, today) === 'next'))
   );
 
-export const weeklyReview = (tasks, today = new Date()) => {
+export const weeklyReview = (tasks, today = new Date(), lastReview = null) => {
   const live = tasks.filter((t) => !t.isTrashed);
   const t0 = startOfDay(today);
+  // (4.04) terminadas desde la última revisión (o en los últimos 7 días), las más nuevas primero
+  const lastAt = lastReview ? new Date(lastReview) : null;
+  const since = lastAt && !isNaN(+lastAt) ? lastAt : new Date(+t0 - 7 * DAY);
+  const closed = live
+    .filter((t) => t.isDone && !!t.closed && +t.closed >= +since)
+    .sort((a, b) => +b.closed - +a.closed);
   const in7 = new Date(+t0 + 7 * DAY);
   const inbox = live.filter((t) => listOf(t, today) === 'inbox');
   const someday = live.filter((t) => listOf(t, today) === 'someday');
@@ -133,7 +150,7 @@ export const weeklyReview = (tasks, today = new Date()) => {
   const upcoming = open
     .filter((t) => !overdue.includes(t) && (soon(t.deadline) || soon(t.scheduled)))
     .sort(byDate);
-  return { inbox, next, later, waiting, stalled, sleep, overdue, upcoming, someday };
+  return { closed, inbox, next, later, waiting, stalled, sleep, overdue, upcoming, someday };
 };
 
 // Cuántos elementos hay en un paso

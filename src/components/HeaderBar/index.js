@@ -14,6 +14,7 @@ import {
 import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
+import { openShortcuts } from '../Gtd/GtdShortcutsHost';
 import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
@@ -588,6 +589,53 @@ class HeaderBar extends PureComponent {
     this.props.base.pushModalPage('sample');
   }
 
+  // (4.04) Menú ☰ › Procesos: por bloques (Diarios / Puntuales / Periódicos). Los bloques
+  // vacíos no salen. Desde Documentos, se abre la vista GTD y se lanza allí.
+  processesMenu(inGtd) {
+    const run = (cmd) => {
+      if (inGtd) {
+        window.dispatchEvent(new CustomEvent('eli:gtd', { detail: cmd }));
+      } else {
+        window.__eliGtdPending = cmd;
+        openGtdMode();
+      }
+    };
+    const blocks = [
+      {
+        heading: 'Diarios',
+        id: 'daily',
+        items: [
+          {
+            icon: 'fas fa-filter',
+            label: 'Procesar Inbox',
+            onClick: () => run({ process: true }),
+            testId: 'eli-proc-inbox',
+          },
+        ],
+      },
+      { heading: 'Puntuales', id: 'oneoff', items: [] },
+      {
+        heading: 'Periódicos',
+        id: 'periodic',
+        items: [
+          {
+            icon: 'fas fa-clipboard-check',
+            label: 'Revisión semanal',
+            onClick: () => run({ review: true }),
+            testId: 'eli-proc-review',
+          },
+        ],
+      },
+    ];
+    const items = [];
+    blocks.forEach((b) => {
+      if (!b.items.length) return;
+      items.push({ heading: b.heading, testId: 'eli-proc-h-' + b.id });
+      items.push(...b.items);
+    });
+    return { icon: 'fas fa-route', label: 'Procesos', testId: 'eli-menu-processes', items };
+  }
+
   handleSettingsClick() {
     this.props.base.setLastViewedFile(this.props.path);
   }
@@ -665,6 +713,21 @@ class HeaderBar extends PureComponent {
               onClick: openPalette,
               testId: 'eli-palette-btn',
             },
+            // (4.01) la agenda (antes solo con la tecla «a»); (4.04) la segunda, también en GTD.
+            // En el Modo Notas no sale
+            (inFile || inGtd) &&
+              !notes && {
+                icon: 'far fa-calendar-check',
+                label: 'Agenda',
+                onClick: () =>
+                  inGtd
+                    ? window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { agenda: true } }))
+                    : this.props.base.activatePopup('agenda'),
+                testId: 'eli-agenda-menu',
+              },
+            // (4.04) los procesos guiados de GTD, por tipo (aunque su sección del menú de GTD
+            // esté apagada). En el Modo Notas no salen.
+            !notes && this.processesMenu(inGtd),
             {
               icon: 'far fa-folder-open',
               label: 'Mis ficheros',
@@ -730,14 +793,6 @@ class HeaderBar extends PureComponent {
                 },
               ],
             },
-            // (4.01) la agenda (antes solo con la tecla «a»); en el Modo Notas no sale
-            inFile &&
-              !notes && {
-                icon: 'far fa-calendar-check',
-                label: 'Agenda',
-                onClick: () => this.props.base.activatePopup('agenda'),
-                testId: 'eli-agenda-menu',
-              },
             !inRealFile &&
               split && {
                 icon: 'fas fa-columns',
@@ -768,18 +823,19 @@ class HeaderBar extends PureComponent {
                   onClick: this.handleChangelogClick,
                   testId: 'eli-changelog',
                 },
+                // (4.04) dentro de Ayuda; siempre la ventana de atajos (también en Documentos)
+                {
+                  icon: 'far fa-keyboard',
+                  label: 'Atajos de teclado',
+                  onClick: () =>
+                    inGtd
+                      ? window.dispatchEvent(
+                          new CustomEvent('eli:gtd', { detail: { shortcuts: true } })
+                        )
+                      : openShortcuts(),
+                  testId: inGtd ? 'gtd-shortcuts-btn' : 'eli-shortcuts',
+                },
               ],
-            },
-            {
-              icon: 'far fa-keyboard',
-              label: 'Atajos de teclado',
-              onClick: () =>
-                inGtd
-                  ? window.dispatchEvent(
-                      new CustomEvent('eli:gtd', { detail: { shortcuts: true } })
-                    )
-                  : this.props.base.pushModalPage('keyboard_shortcuts_editor'),
-              testId: inGtd ? 'gtd-shortcuts-btn' : 'eli-shortcuts',
             },
             {
               icon: 'fas fa-cogs',

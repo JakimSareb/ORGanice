@@ -20,6 +20,9 @@ test('GTD (3.41): revisar Next, elegir para la semana y Waiting', async ({ app }
   await gtd.ready(app);
   await gtd.side(app, 'gtd-review-start');
   await expect(p.locator('[data-testid=gtd-review-kicker]')).toContainText('Despejar');
+  // (4.04) paso 1: las terminadas; paso 2: el Inbox
+  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Terminadas');
+  await app.press(p.locator('[data-testid=gtd-review-next]'));
   await expect(p.locator('[data-testid=gtd-review-capture]')).toBeVisible();
 
   // Paso 2: Revisar Next (sigue a Inbox; abre la lista Next)

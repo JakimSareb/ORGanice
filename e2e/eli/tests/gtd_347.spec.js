@@ -25,47 +25,9 @@ test('Ajustes (3.47): «Apariencia» empieza plegada y se despliega', async ({ a
   expect(await sec.evaluate((d) => d.open)).toBe(false);
   await sec.locator('> summary').click();
   expect(await sec.evaluate((d) => d.open)).toBe(true);
-  await expect(app.page.locator('[data-testid=eli-setting-tap-header-mobile]')).toBeVisible();
-});
-
-const FOLD = `* Primera cabecera
-** Hija de la primera
-* Segunda cabecera
-`;
-
-test('Documentos (3.47): con «Plegar / desplegar» basta un toque (título o viñeta)', async ({
-  app,
-}) => {
-  await app.open({ ...BASE, '/notas.org': FOLD }, '/file/notas.org', {
-    localStorage: {
-      eliTapMode: JSON.stringify({ 'header-desktop': 'open', 'header-mobile': 'open' }),
-    },
-  });
-  const first = app.page.locator('text=Primera cabecera').first();
-  await expect(first).toBeVisible({ timeout: 20000 });
-  const child = app.page.locator('text=Hija de la primera');
-  await expect(child).toHaveCount(0);
-  // un toque en el título: despliega
-  await app.press(first);
-  await expect(child.first()).toBeVisible();
-  await app.page.waitForTimeout(600);
-  // otro toque: pliega
-  await app.press(first);
-  await expect(child).toHaveCount(0);
-  await app.page.waitForTimeout(600);
-  const second = app.page.locator('.header', { hasText: 'Segunda cabecera' }).first();
-  await app.press(app.page.locator('text=Segunda cabecera').first());
-  await app.page.waitForTimeout(600);
-  const bullet = app.page
-    .locator('.header', { hasText: 'Primera cabecera' })
-    .first()
-    .locator('.header__bullet')
-    .first();
-  // la viñeta queda bajo la línea del título: se le manda el clic directamente
-  await bullet.dispatchEvent('click');
-  await expect(child.first()).toBeVisible();
-  await expect(second).toBeVisible();
-  expect(app.errors).toEqual([]);
+  // (4.04) ya no hay ajuste para las cabeceras (sí para las tareas)
+  await expect(app.page.locator('[data-testid=eli-setting-tap-task-mobile]')).toBeVisible();
+  await expect(app.page.locator('[data-testid=eli-setting-tap-header-mobile]')).toHaveCount(0);
 });
 
 test('Documentos (3.47): Intro en las notas copia la sangría de la línea', async ({ app }) => {

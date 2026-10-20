@@ -369,3 +369,10 @@
   margin-top: 8px;
   align-self: flex-start;
 }
+
+/* (4.04) estilo de viñetas */
+.eli-bullet-select {
+  max-width: 60vw;
+  font-size: 16px;
+  padding: 4px 6px;
+}

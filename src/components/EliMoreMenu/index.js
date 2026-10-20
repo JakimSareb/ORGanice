@@ -7,6 +7,7 @@ import './stylesheet.css';
 /**
  * items: [{ icon, label, onClick, testId, disabled, danger, keepOpen, items }] (los falsos se
  * ignoran). (3.03) Con `items`, el elemento abre un submenú vertical (con «‹» para volver).
+ * (4.04) `{ heading: 'Texto' }` es un rótulo de grupo (no se pulsa).
  * align: 'right' | 'left'
  */
 export default ({
@@ -116,39 +117,50 @@ export default ({
               <span>{level.label}</span>
             </button>
           )}
-          {level.items.map((item, i) => (
-            <button
-              key={item.testId || item.label || i}
-              type="button"
-              role="menuitem"
-              className={
-                'eli-more__item' +
-                (item.danger ? ' eli-more__item--danger' : '') +
-                (item.active ? ' is-active' : '')
-              }
-              disabled={item.disabled}
-              data-testid={item.testId}
-              title={item.title || item.label}
-              onMouseDown={keep}
-              aria-haspopup={item.items ? 'menu' : undefined}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (item.items) {
-                  const key = item.testId || item.label;
-                  setStack((st) => [...st, key]);
-                  return;
+          {level.items.map((item, i) =>
+            item.heading ? (
+              <div
+                key={'h-' + item.heading}
+                className="eli-more__heading"
+                role="presentation"
+                data-testid={item.testId}
+              >
+                {item.heading}
+              </div>
+            ) : (
+              <button
+                key={item.testId || item.label || i}
+                type="button"
+                role="menuitem"
+                className={
+                  'eli-more__item' +
+                  (item.danger ? ' eli-more__item--danger' : '') +
+                  (item.active ? ' is-active' : '')
                 }
-                if (!item.keepOpen) setOpen(false);
-                if (item.onClick) item.onClick(e);
-              }}
-            >
-              <i className={item.icon} aria-hidden="true" />
-              <span>{item.label}</span>
-              {item.items && (
-                <i className="fas fa-chevron-right eli-more__chev" aria-hidden="true" />
-              )}
-            </button>
-          ))}
+                disabled={item.disabled}
+                data-testid={item.testId}
+                title={item.title || item.label}
+                onMouseDown={keep}
+                aria-haspopup={item.items ? 'menu' : undefined}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (item.items) {
+                    const key = item.testId || item.label;
+                    setStack((st) => [...st, key]);
+                    return;
+                  }
+                  if (!item.keepOpen) setOpen(false);
+                  if (item.onClick) item.onClick(e);
+                }}
+              >
+                <i className={item.icon} aria-hidden="true" />
+                <span>{item.label}</span>
+                {item.items && (
+                  <i className="fas fa-chevron-right eli-more__chev" aria-hidden="true" />
+                )}
+              </button>
+            )
+          )}
         </div>
       )}
     </div>

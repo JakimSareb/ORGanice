@@ -632,16 +632,43 @@ export const eliAddSubheaderAndEdit = (headerId) => (dispatch) => {
   dispatch(activatePopup('title-editor'));
 };
 
-// (4.03) «Nueva» de la barra de abajo (arriba / debajo / subcabecera): se añade la cabecera y se
-// abre la hoja «Editar» completa (título + texto); «Cancelar» en esa hoja la quita
-export const eliAddHeaderWithSheet = (headerId, where) => (dispatch) => {
+// (4.03) «Nueva» de la barra de abajo (arriba / debajo / subcabecera). (4.04) Sin hoja: la
+// cabecera aparece en el documento con el título en edición en su sitio. Si al salir no tiene ni
+// título ni notas, se borra sola (ver eliDropIfEmptyNewHeader).
+let eliFreshHeaderId = null;
+let eliFreshFromId = null;
+export const eliGetFreshHeaderId = () => eliFreshHeaderId;
+export const eliClearFreshHeader = () => {
+  eliFreshHeaderId = null;
+};
+export const eliAddHeaderWithSheet = (headerId, where) => (dispatch, getState) => {
   if (where === 'sub') dispatch({ type: 'ELI_ADD_SUBHEADER', headerId, dirtying: false });
   else if (where === 'above') dispatch({ type: 'ELI_ADD_HEADER_ABOVE', headerId, dirtying: false });
   else {
     dispatch(addHeader(headerId));
     dispatch(selectNextSiblingHeader(headerId));
   }
-  dispatch(activatePopup('eli-edit-sheet', { eliNew: true, fromId: headerId }));
+  const present = getState().org.present;
+  eliFreshHeaderId = present.getIn(['files', present.get('path'), 'selectedHeaderId']) || null;
+  eliFreshFromId = headerId;
+  dispatch(activatePopup('title-editor'));
+};
+
+// (4.04) Cabecera recién añadida con «Nueva» que se deja vacía: se quita sin dejar paso en
+// deshacer (el reductor quita también el paso de «añadir», si es el último)
+export const eliDropIfEmptyNewHeader = () => (dispatch, getState) => {
+  const id = eliFreshHeaderId;
+  if (!id) return;
+  const present = getState().org.present;
+  const headers = present.getIn(['files', present.get('path'), 'headers']);
+  const header = headers && headers.find((h) => h.get('id') === id);
+  eliFreshHeaderId = null;
+  if (!header) return;
+  const title = (header.getIn(['titleLine', 'rawTitle']) || '').trim();
+  const desc = (header.get('rawDescription') || '').trim();
+  const descParts = header.get('description');
+  if (title || desc || (descParts && descParts.size)) return;
+  dispatch({ type: 'ELI_DROP_NEW_HEADER', headerId: id, fromId: eliFreshFromId, dirtying: false });
 };
 
 export const selectNextVisibleHeader = (headerId) => ({
@@ -702,6 +729,16 @@ export const moveHeaderUp = (headerId) => ({
 export const moveHeaderDown = (headerId) => ({
   type: 'MOVE_HEADER_DOWN',
   headerId,
+  dirtying: true,
+});
+
+// (4.04) arrastrar una cabecera (con sus subcabeceras) por su viñeta
+export const eliDropSubtree = (headerId, { beforeId = null, afterId = null, level }) => ({
+  type: 'ELI_DROP_SUBTREE',
+  headerId,
+  beforeId,
+  afterId,
+  level,
   dirtying: true,
 });
 

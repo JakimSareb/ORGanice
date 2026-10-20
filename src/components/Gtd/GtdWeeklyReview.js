@@ -40,7 +40,7 @@ export default function GtdWeeklyReview({
   const t0 = +new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   const renderList = (list, opts = {}) => {
-    const { dated = false, actions = null, id = s.id } = opts;
+    const { dated = false, actions = null, id = s.id, done: doneList = false } = opts;
     const all = !!expanded[id];
     const shown = all ? list : list.slice(0, MAX);
     return (
@@ -55,8 +55,17 @@ export default function GtdWeeklyReview({
                 onClick={() => onOpenTask(t)}
                 data-testid="gtd-review-item"
               >
-                <i className={t.isProject ? 'fas fa-project-diagram' : 'far fa-circle'} />
+                <i
+                  className={
+                    t.isProject
+                      ? 'fas fa-project-diagram'
+                      : doneList
+                      ? 'far fa-check-circle'
+                      : 'far fa-circle'
+                  }
+                />
                 <span className="gtd-review__item-title">{t.title || '(sin título)'}</span>
+                {doneList && t.closed && <span className="gtd-review__date">{fmt(t.closed)}</span>}
                 {dated && d && (
                   <span className={'gtd-review__date' + (+d < t0 ? ' is-overdue' : '')}>
                     {t.deadline ? (
@@ -161,7 +170,8 @@ export default function GtdWeeklyReview({
           onClick={() => onOpenView(s.view)}
           data-testid="gtd-review-open"
         >
-          <i className={s.icon} /> Abrir {s.id === 'inbox' ? 'Inbox' : 'Someday'}
+          <i className={s.icon} /> Abrir{' '}
+          {s.id === 'inbox' ? 'Inbox' : s.id === 'closed' ? 'el Logbook' : 'Someday'}
         </button>
       );
     return b.length ? <div className="gtd-review__tools">{b}</div> : null;
@@ -176,7 +186,9 @@ export default function GtdWeeklyReview({
       );
     }
     let content = null;
-    if (['stalled', 'sleep', 'next', 'waiting'].includes(s.id)) {
+    if (s.id === 'closed') {
+      content = n ? renderList(review.closed, { done: true }) : null;
+    } else if (['stalled', 'sleep', 'next', 'waiting'].includes(s.id)) {
       content = n ? renderList(review[s.id], { actions: ACTIONS[s.id] }) : null;
     } else if (s.id === 'week') {
       content = (
