@@ -3950,3 +3950,68 @@ html[data-eli-theme] .gtd-editor .gtd-editor__notes {
 .gtd-chip--inherit:not(.is-on) {
   opacity: 0.6;
 }
+
+/* (3.37) Editor: Cancelar y Guardar en la misma línea */
+.gtd-ed__save-pair {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+/* (3.37) Vista previa (móvil): rótulo pequeño + fondo y borde suaves */
+.gtd-ed__preview-label {
+  display: block;
+  margin: 4px 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--base1);
+}
+.gtd-editor--sheet .gtd-ed__preview-label {
+  order: 3;
+  margin: 6px 0 3px 40px;
+}
+.gtd-editor .gtd-editor__notes.is-preview:not(.is-behind-preview),
+.gtd-editor .gtd-editor__notes-preview {
+  background: color-mix(in srgb, var(--blue, #268bd2) 5%, var(--base3)) !important;
+  border: 1px dashed color-mix(in srgb, var(--base1) 55%, transparent) !important;
+  border-radius: 6px;
+}
+/* (3.37) Editor: hecha en verde y cancelada en gris, sin tachado ni transparencia */
+.gtd-editor.is-finished {
+  filter: none;
+  opacity: 1;
+}
+.gtd-editor.is-finished .gtd-editor__title {
+  text-decoration: none;
+  color: var(--green) !important;
+}
+.gtd-editor.is-finished.is-cancelled .gtd-editor__title {
+  color: var(--base1) !important;
+}
+.gtd-editor.is-finished.is-cancelled .gtd-ed__done.is-on {
+  background: var(--base1);
+  border-color: var(--base1);
+}
+/* (3.37) Notas abiertas con su icono: se despliegan rápido */
+.gtd-task__below.is-unfold > .gtd-task__notes {
+  animation: gtd-notes-unfold 0.15s ease-out;
+  transform-origin: top;
+}
+@keyframes gtd-notes-unfold {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gtd-task__below.is-unfold > .gtd-task__notes {
+    animation: none;
+  }
+}

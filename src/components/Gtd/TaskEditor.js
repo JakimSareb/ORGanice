@@ -121,13 +121,6 @@ export const currentListOf = (task) => {
   );
 };
 
-// (3.09) hoy, como valor de un <input type=date> (AAAA-MM-DD, hora local)
-const todayInput = () => {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-};
-
 // (3.09) pantalla táctil (móvil o tableta)
 const isCoarsePointer = () => {
   try {
@@ -692,22 +685,7 @@ export default function TaskEditor({
         onChange={(e) => onChange(e.target.value)}
         data-testid={testId}
       />
-      {/* (3.09) «Hoy» al lado (el «Restablecer» del selector de iOS solo la borra) */}
-      {value !== todayInput() && (
-        <button
-          type="button"
-          className="gtd-ed__today"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onChange(todayInput());
-          }}
-          title={`${label}: hoy`}
-          data-testid={testId + '-today'}
-        >
-          Hoy
-        </button>
-      )}
+      {/* (3.37) sin botón «Hoy» (solo el icono del campo) */}
       {value && (
         <button
           type="button"
@@ -785,7 +763,8 @@ export default function TaskEditor({
         (editingText ? ' is-editing-text' : '') +
         (replacesRow ? ' gtd-editor--inline' : '') +
         (mustDecide ? ' gtd-editor--new' : '') +
-        (finished && showDone ? ' is-finished' : '')
+        (finished && showDone ? ' is-finished' : '') +
+        (finished && showDone && list === 'cancelled' ? ' is-cancelled' : '')
       }
       ref={editorRef}
       onKeyDown={onKeyDown}
@@ -1035,6 +1014,12 @@ export default function TaskEditor({
               ) : null
             }
           />
+        )}
+        {/* (3.37) la vista previa (móvil) se marca como tal */}
+        {!editingText && !encrypted && (
+          <span className="gtd-ed__preview-label" data-testid="gtd-editor-preview-label">
+            Vista previa
+          </span>
         )}
         {/* (3.09) vista previa (móvil) con enlaces: se pueden pulsar sin entrar en edición; un
             toque en el resto edita, con el cursor donde se ha tocado */}
@@ -1461,26 +1446,29 @@ export default function TaskEditor({
           </button>
         )}
         <span className="gtd-spacer" />
-        <button
-          type="button"
-          className="gtd-btn gtd-btn--cancel"
-          onClick={cancelEditor}
-          title={
-            onCancelNew ? 'Descartar la tarea nueva (se borra)' : 'Descartar los cambios y cerrar'
-          }
-          data-testid="gtd-editor-cancel"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          className="gtd-btn gtd-btn--primary"
-          onClick={() => closeEditor()}
-          title="Guardar y cerrar"
-          data-testid="gtd-editor-save"
-        >
-          Guardar
-        </button>
+        {/* (3.37) Cancelar y Guardar siempre juntos en la misma línea */}
+        <span className="gtd-ed__save-pair">
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--cancel"
+            onClick={cancelEditor}
+            title={
+              onCancelNew ? 'Descartar la tarea nueva (se borra)' : 'Descartar los cambios y cerrar'
+            }
+            data-testid="gtd-editor-cancel"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--primary"
+            onClick={() => closeEditor()}
+            title="Guardar y cerrar"
+            data-testid="gtd-editor-save"
+          >
+            Guardar
+          </button>
+        </span>
         {isProject && !isNew && !task.isDone && onCloseProject && (
           <div className="gtd-ed__close-row">
             <button
