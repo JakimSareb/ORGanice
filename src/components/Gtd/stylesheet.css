@@ -3815,3 +3815,49 @@ html[data-eli-theme] .gtd-editor .gtd-editor__notes {
     animation: none;
   }
 }
+
+/* (3.34) Hecha: sin transparencia, título verde y tarjeta con tono verde.
+   Cancelada: título tachado y tarjeta gris. */
+.gtd-task.is-done .gtd-task__title {
+  opacity: 1;
+  text-decoration: none;
+  color: var(--green);
+}
+.gtd-task.is-done:not(.is-selected) > .gtd-task__row {
+  background: color-mix(in srgb, var(--green) 12%, var(--base3));
+}
+.gtd-task.is-done:not(.is-selected) > .gtd-task__row:hover {
+  background: color-mix(in srgb, var(--green) 18%, var(--base3));
+}
+.gtd-task.is-done .gtd-date--due {
+  opacity: 1;
+}
+.gtd-task.is-done.is-cancelled .gtd-task__title {
+  text-decoration: line-through;
+  color: var(--base1);
+}
+.gtd-task.is-done.is-cancelled:not(.is-selected) > .gtd-task__row {
+  background: color-mix(in srgb, var(--base1) 16%, var(--base3));
+}
+.gtd-task.is-done.is-cancelled:not(.is-selected) > .gtd-task__row:hover {
+  background: color-mix(in srgb, var(--base1) 22%, var(--base3));
+}
+.gtd-schedtime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 2px;
+}
+.gtd-schedtime > span {
+  opacity: 0.75;
+}
+.gtd-schedtime input[type='time'] {
+  font: inherit;
+}
+.gtd-schedtime button {
+  border: 0;
+  background: transparent;
+  color: var(--base1);
+  cursor: pointer;
+  font-size: 1.1em;
+}

@@ -266,6 +266,20 @@ describe('acciones GTD sobre los ficheros', () => {
     expect(text2).toMatch(/:Effort: +0:15/);
   });
 
+  test('(3.34) hora de la fecha programada: poner, mantener al cambiar el día y quitar', () => {
+    const store = makeStore();
+    const t = byTitle(tasksOf(store.state()), 'Llamar a Juan');
+    store.dispatch(gtdSaveTask(t, { scheduled: new Date(2026, 8, 25), scheduledTime: '9:05' }));
+    expect(textOf(store.state(), INBOX)).toMatch(/SCHEDULED: <2026-09-25 \w+ 09:05>/);
+    const t2 = byTitle(tasksOf(store.state()), 'Llamar a Juan');
+    expect(t2.scheduledTimed).toBe(true);
+    store.dispatch(gtdSaveTask(t2, { scheduled: new Date(2026, 8, 26) }));
+    expect(textOf(store.state(), INBOX)).toMatch(/SCHEDULED: <2026-09-26 \w+ 09:05>/);
+    const t3 = byTitle(tasksOf(store.state()), 'Llamar a Juan');
+    store.dispatch(gtdSaveTask(t3, { scheduledTime: '' }));
+    expect(textOf(store.state(), INBOX)).toMatch(/SCHEDULED: <2026-09-26 \w+>/);
+  });
+
   test('completar (CLOSED) y reabrir, estrella', () => {
     const store = makeStore();
     const t = byTitle(tasksOf(store.state()), 'Mover muebles');

@@ -198,3 +198,46 @@ test('GTD (3.33): editor — título sin espacios de etiquetas; cerrar arrastran
   expect(await app.fileAfterSync('/tasks.org')).toMatch(/NEXT Con etiquetas +:casa:/);
   expect(app.errors).toEqual([]);
 });
+
+test('GTD (3.34): programada — vaciar = hoy, hora; el icono de notas alterna', async ({
+  app,
+  isMobile,
+}) => {
+  await app.open(
+    {
+      '/tasks.org':
+        '* NEXT Con hora\nSCHEDULED: <2026-01-05 Mon>\n* NEXT Con notas\nuna\ndos\ntres\n',
+      '/inbox.org': '',
+    },
+    '/gtd'
+  );
+  await gtd.ready(app);
+  await gtd.openList(app, 'Next');
+  const page = app.page;
+  // espera a que se ponga la ★ automática (programada pasada) antes de abrir el editor
+  await app.fileAfterSync('/tasks.org');
+  // (c) icono de notas: nada ⇄ todo
+  const notesRow = page.locator('[data-testid=gtd-task]', { hasText: 'Con notas' }).first();
+  const toggle = notesRow.locator('[data-testid=gtd-notes-toggle]');
+  await toggle.click();
+  await expect(notesRow).toContainText('tres');
+  await toggle.click();
+  await expect(notesRow).not.toContainText('una');
+  // (a) programada
+  const row = page.locator('[data-testid=gtd-task-title]', { hasText: 'Con hora' }).first();
+  if (isMobile) await app.press(row);
+  else await row.dblclick();
+  await page.locator('[data-testid=gtd-editor-schedule-btn]').click();
+  await page.locator('[data-testid=gtd-editor-scheduled]').fill('');
+  await page.locator('[data-testid=gtd-editor-schedule-btn]').click();
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  const today = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  await expect(page.locator('[data-testid=gtd-editor-scheduled]')).toHaveValue(today);
+  await page.locator('[data-testid=gtd-editor-scheduled-time]').fill('10:30');
+  await page.locator('[data-testid=gtd-editor-title]').click();
+  await page.locator('[data-testid=gtd-editor-title]').press('Enter');
+  expect(await app.fileAfterSync('/tasks.org')).toContain(`SCHEDULED: <${today} `);
+  expect(await app.fileAfterSync('/tasks.org')).toMatch(/SCHEDULED: <[^>]* 10:30>/);
+  expect(app.errors).toEqual([]);
+});

@@ -133,7 +133,8 @@ const KEEP_FIELDS = [
   'delayUnit',
 ];
 const REPEAT_FIELDS = ['repeaterType', 'repeaterValue', 'repeaterUnit'];
-const setPlanning = (items, type, date, repeat) => {
+// (3.34) time: undefined = la que tuviera, '' = sin hora, 'HH:MM' = esa hora
+const setPlanning = (items, type, date, repeat, time) => {
   const all = items || List();
   const old = all.find((p) => p.get('type') === type);
   const list = all.filter((p) => p.get('type') !== type);
@@ -147,6 +148,14 @@ const setPlanning = (items, type, date, repeat) => {
         (f) => (ts = ts.set(f, oldTs.get(f) === undefined ? null : oldTs.get(f)))
       );
     }
+  }
+  if (time !== undefined) {
+    const m = /^(\d{1,2}):(\d{2})/.exec(time || '');
+    ts = ts
+      .set('startHour', m ? m[1].padStart(2, '0') : null)
+      .set('startMinute', m ? m[2] : null)
+      .set('endHour', null)
+      .set('endMinute', null);
   }
   if (repeat !== undefined) {
     const r = parseRepeat(repeat);
@@ -207,12 +216,19 @@ const buildSaveTask = (getState, task, changes) => {
   const repeatChanged = (next, now) => next !== undefined && (next || '') !== (now || '');
   if (
     (changes.scheduled !== undefined && !sameDay(changes.scheduled, task.scheduled)) ||
-    repeatChanged(changes.scheduledRepeat, task.scheduledRepeat)
+    repeatChanged(changes.scheduledRepeat, task.scheduledRepeat) ||
+    changes.scheduledTime !== undefined
   ) {
     const date = changes.scheduled !== undefined ? changes.scheduled : task.scheduled;
     h = h.set(
       'planningItems',
-      setPlanning(h.get('planningItems'), 'SCHEDULED', date, changes.scheduledRepeat)
+      setPlanning(
+        h.get('planningItems'),
+        'SCHEDULED',
+        date,
+        changes.scheduledRepeat,
+        changes.scheduledTime
+      )
     );
   }
   if (
