@@ -201,6 +201,7 @@ const EMPTY_FILTERS = {
   dated: false,
   badProject: false,
 };
+const LS_TAG_INHERIT = 'eliGtdTagInherit';
 const LS_GROUP = 'eliGtdGroupByProject';
 const LS_AREA = 'eliGtdArea';
 const readLS = (k, fallback) => {
@@ -881,7 +882,14 @@ export default function GtdView() {
   const viewRef = useRef(view);
   viewRef.current = view;
   const [area, setArea] = useState(() => readLS(LS_AREA, '*'));
-  const [filters, setFilters] = useState({ ...EMPTY_FILTERS });
+  const [filtersRaw, setFilters] = useState({ ...EMPTY_FILTERS });
+  // 3.36: «Heredadas» en la barra de filtros: con ella (por defecto) una etiqueta del proyecto o
+  // de la tarea madre también cuenta; sin ella, solo las asignadas directamente (se recuerda)
+  const [tagInherit, setTagInherit] = useState(() => readLS(LS_TAG_INHERIT, true) !== false);
+  const filters = useMemo(() => ({ ...filtersRaw, ownTagsOnly: !tagInherit }), [
+    filtersRaw,
+    tagInherit,
+  ]);
   const activeFilterCount =
     filters.tags.length +
     filters.notTags.length +
@@ -889,7 +897,12 @@ export default function GtdView() {
     (filters.energy ? 1 : 0) +
     (filters.time ? 1 : 0) +
     (filters.dated ? 1 : 0);
+  // 3.36: `text` = filtro de la sección (lupa de la cabecera; se borra al cambiar de sección);
+  // `searchText` = buscador del menú lateral (resultados de todas las secciones)
   const [text, setText] = useState('');
+  const [secFilterOpen, setSecFilterOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [searchFolded, setSearchFolded] = useState([]);
   const [logText, setLogText] = useState('');
   // ORG Mode para Eli: tareas creadas ahora en esta lista: se ven arriba del todo (hasta cambiar
   // de lista)
@@ -1117,7 +1130,34 @@ export default function GtdView() {
     text,
     today,
   ]);
-  const facets = useMemo(() => facetsFor(baseList), [baseList]);
+  const facets = useMemo(() => facetsFor(baseList, { ownOnly: !tagInherit }), [
+    baseList,
+    tagInherit,
+  ]);
+  // 3.36 (a): el buscador del menú lateral busca en TODAS las secciones; resultados agrupados
+  // por sección en el orden del menú (las ocultas en Ajustes no salen; Agenda tampoco)
+  const searchGroups = useMemo(() => {
+    const q = searchText.trim();
+    if (!q) return null;
+    const out = [];
+    gtdCfg.order.forEach((id) => {
+      if (isSepId(id) || id === 'agenda' || !isSectionShown(id, gtdCfg)) return;
+      const label = sectionLabel(id, gtdCfg);
+      if (id === 'projects') {
+        const lq = q.toLowerCase();
+        const list = projects.filter((p) =>
+          `${p.title} ${p.description || ''}`.toLowerCase().includes(lq)
+        );
+        if (list.length) out.push({ id, label, icon: 'fas fa-project-diagram', list });
+        return;
+      }
+      const def = [...LISTS, ...EXTRA_LISTS].find((l) => l.id === id) || sectionDef(id, gtdCfg);
+      if (!def) return;
+      const list = tasksForView(tasks, { id }, { area, text: q }, today);
+      if (list.length) out.push({ id, label, icon: def.icon, list });
+    });
+    return out;
+  }, [searchText, gtdCfg, projects, tasks, area, today]);
   const logSearch = view.id === 'logbook' ? logText : '';
   const visible = useMemo(
     () => tasksForView(tasks, view, { area, text, ...filters, logText: logSearch }, today),
@@ -1660,6 +1700,9 @@ export default function GtdView() {
     setView(v);
     writeLS(LS_VIEW, v);
     setFilters({ ...EMPTY_FILTERS }); // como Nirvana
+    // 3.36: el filtro de la sección se queda solo mientras se está en ella
+    setText('');
+    setSecFilterOpen(false);
     setOpenKey(null);
     setFreshKeys([]);
     // 3.35: al recorrer el menú con ↑ ↓ se queda abierto (en pantalla estrecha se cerraba)
@@ -4313,6 +4356,106 @@ export default function GtdView() {
   const isTrash = view.id === 'trash';
   // (3.0) «Nuevo elemento» y Entrada rápida: en las listas donde se crean cosas
   const canCreate = !['logbook', 'trash', 'projects'].includes(view.id);
+  // 3.36: lupa de la cabecera (filtro de la sección); el Logbook tiene su propio buscador
+  const canFilterSection = !['logbook', 'projects'].includes(view.id);
+  // 3.36 (a): resultados del buscador del menú lateral, agrupados por sección (plegables)
+  const openSearchResult = (group, task) => {
+    setSearchText('');
+    if (group.id === 'projects') selectView({ type: 'project', key: task.key });
+    else {
+      selectView({ id: group.id });
+      setSelKey(task.key);
+      setOpenKey(task.key);
+    }
+  };
+  const renderSearchResults = () => {
+    const total = searchGroups.reduce((n, g) => n + g.list.length, 0);
+    return (
+      <div className="gtd-search" data-testid="gtd-search-results">
+        <header className="gtd-main__head">
+          <button className="gtd-main__menu" onClick={() => setSideOpen(true)} aria-label="Menú">
+            <i className="fas fa-bars" />
+          </button>
+          <h1 className="gtd-main__title" data-testid="gtd-search-title">
+            <span className="gtd-main__title-text">«{searchText.trim()}»</span>
+            <span className="gtd-main__count">{total}</span>
+          </h1>
+          <button
+            className="gtd-main__sync"
+            onClick={() => setSearchText('')}
+            title="Cerrar la búsqueda"
+            aria-label="Cerrar la búsqueda"
+            data-testid="gtd-search-close"
+          >
+            <i className="fas fa-times" />
+          </button>
+        </header>
+        {!searchGroups.length && <div className="gtd-empty">No se ha encontrado nada.</div>}
+        {searchGroups.map((g) => {
+          const folded = searchFolded.includes(g.id);
+          return (
+            <section
+              key={g.id}
+              className="gtd-search__group"
+              data-testid={`gtd-search-group-${g.id}`}
+            >
+              <div className="gtd-section gtd-section--group">
+                <button
+                  type="button"
+                  className="gtd-section__toggle"
+                  onClick={() =>
+                    setSearchFolded((f) =>
+                      f.includes(g.id) ? f.filter((x) => x !== g.id) : [...f, g.id]
+                    )
+                  }
+                  aria-expanded={!folded}
+                  data-testid="gtd-search-group-toggle"
+                >
+                  <i className={folded ? 'fas fa-caret-right' : 'fas fa-caret-down'} />{' '}
+                  <i className={g.icon} /> {g.label}
+                </button>
+                <span className="gtd-section__n">{g.list.length}</span>
+              </div>
+              {!folded &&
+                g.list.map((t) => (
+                  <button
+                    type="button"
+                    key={t.key}
+                    className={'gtd-search__row' + (t.isDone ? ' is-done' : '')}
+                    onClick={() => openSearchResult(g, t)}
+                    data-testid="gtd-search-result"
+                  >
+                    <span className="gtd-search__title">
+                      {t.keyword && !t.isProject && (
+                        <span className="gtd-search__kw">{t.keyword}</span>
+                      )}
+                      {t.title || '(sin título)'}
+                    </span>
+                    {(t.project || t.area || (t.tags || []).length > 0) && (
+                      <span className="gtd-search__meta">
+                        {t.project && !t.isProject && (
+                          <span className="gtd-meta">
+                            <i className="fas fa-project-diagram" /> {t.project.title}
+                          </span>
+                        )}
+                        {t.area && <span className="gtd-meta gtd-meta--area">{t.area}</span>}
+                        {(t.tags || [])
+                          .filter((x) => !hasTrashTag([x]))
+                          .map((x) => (
+                            <span key={x} className="gtd-meta gtd-meta--tag">
+                              {x}
+                            </span>
+                          ))}
+                      </span>
+                    )}
+                  </button>
+                ))}
+            </section>
+          );
+        })}
+      </div>
+    );
+  };
   // Etiquetas del menú lateral (como Nirvana): las que llevan las tareas abiertas
   const sideTags = (() => {
     const n = {};
@@ -4477,40 +4620,46 @@ export default function GtdView() {
         <div className="gtd-side__search">
           <i className="fas fa-search" />
           <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 e.preventDefault();
                 e.stopPropagation();
-                if (text) {
-                  setText('');
+                if (searchText) {
+                  setSearchText('');
                 } else {
                   e.currentTarget.blur();
                   setSideOpen(false);
                 }
               }
+              // 3.36: Intro (o «Buscar» del teclado del móvil) = ver los resultados
+              if (e.key === 'Enter' && searchText.trim()) {
+                e.preventDefault();
+                e.currentTarget.blur();
+                setSideOpen(false);
+              }
               if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                const first = items.find((x) => x.kind === 'task');
+                // 3.36: Tab = al primer resultado (Intro lo abre)
+                const first = document.querySelector('[data-testid="gtd-search-result"]');
                 if (first) {
                   e.preventDefault();
-                  e.currentTarget.blur();
                   setSideOpen(false);
-                  setSelKey(first.task.key);
+                  first.focus();
                 }
               }
             }}
-            placeholder="Buscar"
+            placeholder="Buscar en todo"
             data-testid="gtd-search"
           />
           {/* (3.09) ✕ para borrar la búsqueda */}
-          {text && (
+          {searchText && (
             <button
               type="button"
               className="gtd-side__search-clear"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                setText('');
+                setSearchText('');
                 const el = document.querySelector('[data-testid="gtd-search"]');
                 if (el) el.focus();
               }}
@@ -4579,7 +4728,8 @@ export default function GtdView() {
           'gtd-main' +
           (projectTask ? ' is-project-view' : '') +
           (pullMoving ? ' is-pulling' : '') +
-          (pullDragging ? ' is-pull-drag' : '')
+          (pullDragging ? ' is-pull-drag' : '') +
+          (searchGroups ? ' is-searching' : '')
         }
         style={pullMoving ? { '--gtd-pull': `${pullOffset}px` } : undefined}
         ref={gtdMainRef}
@@ -4603,6 +4753,7 @@ export default function GtdView() {
             </span>
           </div>
         )}
+        {searchGroups && renderSearchResults()}
         <header className="gtd-main__head">
           <button className="gtd-main__menu" onClick={() => setSideOpen(true)} aria-label="Menú">
             <i className="fas fa-bars" />
@@ -4626,6 +4777,28 @@ export default function GtdView() {
                 : visible.length}
             </span>
           </h1>
+          {/* 3.36 (a): filtrar la sección por texto (título y notas) */}
+          {canFilterSection && (
+            <button
+              className={'gtd-main__sync gtd-main__filter' + (text ? ' is-on' : '')}
+              onClick={() => {
+                if (secFilterOpen && !text) {
+                  setSecFilterOpen(false);
+                  return;
+                }
+                setSecFilterOpen(true);
+                setTimeout(() => {
+                  const el = document.querySelector('[data-testid="gtd-sec-filter"]');
+                  if (el) el.focus();
+                }, 30);
+              }}
+              title="Filtrar esta sección"
+              aria-label="Filtrar esta sección"
+              data-testid="gtd-sec-filter-btn"
+            >
+              <i className="fas fa-search" />
+            </button>
+          )}
           {canCreate && (
             <button
               className="gtd-main__new"
@@ -4706,6 +4879,47 @@ export default function GtdView() {
             <i className="fas fa-ellipsis-h" />
           </button>
         </header>
+        {canFilterSection && (secFilterOpen || text) && (
+          <div className="gtd-secfilter" data-testid="gtd-sec-filter-row">
+            <i className="fas fa-filter" />
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (text) setText('');
+                  else {
+                    setSecFilterOpen(false);
+                    e.currentTarget.blur();
+                  }
+                }
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              placeholder="Filtrar…"
+              enterKeyHint="done"
+              data-testid="gtd-sec-filter"
+            />
+            <button
+              type="button"
+              className="gtd-secfilter__clear"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setText('');
+                setSecFilterOpen(false);
+              }}
+              title="Quitar el filtro"
+              aria-label="Quitar el filtro"
+              data-testid="gtd-sec-filter-clear"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {reviewStep !== null && (
           <GtdWeeklyReview
@@ -4857,7 +5071,7 @@ export default function GtdView() {
         {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
         {hasFacets && view.id !== 'projects' && (
           <div className="gtd-filterbar" data-testid="gtd-filters">
-            {Array.from(new Set([...facets.tags, ...filters.notTags]))
+            {Array.from(new Set([...facets.tags, ...filters.tags, ...filters.notTags]))
               .filter((t) => t !== NO_TAGS)
               .map((t) => (
                 <button
@@ -4901,6 +5115,26 @@ export default function GtdView() {
                 data-testid="gtd-chip-untagged"
               >
                 Sin etiquetas
+              </button>
+            )}
+            {/* 3.36 (b): contar o no las etiquetas heredadas (del proyecto o de la madre) */}
+            {facets.tags.length > 0 && facets.hasInherited && (
+              <button
+                className={'gtd-chip gtd-chip--inherit' + (tagInherit ? ' is-on' : '')}
+                onClick={() => {
+                  const v = !tagInherit;
+                  setTagInherit(v);
+                  writeLS(LS_TAG_INHERIT, v);
+                }}
+                aria-pressed={tagInherit}
+                title={
+                  tagInherit
+                    ? 'Las etiquetas heredadas (del proyecto o de la tarea madre) cuentan · clic: solo las asignadas directamente'
+                    : 'Solo cuentan las etiquetas asignadas directamente · clic: incluir las heredadas'
+                }
+                data-testid="gtd-chip-inherit"
+              >
+                <i className="fas fa-level-down-alt" /> Heredadas
               </button>
             )}
             {facets.energy.map((en) => (

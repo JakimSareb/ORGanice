@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.36 (octubre de 2026)
+** GTD
+- *Buscar* (arriba del menú lateral) busca ahora en *todas las secciones*: los resultados salen agrupados por sección (en el orden del menú), cada una con su número y plegable. Al tocar un resultado vas a su sección con la tarea abierta. Intro (o «Buscar» en el teclado del móvil) cierra el menú para ver los resultados; × o Esc borran la búsqueda.
+- *Filtrar una sección*: la lupa pequeña de la cabecera abre un campo «Filtrar…» que deja solo las tareas de esa sección cuyo título o notas contienen lo que escribes. Se queda mientras estás en la sección y se quita con ×.
+- *Etiquetas heredadas en los filtros*: en la barra de filtros, el botón *Heredadas* decide si una etiqueta del proyecto o de la tarea madre cuenta (encendido, como hasta ahora) o solo las asignadas directamente (apagado). Se recuerda.
+
 * 3.35 (octubre de 2026)
 ** GTD
 - *Flechas ← →*: solo recorren las secciones que has abierto (Inbox, Next, Todos los proyectos…). Abrir un proyecto ya no añade un paso: desde él, ← vuelve a la sección anterior. En el móvil en vertical, al cambiar de sección con ellas se muestra el menú lateral (para ver dónde estás); al tocar la lista se oculta.

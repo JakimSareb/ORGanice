@@ -512,7 +512,9 @@ export const matchesFilters = (task, filters) => {
   const { area, tags = [], energy, time, dated, text } = filters || {};
   if (area && area !== '*' && (task.area || '') !== (area === '-' ? '' : area)) return false;
   // (3.05) NO_TAGS = «Sin etiquetas» (ninguna, salvo :trash:): filtrar por ella o tacharla
-  const has = (t) => (t === NO_TAGS ? isUntagged(task) : task.tags.includes(t));
+  // 3.36: `ownTagsOnly` = solo las etiquetas asignadas directamente (sin las heredadas)
+  const pool = filters && filters.ownTagsOnly ? task.ownTags || [] : task.tags;
+  const has = (t) => (t === NO_TAGS ? isUntagged(task) : pool.includes(t));
   if (tags.length && !tags.every(has)) return false;
   // (3.01) etiquetas tachadas en la barra de filtros: fuera las que las llevan
   const notTags = (filters && filters.notTags) || [];
@@ -788,17 +790,19 @@ export const countsFor = (tasks, filters = {}, today = new Date()) => {
 };
 
 // Valores disponibles para los filtros de la lista actual
-export const facetsFor = (tasks) => {
+export const facetsFor = (tasks, opts = {}) => {
   const tags = new Set();
   const energy = new Set();
   let hasEffort = false;
   let hasDates = false;
   let hasBadProject = false;
   let hasUntagged = false;
+  let hasInherited = !!opts.ownOnly;
   tasks.forEach((t) => {
     if (t.badProject) hasBadProject = true;
     if (isUntagged(t)) hasUntagged = true;
-    t.tags.forEach((x) => tags.add(x));
+    (opts.ownOnly ? t.ownTags || [] : t.tags).forEach((x) => tags.add(x));
+    if (!opts.ownOnly && t.tags.length > (t.ownTags || []).length) hasInherited = true;
     if (t.energy) energy.add(t.energy);
     if (t.effort) hasEffort = true;
     if (t.deadline || t.scheduled) hasDates = true;
@@ -817,6 +821,8 @@ export const facetsFor = (tasks) => {
     hasDates,
     hasBadProject,
     hasUntagged,
+    // 3.36: hay etiquetas heredadas en la lista (o el filtro «Heredadas» está apagado)
+    hasInherited,
   };
 };
 
