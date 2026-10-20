@@ -146,6 +146,7 @@ export default ({
   collapsible = true,
   after = null,
   before = null, // (3.04) botones antes del «Aa» (p. ej. deshacer/rehacer en GTD)
+  hideNow = false, // (4.01) GTD: el reloj ya está fuera, junto a deshacer/rehacer
 }) => {
   const [open, setOpen] = React.useState(!collapsible || readOpen());
   // (4.0) en el Modo Notas no sale el reloj (fecha y hora); la fecha de hoy está en «Añadir»
@@ -225,7 +226,7 @@ export default ({
           </button>
         ))}
       {/* (3.44) insertar la fecha y la hora de ahora (en las notas y descripciones) */}
-      {open && getListField && !notes && (
+      {open && getListField && !notes && !hideNow && (
         <button
           type="button"
           className="eli-format-bar__btn"

@@ -656,8 +656,15 @@ class HeaderBar extends PureComponent {
           },
       ].filter(Boolean);
       const split = !notes && this.canOpenSplitView();
+      // (4.01) «Buscar», la primera opción; «Ajustes», la última
       const moreItems = isAuthenticated
         ? [
+            {
+              icon: 'fas fa-search',
+              label: 'Buscar',
+              onClick: openPalette,
+              testId: 'eli-palette-btn',
+            },
             {
               icon: 'far fa-folder-open',
               label: 'Mis ficheros',
@@ -698,12 +705,6 @@ class HeaderBar extends PureComponent {
                   },
               ],
             },
-            {
-              icon: 'fas fa-search',
-              label: 'Buscar',
-              onClick: openPalette,
-              testId: 'eli-palette-btn',
-            },
             inRealFile && {
               icon: 'far fa-eye',
               label: 'Vista',
@@ -729,6 +730,14 @@ class HeaderBar extends PureComponent {
                 },
               ],
             },
+            // (4.01) la agenda (antes solo con la tecla «a»); en el Modo Notas no sale
+            inFile &&
+              !notes && {
+                icon: 'far fa-calendar-check',
+                label: 'Agenda',
+                onClick: () => this.props.base.activatePopup('agenda'),
+                testId: 'eli-agenda-menu',
+              },
             !inRealFile &&
               split && {
                 icon: 'fas fa-columns',
@@ -741,15 +750,6 @@ class HeaderBar extends PureComponent {
               label: 'Herramientas',
               testId: 'eli-menu-tools',
               items: tools,
-            },
-            {
-              icon: 'fas fa-cogs',
-              label: 'Ajustes',
-              onClick: () => {
-                this.handleSettingsClick();
-                this.props.history.push('/settings');
-              },
-              testId: 'eli-settings',
             },
             {
               icon: 'far fa-question-circle',
@@ -780,6 +780,15 @@ class HeaderBar extends PureComponent {
                     )
                   : this.props.base.pushModalPage('keyboard_shortcuts_editor'),
               testId: inGtd ? 'gtd-shortcuts-btn' : 'eli-shortcuts',
+            },
+            {
+              icon: 'fas fa-cogs',
+              label: 'Ajustes',
+              onClick: () => {
+                this.handleSettingsClick();
+                this.props.history.push('/settings');
+              },
+              testId: 'eli-settings',
             },
           ]
         : [];

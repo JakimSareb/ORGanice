@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { focusField } from '../../lib/eli_keyboard_bridge';
-import EliFormatBar from '../EliFormatBar';
+import EliFormatBar, { insertNowIn } from '../EliFormatBar';
 import { continueListOnEnter } from '../../lib/eli_format';
 import { noteTextParts, hasNoteLinks, isWebUri } from '../../lib/eli_note_links';
 import ScheduleField from './ScheduleField';
@@ -510,6 +510,22 @@ export default function TaskEditor({
     k === 'tags' ? current.tags.join(' ') !== b0.tags.join(' ') : current[k] !== b0[k]
   );
 
+  // (4.01) fecha y hora de ahora: en el título si es donde está el cursor; si no, en las notas
+  // (si no se estaban editando, al final)
+  const insertNow = (e) => {
+    if (e) e.stopPropagation();
+    const t = titleRef.current;
+    const el = t && document.activeElement === t ? t : notesRef.current;
+    if (!el) return;
+    if (document.activeElement !== el) {
+      try {
+        el.setSelectionRange(el.value.length, el.value.length);
+      } catch (err) {}
+    }
+    el.readOnly = false;
+    setEditingText(true);
+    insertNowIn(el);
+  };
   const withCommit = (fn) => () => {
     commit();
     if (fn) fn();
@@ -1000,34 +1016,48 @@ export default function TaskEditor({
               document.activeElement === titleRef.current ? titleRef.current : notesRef.current
             }
             getListField={() => notesRef.current}
-            // (3.04) deshacer y rehacer, antes del botón de formato
+            hideNow
+            // (3.04) deshacer y rehacer, antes del botón de formato. (4.01) Y luego, el reloj:
+            // fecha y hora de ahora en el cursor (título o notas)
             before={
-              !isNew && onUndo ? (
-                <>
-                  <button
-                    type="button"
-                    className="eli-format-bar__btn"
-                    onClick={withCommit(onUndo)}
-                    disabled={!canUndo && !dirty}
-                    title="Deshacer"
-                    aria-label="Deshacer"
-                    data-testid="gtd-editor-undo"
-                  >
-                    <i className="fas fa-undo" />
-                  </button>
-                  <button
-                    type="button"
-                    className="eli-format-bar__btn"
-                    onClick={withCommit(onRedo)}
-                    disabled={!canRedo}
-                    title="Rehacer"
-                    aria-label="Rehacer"
-                    data-testid="gtd-editor-redo"
-                  >
-                    <i className="fas fa-redo" />
-                  </button>
-                </>
-              ) : null
+              <>
+                {!isNew && onUndo ? (
+                  <>
+                    <button
+                      type="button"
+                      className="eli-format-bar__btn"
+                      onClick={withCommit(onUndo)}
+                      disabled={!canUndo && !dirty}
+                      title="Deshacer"
+                      aria-label="Deshacer"
+                      data-testid="gtd-editor-undo"
+                    >
+                      <i className="fas fa-undo" />
+                    </button>
+                    <button
+                      type="button"
+                      className="eli-format-bar__btn"
+                      onClick={withCommit(onRedo)}
+                      disabled={!canRedo}
+                      title="Rehacer"
+                      aria-label="Rehacer"
+                      data-testid="gtd-editor-redo"
+                    >
+                      <i className="fas fa-redo" />
+                    </button>
+                  </>
+                ) : null}
+                <button
+                  type="button"
+                  className="eli-format-bar__btn"
+                  onClick={insertNow}
+                  title="Insertar la fecha y la hora de ahora"
+                  aria-label="Insertar la fecha y la hora de ahora"
+                  data-testid="gtd-editor-now"
+                >
+                  <i className="far fa-clock" />
+                </button>
+              </>
             }
           />
         )}

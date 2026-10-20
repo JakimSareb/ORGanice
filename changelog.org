@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.01 (octubre de 2026)
+** GTD
+- En el editor de la tarea, el botón del *reloj* (fecha y hora de ahora) está en la barra de arriba, entre *rehacer* y *Aa*. Inserta en el título si estás escribiendo en él y, si no, en las notas. Ya no está repetido dentro de *Aa*.
+** Menú ☰ (GTD y Documentos)
+- *Buscar* es la primera opción y *Ajustes* la última.
+- Documentos: nueva opción *Agenda* (antes solo con la tecla a). En el Modo Notas no sale.
+
 * 4.0 (octubre de 2026)
 ** Modo Notas
 - Nuevo ajuste *Modo Notas* (Ajustes, arriba del todo): deja la app solo para notas. Oculta la vista GTD y lo de tareas en Documentos (estado, ★, fechas, reloj, propiedades, agenda, capturar…). Tus ficheros no cambian; al apagarlo vuelve todo.
