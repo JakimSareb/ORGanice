@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.47 (octubre de 2026)
+** Documentos
+- Al volver de *Narrow* a ver todo (*Wide*), la cabecera que estaba reducida queda la *primera arriba* de la pantalla, para no perderse en el fichero entero.
+- Notas (editor en su sitio y «Editar como texto»): al pulsar *Intro*, la línea nueva empieza con la *misma sangría* que la anterior, como en Emacs.
+- Con *«Plegar / desplegar»* en Ajustes, basta *un toque* (o clic) para plegar o desplegar una cabecera, también en su viñeta o su margen.
+- *Notas largas*: al editarlas, la vista *sigue al cursor*; ya no se queda escondido bajo la barra de abajo o el teclado, ni la nota vuelve al principio al empezar a escribir.
+** Ajustes
+- *Apariencia* empieza plegada, como las demás secciones.
+
 * 3.46 (octubre de 2026)
 ** GTD
 - *Subtareas*: nuevo interruptor en el ⋯ de arriba, *apagado por defecto*. Apagado, no se ve nada de subtareas (ni sangría, ni ▾, ni indicador, ni «Subtarea de», ni ＋ Subtarea) y las subtareas salen como tareas normales. Los ficheros no cambian; al encenderlo vuelve todo como antes.

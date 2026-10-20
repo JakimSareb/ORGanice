@@ -4,6 +4,7 @@
 // el campo aparece en el mismo paso del toque (en el iPhone, el teclado sale a la primera).
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import './stylesheet.css';
+import { keepCaretVisible, scrollParentOf } from '../../../../lib/eli_caret_view';
 
 export const NOT_EDITING = { editing: null, render: null };
 export const EliInlineEditContext = React.createContext(NOT_EDITING);
@@ -33,9 +34,33 @@ export const InlineTextarea = React.forwardRef(function InlineTextarea(
   useLayoutEffect(() => {
     const el = inner.current;
     if (!el) return;
+    // (3.47) al medir, el cuadro se encoge un instante: la página no debe volver arriba
+    const scroller = scrollParentOf(el);
+    const before = scroller ? scroller.scrollTop : window.scrollY;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight + 2}px`;
+    const after = scroller ? scroller.scrollTop : window.scrollY;
+    if (after !== before) {
+      if (scroller) scroller.scrollTop = before;
+      else window.scrollTo(window.scrollX, before);
+    }
+    keepCaretVisible(el);
   }, [value]);
+  // (3.47) la vista sigue al cursor (notas más largas que la pantalla; teclado del iPhone)
+  useEffect(() => {
+    const el = inner.current;
+    if (!el) return undefined;
+    const follow = () => keepCaretVisible(el);
+    const timers = [60, 350, 700].map((ms) => setTimeout(follow, ms));
+    const vv = window.visualViewport;
+    if (vv) vv.addEventListener('resize', follow);
+    document.addEventListener('selectionchange', follow);
+    return () => {
+      timers.forEach(clearTimeout);
+      if (vv) vv.removeEventListener('resize', follow);
+      document.removeEventListener('selectionchange', follow);
+    };
+  }, []);
   // Tocar fuera (salvo la barra de Documentos, menús y ventanas) guarda y sale
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
@@ -93,7 +118,11 @@ export const InlineTextarea = React.forwardRef(function InlineTextarea(
         }
         if (onKeyDown) onKeyDown(e);
       }}
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        keepCaretVisible(e.currentTarget);
+      }}
+      onKeyUp={(e) => keepCaretVisible(e.currentTarget)}
       onDoubleClick={(e) => e.stopPropagation()}
       {...rest}
     />

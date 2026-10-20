@@ -293,7 +293,7 @@ const Settings = ({
 
   return (
     <div className="settings-container">
-      <details className="eli-settings-section" open data-testid="eli-settings-appearance">
+      <details className="eli-settings-section" data-testid="eli-settings-appearance">
         <summary>
           <span className="eli-settings-section__title">Apariencia</span>
           <span className="eli-settings-section__hint">Tema, colores, letra y viñetas</span>

@@ -45,6 +45,7 @@ Las ventanas que se abren desde la barra (fechas, etiquetas, propiedades, nota) 
 ** Editar en su sitio
 Toca este encabezado dos veces: el título se edita ahí mismo, con la misma letra. Ctrl+d (o tu atajo de «editar descripción») edita el texto de debajo, también en su sitio.
 - Intro (en el título), Esc o tocar fuera guardan.
+- (3.47) En las notas (y en «Editar como texto»), Intro empieza la línea nueva con la *misma sangría* que la anterior. En las notas largas, la vista sigue al cursor mientras escribes.
 - La ★, el estado, las fechas y el resto: en la barra de abajo.
 - Con el *tabulador* saltas al siguiente editor: título → descripción → etiquetas → fecha límite → fecha programada (mayúsculas + tabulador, al revés).
 - «+ Insertar fecha», debajo de los editores, escribe la fecha de hoy como fecha inactiva, p. ej. [%HOY%].
@@ -72,7 +73,7 @@ En Documentos, mientras editas el título o la descripción, el botón *Aa* est�
 - Junto al conmutador, *‹* sube a la carpeta del fichero (o a la carpeta de arriba en el explorador).
 - A la derecha, a la vista: *← →* (atrás y adelante, como en el navegador: vuelven a la vista, fichero o carpeta anterior; GTD y Documentos llevan cada uno su historial, y en GTD cuentan las listas y proyectos que has abierto; también Alt+← / Alt+→, o ⌘[ / ⌘] en el Mac), *sincronizar* (en Documentos, el fichero abierto; en GTD, sus ficheros y avisa de lo que hace; tecla s; normalmente es automático), la *lupa* (la única de la app: paleta de comandos, Ctrl+Espacio; desde ella, «Buscar en el fichero», tecla b; se pone naranja si hay un reloj en marcha) y *⋯* (en él, Fichero › ficheros principales, tecla f, y el candado). Deshacer y rehacer están en la barra flotante de abajo.
 - Arriba va lo que afecta al *documento entero*; lo de cada encabezado, en la barra flotante. El *⋯* lo agrupa en submenús (› entra, ‹ vuelve): rehacer; *Vista* (contraer y expandir todas las cabeceras, reducir al encabezado seleccionado, dos columnas); *Fichero* (explorador de ficheros, editar como texto plano); *Exportar* (PDF, compartir / correo, copiar el texto Org); *Herramientas* (calendario, calculadora, turnos de acomodadores, fases de la Luna); novedades y ajustes.
-- *Dejar pulsado* un encabezado lo reduce (narrow): solo se ve él y lo que cuelga. En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero.
+- *Dejar pulsado* un encabezado lo reduce (narrow): solo se ve él y lo que cuelga. En narrow aparece arriba la etiqueta *Ver todo* para volver a ver el fichero entero (3.47: la cabecera reducida queda entonces la primera arriba de la pantalla).
 - El plegado de los encabezados se recuerda al cerrar y volver a abrir la app (en cada dispositivo).
 - *Doble clic en las notas* las edita con el cursor donde has pulsado.
 - *Dos columnas* (en pantallas anchas): dos vistas a la vez, una al lado de la otra (por ejemplo, GTD a la izquierda y un fichero a la derecha). Lo que cambias en una se ve en la otra. La raya del centro se arrastra para cambiar el ancho, y el botón de cada columna la deja sola a pantalla completa. Al tocar un enlace a un fichero o a un encabezado (o el nombre del fichero en el editor de la vista GTD), te pregunta si abrirlo *aquí* o *en la otra columna* (Ctrl+clic, o ⌘+clic en el Mac, lo abre directamente en la otra).
@@ -524,7 +525,7 @@ Los guiones se escriben en ficheros =.fountain= aparte (formato abierto de texto
 - *Archivar en*: junto al fichero (tareas.org_archive) o en la subcarpeta archive de cada carpeta.
 - Los ajustes están en secciones plegables: *Apariencia*, *Tareas y etiquetas*, *Vista GTD y gestos* y *Opciones avanzadas*.
 - *Vista GTD y gestos*: deslizar sí/no, por separado en los documentos y en la vista GTD, y las secciones de la vista GTD (ver «Secciones configurables»).
-- *Al tocar una tarea* y *Al tocar una cabecera* (en Apariencia, debajo de Legibilidad; 3.07): por separado en el móvil y en el ordenador. Tarea: «Abrirla» o «Seleccionarla» (en el ordenador también «Según dónde», lo de siempre). Cabecera: «Seleccionarla» (lo de siempre) o «Plegar / desplegar» con el primer toque.
+- *Al tocar una tarea* y *Al tocar una cabecera* (en Apariencia, debajo de Legibilidad; 3.07): por separado en el móvil y en el ordenador. Tarea: «Abrirla» o «Seleccionarla» (en el ordenador también «Según dónde», lo de siempre). Cabecera: «Seleccionarla» (lo de siempre) o «Plegar / desplegar» con el primer toque (3.47: también en la viñeta o el margen). Las secciones de Ajustes, Apariencia incluida, empiezan plegadas.
 - *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada), «Nirvana» (como NirvanaHQ: grises claros, tarjetas blancas y acento azul; en oscuro, grafito; la vista GTD se ve aún más limpia) y los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).

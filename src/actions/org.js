@@ -500,6 +500,36 @@ export const selectHeaderAndOpenParents = (path, headerId, { widen = false } = {
   if (widen) centerHeaderInView(headerId);
 };
 
+// (3.47) Narrow → Wide: la cabecera que estaba reducida queda la primera arriba de la pantalla
+// (justo bajo la barra de arriba), para no perderse en el fichero entero
+export const scrollHeaderToTop = (headerId) => {
+  if (typeof document === 'undefined' || !headerId) return;
+  let tries = 0;
+  const attempt = () => {
+    tries++;
+    const esc = window.CSS && window.CSS.escape ? window.CSS.escape(headerId) : headerId;
+    const el = document.querySelector(`[data-header-id="${esc}"]`);
+    if (el && el.scrollIntoView) {
+      const bar = document.querySelector('.header-bar');
+      const barBottom = bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
+      el.style.scrollMarginTop = `${Math.round(barBottom) + 8}px`;
+      el.scrollIntoView({ block: 'start' });
+      // al pintar el fichero entero la página puede moverse: se repite
+      if (tries < 4) setTimeout(attempt, 200);
+      return;
+    }
+    if (tries < 15) setTimeout(attempt, 100);
+  };
+  setTimeout(attempt, 50);
+};
+
+export const widenHeaderToTop = () => (dispatch, getState) => {
+  const path = getState().org.present.get('path');
+  const id = getState().org.present.getIn(['files', path, 'narrowedHeaderId']);
+  dispatch(widenHeader());
+  scrollHeaderToTop(id);
+};
+
 export const centerHeaderInView = (headerId) => {
   if (typeof document === 'undefined' || !headerId) return;
   let tries = 0;
