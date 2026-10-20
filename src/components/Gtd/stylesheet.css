@@ -4165,3 +4165,44 @@ input.gtd-proc__input:not([type]) {
   letter-spacing: 0.04em;
   color: var(--base1);
 }
+
+/* (3.41) revisión semanal: botones en cada fila, separador de fase, herramientas */
+.gtd-review__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gtd-review__row > .gtd-review__item {
+  flex: 1;
+  min-width: 0;
+}
+.gtd-review__act {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  font-size: 0.8em;
+  white-space: nowrap;
+  color: var(--base1);
+}
+.gtd-review__act--next {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.gtd-review__act--done {
+  color: var(--green);
+}
+.gtd-review__act:hover {
+  background: var(--base2, rgba(0, 0, 0, 0.05));
+}
+.gtd-review__dot.is-phase {
+  margin-left: 6px;
+}
+.gtd-review__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.gtd-review__more-btn {
+  color: var(--blue);
+}

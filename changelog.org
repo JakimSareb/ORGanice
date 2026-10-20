@@ -3,6 +3,14 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.41 (octubre de 2026)
+** GTD
+- *Revisión semanal* con los pasos de la checklist oficial de GTD (Weekly Review® de David Allen), en tres fases: *Despejar* (vaciar la cabeza y el Inbox: botones «Procesar Inbox» y «Apuntar algo»), *Al día* (Revisar Next, Elegir para la semana, Calendario atrasado y próximo con «Abrir la agenda», Waiting, proyectos sin acción siguiente, dormidos) y *Crear* (Someday e ideas nuevas, con «Apuntar una idea»).
+- *Revisar Next*: en cada acción, ✓ (hecha) o − (quitar de Next → Todo).
+- *Elegir para la semana* (justo después de Revisar Next): las tareas de Todo y de Someday, cada una con un botón «Next» para pasarla a Next.
+- *Waiting*: ✓ marca como recibida (hecha).
+- Las listas largas de la revisión ya se pueden desplegar enteras («ver todas»).
+
 * 3.40 (octubre de 2026)
 ** GTD
 - *Procesar Inbox* (estilo FacileThings): en el menú lateral, junto a Inbox, o en el ⋯ de arriba. Sale una tarjeta encima de la lista con una tarea del Inbox cada vez («n de N»), con *Atrás*, *Saltar* y *Terminar*. Toca el título para abrir la tarea.

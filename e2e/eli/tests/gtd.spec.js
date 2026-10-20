@@ -62,7 +62,8 @@ test('GTD (3.24): revisión semanal paso a paso', async ({ app }) => {
   await p.waitForSelector('[data-testid=gtd-review]');
   await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Inbox');
   expect(await gtd.titles(app)).toContain('Idea');
-  await app.press(p.locator('[data-testid=gtd-review-next]'));
+  // (3.41) pasos nuevos (Next, semana, calendario, Waiting): se salta directo con su punto
+  await app.press(p.locator('[data-testid=gtd-review-dot-stalled]'));
   await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('sin acción');
   await expect(p.locator('[data-testid=gtd-review-item]')).toHaveText(['Atascado']);
   await app.press(p.locator('[data-testid=gtd-review-item]'));
@@ -70,7 +71,7 @@ test('GTD (3.24): revisión semanal paso a paso', async ({ app }) => {
   await expect(p.locator('[data-testid=gtd-review]')).toBeVisible();
   await app.press(p.locator('[data-testid=gtd-review-next]'));
   await expect(p.locator('[data-testid=gtd-review-item]')).toHaveText(['Dormido']);
-  for (let i = 0; i < 3; i++) await app.press(p.locator('[data-testid=gtd-review-next]'));
+  for (let i = 0; i < 2; i++) await app.press(p.locator('[data-testid=gtd-review-next]'));
   await p.waitForSelector('[data-testid=gtd-review-done]');
   await app.press(p.locator('[data-testid=gtd-review-finish]'));
   await expect(p.locator('[data-testid=gtd-review]')).toHaveCount(0);

@@ -103,7 +103,7 @@ import {
 } from '../../lib/gtd/gtd_rapid';
 import GtdMenu from './GtdMenu';
 import GtdWeeklyReview from './GtdWeeklyReview';
-import { weeklyReview } from '../../lib/gtd/gtd_review';
+import { weeklyReview, REVIEW_STEPS } from '../../lib/gtd/gtd_review';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
 import EliOrgTable from '../EliOrgTable';
@@ -2936,7 +2936,17 @@ export default function GtdView() {
     const now = new Date().toISOString();
     setLastReview(now);
     writeLS('eliGtdLastReview', now);
-    setReview(5);
+    setReview(REVIEW_STEPS.length);
+  };
+  // (3.41) botones de las filas de la revisión: → Next, quitar de Next (→ Todo), hecha/recibida
+  const reviewMove = (t, kind) => {
+    if (kind === 'done') {
+      dispatch(gtdSaveMany([[t, doneChangesFor(t)]]));
+    } else {
+      dispatch(gtdSaveTask(t, { list: kind, tags: tagsForList(t, kind) }));
+    }
+    const label = { done: 'Hecha', next: '→ Next', later: 'Quitada de Next (→ Todo)' }[kind];
+    dispatch(setDisappearingLoadingMessage(label, 1500));
   };
   const reviewOpenTask = (t) => {
     if (t.isProject) {
@@ -5138,13 +5148,17 @@ export default function GtdView() {
             today={today}
             onStep={(i) => {
               setReview(i);
-              if (i === 0) goList('inbox');
-              else if (i === 4) goList('someday');
+              const st = REVIEW_STEPS[i];
+              if (st && st.view) goList(st.view);
             }}
             onClose={() => setReview(null)}
             onFinish={finishReview}
             onOpenView={goList}
             onOpenTask={reviewOpenTask}
+            onMove={reviewMove}
+            onProcess={startProcess}
+            onCapture={() => openDraft('inbox')}
+            onAgenda={() => setShowAgenda(true)}
           />
         )}
         {proc && (

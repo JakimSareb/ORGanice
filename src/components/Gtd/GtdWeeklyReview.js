@@ -1,11 +1,22 @@
-// ORG Mode para Eli (3.24): revisión semanal guiada. Tarjeta encima de la lista que va paso a paso
-// (Inbox → proyectos sin acción siguiente → dormidos → fechas → Algún día). Se queda abierta al
-// cambiar de vista, para poder ir a cada lista o proyecto y volver al paso siguiente.
-import React from 'react';
-import { REVIEW_STEPS, reviewCount } from '../../lib/gtd/gtd_review';
+// ORG Mode para Eli (3.24): revisión semanal guiada. Tarjeta encima de la lista que va paso a paso.
+// Se queda abierta al cambiar de vista, para poder ir a cada lista o proyecto y volver al paso
+// siguiente. (3.41) Pasos de la checklist oficial de GTD (Despejar → Al día → Crear), con «Revisar
+// Next» y «Elegir para la semana» (botones → Next / quitar de Next / hecha en cada fila).
+import React, { useState } from 'react';
+import { REVIEW_STEPS, REVIEW_PHASES, reviewCount } from '../../lib/gtd/gtd_review';
 
 const MAX = 12;
 const fmt = (d) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+// Botones de cada fila según el paso: [tipo, icono, texto]
+const ACTIONS = {
+  next: [
+    ['done', 'fas fa-check', 'Hecha'],
+    ['later', 'fas fa-minus', 'Quitar de Next'],
+  ],
+  week: [['next', 'fas fa-play', 'Next']],
+  waiting: [['done', 'fas fa-check', 'Recibida']],
+};
 
 export default function GtdWeeklyReview({
   review,
@@ -17,49 +28,144 @@ export default function GtdWeeklyReview({
   onFinish,
   onOpenView,
   onOpenTask,
+  onMove,
+  onProcess,
+  onCapture,
+  onAgenda,
 }) {
+  const [expanded, setExpanded] = useState({});
   const done = step >= REVIEW_STEPS.length;
   const s = REVIEW_STEPS[Math.min(step, REVIEW_STEPS.length - 1)];
   const n = done ? 0 : reviewCount(review, s.id);
+  const t0 = +new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const renderList = (list, dated = false) => (
-    <ul className="gtd-review__list">
-      {list.slice(0, MAX).map((t) => {
-        const d = t.deadline || t.scheduled;
-        return (
-          <li key={t.key}>
+  const renderList = (list, opts = {}) => {
+    const { dated = false, actions = null, id = s.id } = opts;
+    const all = !!expanded[id];
+    const shown = all ? list : list.slice(0, MAX);
+    return (
+      <ul className="gtd-review__list">
+        {shown.map((t) => {
+          const d = t.deadline || t.scheduled;
+          return (
+            <li key={t.key} className="gtd-review__row">
+              <button
+                type="button"
+                className="gtd-review__item"
+                onClick={() => onOpenTask(t)}
+                data-testid="gtd-review-item"
+              >
+                <i className={t.isProject ? 'fas fa-project-diagram' : 'far fa-circle'} />
+                <span className="gtd-review__item-title">{t.title || '(sin título)'}</span>
+                {dated && d && (
+                  <span className={'gtd-review__date' + (+d < t0 ? ' is-overdue' : '')}>
+                    {t.deadline ? (
+                      <i className="fas fa-flag" />
+                    ) : (
+                      <i className="far fa-calendar-alt" />
+                    )}{' '}
+                    {fmt(d)}
+                  </span>
+                )}
+              </button>
+              {actions &&
+                actions.map(([kind, icon, label]) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    className={'gtd-review__act gtd-review__act--' + kind}
+                    onClick={() => onMove(t, kind)}
+                    title={label}
+                    aria-label={`${label}: ${t.title || ''}`}
+                    data-testid={`gtd-review-act-${kind}`}
+                  >
+                    <i className={icon} />
+                    {kind === 'next' && <span> {label}</span>}
+                  </button>
+                ))}
+            </li>
+          );
+        })}
+        {list.length > MAX && (
+          <li className="gtd-review__more">
             <button
               type="button"
-              className="gtd-review__item"
-              onClick={() => onOpenTask(t)}
-              data-testid="gtd-review-item"
+              className="gtd-review__more-btn"
+              onClick={() => setExpanded((e) => ({ ...e, [id]: !all }))}
+              data-testid="gtd-review-more"
             >
-              <i className={t.isProject ? 'fas fa-project-diagram' : 'far fa-circle'} />
-              <span className="gtd-review__item-title">{t.title || '(sin título)'}</span>
-              {dated && d && (
-                <span
-                  className={
-                    'gtd-review__date' +
-                    (+d < +new Date(today.getFullYear(), today.getMonth(), today.getDate())
-                      ? ' is-overdue'
-                      : '')
-                  }
-                >
-                  {t.deadline ? (
-                    <i className="fas fa-flag" />
-                  ) : (
-                    <i className="far fa-calendar-alt" />
-                  )}{' '}
-                  {fmt(d)}
-                </span>
-              )}
+              {all ? 'Ver menos' : `y ${list.length - MAX} más… (ver todas)`}
             </button>
           </li>
+        )}
+      </ul>
+    );
+  };
+
+  const sub = (title, list, opts) =>
+    list.length > 0 && (
+      <React.Fragment>
+        <div className="gtd-review__sub">
+          {title} ({list.length})
+        </div>
+        {renderList(list, opts)}
+      </React.Fragment>
+    );
+
+  const extraButtons = () => {
+    const b = [];
+    if (s.id === 'inbox') {
+      if (n > 0)
+        b.push(
+          <button
+            key="proc"
+            type="button"
+            className="gtd-review__open"
+            onClick={onProcess}
+            data-testid="gtd-review-process"
+          >
+            <i className="fas fa-random" /> Procesar Inbox
+          </button>
         );
-      })}
-      {list.length > MAX && <li className="gtd-review__more">y {list.length - MAX} más…</li>}
-    </ul>
-  );
+    }
+    if (s.id === 'dates')
+      b.push(
+        <button
+          key="agenda"
+          type="button"
+          className="gtd-review__open"
+          onClick={onAgenda}
+          data-testid="gtd-review-agenda"
+        >
+          <i className="fas fa-calendar-alt" /> Abrir la agenda
+        </button>
+      );
+    if (s.id === 'inbox' || s.id === 'someday')
+      b.push(
+        <button
+          key="cap"
+          type="button"
+          className="gtd-review__open"
+          onClick={onCapture}
+          data-testid="gtd-review-capture"
+        >
+          <i className="fas fa-plus" /> {s.id === 'inbox' ? 'Apuntar algo' : 'Apuntar una idea'}
+        </button>
+      );
+    if (s.view && s.id !== 'next' && s.id !== 'waiting')
+      b.push(
+        <button
+          key="open"
+          type="button"
+          className="gtd-review__open"
+          onClick={() => onOpenView(s.view)}
+          data-testid="gtd-review-open"
+        >
+          <i className={s.icon} /> Abrir {s.id === 'inbox' ? 'Inbox' : 'Someday'}
+        </button>
+      );
+    return b.length ? <div className="gtd-review__tools">{b}</div> : null;
+  };
 
   const body = () => {
     if (done) {
@@ -70,23 +176,20 @@ export default function GtdWeeklyReview({
       );
     }
     let content = null;
-    if (s.id === 'stalled' || s.id === 'sleep') {
-      content = n ? renderList(review[s.id]) : null;
+    if (['stalled', 'sleep', 'next', 'waiting'].includes(s.id)) {
+      content = n ? renderList(review[s.id], { actions: ACTIONS[s.id] }) : null;
+    } else if (s.id === 'week') {
+      content = (
+        <React.Fragment>
+          {sub('Todo', review.later, { actions: ACTIONS.week, id: 'week-later' })}
+          {sub('Someday', review.someday, { actions: ACTIONS.week, id: 'week-someday' })}
+        </React.Fragment>
+      );
     } else if (s.id === 'dates') {
       content = (
         <React.Fragment>
-          {review.overdue.length > 0 && (
-            <React.Fragment>
-              <div className="gtd-review__sub">Atrasadas ({review.overdue.length})</div>
-              {renderList(review.overdue, true)}
-            </React.Fragment>
-          )}
-          {review.upcoming.length > 0 && (
-            <React.Fragment>
-              <div className="gtd-review__sub">Próximos 7 días ({review.upcoming.length})</div>
-              {renderList(review.upcoming, true)}
-            </React.Fragment>
-          )}
+          {sub('Atrasadas', review.overdue, { dated: true, id: 'overdue' })}
+          {sub('Próximos 7 días', review.upcoming, { dated: true, id: 'upcoming' })}
         </React.Fragment>
       );
     }
@@ -100,16 +203,7 @@ export default function GtdWeeklyReview({
         ) : (
           content
         )}
-        {s.view && (
-          <button
-            type="button"
-            className="gtd-review__open"
-            onClick={() => onOpenView(s.view)}
-            data-testid="gtd-review-open"
-          >
-            <i className={s.icon} /> Abrir {s.id === 'inbox' ? 'Inbox' : 'Algún día'}
-          </button>
-        )}
+        {extraButtons()}
       </React.Fragment>
     );
   };
@@ -119,9 +213,9 @@ export default function GtdWeeklyReview({
       <div className="gtd-review__head">
         <i className="fas fa-clipboard-check gtd-review__icon" />
         <div className="gtd-review__titles">
-          <div className="gtd-review__kicker">
+          <div className="gtd-review__kicker" data-testid="gtd-review-kicker">
             Revisión semanal
-            {!done && ` · Paso ${step + 1} de ${REVIEW_STEPS.length}`}
+            {!done && ` · ${REVIEW_PHASES[s.phase]} · Paso ${step + 1} de ${REVIEW_STEPS.length}`}
           </div>
           <div className="gtd-review__title" data-testid="gtd-review-title">
             {done ? 'Terminada' : s.label}
@@ -147,10 +241,14 @@ export default function GtdWeeklyReview({
             role="tab"
             aria-selected={i === step}
             className={
-              'gtd-review__dot' + (i === step ? ' is-on' : '') + (i < step ? ' is-past' : '')
+              'gtd-review__dot' +
+              (i === step ? ' is-on' : '') +
+              (i < step ? ' is-past' : '') +
+              (i > 0 && REVIEW_STEPS[i - 1].phase !== x.phase ? ' is-phase' : '')
             }
-            title={x.label}
+            title={`${REVIEW_PHASES[x.phase]}: ${x.label}`}
             onClick={() => onStep(i)}
+            data-testid={`gtd-review-dot-${x.id}`}
           >
             <i className={x.icon} />
             {reviewCount(review, x.id) > 0 && (
