@@ -4224,3 +4224,15 @@ input.gtd-proc__input:not([type]) {
 .gtd-task__title > .gtd-notes-btn {
   margin-left: 2px;
 }
+/* (3.43) notas de un proyecto en «Todos los proyectos» */
+.gtd-overview__title > .gtd-notes-btn {
+  margin-left: 4px;
+}
+.gtd-overview__title > .gtd-notes-btn i {
+  opacity: 1;
+  margin-right: 0;
+}
+.gtd-overview__notes {
+  padding: 4px 6px 10px 28px;
+  border-bottom: 1px solid var(--base2);
+}
