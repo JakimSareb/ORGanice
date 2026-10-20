@@ -188,6 +188,8 @@ const selectCanUndo = (s) => s.org.past.length > 0;
 const selectCanRedo = (s) => s.org.future.length > 0;
 const selectCustomKeybindings = (s) => s.base.get('customKeybindings');
 
+// 3.35: ancho de la franja del borde izquierdo desde la que deslizar abre el menú lateral
+const EDGE_SWIPE_ZONE = 24;
 const LS_VIEW = 'eliGtdView';
 // (3.01) filtros de la barra: etiquetas (incluir y tachadas = excluir), energía, tiempo, con
 // fecha y «Proyecto no encontrado»
@@ -992,6 +994,7 @@ export default function GtdView() {
   const [newProject, setNewProject] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
+  const keepSideRef = useRef(false);
   const [showAgenda, setShowAgenda] = useState(false);
   // (3.24) Revisión semanal guiada: paso en curso (null = cerrada; se recuerda)
   const [reviewStep, setReviewStep] = useState(() => {
@@ -1204,6 +1207,7 @@ export default function GtdView() {
     onReorder: (task, pos) => onReorderDropRef.current && onReorderDropRef.current(task, pos),
     onStart: (t) => rowDragRef.current.onStart(t),
     onNearEdge: (t) => rowDragRef.current.onNearEdge(t),
+    onAwayFromEdge: (t) => rowDragRef.current.onAwayFromEdge(t),
     canSwipe: (task) => rowDragRef.current.canSwipe(task),
     onSwipe: (task, dir) => rowDragRef.current.onSwipe(task, dir),
     dragSet: (task) => rowDragRef.current.dragSet(task),
@@ -1658,24 +1662,28 @@ export default function GtdView() {
     setFilters({ ...EMPTY_FILTERS }); // como Nirvana
     setOpenKey(null);
     setFreshKeys([]);
-    setSideOpen(false);
+    // 3.35: al recorrer el menú con ↑ ↓ se queda abierto (en pantalla estrecha se cerraba)
+    if (keepSideRef.current) keepSideRef.current = false;
+    else setSideOpen(false);
     setSelKey(null);
   }, []);
+  // 3.35: el historial (flechas ← →) solo apunta secciones (Inbox, Next…); abrir un proyecto no
+  // crea entrada, así que ← desde un proyecto vuelve a la sección anterior
   const selectView = useCallback(
     (v) => {
-      const same = JSON.stringify(v) === JSON.stringify(viewRef.current);
       applyView(v);
-      if (!same && /^\/gtd(\/|$)/.test(history.location.pathname)) {
-        const l = history.location;
-        history.push(l.pathname + (l.search || ''), { ...(l.state || {}), eliGtdView: v });
-      }
+      const l = history.location;
+      if (v.type || !/^\/gtd(\/|$)/.test(l.pathname)) return;
+      const cur = l.state && l.state.eliGtdView;
+      if (JSON.stringify(v) === JSON.stringify(cur)) return;
+      history.push(l.pathname + (l.search || ''), { ...(l.state || {}), eliGtdView: v });
     },
     [applyView, history]
   );
   // La entrada actual guarda la vista; al ir atrás/adelante (POP) se recupera la de esa entrada
   useEffect(() => {
     const l = history.location;
-    if (!(l.state && l.state.eliGtdView)) {
+    if (!(l.state && l.state.eliGtdView) && !viewRef.current.type) {
       history.replace(l.pathname + (l.search || '') + (l.hash || ''), {
         ...(l.state || {}),
         eliGtdView: viewRef.current,
@@ -1684,7 +1692,16 @@ export default function GtdView() {
     return history.listen((location, action) => {
       if (action !== 'POP' || !/^\/gtd(\/|$)/.test(location.pathname)) return;
       const v = location.state && location.state.eliGtdView;
-      if (v && JSON.stringify(v) !== JSON.stringify(viewRef.current)) applyView(v);
+      if (v && JSON.stringify(v) !== JSON.stringify(viewRef.current)) {
+        applyView(v);
+        // 3.35 (b): en el móvil en vertical, al cambiar de sección con ← → se muestra el menú
+        // lateral (se ve dónde se está); tocar la lista (el velo) lo vuelve a ocultar
+        if (
+          window.matchMedia &&
+          window.matchMedia('(max-width: 720px) and (orientation: portrait)').matches
+        )
+          setSideOpen(true);
+      }
     });
   }, [history, applyView]);
   const selectArea = (a) => {
@@ -2612,6 +2629,10 @@ export default function GtdView() {
     onNearEdge: () => {
       if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
     },
+    // (3.35) al alejar la tarea del menú, se oculta para ver la lista y poder reordenar
+    onAwayFromEdge: () => {
+      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(false);
+    },
     canSwipe: (task) => !noSwipeGtd && !task.isDone && !task.isProject && view.id !== 'logbook',
     onSwipe: (task, dir) => {
       if (dir === 'right') toggleDone(task);
@@ -2662,6 +2683,58 @@ export default function GtdView() {
     }
     dispatch(sync({ forceAction: 'manual' }));
   };
+
+  // 3.35: en el móvil, deslizar el dedo desde el borde izquierdo abre el menú lateral (como las
+  // hojas de iOS). Solo si empieza muy pegado al borde y va claramente hacia la derecha; nada con
+  // el editor, un menú o una ventana abiertos. En Safari (no en la app de inicio) el borde es
+  // también su «atrás», así que puede ganar el navegador.
+  const edgeOkRef = useRef(false);
+  edgeOkRef.current =
+    !sideOpen && !openKey && !draft && !menu && !newProject && !showAgenda && !dragging;
+  useEffect(() => {
+    let st = null;
+    const narrow = () => window.matchMedia && window.matchMedia('(max-width: 720px)').matches;
+    const start = (e) => {
+      st = null;
+      if (e.touches.length !== 1 || !edgeOkRef.current || !narrow()) return;
+      const t = e.touches[0];
+      if (t.clientX > EDGE_SWIPE_ZONE) return;
+      if (
+        document.querySelector(
+          '.eli-cal__overlay, .eli-calc__overlay, .drawer, .eli-palette__overlay'
+        )
+      )
+        return;
+      st = { x: t.clientX, y: t.clientY };
+    };
+    const moveT = (e) => {
+      if (!st || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - st.x;
+      const dy = Math.abs(t.clientY - st.y);
+      if (dy > 30 && dy > dx) {
+        st = null; // es un desplazamiento vertical
+        return;
+      }
+      if (dx > 40 && dx > 1.5 * dy) {
+        st = null;
+        setSideOpen(true);
+      }
+    };
+    const end = () => {
+      st = null;
+    };
+    window.addEventListener('touchstart', start, { passive: true });
+    window.addEventListener('touchmove', moveT, { passive: true });
+    window.addEventListener('touchend', end, { passive: true });
+    window.addEventListener('touchcancel', end, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', start);
+      window.removeEventListener('touchmove', moveT);
+      window.removeEventListener('touchend', end);
+      window.removeEventListener('touchcancel', end);
+    };
+  }, []);
 
   // 3.26: tirar hacia abajo de la lista (con el dedo) = sincronizar
   const gtdMainRef = useRef(null);
@@ -3074,11 +3147,15 @@ export default function GtdView() {
       e.preventDefault();
       if (next) {
         next.focus();
+        keepSideRef.current = true;
         next.click();
+        keepSideRef.current = false;
+        if (next.scrollIntoView) next.scrollIntoView({ block: 'nearest' });
       }
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
       item.blur();
+      setSideOpen(false);
       const first = items.find((x) => x.kind === 'task');
       setSelKey(first ? first.task.key : null);
     }

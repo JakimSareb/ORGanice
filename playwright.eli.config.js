@@ -12,7 +12,8 @@ export default defineConfig({
   fullyParallel: true,
   retries: 0,
   timeout: 60 * 1000,
-  reporter: [['list']],
+  // (3.35) en GitHub, los fallos salen también como anotaciones de la ejecución (se leen por API)
+  reporter: process.env.CI ? [['list'], ['github']] : [['list']],
   outputDir: 'test-results/e2e-eli',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
