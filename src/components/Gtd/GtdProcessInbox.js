@@ -4,7 +4,7 @@
 // o todo junto (grupos «No requiere acción» / «Requiere acción» / «¿Cuándo?»).
 // La decisión se entrega a `onDecide(d)`: d.kind = trash | reference | someday | tickler | done |
 // waiting | project | next | later, con los datos que haga falta (fechas, persona, área, etiquetas…).
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { toDateInput, fromDateInput } from './TaskEditor';
 import { parseTagsInput, personTag } from '../../lib/gtd/gtd_process';
 
