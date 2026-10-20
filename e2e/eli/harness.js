@@ -165,6 +165,12 @@ const gtd = {
     await app.press(item);
     await app.page.waitForTimeout(600);
   },
+  // (4.0) Abre una entrada del menú lateral (Procesar Inbox, Revisión…); en el móvil, antes el menú
+  async side(app, testId) {
+    if (app.mobile) await app.page.click('.gtd-main__menu');
+    await app.press(app.page.locator(`[data-testid=${testId}]`));
+    await app.page.waitForTimeout(400);
+  },
   async titles(app) {
     return app.page.$$eval('[data-testid=gtd-task-title]', (a) =>
       a.map((x) => x.textContent.trim())

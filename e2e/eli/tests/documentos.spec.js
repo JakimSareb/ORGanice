@@ -44,7 +44,8 @@ test('Explorador: barra de herramientas sin fichero abierto (3.29)', async ({ ap
   await app.open({ '/notas.org': DOC, '/tasks.org': '', '/inbox.org': '' }, '/files');
   const bar = app.page.locator('[data-testid=eli-docbar]');
   await expect(bar).toBeVisible({ timeout: 20000 });
-  for (const id of ['favorites', 'new', 'agenda', 'capture']) {
+  // (4.0) Ficheros principales (Menú) y Agenda (GTD) ya no se repiten en la barra
+  for (const id of ['new', 'capture']) {
     await expect(app.page.locator(`[data-testid=eli-docbar-${id}]`)).toBeVisible();
   }
   // Nuevo › Fichero Org / Guion Fountain
@@ -66,17 +67,18 @@ test('Abrir en GTD: una tarea se abre en GTD; un encabezado sin estado avisa (3.
   await expect(plain).toBeVisible({ timeout: 20000 });
   // sin estado: aviso y se queda en Documentos
   await app.press(plain);
+  await app.page.locator('[data-testid=eli-docbar-more]').click();
   await app.page.locator('[data-testid=eli-docbar-gtd]').click();
   await expect(app.page.locator('text=No es una tarea').first()).toBeVisible();
+  // un solo aviso, y se cierra con Esc
+  await expect(app.page.locator('.eli-prompt__overlay')).toHaveCount(1);
   await app.page.keyboard.press('Escape');
-  await app.page
-    .locator('text=Aceptar, text=OK, text=Vale')
-    .first()
-    .click({ timeout: 2000 })
-    .catch(() => {});
+  await expect(app.page.locator('.eli-prompt__overlay')).toHaveCount(0);
   // con estado: va a GTD
   const task = app.page.locator('text=Llamar al banco').first();
   await app.press(task);
+  await app.page.waitForTimeout(300);
+  await app.page.locator('[data-testid=eli-docbar-more]').click();
   await app.page.locator('[data-testid=eli-docbar-gtd]').click();
   await expect(app.page).toHaveURL(/\/gtd/, { timeout: 20000 });
   await expect(app.page.locator('.gtd-editor').first()).toBeVisible({ timeout: 20000 });
@@ -91,7 +93,9 @@ test('Flechas (3.30): atrás funciona tras abrir y cerrar la Agenda', async ({ a
   await app.page.locator('text=notas.org').first().click();
   await expect(app.page).toHaveURL(/notas\.org/, { timeout: 20000 });
   // Abrir y cerrar la Agenda (ventana que reescribía la entrada del historial y la estropeaba)
-  await app.page.locator('[data-testid=eli-docbar-agenda]').first().click();
+  // (4.0) la Agenda ya no está en la barra: con su tecla (a)
+  await app.page.waitForTimeout(800);
+  await app.page.keyboard.press('a');
   await expect(app.page).toHaveURL(/#agenda/);
   await app.page.keyboard.press('Escape');
   await app.page.waitForTimeout(500);

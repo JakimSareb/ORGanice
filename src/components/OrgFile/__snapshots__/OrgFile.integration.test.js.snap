@@ -710,16 +710,26 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         title="Adelante (Alt+→)"
       />
       <i
+        aria-disabled="true"
+        aria-label="Deshacer"
+        class="fas fa-undo header-bar__actions__item header-bar__actions__item--disabled"
+        data-testid="eli-undo"
+        role="button"
+        title="Deshacer"
+      />
+      <i
+        aria-disabled="true"
+        aria-label="Rehacer"
+        class="fas fa-redo header-bar__actions__item header-bar__actions__item--disabled"
+        data-testid="eli-redo"
+        role="button"
+        title="Rehacer"
+      />
+      <i
         class="fas fa-sync-alt header-bar__actions__item"
         data-testid="eli-sync-btn"
         role="button"
         title="Sincronizar ahora (s)"
-      />
-      <i
-        class="fas fa-search header-bar__actions__item"
-        data-testid="eli-palette-btn"
-        role="button"
-        title="Buscar: ficheros, tareas, etiquetas o acciones (Ctrl+Espacio)"
       />
       <div
         class="eli-more "
@@ -727,14 +737,14 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         <button
           aria-expanded="false"
           aria-haspopup="menu"
-          aria-label="Más opciones"
+          aria-label="Menú"
           class="eli-more__btn header-bar__actions__item "
           data-testid="eli-more-top"
-          title="Más opciones"
+          title="Menú"
           type="button"
         >
           <i
-            class="fas fa-ellipsis-h"
+            class="fas fa-bars"
           />
         </button>
       </div>
@@ -1243,18 +1253,6 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         data-testid="eli-docbar-row-idle"
       >
         <button
-          aria-label="Agenda"
-          class="eli-docbar__btn"
-          data-bid="agenda"
-          data-testid="eli-docbar-agenda"
-          title="Agenda"
-          type="button"
-        >
-          <i
-            class="far fa-calendar-check"
-          />
-        </button>
-        <button
           aria-label="Capturar (plantillas de captura)"
           class="eli-docbar__btn"
           data-bid="capture"
@@ -1270,32 +1268,6 @@ exports[`Render all views Org Functionality Renders everything starting from an 
           >
             +
           </span>
-        </button>
-        <button
-          aria-label="Deshacer"
-          class="eli-docbar__btn"
-          data-bid="undo"
-          data-testid="eli-docbar-undo"
-          disabled=""
-          title="Deshacer"
-          type="button"
-        >
-          <i
-            class="fas fa-undo"
-          />
-        </button>
-        <button
-          aria-label="Rehacer"
-          class="eli-docbar__btn"
-          data-bid="redo"
-          data-testid="eli-docbar-redo"
-          disabled=""
-          title="Rehacer"
-          type="button"
-        >
-          <i
-            class="fas fa-redo"
-          />
         </button>
       </div>
     </div>

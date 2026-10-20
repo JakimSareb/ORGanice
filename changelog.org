@@ -3,6 +3,19 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.0 (octubre de 2026)
+** Modo Notas
+- Nuevo ajuste *Modo Notas* (Ajustes, arriba del todo): deja la app solo para notas. Oculta la vista GTD y lo de tareas en Documentos (estado, ★, fechas, reloj, propiedades, agenda, capturar…). Tus ficheros no cambian; al apagarlo vuelve todo.
+- *Herramientas* en Ajustes: un interruptor para la Calculadora, las Fases de la luna, los Acomodadores y el Calendario (apagadas de inicio en el Modo Notas).
+** Documentos
+- La barra de abajo tiene ahora *cinco botones grandes con texto*: *Editar* (título y texto juntos en una hoja, con negrita, listas, casilla y tabla), *Nueva* (debajo o subcabecera), *Añadir* (archivo o foto, enlace, fecha de hoy), *Mover* (subir, bajar, hacia dentro o hacia fuera con o sin subcabeceras, a otro fichero) y *Más* (hecha/pendiente, ver sola, etiquetas, compartir o PDF, duplicar, borrar y, en el modo completo, lo de tareas).
+- Arriba: *atrás, adelante, deshacer, rehacer, la nube y el Menú* (mis ficheros, buscar, herramientas, ajustes, ayuda y atajos). Con una cabecera «vista sola», *Atrás* vuelve al fichero entero.
+- Fuera los botones repetidos: Ver todo y narrow de arriba, Exportar (ahora en Más › Compartir o PDF, también para todo el fichero), Agenda de la barra, duplicar al mantener ＋…
+- *Temas*: a la vista Unicornio, Cuki y Nirvana; los demás tras *⋯ Más temas*.
+** GTD
+- Sin el ▾ de cada tarea (lo mismo está en su editor; el clic derecho sigue abriendo el menú).
+- El ⋯ de arriba ya no repite Procesar Inbox, Revisión, Agenda (menú lateral), Sincronizar (la nube), Editar el proyecto / Abrir en su fichero, Capturar con una plantilla ni Atajos de teclado (Menú de arriba).
+
 * 3.47 (octubre de 2026)
 ** Documentos
 - Al volver de *Narrow* a ver todo (*Wide*), la cabecera que estaba reducida queda la *primera arriba* de la pantalla, para no perderse en el fichero entero.

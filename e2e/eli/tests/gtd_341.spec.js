@@ -18,8 +18,7 @@ test('GTD (3.41): revisar Next, elegir para la semana y Waiting', async ({ app }
   const p = app.page;
   await app.open({ '/tasks.org': TASKS, '/inbox.org': '' });
   await gtd.ready(app);
-  await app.press(p.locator('[data-testid=gtd-view-menu-button]'));
-  await app.press(p.locator('[data-testid=gtd-menu-review]'));
+  await gtd.side(app, 'gtd-review-start');
   await expect(p.locator('[data-testid=gtd-review-kicker]')).toContainText('Despejar');
   await expect(p.locator('[data-testid=gtd-review-capture]')).toBeVisible();
 

@@ -4098,39 +4098,9 @@ export default function GtdView() {
       writeLS('eliGtdNotes', m);
       setNotesOverride({});
     };
-    const out = [
-      {
-        label: 'Revisión semanal',
-        icon: 'fas fa-clipboard-check',
-        onClick: startReview,
-        testId: 'gtd-menu-review',
-      },
-      {
-        label: 'Procesar Inbox',
-        icon: 'fas fa-inbox',
-        onClick: startProcess,
-        testId: 'gtd-menu-process',
-      },
-      { sep: true },
-    ];
-    // (3.05) en un proyecto: editarlo y abrirlo en su fichero (antes, botones bajo el título)
-    if (projectTask) {
-      out.push(
-        {
-          label: 'Editar el proyecto',
-          icon: 'fas fa-pen',
-          onClick: () => setOpenKey(projectTask.key),
-          testId: 'gtd-menu-edit-project',
-        },
-        {
-          label: 'Abrir en su fichero',
-          icon: 'fas fa-external-link-alt',
-          onClick: () => openInFile(projectTask, null),
-          testId: 'gtd-menu-open-project-file',
-        },
-        { sep: true }
-      );
-    }
+    // (4.0) Sin Revisión semanal ni Procesar Inbox (están en el menú lateral), ni «Editar el
+    // proyecto» / «Abrir en su fichero» (clic en el título del proyecto y su editor)
+    const out = [];
     // (3.01) «Opciones de vista» (como Nirvana): Acciones (una sola) y Detalles (interruptores)
     const opts = [
       { heading: 'Acciones' },
@@ -4235,12 +4205,6 @@ export default function GtdView() {
       },
       { sep: true },
       {
-        label: 'Capturar con una plantilla',
-        icon: 'fas fa-plus-square',
-        hint: 't',
-        onClick: captureWithTemplate,
-      },
-      {
         label: 'Gestionar etiquetas',
         icon: 'fas fa-tags',
         hint: 'g',
@@ -4274,22 +4238,8 @@ export default function GtdView() {
         }
       );
     }
-    out.push(
-      { sep: true },
-      {
-        label: 'Atajos de teclado',
-        icon: 'far fa-keyboard',
-        hint: 'k',
-        onClick: () => setShowShortcuts(true),
-      },
-      {
-        label: 'Agenda',
-        icon: 'fas fa-calendar-alt',
-        hint: 'a',
-        onClick: () => setShowAgenda(true),
-      },
-      { label: 'Sincronizar', icon: 'fas fa-sync-alt', hint: 'r', onClick: syncAll }
-    );
+    // (4.0) Atajos de teclado (Menú de arriba), Agenda (menú lateral) y Sincronizar (la nube) ya
+    // no se repiten aquí
     return out;
   };
 
@@ -4864,7 +4814,6 @@ export default function GtdView() {
         onPointerDown(item.task)(e);
       }}
       onContextMenu={(e) => openTaskMenu(item.task, e)}
-      onMenuButton={(e) => openTaskMenu(item.task, e)}
       onDotsDown={item.isRef ? null : dotsDown(item.task)}
       onToggleDone={(e) => toggleDone(item.task, e)}
       onToggleStar={() => dispatch(gtdToggleStar(item.task))}
@@ -5284,7 +5233,7 @@ export default function GtdView() {
         {draft && renderDraftEditor()}
 
         {/* (3.05) sin «Editar el proyecto» ni «Abrir en su fichero»: se edita con clic en el título
-            (y los dos siguen en ⋯) */}
+            y desde su editor se abre en su fichero (4.0: ya no están en ⋯) */}
         {projectTask &&
           (projectTask.area ||
             projectTask.deadline ||

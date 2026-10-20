@@ -16,8 +16,7 @@
 // sangrar del editor de título y a la barra de formato «Aa» plegada.
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Map as IMap } from 'immutable';
-import { ActionCreators as undoActions } from 'redux-undo';
+import { Map as IMap, List } from 'immutable';
 
 import * as orgActions from '../../../../actions/org';
 import * as baseActions from '../../../../actions/base';
@@ -30,7 +29,8 @@ import { insertLinkInto } from '../../../../lib/eli_links';
 import { showMessage, askPick } from '../../../../lib/eli_prompt';
 import { getPriority } from '../../../../lib/eli_priority';
 import { shareContent } from '../../../../lib/share_utils';
-import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
+import { exportHeaderWithSubheaders, exportOrg } from '../../../../lib/export_org';
+import { useNotesMode } from '../../../../lib/eli_notes_mode';
 import { ORG_EMPHASIS } from '../../../../lib/eli_format';
 import { eliAssignHeaderToProject } from '../../../../lib/gtd/gtd_assign';
 import {
@@ -112,8 +112,9 @@ export default function EliDocBar({
   const todoKeywordSets = file.get('todoKeywordSets');
   const narrowedId = file.get('narrowedHeaderId');
   const logIntoDrawer = useSelector((s) => s.base.get('shouldLogIntoDrawer'));
-  const canUndo = useSelector((s) => s.org.past.length > 0);
-  const canRedo = useSelector((s) => s.org.future.length > 0);
+  const indentOnExport = useSelector((s) => s.base.get('eliIndentOnExport') === true);
+  // (4.0) Modo Notas: sin lo de tareas (estado, ★, fechas, reloj, propiedades, GTD…)
+  const notes = useNotesMode();
   const [sub, setSub] = useState(null); // submenú abierto (id)
   const [bottom, setBottom] = useState(0);
   const press = useLongPress();
@@ -329,7 +330,6 @@ export default function EliDocBar({
     setTimeout(() => insertLinkInto(activeField(), insertIntoField), 120);
   };
   // (3.04) Agenda y plantillas de captura (antes, botones redondos grandes)
-  const openAgenda = () => base('activatePopup', 'agenda');
   // (3.29) Abrir el encabezado seleccionado en la vista GTD (si es una tarea, es decir, tiene
   // estado); GTD lo selecciona y abre su editor (orden `openTask`, ver Gtd/index.js)
   const openInGtd = () => {
@@ -419,6 +419,38 @@ export default function EliDocBar({
       }),
     });
   };
+  // (4.0) Todo el fichero: compartir, PDF o copiar su texto Org (antes, ⋯ › Exportar de arriba)
+  const fileText = () =>
+    exportOrg({
+      headers,
+      linesBeforeHeadings: file.get('linesBeforeHeadings') || List(),
+      dontIndent: !indentOnExport,
+    });
+  const fileName = () => (path || '').split('/').pop();
+  const shareFile = () => shareContent({ title: fileName(), text: fileText() });
+  const copyFile = () => {
+    const name = fileName();
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(fileText()))
+      .then(
+        () => showMessage('Copiado', `El texto de «${name}» está en el portapapeles.`),
+        () => showMessage('No se ha podido copiar', 'El navegador no deja usar el portapapeles.')
+      );
+  };
+  // (4.0) «Hecha / Pendiente»: hecha (DONE) o vuelve a pendiente (el primer estado activo)
+  const pendingKeyword = () => {
+    const sets = todoKeywordSets || List();
+    const set =
+      sets.find((x) => (x.get('keywords') || List()).includes(keyword)) || sets.first() || null;
+    if (!set) return 'TODO';
+    const done = set.get('completedKeywords') || List();
+    const active = (set.get('keywords') || List()).filter((k) => !done.includes(k));
+    return active.first() || 'TODO';
+  };
+  const toggleDone = () =>
+    st.kind === 'done'
+      ? org('setTodoState', id, pendingKeyword(), logIntoDrawer)
+      : org('setTodoState', id, st.kind === 'active' ? st.doneKeyword : 'DONE', logIntoDrawer);
   const remove = () => {
     const before = headers;
     confirmRemoveHeader(before, id).then((ok) => {
@@ -428,8 +460,6 @@ export default function EliDocBar({
       org('eliOfferDeleteAttachments', before, id);
     });
   };
-  const undo = () => dispatch(undoActions.undo());
-  const redo = () => dispatch(undoActions.redo());
   const hideKeyboard = () => {
     const el = document.activeElement;
     if (el && el.blur) el.blur();
@@ -573,18 +603,7 @@ export default function EliDocBar({
             text: true,
             onClick: () => applyEmphasis(fieldNow(), it.marker),
           })),
-          ...(fieldNow()
-            ? [
-                {
-                  id: 'fmt-link',
-                  icon: 'fas fa-link',
-                  label: 'Enlace',
-                  text: true,
-                  onClick: insertLink,
-                },
-                { id: 'sep-fmt', sep: true },
-              ]
-            : []),
+          ...(fieldNow() ? [{ id: 'sep-fmt', sep: true }] : []),
           // (3.06) listas y tablas: también sin estar editando (se abren las notas)
           ...(!fieldNow() || isListField(fieldNow())
             ? [
@@ -644,76 +663,23 @@ export default function EliDocBar({
           onClick: () => withNotes((f) => sortListIn(f, mode)),
         })),
         todo: todoMenu(),
-        // (3.03) Editar: título, notas y lo demás del encabezado (todo con el estilo nuevo)
-        edit: [
+        // (4.0) Nueva: debajo o como subcabecera
+        new: [
           {
-            id: 'edit-title',
-            icon: 'fas fa-pencil-alt',
-            label: 'Editar título',
-            hint: 'Intro',
-            onClick: () => base('activatePopup', 'title-editor'),
+            id: 'new-below',
+            icon: 'fas fa-level-down-alt',
+            label: 'Debajo',
+            onClick: () => org('addHeaderAndEdit', id),
           },
           {
-            id: 'edit-notes',
-            icon: 'far fa-edit',
-            label: 'Editar notas',
-            hint: 'd',
-            onClick: editNotes,
-          },
-          {
-            id: 'props',
-            icon: 'fas fa-list',
-            label: 'Propiedades',
-            onClick: () => base('activatePopup', 'property-list-editor'),
-          },
-          {
-            id: 'note',
-            icon: 'far fa-sticky-note',
-            label: 'Añadir nota al registro',
-            onClick: () => base('activatePopup', 'note-editor'),
-          },
-          {
-            id: 'plain',
-            icon: 'fas fa-code',
-            label: 'Texto plano (este encabezado)',
-            onClick: () => {
-              org('narrowHeader', id);
-              openRawEditor(id);
-            },
+            id: 'new-sub',
+            icon: 'fas fa-indent',
+            label: 'Subcabecera',
+            onClick: () => org('eliAddSubheaderAndEdit', id),
           },
         ],
-        // (3.03) Mover: el menú se queda abierto para mover varias veces seguidas
+        // (4.0) Mover: el menú se queda abierto para mover varias veces seguidas
         move: [
-          {
-            id: 'outdent',
-            icon: 'fas fa-arrow-left',
-            label: 'Sangrar hacia fuera',
-            disabled: level <= 1,
-            keepOpen: true,
-            onClick: () => level > 1 && org('moveHeaderLeft', id),
-          },
-          {
-            id: 'indent',
-            icon: 'fas fa-arrow-right',
-            label: 'Sangrar hacia dentro',
-            keepOpen: true,
-            onClick: () => org('moveHeaderRight', id),
-          },
-          {
-            id: 'outdent-tree',
-            icon: 'fas fa-angle-double-left',
-            label: 'Sangrar fuera con subencabezados',
-            disabled: level <= 1,
-            keepOpen: true,
-            onClick: () => level > 1 && org('moveSubtreeLeft', id),
-          },
-          {
-            id: 'indent-tree',
-            icon: 'fas fa-angle-double-right',
-            label: 'Sangrar dentro con subencabezados',
-            keepOpen: true,
-            onClick: () => org('moveSubtreeRight', id),
-          },
           {
             id: 'up',
             icon: 'fas fa-arrow-up',
@@ -728,14 +694,46 @@ export default function EliDocBar({
             keepOpen: true,
             onClick: () => org('moveHeaderDown', id),
           },
+          {
+            id: 'indent-tree',
+            icon: 'fas fa-angle-double-right',
+            label: 'Hacia dentro',
+            hint: 'con subcabeceras',
+            keepOpen: true,
+            onClick: () => org('moveSubtreeRight', id),
+          },
+          {
+            id: 'outdent-tree',
+            icon: 'fas fa-angle-double-left',
+            label: 'Hacia fuera',
+            hint: 'con subcabeceras',
+            disabled: level <= 1,
+            keepOpen: true,
+            onClick: () => level > 1 && org('moveSubtreeLeft', id),
+          },
+          {
+            id: 'indent',
+            icon: 'fas fa-arrow-right',
+            label: 'Solo la cabecera hacia dentro',
+            keepOpen: true,
+            onClick: () => org('moveHeaderRight', id),
+          },
+          {
+            id: 'outdent',
+            icon: 'fas fa-arrow-left',
+            label: 'Solo la cabecera hacia fuera',
+            disabled: level <= 1,
+            keepOpen: true,
+            onClick: () => level > 1 && org('moveHeaderLeft', id),
+          },
           { id: 'sep-move', sep: true },
           {
             id: 'refile',
             icon: 'fas fa-file-export',
-            label: 'Mover a otro sitio (refile)…',
+            label: 'A otro fichero…',
             onClick: () => base('activatePopup', 'refile'),
           },
-          ...(path && !path.startsWith('/__')
+          ...(!notes && path && !path.startsWith('/__')
             ? [
                 {
                   id: 'assign',
@@ -745,31 +743,26 @@ export default function EliDocBar({
                 },
               ]
             : []),
-          {
-            id: 'archive',
-            icon: 'fas fa-archive',
-            label: 'Archivar',
-            onClick: () => org('archiveSubtree', id),
-          },
         ],
-        // (3.03) Insertar: enlace, archivo adjunto y fecha (en el texto que se edita o en las notas)
+        // (4.0) Añadir: archivo o foto, enlace y la fecha de hoy (en el texto que se edita o en
+        // las notas)
         insert: [
-          {
-            id: 'link-insert',
-            icon: 'fas fa-link',
-            label: 'Enlace…',
-            onClick: insertLink,
-            text: true,
-          },
           {
             id: 'att-add',
             icon: 'fas fa-paperclip',
-            label: 'Adjuntar archivo…',
+            label: 'Archivo o foto…',
             onClick: attach,
             text: true,
           },
           {
-            id: 'insert',
+            id: 'link-insert',
+            icon: 'fas fa-link',
+            label: 'Enlace (nota o web)…',
+            onClick: insertLink,
+            text: true,
+          },
+          {
+            id: 'date-today',
             icon: 'far fa-calendar-plus',
             label: 'Fecha de hoy',
             onClick: insertDate,
@@ -786,11 +779,8 @@ export default function EliDocBar({
               ]
             : []),
         ],
-        // (3.03) Compartir y exportar este encabezado
+        // (4.0) Compartir o PDF: esta cabecera o todo el fichero
         share: [
-          ...(path && !path.startsWith('/__')
-            ? [{ id: 'link-copy', icon: 'far fa-copy', label: 'Copiar enlace', onClick: copyLink }]
-            : []),
           { id: 'mail', icon: 'fas fa-share', label: 'Compartir / correo', onClick: share },
           {
             id: 'pdf',
@@ -798,121 +788,168 @@ export default function EliDocBar({
             label: 'PDF / imprimir',
             onClick: () => openPrintPreview(id),
           },
+          ...(path && !path.startsWith('/__')
+            ? [{ id: 'link-copy', icon: 'far fa-copy', label: 'Copiar enlace', onClick: copyLink }]
+            : []),
+          { id: 'sep-share', sep: true },
+          {
+            id: 'file-share',
+            icon: 'fas fa-share-square',
+            label: 'Todo el fichero: compartir',
+            onClick: shareFile,
+          },
+          {
+            id: 'file-pdf',
+            icon: 'far fa-file-pdf',
+            label: 'Todo el fichero: PDF',
+            onClick: () => openPrintPreview(null),
+          },
+          {
+            id: 'file-copy',
+            icon: 'far fa-clipboard',
+            label: 'Todo el fichero: copiar el texto Org',
+            onClick: copyFile,
+          },
         ],
         more: [
-          // (3.16) Agenda y Capturar ya van en la fila (al final)
           {
-            id: 'clock',
-            icon: hasClock ? 'fas fa-hourglass-end' : 'fas fa-hourglass-start',
-            label: hasClock ? 'Parar reloj' : 'Iniciar reloj',
-            onClick: clockInOut,
+            id: 'done-toggle',
+            icon: st.kind === 'done' ? 'far fa-square' : 'far fa-check-square',
+            label: st.kind === 'done' ? 'Pendiente' : 'Hecha',
+            onClick: toggleDone,
           },
-          {
-            id: 'clock-total',
-            icon: 'far fa-clock',
-            label: 'Tiempo registrado',
-            onClick: clockReport,
-          },
-          ...(st.kind === 'active'
-            ? [
-                {
-                  id: 'done',
-                  icon: 'far fa-check-square',
-                  label: 'Hecha',
-                  onClick: () => org('setTodoState', id, st.doneKeyword, logIntoDrawer),
-                },
-                {
-                  id: 'cancel',
-                  icon: 'far fa-window-close',
-                  label: 'Cancelada',
-                  onClick: () => org('setTodoState', id, st.cancelKeyword, logIntoDrawer),
-                },
-              ]
-            : []),
           narrowedId === id
             ? {
                 id: 'widen',
                 icon: 'fas fa-expand',
-                label: 'Ver todo (widen)',
+                label: 'Ver todo',
                 onClick: () => org('widenHeaderToTop'),
               }
             : {
                 id: 'narrow',
                 icon: 'fas fa-compress',
-                label: 'Reducir (narrow)',
+                label: 'Ver sola',
+                hint: 'se vuelve con Atrás',
                 onClick: () => org('narrowHeader', id),
               },
+          {
+            id: 'tags',
+            icon: 'fas fa-hashtag',
+            label: 'Etiquetas',
+            onClick: () => base('activatePopup', 'tags-editor'),
+          },
+          { id: 'share', icon: 'fas fa-share-alt', label: 'Compartir o PDF', openSub: 'share' },
           {
             id: 'dup',
             icon: 'far fa-clone',
             label: 'Duplicar',
             onClick: () => org('duplicateHeader', id),
           },
+          ...(notes
+            ? []
+            : [
+                { id: 'sep-tasks', sep: true },
+                {
+                  id: 'todo',
+                  icon: 'far fa-check-circle',
+                  label: 'Estado',
+                  hint: keyword || '',
+                  openSub: 'todo',
+                },
+                {
+                  id: 'star',
+                  icon: getPriority(header) === 'A' ? 'fas fa-star' : 'far fa-star',
+                  label: 'Prioridad A (★)',
+                  current: getPriority(header) === 'A',
+                  onClick: () => org('togglePriorityA', id),
+                },
+                { id: 'dates', icon: 'far fa-calendar-alt', label: 'Fechas', openSub: 'dates' },
+                ...(st.kind === 'active'
+                  ? [
+                      {
+                        id: 'cancel',
+                        icon: 'far fa-window-close',
+                        label: 'Cancelada',
+                        onClick: () => org('setTodoState', id, st.cancelKeyword, logIntoDrawer),
+                      },
+                    ]
+                  : []),
+                {
+                  id: 'props',
+                  icon: 'fas fa-list',
+                  label: 'Propiedades',
+                  onClick: () => base('activatePopup', 'property-list-editor'),
+                },
+                {
+                  id: 'clock',
+                  icon: hasClock ? 'fas fa-hourglass-end' : 'fas fa-hourglass-start',
+                  label: hasClock ? 'Parar reloj' : 'Iniciar reloj',
+                  onClick: clockInOut,
+                },
+                {
+                  id: 'clock-total',
+                  icon: 'far fa-clock',
+                  label: 'Tiempo registrado',
+                  onClick: clockReport,
+                },
+                {
+                  id: 'note',
+                  icon: 'far fa-sticky-note',
+                  label: 'Añadir nota al registro',
+                  onClick: () => base('activatePopup', 'note-editor'),
+                },
+                {
+                  id: 'plain',
+                  icon: 'fas fa-code',
+                  label: 'Texto plano (esta cabecera)',
+                  onClick: () => {
+                    org('narrowHeader', id);
+                    openRawEditor(id);
+                  },
+                },
+                {
+                  id: 'archive',
+                  icon: 'fas fa-archive',
+                  label: 'Archivar',
+                  onClick: () => org('archiveSubtree', id),
+                },
+                {
+                  id: 'gtd',
+                  icon: 'fas fa-bullseye',
+                  label: 'Abrir en GTD',
+                  onClick: openInGtd,
+                },
+                {
+                  id: 'capture',
+                  icon: 'fas fa-inbox',
+                  label: 'Capturar (plantillas)',
+                  onClick: openCapture,
+                },
+              ]),
           { id: 'sep-more', sep: true },
           { id: 'delete', icon: 'fas fa-trash', label: 'Borrar', onClick: remove, danger: true },
         ],
       }
     : {};
 
-  // Fila principal (orden fijo). (3.03) Menos iconos: lo que no es de cada momento va en
-  // submenús verticales (Editar, Mover, Insertar, Compartir, Más).
+  // (4.0) Fila principal: 5 botones grandes con texto (Editar · Nueva · Añadir · Mover · Más);
+  // editando en el sitio, además el formato (Aa) y ocultar el teclado
   const main = header
     ? [
-        { id: 'edit', icon: 'fas fa-pencil-alt', title: 'Editar', sub: 'edit' },
         {
-          id: 'todo',
-          label: keyword || 'TODO',
-          dim: !keyword,
-          title: 'Estado',
-          sub: 'todo',
+          id: 'edit',
+          icon: 'fas fa-pencil-alt',
+          label: 'Editar',
+          title: 'Editar el título y el texto',
+          onClick: () => base('activatePopup', 'eli-edit-sheet'),
         },
-        {
-          id: 'star',
-          icon: getPriority(header) === 'A' ? 'fas fa-star' : 'far fa-star',
-          on: getPriority(header) === 'A',
-          title: 'Prioridad A (★)',
-          onClick: () => org('togglePriorityA', id),
-        },
-        { id: 'dates', icon: 'far fa-calendar-alt', title: 'Fechas', sub: 'dates' },
-        {
-          id: 'tags',
-          icon: 'fas fa-hashtag',
-          title: 'Etiquetas',
-          onClick: () => base('activatePopup', 'tags-editor'),
-        },
-        { id: 'move', icon: 'fas fa-arrows-alt', title: 'Mover', sub: 'move' },
-        // (3.06) Formato siempre (sin editar: Lista› y Tabla, que abren las notas)
-        { id: 'format', label: 'Aa', title: 'Formato', sub: 'format' },
-        { id: 'insert', icon: 'fas fa-paperclip', title: 'Insertar', sub: 'insert' },
-        {
-          id: 'new',
-          icon: 'fas fa-plus',
-          title: 'Encabezado nuevo debajo (mantener: duplicar)',
-          onClick: () => org('addHeaderAndEdit', id),
-          onLong: () => org('duplicateHeader', id),
-        },
-        { id: 'share', icon: 'fas fa-share-alt', title: 'Compartir y exportar', sub: 'share' },
-        { id: 'more', icon: 'fas fa-ellipsis-h', title: 'Más', sub: 'more' },
-        { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
-        { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
-        // (3.29) Abrir la tarea en GTD
-        {
-          id: 'gtd',
-          icon: 'fas fa-bullseye',
-          title: 'Abrir en GTD (la tarea seleccionada)',
-          onClick: openInGtd,
-        },
-        // (3.16) Agenda y Capturar también con una cabecera seleccionada
-        { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
-        {
-          id: 'capture',
-          icon: 'fas fa-inbox',
-          badge: '+',
-          title: 'Capturar (plantillas de captura)',
-          onClick: openCapture,
-        },
+        { id: 'new', icon: 'fas fa-plus', label: 'Nueva', title: 'Cabecera nueva', sub: 'new' },
+        { id: 'insert', icon: 'fas fa-paperclip', label: 'Añadir', title: 'Añadir', sub: 'insert' },
+        { id: 'move', icon: 'fas fa-arrows-alt', label: 'Mover', title: 'Mover', sub: 'move' },
+        { id: 'more', icon: 'fas fa-ellipsis-h', label: 'Más', title: 'Más', sub: 'more' },
         ...(editing
           ? [
+              { id: 'format', label: 'Aa', title: 'Formato', sub: 'format' },
               {
                 id: 'kbd',
                 icon: 'fas fa-keyboard',
@@ -974,37 +1011,44 @@ export default function EliDocBar({
   // (3.02) Con el candado (modo lectura): solo acciones que no editan
   const lockedMain = header
     ? [
-        ...(path && !path.startsWith('/__')
-          ? [{ id: 'link-copy', icon: 'far fa-copy', title: 'Copiar enlace', onClick: copyLink }]
-          : []),
         narrowedId === id
           ? {
               id: 'widen',
               icon: 'fas fa-expand',
-              title: 'Ver todo (widen)',
+              label: 'Ver todo',
+              title: 'Ver todo',
               onClick: () => org('widenHeaderToTop'),
             }
           : {
               id: 'narrow',
               icon: 'fas fa-compress',
-              title: 'Reducir (narrow)',
+              label: 'Ver sola',
+              title: 'Ver sola (se vuelve con Atrás)',
               onClick: () => org('narrowHeader', id),
             },
         {
-          id: 'clock-total',
-          icon: 'far fa-clock',
-          title: 'Tiempo registrado',
-          onClick: clockReport,
+          id: 'share',
+          icon: 'fas fa-share-alt',
+          label: 'Compartir',
+          title: 'Compartir o PDF',
+          sub: 'share',
         },
-        { id: 'mail', icon: 'fas fa-share', title: 'Correo', onClick: share },
-        { id: 'pdf', icon: 'fas fa-file-pdf', title: 'PDF', onClick: () => openPrintPreview(id) },
-        {
-          id: 'gtd',
-          icon: 'fas fa-bullseye',
-          title: 'Abrir en GTD (la tarea seleccionada)',
-          onClick: openInGtd,
-        },
-        { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
+        ...(notes
+          ? []
+          : [
+              {
+                id: 'clock-total',
+                icon: 'far fa-clock',
+                title: 'Tiempo registrado',
+                onClick: clockReport,
+              },
+              {
+                id: 'gtd',
+                icon: 'fas fa-bullseye',
+                title: 'Abrir en GTD (la tarea seleccionada)',
+                onClick: openInGtd,
+              },
+            ]),
         {
           id: 'unlock',
           icon: 'fas fa-lock',
@@ -1148,8 +1192,6 @@ export default function EliDocBar({
           onClick: () => org('removeListItem'),
           text: true,
         },
-        { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
-        { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
         {
           id: 'li-done',
           icon: 'fas fa-check',
@@ -1163,30 +1205,29 @@ export default function EliDocBar({
         },
       ]
     : [];
-  const idleMain = [
-    { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
-    ...(locked
-      ? [
-          {
-            id: 'unlock',
-            icon: 'fas fa-lock',
-            on: true,
-            title: 'Quitar el candado (volver a editar)',
-            onClick: toggleDocLock,
-          },
-        ]
-      : [
-          {
-            id: 'capture',
-            icon: 'fas fa-inbox',
-            badge: '+',
-            title: 'Capturar (plantillas de captura)',
-            onClick: openCapture,
-          },
-          { id: 'undo', icon: 'fas fa-undo', title: 'Deshacer', onClick: undo, disabled: !canUndo },
-          { id: 'redo', icon: 'fas fa-redo', title: 'Rehacer', onClick: redo, disabled: !canRedo },
-        ]),
-  ];
+  // (4.0) Sin nada seleccionado: Capturar (en el modo completo) o quitar el candado. Agenda
+  // está en GTD y deshacer/rehacer, arriba.
+  const idleMain = locked
+    ? [
+        {
+          id: 'unlock',
+          icon: 'fas fa-lock',
+          on: true,
+          title: 'Quitar el candado (volver a editar)',
+          onClick: toggleDocLock,
+        },
+      ]
+    : notes
+    ? []
+    : [
+        {
+          id: 'capture',
+          icon: 'fas fa-inbox',
+          badge: '+',
+          title: 'Capturar (plantillas de captura)',
+          onClick: openCapture,
+        },
+      ];
   const rowItems = external
     ? external.items
     : table
@@ -1297,7 +1338,7 @@ export default function EliDocBar({
     };
   }, [sub]);
 
-  if (!visible) return null;
+  if (!visible || !rowItems.length) return null;
 
   const keep = (e) => e.preventDefault(); // no quitar el foco (ni el teclado) al editar
   const shown =
@@ -1330,6 +1371,7 @@ export default function EliDocBar({
           (b.on ? ' is-on' : '') +
           (b.dim ? ' is-dim' : '') +
           (b.label ? ' has-label' : '') +
+          (b.label && b.icon ? ' is-big' : '') +
           (b.sub && sub === b.sub ? ' is-open' : '')
         }
         title={b.title}
@@ -1455,18 +1497,4 @@ export default function EliDocBar({
 }
 
 // Para pruebas: lo que tiene que estar en la barra, en orden
-export const DOCBAR_ORDER = [
-  'edit',
-  'todo',
-  'star',
-  'dates',
-  'tags',
-  'move',
-  'format',
-  'insert',
-  'new',
-  'share',
-  'more',
-  'undo',
-  'redo',
-];
+export const DOCBAR_ORDER = ['edit', 'new', 'insert', 'move', 'more'];

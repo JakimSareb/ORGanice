@@ -29,6 +29,7 @@ import SearchModal from './components/SearchModal';
 import ExternalLink from '../UI/ExternalLink';
 import Drawer from '../UI/Drawer/';
 import UnifiedHeaderEditor, { UNIFIED_EDITOR_POPUP_TYPES } from './components/UnifiedHeaderEditor';
+import EliEditSheet from './components/EliEditSheet';
 import { EliInlineEditContext, NOT_EDITING } from './components/EliInlineEdit';
 import { subscribeDocLock, isDocLocked, setCaptureActive } from '../../lib/eli_doc_lock';
 
@@ -83,6 +84,7 @@ class OrgFile extends PureComponent {
       'handleSearchPopupClose',
       'handleRefilePopupClose',
       'handleTitlePopupClose',
+      'handleEditSheetClose',
       'saveTitle',
       'handleTodoChange',
       'handleDescriptionPopupClose',
@@ -672,6 +674,28 @@ class OrgFile extends PureComponent {
     this.props.base.closePopup();
   }
 
+  // (4.0) Hoja «Editar»: título y texto a la vez
+  handleEditSheetClose(titleValue, descriptionValue) {
+    const h = this.props.selectedHeader;
+    if (h && titleValue !== undefined && h.getIn(['titleLine', 'rawTitle']) !== titleValue) {
+      this.props.org.updateHeaderTitle(
+        h.get('id'),
+        generateTitleLine(h.setIn(['titleLine', 'rawTitle'], titleValue).toJS(), false)
+      );
+    }
+    if (h && descriptionValue !== undefined && h.get('rawDescription') !== descriptionValue) {
+      this.props.org.updateHeaderDescription(
+        h.get('id'),
+        createRawDescriptionText(
+          h.set('rawDescription', descriptionValue),
+          false,
+          this.props.dontIndent
+        )
+      );
+    }
+    this.props.base.closePopup();
+  }
+
   handleTablePopupClose() {
     this.props.base.closePopup();
     this.props.org.setSelectedDescriptionItemIndex(null);
@@ -847,6 +871,8 @@ class OrgFile extends PureComponent {
         return this.handleDescriptionPopupClose;
       case 'table-editor':
         return this.handleTablePopupClose;
+      case 'eli-edit-sheet':
+        return this.handleEditSheetClose;
       default:
         return this.handlePopupClose;
     }
@@ -868,6 +894,16 @@ class OrgFile extends PureComponent {
     const { activePopupType, activePopupData, headers, shouldDisableActions } = this.props;
 
     switch (activePopupType) {
+      case 'eli-edit-sheet':
+        return this.props.selectedHeader ? (
+          <EliEditSheet
+            key={this.props.selectedHeader.get('id')}
+            header={this.props.selectedHeader}
+            setAccessor={_setPopupCloseActionValuesAccessor}
+            onDone={this.handleActivePopupClose}
+            onCancel={() => this.props.base.closePopup()}
+          />
+        ) : null;
       case 'sync-confirmation':
         return (
           <SyncConfirmationModal
@@ -1134,7 +1170,7 @@ class OrgFile extends PureComponent {
       closeEditor: (event) => {
         if (
           UNIFIED_EDITOR_POPUP_TYPES.includes(this.props.activePopupType) ||
-          ['search', 'refile', 'task-list'].includes(this.props.activePopupType)
+          ['search', 'refile', 'task-list', 'eli-edit-sheet'].includes(this.props.activePopupType)
         ) {
           event.preventDefault();
           this.handleActivePopupClose();

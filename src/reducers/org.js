@@ -525,6 +525,28 @@ const addHeader = (state, action) => {
   );
 };
 
+// (4.0) «Nueva › Subcabecera»: una cabecera hija al final de las de esta (sin estado), con la
+// madre desplegada y la nueva seleccionada
+const eliAddSubheader = (state, action) => {
+  const headers = state.get('headers');
+  const { header, headerIndex } = indexAndHeaderWithId(headers, action.headerId);
+  if (!header) return state;
+  const subheaders = subheadersOfHeaderWithId(headers, action.headerId);
+  const newHeader = newHeaderWithTitle(
+    '',
+    header.get('nestingLevel') + 1,
+    state.get('todoKeywordSets')
+  );
+  return state
+    .update('headers', (hs) =>
+      hs
+        .setIn([headerIndex, 'opened'], true)
+        .setIn([headerIndex, 'eliHideBody'], false)
+        .insert(headerIndex + subheaders.size + 1, newHeader)
+    )
+    .set('selectedHeaderId', newHeader.get('id'));
+};
+
 const duplicateHeader = (state, action) => {
   const headers = state.get('headers');
   const { header: originalHeader, headerIndex: originalHeaderIndex } = indexAndHeaderWithId(
@@ -2410,6 +2432,8 @@ const reducer = (state, action) => {
       return inFile(addHeader);
     case 'DUPLICATE_HEADER':
       return inFile(duplicateHeader);
+    case 'ELI_ADD_SUBHEADER':
+      return inFile(eliAddSubheader);
     case 'CREATE_FIRST_HEADER':
       return inFile(createFirstHeader);
     case 'SELECT_NEXT_SIBLING_HEADER':

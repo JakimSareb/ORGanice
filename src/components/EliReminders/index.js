@@ -11,6 +11,7 @@ import {
   wasFired,
   markFired,
 } from '../../lib/eli_reminders';
+import { useNotesMode } from '../../lib/eli_notes_mode';
 
 const selectFiles = (s) => s.org.present.get('files');
 const TICK_MS = 30 * 1000;
@@ -21,6 +22,8 @@ export default function EliReminders() {
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
   const [settings, setSettings] = useState(getReminderSettings());
+  // (4.0) en el Modo Notas no hay avisos de fechas
+  const notes = useNotesMode();
 
   useEffect(() => {
     const onChange = () => setSettings(getReminderSettings());
@@ -33,7 +36,7 @@ export default function EliReminders() {
   }, []);
 
   useEffect(() => {
-    if (!settings.on) return undefined;
+    if (!settings.on || notes) return undefined;
     const tick = () => {
       if (notificationPermission() !== 'granted') return;
       const now = new Date();
@@ -57,7 +60,7 @@ export default function EliReminders() {
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [settings.on, settings.hour]);
+  }, [settings.on, settings.hour, notes]);
 
   return null;
 }

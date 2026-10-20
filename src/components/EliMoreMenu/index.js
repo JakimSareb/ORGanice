@@ -17,6 +17,8 @@ export default ({
   testId = 'eli-more',
   title = 'Más opciones',
   keepFocus = false,
+  icon = 'fas fa-ellipsis-h',
+  label = null,
 }) => {
   const [open, setOpenRaw] = useState(false);
   const [stack, setStack] = useState([]); // submenús abiertos (índices)
@@ -89,7 +91,8 @@ export default ({
           setOpen(!open);
         }}
       >
-        <i className="fas fa-ellipsis-h" />
+        <i className={icon} />
+        {label && <span className="eli-more__btn-label">{label}</span>}
       </button>
       {open && (
         <div

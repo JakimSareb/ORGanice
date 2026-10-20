@@ -30,6 +30,7 @@ import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
 import { installFormatHotkeys } from '../EliFormatBar';
 import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
+import { isNotesMode, subscribeNotesMode } from '../../lib/eli_notes_mode';
 import { captureFromLocation, peekQuickCapture } from '../../lib/eli_quick_capture';
 import {
   notWhileTyping,
@@ -64,6 +65,8 @@ class Entry extends PureComponent {
   // En la vista GTD, la misma tecla (o el conmutador) vuelve a Documentos.
   openGtd() {
     if (!this.props.isAuthenticated) return;
+    // (4.0) en el Modo Notas no hay GTD
+    if (isNotesMode()) return;
     if (this.props.location.pathname === '/gtd') {
       this.openDocs();
       return;
@@ -160,6 +163,7 @@ class Entry extends PureComponent {
     // ORG Mode para Eli: modo «todos los ficheros .org» (al abrir y al volver a la app)
     this.props.org.eliRefreshAllOrgFiles({ force: true });
     document.addEventListener('visibilitychange', this.eliOnVisible);
+    this.eliUnsubNotes = subscribeNotesMode(() => this.forceUpdate());
   }
 
   eliOnVisible = () => {
@@ -197,6 +201,7 @@ class Entry extends PureComponent {
     window.removeEventListener('eli:follow-link', this.eliFollowLink);
     window.removeEventListener('eli:open-task', this.eliOpenTask);
     document.removeEventListener('visibilitychange', this.eliOnVisible);
+    if (this.eliUnsubNotes) this.eliUnsubNotes();
     window.onbeforeunload = undefined;
   }
 
@@ -344,12 +349,13 @@ class Entry extends PureComponent {
                 <EncryptionSettings />
               </Route>
               <Route path="/gtd" exact={true}>
-                <GtdView />
+                {/* (4.0) Modo Notas: sin GTD, a Documentos */}
+                {isNotesMode() ? <Redirect to="/files" /> : <GtdView />}
               </Route>
               <Route path="/settings" exact={true}>
                 <Settings />
               </Route>
-              {peekQuickCapture() ? (
+              {peekQuickCapture() && !isNotesMode() ? (
                 <Redirect to="/gtd" />
               ) : this.eliResume() ? (
                 <Redirect to={this.eliResume()} />

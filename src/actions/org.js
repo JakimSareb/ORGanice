@@ -626,6 +626,12 @@ export const addHeaderAndEdit = (headerId) => (dispatch) => {
   dispatch(activatePopup('title-editor'));
 };
 
+// (4.0) «Nueva › Subcabecera»: hija nueva (al final de las suyas) y se edita su título
+export const eliAddSubheaderAndEdit = (headerId) => (dispatch) => {
+  dispatch({ type: 'ELI_ADD_SUBHEADER', headerId, dirtying: false });
+  dispatch(activatePopup('title-editor'));
+};
+
 export const selectNextVisibleHeader = (headerId) => ({
   type: 'SELECT_NEXT_VISIBLE_HEADER',
   headerId,
