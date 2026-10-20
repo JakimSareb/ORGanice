@@ -40,6 +40,7 @@ import { phasesForThreeMonths, moonState } from '../../lib/lunar';
 import { getCurrentTimestampAsText, getTimestampAsText } from '../../lib/timestamps';
 import { setPlanning, narrowAt } from '../../lib/eli_raw_tools';
 import { insertLinkInto } from '../../lib/eli_links';
+import { autoIndentEnter, isPlainEnter } from '../../lib/eli_autoindent';
 import { List } from 'immutable';
 
 // ORG Mode para Eli: herramientas de fichero
@@ -314,6 +315,15 @@ function RawEditor({ path, initialText, narrow: initialNarrow, onClose, dontInde
       const next = text.slice(0, s) + '  ' + text.slice(t);
       setText(next);
       requestAnimationFrame(() => el.setSelectionRange(s + 2, s + 2));
+    } else if (isPlainEnter(e)) {
+      // (3.47) la línea nueva empieza con la sangría de la anterior
+      const el = ref.current;
+      const r = el && autoIndentEnter(text, el.selectionStart, el.selectionEnd);
+      if (r) {
+        e.preventDefault();
+        setText(r.value);
+        requestAnimationFrame(() => el.setSelectionRange(r.cursor, r.cursor));
+      }
     }
   };
 

@@ -20,6 +20,7 @@ import { titleTextHasPriorityA, toggledPriorityAText } from '../../../../lib/eli
 import { isMobileBrowser } from '../../../../lib/browser_utils';
 import EliFormatBar from '../../../EliFormatBar';
 import { InlineTextarea } from '../EliInlineEdit';
+import { autoIndentEnter, isPlainEnter } from '../../../../lib/eli_autoindent';
 
 // Header-editing popup types that use the unified editor
 export const UNIFIED_EDITOR_POPUP_TYPES = [
@@ -288,6 +289,18 @@ class UnifiedHeaderEditor extends PureComponent {
         });
       }
       return;
+    }
+
+    // (3.47) Línea con sangría: la nueva empieza con la misma sangría (como Emacs)
+    if (isPlainEnter(event)) {
+      const r = autoIndentEnter(descriptionValue, selectionStart, selectionEnd);
+      if (r) {
+        event.preventDefault();
+        this.setState({ descriptionValue: r.value }, () => {
+          textarea.selectionStart = r.cursor;
+          textarea.selectionEnd = r.cursor;
+        });
+      }
     }
   }
 

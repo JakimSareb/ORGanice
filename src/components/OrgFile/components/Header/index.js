@@ -25,6 +25,7 @@ import { Map } from 'immutable';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders } from '../../../../lib/export_org';
 import { isDocLocked } from '../../../../lib/eli_doc_lock';
+import { getTapMode, isTouchEvent } from '../../../../lib/eli_tap_mode';
 
 // ORG Mode para Eli: dentro de un cuadro de texto no se desliza ni se arrastra el encabezado
 const eliIsEditableTarget = (el) =>
@@ -323,8 +324,11 @@ class Header extends PureComponent {
       const { header, hasContent, closeSubheadersRecursively } = this.props;
 
       // (3.05) el primer toque solo selecciona; en el ya seleccionado, plegar/desplegar
+      // (3.47) salvo con «Plegar / desplegar» en Ajustes: entonces basta un toque también en la
+      // viñeta o el margen (antes solo valía el título)
       const { isSelected } = this.props;
-      if (hasContent && isSelected) {
+      const tapMode = getTapMode(isTouchEvent(event) ? 'header-mobile' : 'header-desktop');
+      if (hasContent && (isSelected || tapMode === 'open')) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       }
       this.props.org.selectHeader(header.get('id'));

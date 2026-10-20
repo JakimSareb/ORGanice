@@ -53,6 +53,11 @@ class HeaderList extends PureComponent {
   }
 
   componentDidUpdate(prevProps) {
+    // (3.47) Narrow → Wide: la cabecera que estaba reducida queda la primera arriba de la
+    // pantalla (justo bajo la barra de arriba), para no perderse en el fichero entero
+    if (prevProps.narrowedHeaderId && !this.props.narrowedHeaderId) {
+      this.eliScrollHeaderToTop(prevProps.narrowedHeaderId);
+    }
     if (prevProps.selectedHeaderId !== this.props.selectedHeaderId) {
       const selectedHeaderDiv = this.headerRefs[this.props.selectedHeaderId];
       if (!!selectedHeaderDiv) {
@@ -64,6 +69,28 @@ class HeaderList extends PureComponent {
         }
       }
     }
+  }
+
+  eliScrollHeaderToTop(headerId) {
+    let tries = 0;
+    // si entretanto se selecciona otra (saltar desde la agenda o GTD), manda esa
+    const sel = this.props.selectedHeaderId;
+    const place = () => {
+      tries++;
+      if (this.props.selectedHeaderId !== sel) return;
+      const el = this.headerRefs[headerId];
+      if (!el || !el.isConnected || !el.scrollIntoView) {
+        if (tries < 10) setTimeout(place, 60);
+        return;
+      }
+      const bar = document.querySelector('.header-bar');
+      const barBottom = bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
+      el.style.scrollMarginTop = `${Math.round(barBottom) + 8}px`;
+      el.scrollIntoView({ block: 'start' });
+      // organice puede desplazar después al seleccionado (o terminar de pintar): se repite
+      if (tries < 3) setTimeout(place, 120);
+    };
+    requestAnimationFrame(place);
   }
 
   componentWillUnmount() {
