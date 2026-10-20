@@ -3947,7 +3947,7 @@ html[data-eli-theme] .gtd-editor .gtd-editor__notes {
   line-height: 1;
   cursor: pointer;
 }
-.gtd-chip--inherit:not(.is-on) {
+.gtd-chip--inherit:not(.is-on):not(.is-not) {
   opacity: 0.6;
 }
 

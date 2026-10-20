@@ -158,7 +158,7 @@ import { Map as IMap } from 'immutable';
 import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import { headerWithPath, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
-import { primeKeyboard } from '../../lib/eli_keyboard_bridge';
+import { primeKeyboard, focusField } from '../../lib/eli_keyboard_bridge';
 import { peekQuickCapture, takeQuickCapture } from '../../lib/eli_quick_capture';
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
@@ -888,11 +888,22 @@ export default function GtdView() {
   const [filtersRaw, setFilters] = useState({ ...EMPTY_FILTERS });
   // 3.36: «Heredadas» en la barra de filtros: con ella (por defecto) una etiqueta del proyecto o
   // de la tarea madre también cuenta; sin ella, solo las asignadas directamente (se recuerda)
-  const [tagInherit, setTagInherit] = useState(() => readLS(LS_TAG_INHERIT, true) !== false);
-  const filters = useMemo(() => ({ ...filtersRaw, ownTagsOnly: !tagInherit }), [
-    filtersRaw,
-    tagInherit,
-  ]);
+  // 3.39: tres estados como el resto de chips: 'all' (cuentan, por defecto) / 'own' (solo propias)
+  // / 'exclude' (fuera las tareas con alguna heredada). Los true/false antiguos se respetan.
+  const [tagInherit, setTagInherit] = useState(() => {
+    const v = readLS(LS_TAG_INHERIT, 'all');
+    if (v === false || v === 'own') return 'own';
+    if (v === 'exclude') return 'exclude';
+    return 'all';
+  });
+  const filters = useMemo(
+    () => ({
+      ...filtersRaw,
+      ownTagsOnly: tagInherit !== 'all',
+      noInherited: tagInherit === 'exclude',
+    }),
+    [filtersRaw, tagInherit]
+  );
   const activeFilterCount =
     filters.tags.length +
     filters.notTags.length +
@@ -1011,6 +1022,9 @@ export default function GtdView() {
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
   const keepSideRef = useRef(false);
+  // 3.39: menú lateral abierto por ← → (POP); el velo no lo cierra en los 450 ms siguientes
+  const sidePopRef = useRef(0);
+  const [sidePopTick, setSidePopTick] = useState(0);
   const [showAgenda, setShowAgenda] = useState(false);
   // (3.24) Revisión semanal guiada: paso en curso (null = cerrada; se recuerda)
   const [reviewStep, setReviewStep] = useState(() => {
@@ -1133,7 +1147,7 @@ export default function GtdView() {
     text,
     today,
   ]);
-  const facets = useMemo(() => facetsFor(baseList, { ownOnly: !tagInherit }), [
+  const facets = useMemo(() => facetsFor(baseList, { ownOnly: tagInherit !== 'all' }), [
     baseList,
     tagInherit,
   ]);
@@ -1740,16 +1754,26 @@ export default function GtdView() {
       const v = location.state && location.state.eliGtdView;
       if (v && JSON.stringify(v) !== JSON.stringify(viewRef.current)) {
         applyView(v);
-        // 3.35 (b): en el móvil en vertical, al cambiar de sección con ← → se muestra el menú
-        // lateral (se ve dónde se está); tocar la lista (el velo) lo vuelve a ocultar
-        if (
-          window.matchMedia &&
-          window.matchMedia('(max-width: 720px) and (orientation: portrait)').matches
-        )
-          setSideOpen(true);
+        // 3.35 (b): en el móvil, al cambiar de sección con ← → se muestra el menú lateral (se ve
+        // dónde se está); tocar la lista (el velo) lo vuelve a ocultar.
+        // 3.39: en el iPhone en vertical no salía. Ahora: misma condición que el CSS del menú
+        // desplegable (≤720 px, sin mirar la orientación) y se abre DESPUÉS de pintar la vista
+        // nueva (efecto con `sidePopRef`), no en el mismo paso que `applyView` lo cierra.
+        if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
+          sidePopRef.current = Date.now();
+          setSidePopTick((n) => n + 1);
+        }
       }
     });
   }, [history, applyView]);
+  useEffect(() => {
+    if (!sidePopTick) return;
+    setSideOpen(true);
+    const id = window.requestAnimationFrame
+      ? window.requestAnimationFrame(() => setSideOpen(true))
+      : null;
+    return () => id && window.cancelAnimationFrame && window.cancelAnimationFrame(id);
+  }, [sidePopTick]);
   const selectArea = (a) => {
     setArea(a);
     writeLS(LS_AREA, a);
@@ -4753,7 +4777,13 @@ export default function GtdView() {
         )}
       </aside>
 
-      <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
+      <div
+        className="gtd-scrim"
+        onClick={() => {
+          if (Date.now() - sidePopRef.current < 450) return; // 3.39: toque «fantasma» de la flecha
+          setSideOpen(false);
+        }}
+      />
 
       <main
         className={
@@ -4818,10 +4848,17 @@ export default function GtdView() {
                   setSecFilterOpen(false);
                   return;
                 }
+                // 3.39: si el campo ya está, se enfoca en el mismo toque; si no, el puente de
+                // teclado (iOS solo saca el teclado si el foco se pone dentro del toque)
+                const now = document.querySelector('[data-testid="gtd-sec-filter"]');
+                if (now) {
+                  focusField(now);
+                  return;
+                }
+                primeKeyboard();
                 setSecFilterOpen(true);
                 setTimeout(() => {
-                  const el = document.querySelector('[data-testid="gtd-sec-filter"]');
-                  if (el) el.focus();
+                  focusField(document.querySelector('[data-testid="gtd-sec-filter"]'));
                 }, 30);
               }}
               title="Filtrar esta sección"
@@ -5152,21 +5189,32 @@ export default function GtdView() {
             {/* 3.36 (b): contar o no las etiquetas heredadas (del proyecto o de la madre) */}
             {facets.tags.length > 0 && facets.hasInherited && (
               <button
-                className={'gtd-chip gtd-chip--inherit' + (tagInherit ? ' is-on' : '')}
+                className={
+                  'gtd-chip gtd-chip--inherit' +
+                  (tagInherit === 'all' ? ' is-on' : tagInherit === 'exclude' ? ' is-not' : '')
+                }
                 onClick={() => {
-                  const v = !tagInherit;
+                  const v = tagInherit === 'all' ? 'own' : tagInherit === 'own' ? 'exclude' : 'all';
                   setTagInherit(v);
                   writeLS(LS_TAG_INHERIT, v);
                 }}
-                aria-pressed={tagInherit}
+                aria-pressed={tagInherit === 'all'}
                 title={
-                  tagInherit
+                  tagInherit === 'all'
                     ? 'Las etiquetas heredadas (del proyecto o de la tarea madre) cuentan · clic: solo las asignadas directamente'
-                    : 'Solo cuentan las etiquetas asignadas directamente · clic: incluir las heredadas'
+                    : tagInherit === 'own'
+                    ? 'Solo cuentan las etiquetas asignadas directamente · clic: ocultar las tareas con etiquetas heredadas'
+                    : 'Ocultas las tareas con alguna etiqueta heredada · clic: volver a contarlas'
                 }
+                data-state={tagInherit}
                 data-testid="gtd-chip-inherit"
               >
-                <i className="fas fa-level-down-alt" /> Heredadas
+                <i className="fas fa-level-down-alt" />{' '}
+                {tagInherit === 'all'
+                  ? 'Heredadas'
+                  : tagInherit === 'own'
+                  ? 'Solo propias'
+                  : 'Sin heredadas'}
               </button>
             )}
             {facets.energy.map((en) => (

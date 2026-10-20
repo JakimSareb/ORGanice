@@ -34,6 +34,11 @@ describe('3.36: etiquetas heredadas en los filtros', () => {
     expect(facetsFor(next, { ownOnly: true }).hasInherited).toBe(true);
   });
 
+  test('3.39 noInherited: fuera las que tienen alguna heredada', () => {
+    const f = { noInherited: true, ownTagsOnly: true };
+    expect(titles(next.filter((t) => matchesFilters(t, f)))).toEqual(['Lijar', 'Llamar', 'Otra']);
+  });
+
   test('sin heredadas en la lista, no hace falta el botón', () => {
     const loose = tasksFrom('* NEXT Llamar :@casa:\n* NEXT Otra\n');
     expect(facetsFor(tasksForView(loose, { id: 'next' }, {}, TODAY)).hasInherited).toBe(false);

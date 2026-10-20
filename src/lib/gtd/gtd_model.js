@@ -515,6 +515,11 @@ export const matchesFilters = (task, filters) => {
   // 3.36: `ownTagsOnly` = solo las etiquetas asignadas directamente (sin las heredadas)
   const pool = filters && filters.ownTagsOnly ? task.ownTags || [] : task.tags;
   const has = (t) => (t === NO_TAGS ? isUntagged(task) : pool.includes(t));
+  // 3.39: `noInherited` = fuera las tareas que tengan alguna etiqueta heredada
+  if (filters && filters.noInherited) {
+    const own = task.ownTags || [];
+    if ((task.tags || []).some((t) => !own.includes(t))) return false;
+  }
   if (tags.length && !tags.every(has)) return false;
   // (3.01) etiquetas tachadas en la barra de filtros: fuera las que las llevan
   const notTags = (filters && filters.notTags) || [];
