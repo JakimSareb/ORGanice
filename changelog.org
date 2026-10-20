@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.42 (octubre de 2026)
+** GTD
+- *Procesar Inbox*: botón *Editar* en la tarjeta. Abre el editor normal de la tarea para aclarar qué es exactamente (título), añadir notas o ponerle proyecto. Al guardar, se vuelve a la misma pregunta con la misma tarea (aunque al ponerle proyecto haya salido del Inbox).
+
 * 3.41 (octubre de 2026)
 ** GTD
 - *Revisión semanal* con los pasos de la checklist oficial de GTD (Weekly Review® de David Allen), en tres fases: *Despejar* (vaciar la cabeza y el Inbox: botones «Procesar Inbox» y «Apuntar algo»), *Al día* (Revisar Next, Elegir para la semana, Calendario atrasado y próximo con «Abrir la agenda», Waiting, proyectos sin acción siguiente, dormidos) y *Crear* (Someday e ideas nuevas, con «Apuntar una idea»).
