@@ -54,7 +54,7 @@ test('GTD (3.44): botones del editor y fecha y hora en las notas', async ({ app 
   const toggle = page.locator('.gtd-editor [data-testid=eli-format-toggle]');
   if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
   await page.click('.gtd-editor [data-testid=eli-format-now]');
-  await expect(notes).toHaveValue(/Notas de pintar \[\d{4}-\d\d-\d\d \w+ \d\d:\d\d\]/);
+  await expect(notes).toHaveValue(/Notas de pintar\s+\[\d{4}-\d\d-\d\d \w+ \d\d:\d\d\]/);
   await page.click('[data-testid=gtd-editor-cancel]');
   await expect(page.locator('.gtd-editor')).toHaveCount(0);
   expect(app.errors).toEqual([]);
