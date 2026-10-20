@@ -2570,15 +2570,6 @@
   }
 }
 /* (3.05) Proyecto secuencial: en espera (E) / programada (P) entre las Next */
-.gtd-task__seq {
-  display: inline-block;
-  margin-right: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--base0);
-  opacity: 0.8;
-  vertical-align: 1px;
-}
 /* (3.05) Vencidas: cuánto llevan */
 .gtd-date__ago {
   font-weight: normal;
@@ -4239,4 +4230,19 @@ input.gtd-proc__input:not([type]) {
 .gtd-overview__notes {
   padding: 4px 6px 10px 28px;
   border-bottom: 1px solid var(--base2);
+}
+
+/* (4.02) proyecto secuencial: W (Waiting) / S (programada) en gris clarito dentro de la casilla */
+.gtd-check__seq {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--base1);
+  pointer-events: none;
+}
+/* (4.02) móvil: la estrella a la derecha del todo de la fila */
+@media (max-width: 720px), (hover: none) and (pointer: coarse) {
+  .gtd-task__row > .gtd-star {
+    order: 1;
+  }
 }

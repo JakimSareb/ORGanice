@@ -172,10 +172,13 @@ test('4.0: Ajustes: Modo Notas arriba y «Más temas»', async ({ app }) => {
   expect(app.errors).toEqual([]);
 });
 
-test('4.0: GTD sin el ▾ de la fila ni repetidos en el ⋯', async ({ app }) => {
+test('4.0: GTD sin el ▾ de la fila en el móvil ni repetidos en el ⋯', async ({ app }) => {
   await app.open({ '/tasks.org': '* NEXT Algo\n', '/inbox.org': '' });
   await gtd.ready(app);
-  await expect(app.page.locator('[data-testid=gtd-task-menu]')).toHaveCount(0);
+  // (4.02) el ▾ vuelve en el ordenador; en el móvil sigue sin él
+  await gtd.openList(app, 'Next');
+  if (app.mobile) await app.page.waitForTimeout(300);
+  await expect(app.page.locator('[data-testid=gtd-task-menu]')).toHaveCount(app.mobile ? 0 : 1);
   await app.press(app.page.locator('[data-testid=gtd-view-menu-button]'));
   await expect(app.page.locator('[data-testid=gtd-view-options]')).toBeVisible();
   for (const id of ['gtd-menu-review', 'gtd-menu-process'])
