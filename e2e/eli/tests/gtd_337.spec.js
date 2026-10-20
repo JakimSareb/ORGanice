@@ -35,9 +35,8 @@ test('GTD (3.37): retoques del editor', async ({ app }) => {
   const c = await page.locator('[data-testid=gtd-editor-cancel]').boundingBox();
   const s = await page.locator('[data-testid=gtd-editor-save]').boundingBox();
   expect(Math.abs(c.y - s.y)).toBeLessThan(4);
-  // móvil: rótulo «Vista previa»
-  if (app.mobile)
-    await expect(page.locator('[data-testid=gtd-editor-preview-label]')).toBeVisible();
+  // (3.46) sin rótulo «Vista previa» sobre las notas (va sobre tablas y casillas: gtd_346)
+  await expect(page.locator('[data-testid=gtd-editor-preview-label]')).toHaveCount(0);
   await page.click('[data-testid=gtd-editor-cancel]');
   await expect(page.locator('.gtd-editor')).toHaveCount(0);
 

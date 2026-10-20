@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.46 (octubre de 2026)
+** GTD
+- *Subtareas*: nuevo interruptor en el ⋯ de arriba, *apagado por defecto*. Apagado, no se ve nada de subtareas (ni sangría, ni ▾, ni indicador, ni «Subtarea de», ni ＋ Subtarea) y las subtareas salen como tareas normales. Los ficheros no cambian; al encenderlo vuelve todo como antes.
+- Al *arrastrar* una tarea con el menú lateral abierto (iPhone), el menú vuelve a *desplazarse solo* al acercarla arriba o abajo: la franja se mide en la parte que se ve en la pantalla y es más ancha con el dedo.
+- Editor: el rótulo *Vista previa* ya no va encima de las notas, sino sobre lo que se ve ya presentado debajo de ellas (casillas y tablas).
+
 * 3.45 (octubre de 2026)
 ** GTD
 - Al *arrastrar* una tarea sobre el menú lateral, el menú se *desplaza solo* al acercarla a su parte de arriba o de abajo, para llegar a las listas y proyectos que no se ven.

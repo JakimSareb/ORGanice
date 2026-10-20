@@ -3973,6 +3973,10 @@ html[data-eli-theme] .gtd-editor .gtd-editor__notes {
   order: 3;
   margin: 6px 0 3px 40px;
 }
+/* (3.46) el rótulo va sobre las tablas y casillas presentadas, bajo las notas */
+.gtd-editor--sheet .gtd-ed__preview-label--below {
+  order: 4;
+}
 .gtd-editor .gtd-editor__notes.is-preview:not(.is-behind-preview),
 .gtd-editor .gtd-editor__notes-preview {
   background: color-mix(in srgb, var(--blue, #268bd2) 5%, var(--base3)) !important;
