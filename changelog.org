@@ -3,11 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.39a (octubre de 2026)
+** GTD
+- *Teclado externo en el móvil* (iPhone en vertical): ← del teclado abre el menú lateral con el foco en la sección actual; ↑ ↓ cambian de sección y → vuelve a la lista.
+- *Flechas de arriba*: vuelven a ser solo el historial (atrás/adelante entre secciones); ya no abren el menú lateral.
+
 * 3.39 (octubre de 2026)
 ** GTD
 - *Filtrar la sección* (lupa de la cabecera): al tocarla, el cursor queda ya en el campo y, en el iPhone, sale el teclado a la primera.
 - *Heredadas* con tres estados, como el resto de chips de etiquetas: «Heredadas» (cuentan, por defecto) → «Solo propias» (solo las asignadas directamente) → «Sin heredadas» (se ocultan las tareas que tengan alguna etiqueta heredada del proyecto o de la tarea madre). Se recuerda.
-- *Menú lateral con ← →* (móvil en vertical): al cambiar de sección con las flechas vuelve a mostrarse el menú lateral.
 
 * 3.38 (octubre de 2026)
 ** GTD

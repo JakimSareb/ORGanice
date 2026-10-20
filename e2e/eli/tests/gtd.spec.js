@@ -269,10 +269,7 @@ test('GTD (3.35): flechas solo entre secciones; menú lateral con ↑ ↓, borde
   await page.waitForTimeout(500);
   expect(await on()).toBe('Next');
   if (isMobile) {
-    // (b) en vertical, cambiar de sección con ← → muestra el menú; tocar la lista lo oculta
-    expect(await sideOpen()).toBe(true);
-    await page.mouse.click(370, 400);
-    await page.waitForTimeout(400);
+    // (3.39a) las flechas de arriba solo son historial: no abren el menú lateral
     expect(await sideOpen()).toBe(false);
   }
 
