@@ -24,6 +24,13 @@ const sideRight = () => {
   return Math.max(r && r.right > 0 ? r.right : 0, 200);
 };
 const SPEED = 14;
+// (3.45) con la tarea encima del menú lateral, el menú se desplaza solo al acercarse a sus extremos
+const sideScrollerAt = (x) => {
+  const el = document.querySelector('.gtd-side');
+  if (!el || el.scrollHeight <= el.clientHeight + 1) return null;
+  const r = el.getBoundingClientRect();
+  return r.right > 0 && x >= r.left && x <= r.right ? el : null;
+};
 
 const dropIdAt = (x, y) => {
   const el = document.elementFromPoint(x, y);
@@ -194,15 +201,17 @@ export default function useRowDrag({
     };
     const autoScroll = (e) => {
       const d = drag.current;
-      if (!d || !d.scroller) return;
-      const sp = d.scroller;
+      if (!d) return;
+      const sp = sideScrollerAt(e.clientX) || d.scroller;
+      if (!sp) return;
       const r =
         sp === document.scrollingElement || sp === document.documentElement
           ? { top: 0, bottom: window.innerHeight }
           : sp.getBoundingClientRect();
       const dir = e.clientY < r.top + EDGE ? -1 : e.clientY > r.bottom - EDGE ? 1 : 0;
-      if (dir !== d.scrollDir) {
+      if (dir !== d.scrollDir || sp !== d.scrollEl) {
         d.scrollDir = dir;
+        d.scrollEl = sp;
         stopAutoScroll(d);
         if (dir) {
           d.scrollTimer = setInterval(() => {

@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.45 (octubre de 2026)
+** GTD
+- Al *arrastrar* una tarea sobre el menú lateral, el menú se *desplaza solo* al acercarla a su parte de arriba o de abajo, para llegar a las listas y proyectos que no se ven.
+- En *Focus* (o una etiqueta) *agrupado por estado*, arrastrar una tarea a otro grupo (Next, Todo, Waiting, Someday…) le *cambia el estado*, como ya pasaba dentro de los proyectos (a Programadas te pide la fecha).
+
 * 3.44 (octubre de 2026)
 ** GTD
 - *Limpieza*: las tareas hechas de un proyecto que sigue abierto se quedan con él (como al Archivar); cuando el proyecto se termina, la Limpieza se las lleva todas juntas. Se avisa de cuántas se quedan.

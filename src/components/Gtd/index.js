@@ -1484,8 +1484,14 @@ export default function GtdView() {
           count: groups[id].length,
           testId: 'gtd-group-status',
         });
+        // (3.45) se pueden arrastrar a otro grupo de estado (cambia el estado; no el orden)
         groups[id].forEach((t) =>
-          out.push({ kind: 'task', task: t, section: `st:${id}`, reorderable: false })
+          out.push({
+            kind: 'task',
+            task: t,
+            section: `st:${id}`,
+            reorderable: !t.isProject && !t.isDone && !t.isHabit,
+          })
         );
       });
       return out;
@@ -2590,6 +2596,30 @@ export default function GtdView() {
   // ORG Mode para Eli (2.15): soltar una tarea reordenada. En un proyecto, si se suelta en otra
   // sección, cambia de estado; y en todo caso se coloca junto a la tarea de al lado en el fichero.
   onReorderDropRef.current = async (task, pos) => {
+    // (3.45) Focus / etiqueta agrupados por estado: soltar en otro grupo = cambiar de estado
+    if (groupedByStatus) {
+      const target = pos.section && pos.section.startsWith('st:') ? pos.section.slice(3) : null;
+      const it = items.find((i) => i.kind === 'task' && i.task.key === task.key);
+      const own = it && it.section ? it.section.slice(3) : null;
+      if (!target || target === own || target === 'project') return;
+      const changes = {};
+      if (target === 'scheduled') {
+        const day1 = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        const date = await askDate({
+          title: 'Programar (Scheduled)',
+          message: `«${task.title}»: ¿desde qué día?`,
+          value: task.scheduled && task.scheduled > today ? task.scheduled : day1,
+        });
+        if (!date) return;
+        changes.scheduled = date;
+      } else {
+        changes.list = target;
+        changes.tags = tagsForList(task, target);
+        if (own === 'scheduled') changes.scheduled = null;
+      }
+      dispatch(gtdSaveTask(task, changes));
+      return;
+    }
     const rows = items.filter((i) => i.kind === 'task' && i.task.key !== task.key);
     const rowTasks = rows.map((i) => i.task);
     const keyIndex = (k) => rowTasks.findIndex((t) => t.key === k);
