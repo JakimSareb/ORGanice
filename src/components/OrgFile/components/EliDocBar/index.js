@@ -1331,6 +1331,11 @@ export default function EliDocBar({
     };
     const onKey = (e) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
+        // (4.03) con un aviso abierto (eli-prompt), Esc es para él: el menú solo se cierra
+        if (document.querySelector('.eli-prompt__overlay')) {
+          setSub(null);
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         setSub(null);
