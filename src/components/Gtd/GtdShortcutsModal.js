@@ -154,7 +154,7 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>Esc</kbd>
-                    <span>cancelar / salir</span>
+                    <span>guardar y salir (Cancelar descarta)</span>
                   </div>
                   <div className="gtd-keys__row">
                     <kbd>⌘C Ctrl C</kbd>

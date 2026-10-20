@@ -1905,6 +1905,29 @@ export default function GtdView() {
     setNewProject(null);
     setDraft(d);
   };
+  // (3.38) «＋ Subtarea» del editor: la tarea abierta ya se ha guardado; se abre el editor de una
+  // tarea nueva hija suya (en un proyecto: una acción suya), con el cursor en el título
+  const addSubtask = (task) => {
+    if (!task || !files.getIn([task.path, 'headers'])) return;
+    const open = task.keyword && !task.isDone && !task.isProject ? task.keyword : undefined;
+    primeKeyboard();
+    setOpenKey(null);
+    setNewProject(null);
+    setDraft({
+      rev: Date.now(),
+      subtaskOf: task.title,
+      list: task.isProject ? 'next' : 'later',
+      keyword: open,
+      priority: null,
+      scheduled: null,
+      deadline: null,
+      tags: [],
+      area: '',
+      notes: '',
+      target: { path: task.path, parentId: task.id },
+      projectKey: task.isProject ? task.key : '',
+    });
+  };
   // Plantilla de captura (tecla c o botón): el editor de tarea nueva con lo que trae la plantilla
   const captureWithTemplate = async () => {
     const list = templates.toArray();
@@ -2207,6 +2230,11 @@ export default function GtdView() {
       {draft.template && (
         <div className="gtd-new-task__template">
           <i className="fas fa-plus" /> Plantilla: {draft.template}
+        </div>
+      )}
+      {draft.subtaskOf && (
+        <div className="gtd-new-task__template" data-testid="gtd-new-subtask-of">
+          <i className="fas fa-level-up-alt fa-rotate-90" /> Subtarea de «{draft.subtaskOf}»
         </div>
       )}
       <TaskEditor
@@ -4047,6 +4075,7 @@ export default function GtdView() {
         dispatch(gtdArchiveTask(task));
       }}
       onCloseProject={task.isProject ? () => closeProject(task) : undefined}
+      onAddSubtask={task.isTrashed || task.isDone ? undefined : () => addSubtask(task)}
       onAttachFiles={(list, target) =>
         openUploadDialog({ files: list, source: 'attach', path: task.path, target })
       }

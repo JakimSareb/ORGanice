@@ -203,6 +203,14 @@ export default function ScheduleField({
   const [dialog, setDialog] = useState(false);
   const ref = useRef(null);
   const date = fromInput(value);
+  // (3.38) iOS pone HOY en el campo en cuanto se abre su selector (sin elegir nada): ese primer
+  // cambio solo se muestra (hoy como referencia) y no se aplica; se aplica lo que se elija después.
+  // Si se cierra el selector sin elegir, no se pone fecha (para hoy está el botón «Hoy»)
+  const armed = useRef(0);
+  const [shown, setShown] = useState(null);
+  const arm = () => {
+    if (!value) armed.current = Date.now();
+  };
 
   useEffect(() => {
     if (!open) return undefined;
@@ -248,11 +256,25 @@ export default function ScheduleField({
           <div className="gtd-sched__head">Fecha de inicio</div>
           <input
             type="date"
-            value={value}
+            value={shown !== null ? shown : value}
+            onPointerDown={arm}
+            onFocus={arm}
+            onBlur={() => {
+              armed.current = 0;
+              setShown(null);
+            }}
             onChange={(e) => {
+              const raw = e.target.value;
+              const since = armed.current ? Date.now() - armed.current : Infinity;
+              armed.current = 0;
+              if (!value && shown === null && raw === toInput(t0) && since < 800) {
+                setShown(raw);
+                return;
+              }
+              setShown(null);
               // (3.34) el «Restablecer» del selector de iOS deja el campo vacío: aquí pone hoy
               // (para quitar la fecha está «Quitar la fecha»)
-              const v = e.target.value || toInput(t0);
+              const v = raw || toInput(t0);
               onChange(v, repeat);
               setOpen(false);
             }}

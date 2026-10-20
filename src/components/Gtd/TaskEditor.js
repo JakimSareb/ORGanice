@@ -164,6 +164,7 @@ export default function TaskEditor({
   preview = false,
   onMove = null, // (3.06) hoja del móvil: «→ Mover» (abre el menú Mover a)
   onSaveProperties = null, // (3.11) ver y editar PROPERTIES
+  onAddSubtask = null, // (3.38) «＋ Subtarea»: guarda esta y abre el editor de una hija nueva
 }) {
   const [propsOpen, setPropsOpen] = useState(false);
   const [editingText, setEditingText] = useState(!preview);
@@ -180,8 +181,19 @@ export default function TaskEditor({
   // (3.33) el cursor va siempre donde se ha tocado (antes, tras desplazar la hoja, iOS lo dejaba
   // en el 1.er carácter): se calcula el carácter bajo el dedo y se pone a mano
   const pendingCaret = useRef(null);
+  // (3.38) un arrastre (p. ej. deslizar la hoja hacia abajo para cerrarla) no empieza a editar:
+  // si no, el pointerup del final enfocaba el título o las notas y salía el teclado
+  const sheetDragRef = useRef(false);
+  const downAt = useRef(null);
+  const markDown = (e) => {
+    downAt.current = { x: e.clientX, y: e.clientY };
+  };
   const startEditing = (e) => {
     if (editingText) return;
+    const d = downAt.current;
+    downAt.current = null;
+    if (sheetDragRef.current) return;
+    if (d && e.clientX !== undefined && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10) return;
     const el = e.currentTarget;
     const pos = el.tagName === 'TEXTAREA' ? textareaOffsetAt(el, e.clientX, e.clientY) : null;
     el.readOnly = false;
@@ -525,6 +537,7 @@ export default function TaskEditor({
     let dy = 0;
     let dragging = false;
     const reset = () => {
+      if (sheetDragRef.current) setTimeout(() => (sheetDragRef.current = false), 400);
       el.style.transition = 'transform 0.2s ease';
       el.style.transform = '';
       start = null;
@@ -559,6 +572,7 @@ export default function TaskEditor({
           return;
         }
         dragging = true;
+        sheetDragRef.current = true;
       }
       dy = Math.max(0, my);
       if (e.cancelable) e.preventDefault();
@@ -566,6 +580,7 @@ export default function TaskEditor({
       el.style.transform = `translateY(${dy}px)`;
     };
     const onEnd = () => {
+      if (sheetDragRef.current) setTimeout(() => (sheetDragRef.current = false), 400);
       if (!start) return;
       const close = dragging && dy > Math.min(140, window.innerHeight * 0.18);
       if (close) {
@@ -587,8 +602,8 @@ export default function TaskEditor({
     };
   }, [sheet]);
 
-  // (3.0) Como Nirvana: Intro (en el título) o Mayús+Intro (en cualquier campo) guardan; Esc
-  // cancela (descarta lo cambiado; una tarea nueva no se crea)
+  // (3.0) Como Nirvana: Intro (en el título) o Mayús+Intro (en cualquier campo) guardan.
+  // (3.38) Esc también guarda y cierra; solo el botón Cancelar descarta
   const cancelEditor = () => {
     cancelledRef.current = true;
     if (onCancelNew) onCancelNew();
@@ -635,7 +650,7 @@ export default function TaskEditor({
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      cancelEditor();
+      closeEditor();
     } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey || e.shiftKey)) {
       if (e.nativeEvent && e.nativeEvent.isComposing) return;
       // (3.09) en el móvil, el teclado pone Mayúsculas tras un salto de línea y el 2.º Intro
@@ -805,6 +820,7 @@ export default function TaskEditor({
             ref={titleRef}
             className={'gtd-editor__title' + (editingText ? '' : ' is-preview')}
             readOnly={!editingText}
+            onPointerDown={markDown}
             onPointerUp={startEditing}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -1091,6 +1107,7 @@ export default function TaskEditor({
             (notesPreviewLinks ? ' is-behind-preview' : '')
           }
           readOnly={!editingText}
+          onPointerDown={markDown}
           onPointerUp={startEditing}
           value={encrypted ? '(contenido cifrado: ábrelo en su fichero para verlo)' : notes}
           disabled={encrypted}
@@ -1375,6 +1392,21 @@ export default function TaskEditor({
           >
             <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
           </span>
+        )}
+        {!isNew && onAddSubtask && (
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--link"
+            onClick={withCommit(onAddSubtask)}
+            title={
+              isProject
+                ? 'Guardar y añadir una acción al proyecto'
+                : 'Guardar y añadir una subtarea'
+            }
+            data-testid="gtd-editor-add-subtask"
+          >
+            <i className="fas fa-plus" /> Subtarea
+          </button>
         )}
         {!isNew && (
           <button
