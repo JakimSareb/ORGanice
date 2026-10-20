@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.35 (octubre de 2026)
+** GTD
+- *Flechas ← →*: solo recorren las secciones que has abierto (Inbox, Next, Todos los proyectos…). Abrir un proyecto ya no añade un paso: desde él, ← vuelve a la sección anterior.
+- *Teclado*: al recorrer el menú lateral con ↑ ↓ ya no se cierra en pantallas estrechas; → entra en la lista y lo cierra.
+- *Arrastrar* (móvil): el menú lateral que sale al llevar la tarea al borde izquierdo se oculta al alejarla, para ver la lista y reordenar (vuelve a salir si te acercas otra vez).
+- *Deslizar desde el borde izquierdo* (móvil) abre el menú lateral. En Safari ese borde es también el gesto de «atrás»; desde la app de la pantalla de inicio no hay choque.
+
 * 3.34 (octubre de 2026)
 ** GTD
 - *Fecha programada*: en el iPhone, el botón «Restablecer» del selector de fecha pone *hoy* (para quitarla sigue «Quitar la fecha»). Debajo, un campo *Hora* para ponerle hora (sirve para los avisos de hora exacta) o quitarla con ×.

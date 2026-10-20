@@ -155,7 +155,7 @@ Desde la versión 3.0 la vista GTD se maneja como Nirvana (en cada fila: la casi
 - En el *móvil*: *un toque* abre la tarea en *vista previa*, una hoja a pantalla completa como la de Nirvana («Hecho» arriba, estado, etiquetas con el área en ámbar, píldoras de tiempo y fechas, y abajo, siempre a la vista, Abrir, Propiedades, Adjuntar, Archivar, Papelera, Cancelar y Guardar; el nombre del fichero abre *Mover a*); el título y las notas se editan al tocarlos. Para *seleccionar* (y mover o arrastrar), *pulsación larga*.
 - Una tarea con subtareas lleva *▾* a la izquierda: tócalo para plegarlas (▸) o desplegarlas; se recuerda. Como subtareas solo salen las que tienen palabra de acción (TODO, NEXT…).
 - *Ctrl+clic* (⌘ en el Mac) añade o quita tareas de la selección. Los *puntos ⋮⋮* de la izquierda de cada fila seleccionan con un *lazo*: pulsa en ellos y arrastra hacia arriba o abajo.
-- *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección); puede ir junto a una tarea de otro fichero o encabezado si así no cambia de proyecto, tarea madre, área ni etiquetas (si no, avisa y no se mueve). Si la lista estaba ordenada por fecha, pasa a orden manual. En el *móvil*, el menú lateral con las listas solo sale al llevar la tarea al *borde izquierdo* de la pantalla; si no, el arrastre solo cambia el orden.
+- *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección); puede ir junto a una tarea de otro fichero o encabezado si así no cambia de proyecto, tarea madre, área ni etiquetas (si no, avisa y no se mueve). Si la lista estaba ordenada por fecha, pasa a orden manual. En el *móvil*, el menú lateral con las listas solo sale al llevar la tarea al *borde izquierdo* de la pantalla, y se vuelve a ocultar si alejas la tarea (3.35); si no, el arrastre solo cambia el orden.
 - *Clic derecho* en una tarea (o el ▾ del final de la fila) abre su menú: Editar, Focus ★, Completar, Mover a, *Asignar a proyecto…* (y *Quitar del proyecto*), Convertir en, Etiquetas, Tiempo, Energía, *Programar…*, Fecha límite, Hacer una copia, Copiar como ORG Mode, Abrir en su fichero y Papelera. Con varias seleccionadas, el menú actúa sobre todas y arriba dice cuánto tiempo suman.
 - *Mayús+clic* en una tarea selecciona todas las que hay desde la última elegida hasta ella.
 - Un clic fuera de las tareas (en el hueco de abajo, la cabecera o el menú lateral) quita la selección.
@@ -184,7 +184,7 @@ Una tarea (o un encabezado sin estado) de *cualquier fichero* puede ser de un pr
 - Arrastrar una tarea a un proyecto del menú lateral sigue *moviéndola* a su fichero, como siempre. *⌘A / Ctrl+A* selecciona todas.
 
 ** Las listas del menú lateral
-En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de arriba (se queda fijo aunque bajes por la lista).
+En el móvil el menú se esconde; para volver a sacarlo, toca el botón ☰ de arriba (se queda fijo aunque bajes por la lista) o desliza el dedo desde el borde izquierdo de la pantalla (3.35; en Safari ese gesto también puede ser su «atrás»). Las flechas ← → de la barra recorren las secciones que has abierto (Inbox, Next…), no los proyectos.
 Esto es lo que muestran por defecto; qué entra en cada una, cuáles se ven y en qué orden se cambia en Ajustes (ver «Secciones configurables»).
 | Lista      | Qué muestra                                                                          |
 |------------+--------------------------------------------------------------------------------------|
@@ -484,7 +484,7 @@ Solo con teclas sueltas, y nunca mientras escribes ni con el editor de una tarea
 | Intro / Supr | Editar / a la Papelera                                     |
 | ⌘C Ctrl+C / ⌘A Ctrl+A | Copiar como ORG Mode / seleccionar todas           |
 | Esc       | Quitar la selección (en el editor: cancelar)                  |
-| ← / →     | Al menú lateral (↑ ↓ cambian de sección) / a la lista          |
+| ← / →     | Al menú lateral (↑ ↓ cambian de sección y no se cierra) / a la lista |
 Se cambian en Ajustes → Atajos de teclado, en su sección «Vista GTD».
 * Turnos de acomodadores
 ⋯ → *Turnos de acomodadores* (o la paleta). Trabaja con =pages/acomodadores.org=, y en Emacs con =C-c g u= (n mes nuevo, d disponibles, s sumar, o abrir el fichero).

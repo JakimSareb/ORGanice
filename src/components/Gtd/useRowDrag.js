@@ -14,6 +14,15 @@ const SWIPE_RATIO = 1.5;
 const EDGE = 60;
 // (3.16) con el dedo, el menú lateral (listas) solo se abre al acercar la tarea al borde izquierdo
 const SIDE_EDGE = 40;
+// (3.35) y se vuelve a ocultar al alejar la tarea: más allá del menú y este margen
+const SIDE_AWAY = 32;
+// (3.35) igual que EDGE_SWIPE_ZONE de la vista GTD
+const EDGE_SWIPE_ZONE = 24;
+const sideRight = () => {
+  const el = document.querySelector('.gtd-side');
+  const r = el && el.getBoundingClientRect();
+  return Math.max(r && r.right > 0 ? r.right : 0, 200);
+};
 const SPEED = 14;
 
 const dropIdAt = (x, y) => {
@@ -42,6 +51,7 @@ export default function useRowDrag({
   onReorder,
   onStart,
   onNearEdge,
+  onAwayFromEdge,
   canSwipe,
   onSwipe,
   dragSet,
@@ -55,6 +65,7 @@ export default function useRowDrag({
     onReorder,
     onStart,
     onNearEdge,
+    onAwayFromEdge,
     canSwipe,
     onSwipe,
     dragSet,
@@ -142,6 +153,15 @@ export default function useRowDrag({
       ) {
         d.edgeDone = true;
         handlers.current.onNearEdge(d.task);
+      } else if (
+        d.edgeDone &&
+        d.x > sideRight() + SIDE_AWAY &&
+        !dropIdAt(d.x, d.y) &&
+        handlers.current.onAwayFromEdge
+      ) {
+        // (3.35) la tarea se aleja del menú: se oculta (y vuelve a salir si se acerca otra vez)
+        d.edgeDone = false;
+        handlers.current.onAwayFromEdge(d.task);
       }
       const id = dropIdAt(d.x, d.y);
       if (id !== d.over) {
@@ -314,6 +334,8 @@ export default function useRowDrag({
       return;
     }
     if (drag.current) return;
+    // (3.35) con el dedo pegado al borde izquierdo es el gesto de abrir el menú, no la fila
+    if ((e.pointerType || 'mouse') !== 'mouse' && e.clientX <= EDGE_SWIPE_ZONE) return;
     const container = e.currentTarget.closest('[data-reorder-container]');
     drag.current = {
       task,
