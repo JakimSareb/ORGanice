@@ -515,6 +515,8 @@ function TaskRow({
   const taskRef = useRef(null);
   const mainRef = useRef(null);
   const [notesIndent, setNotesIndent] = useState(null);
+  // (3.37) las notas abiertas con el icono se despliegan con una animación corta
+  const [notesUnfold, setNotesUnfold] = useState(false);
   const hasBelow = shownNotes.length > 0;
   useLayoutEffect(() => {
     if (!hasBelow) return undefined;
@@ -662,6 +664,7 @@ function TaskRow({
                 className={'gtd-meta gtd-notes-btn' + (notesMode !== 'none' ? ' is-on' : '')}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (notesMode !== 'full') setNotesUnfold(true);
                   onCycleNotes && onCycleNotes();
                 }}
                 onDoubleClick={(e) => e.stopPropagation()}
@@ -837,7 +840,7 @@ function TaskRow({
           a la izquierda, como en Nirvana */}
       {shownNotes.length > 0 && (
         <div
-          className="gtd-task__below"
+          className={'gtd-task__below' + (notesUnfold ? ' is-unfold' : '')}
           style={notesIndent != null ? { marginLeft: notesIndent } : undefined}
           onClick={onRowClick}
           onDoubleClick={onRowDoubleClick}

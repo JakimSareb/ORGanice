@@ -3,6 +3,14 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.37 (octubre de 2026)
+** GTD
+- *Editor*: Cancelar y Guardar van siempre juntos en la misma línea.
+- *Vista previa* (móvil): la zona de las notas en vista previa se distingue (fondo y borde suaves, con el rótulo «Vista previa»); al tocarla se edita como antes.
+- *Hechas y canceladas en el editor*: la hecha sale en verde y la cancelada en gris, sin tachar ni transparencia (como en las filas).
+- *Vence*: se quita el botón «Hoy»; queda solo el icono del campo.
+- *Notas de una fila*: al abrirlas con su icono se despliegan con una animación rápida (nada con «reducir movimiento»).
+
 * 3.36 (octubre de 2026)
 ** GTD
 - *Buscar* (arriba del menú lateral) busca ahora en *todas las secciones*: los resultados salen agrupados por sección (en el orden del menú), cada una con su número y plegable. Al tocar un resultado vas a su sección con la tarea abierta. Intro (o «Buscar» en el teclado del móvil) cierra el menú para ver los resultados; × o Esc borran la búsqueda.
