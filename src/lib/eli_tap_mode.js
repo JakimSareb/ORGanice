@@ -27,6 +27,8 @@ export const TAP_MODES = {
     options: [
       { id: 'select', label: 'Seleccionarla' },
       { id: 'open', label: 'Plegar / desplegar' },
+      // (4.03) un toque = el título en edición directamente
+      { id: 'edit', label: 'Editarla' },
     ],
   },
   'header-desktop': {
@@ -35,6 +37,8 @@ export const TAP_MODES = {
     options: [
       { id: 'select', label: 'Seleccionarla' },
       { id: 'open', label: 'Plegar / desplegar' },
+      // (4.03) un toque = el título en edición directamente
+      { id: 'edit', label: 'Editarla' },
     ],
   },
 };

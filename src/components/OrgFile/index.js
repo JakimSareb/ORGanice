@@ -901,7 +901,16 @@ class OrgFile extends PureComponent {
             header={this.props.selectedHeader}
             setAccessor={_setPopupCloseActionValuesAccessor}
             onDone={this.handleActivePopupClose}
-            onCancel={() => this.props.base.closePopup()}
+            onCancel={() => {
+              // (4.03) cabecera recién añadida con «Nueva»: Cancelar la quita
+              const isNew = activePopupData && activePopupData.get && activePopupData.get('eliNew');
+              const id = this.props.selectedHeader.get('id');
+              this.props.base.closePopup();
+              if (isNew) {
+                this.props.org.removeHeader(id);
+                this.props.org.selectHeader(activePopupData.get('fromId'));
+              }
+            }}
           />
         ) : null;
       case 'sync-confirmation':

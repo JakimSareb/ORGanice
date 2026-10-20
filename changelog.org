@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.03 (octubre de 2026)
+** Documentos
+- *Nueva* (barra de abajo) tiene ahora tres opciones: *Arriba* (nueva), *Debajo* y *Subcabecera*. Las tres abren la hoja *Editar* completa (título y texto). *Cancelar* en esa hoja quita la cabecera que acabas de añadir.
+- Ajustes › Apariencia › *Al tocar una cabecera*: nueva opción *Editarla* (móvil y ordenador por separado): un toque en el título lo pone en edición directamente.
+- Tocar la *viñeta* de una cabecera (el asterisco o el punto) siempre la pliega o despliega, tengas el ajuste que tengas. Además ahora se puede tocar bien (antes quedaba tapada por el título).
+
 * 4.02 (octubre de 2026)
 ** GTD
 - Proyectos con *Acciones siguientes secuenciales*: las tareas en espera y las programadas mezcladas con las Next llevan ahora una *W* (Waiting) o una *S* (programada) en gris clarito *dentro de la casilla*, en vez de la E y la P delante del título. La casilla sigue sirviendo para completarlas.

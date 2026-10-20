@@ -328,7 +328,9 @@ class Header extends PureComponent {
       // viñeta o el margen (antes solo valía el título)
       const { isSelected } = this.props;
       const tapMode = getTapMode(isTouchEvent(event) ? 'header-mobile' : 'header-desktop');
-      if (hasContent && (isSelected || tapMode === 'open')) {
+      // (4.03) la viñeta (asterisco/punto) SIEMPRE pliega/despliega, sea cual sea el ajuste
+      const onBullet = classList.contains('header__bullet');
+      if (hasContent && (onBullet || isSelected || tapMode === 'open')) {
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       }
       this.props.org.selectHeader(header.get('id'));

@@ -95,6 +95,13 @@ class TitleLine extends PureComponent {
     // (3.05) el primer toque solo selecciona (sin plegar ni desplegar); el segundo, despliega
     // (3.07) salvo que en Ajustes se elija «Plegar / desplegar» (móvil y ordenador por separado)
     const tapMode = getTapMode(isTouchEvent(event) ? 'header-mobile' : 'header-desktop');
+    // (4.03) «Editarla»: un toque en el título lo pone en edición (con el candado, solo selecciona)
+    if (tapMode === 'edit' && !onInner && !this.props.shouldDisableActions && !isDocLocked()) {
+      this.lastTap = null;
+      if (!isSelected) this.props.org.selectHeader(header.get('id'));
+      this.props.base.activatePopup('title-editor');
+      return;
+    }
     if (!isSelected && tapMode !== 'open') {
       this.props.org.selectHeader(header.get('id'));
       return;

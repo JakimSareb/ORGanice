@@ -56,10 +56,11 @@ test('4.0: Nueva › Subcabecera crea una hija', async ({ app }) => {
   await select(app, 'Segunda');
   await app.page.locator('[data-testid=eli-docbar-new]').click();
   await app.page.locator('[data-testid=eli-docbar-new-sub]').click();
-  const input = app.page.locator('[data-testid=titleLineInput]');
+  // (4.03) se abre la hoja «Editar»
+  const input = app.page.locator('[data-testid=eli-edit-sheet-title]');
   await expect(input).toBeVisible();
   await input.fill('Hija nueva');
-  await input.press('Enter');
+  await app.page.locator('[data-testid=eli-edit-sheet-done]').click();
   const text = await app.fileAfterSync('/notas.org');
   expect(text).toMatch(/\* Segunda\n\*\* Hija nueva/);
   expect(app.errors).toEqual([]);

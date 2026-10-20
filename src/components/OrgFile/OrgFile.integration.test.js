@@ -188,17 +188,24 @@ describe('Render all views', () => {
         // 'plus' on the first header which is _not_ a todoKeyword header
         fireEvent.click(getByTestId('eli-docbar-new'));
         fireEvent.click(getByTestId('eli-docbar-new-below'));
-        expect(getByTestId('titleLineInput').value).toEqual('');
+        // (4.03) se abre la hoja «Editar» completa
+        expect(getByTestId('eli-edit-sheet-title').value).toEqual('');
         expect(headerAfter('Top level header').getIn(['titleLine', 'todoKeyword'])).toBeFalsy();
+        fireEvent.click(getByTestId('eli-edit-sheet-done'));
 
         // 'plus' on a header which _is_ a todoKeyword header
         fireEvent.click(queryByText('A todo item with schedule and deadline'));
         fireEvent.click(getByTestId('eli-docbar-new'));
         fireEvent.click(getByTestId('eli-docbar-new-below'));
-        expect(getByTestId('titleLineInput').value).toEqual('');
+        expect(getByTestId('eli-edit-sheet-title').value).toEqual('');
         expect(
           headerAfter('A todo item with schedule and deadline').getIn(['titleLine', 'todoKeyword'])
         ).toEqual('TODO');
+        // (4.03) Cancelar quita la cabecera recién añadida
+        fireEvent.click(getByTestId('eli-edit-sheet-cancel'));
+        expect(
+          headerAfter('A todo item with schedule and deadline').getIn(['titleLine', 'rawTitle'])
+        ).not.toEqual('');
       });
 
       test('Can clock in & out of an event', () => {
