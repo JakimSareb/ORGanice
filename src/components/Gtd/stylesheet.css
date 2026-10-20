@@ -4206,3 +4206,10 @@ input.gtd-proc__input:not([type]) {
 .gtd-review__more-btn {
   color: var(--blue);
 }
+
+/* (3.42) Procesar Inbox: botón «Editar» (abre el editor normal; al cerrar, se sigue en el paso) */
+.gtd-proc__edit {
+  flex: none;
+  align-self: center;
+  white-space: nowrap;
+}

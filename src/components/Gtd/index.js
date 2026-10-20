@@ -2333,6 +2333,7 @@ export default function GtdView() {
       if (extra && extra.length) dispatch(gtdSaveMany(extra));
     }
     dispatch(gtdSaveTask(task, changes));
+    procNoteSaved(task, changes);
     // Proyecto convertido en tarea desde su propia vista: se va a Todo, donde queda la tarea
     if (task.isProject && changes.list === 'later' && view.key === task.key) {
       selectView({ id: 'later' });
@@ -2960,20 +2961,43 @@ export default function GtdView() {
   const inboxNow = () => tasks.filter((t) => !t.isProject && listOf(t, today) === 'inbox');
   const startProcess = () => {
     setSideOpen(false);
-    const queue = inboxNow().map((t) => ({ key: t.key, path: t.path, title: t.title }));
+    const queue = inboxNow().map((t) => ({
+      key: t.key,
+      path: t.path,
+      title: t.title,
+      rawTitle: t.rawTitle,
+    }));
     setProc({ queue, i: 0, gone: {} });
     goList('inbox');
   };
   const procTask = (() => {
     if (!proc || proc.i >= proc.queue.length || proc.gone[proc.i]) return null;
     const e = proc.queue[proc.i];
-    const now = inboxNow();
-    return (
-      now.find((t) => t.key === e.key) ||
-      now.find((t) => t.path === e.path && t.title === e.title) ||
-      null
-    );
+    const find = (list) =>
+      list.find((t) => t.key === e.key) ||
+      list.find((t) => t.path === e.path && t.rawTitle === e.rawTitle) ||
+      list.find((t) => t.path === e.path && t.title === e.title) ||
+      // (3.42) editada desde la tarjeta (p. ej. con proyecto): se sigue aunque salga del Inbox
+      (e.edited ? list.find((t) => t.rawTitle === e.rawTitle) : null) ||
+      null;
+    const found = find(inboxNow());
+    if (found || !e.edited) return found;
+    return find(tasks.filter((t) => !t.isTrashed && !t.isDone && !t.isProject));
   })();
+  // (3.42) Guardada desde el editor durante «Procesar Inbox»: se apunta para seguir con ella
+  const procNoteSaved = (task, changes) => {
+    if (!proc || !procTask || task.key !== procTask.key) return;
+    setProc((p) => {
+      if (!p || !p.queue[p.i]) return p;
+      const queue = p.queue.slice();
+      queue[p.i] = {
+        ...queue[p.i],
+        edited: true,
+        rawTitle: changes.rawTitle !== undefined ? changes.rawTitle : queue[p.i].rawTitle,
+      };
+      return { ...p, queue };
+    });
+  };
   const procMove = (delta, goneText) =>
     setProc((p) =>
       p

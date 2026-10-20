@@ -455,6 +455,17 @@ export default function GtdProcessInbox({
             </div>
           )}
         </div>
+        {task && (
+          <button
+            type="button"
+            className="gtd-review__btn gtd-proc__edit"
+            onClick={() => onOpenTask(task)}
+            title="Editar: título (qué es exactamente), notas y proyecto. Al cerrar, sigues en este paso"
+            data-testid="gtd-process-edit"
+          >
+            <i className="fas fa-pen" /> Editar
+          </button>
+        )}
         <button
           type="button"
           className="gtd-review__close"
