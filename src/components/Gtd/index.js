@@ -83,7 +83,16 @@ import {
   gtdAssignProject,
   gtdUnassignProject,
   assignProjectEntries,
+  gtdToTickler,
+  pathOfHeader,
 } from '../../lib/gtd/gtd_actions';
+import GtdProcessInbox from './GtdProcessInbox';
+import {
+  getProcessMode,
+  mergeTags,
+  isTicklerPath,
+  ticklerPathNear,
+} from '../../lib/gtd/gtd_process';
 import { pickProject } from '../../lib/gtd/gtd_assign';
 import {
   parseRapidEntry,
@@ -112,6 +121,7 @@ import {
   eliReviewFinishedAttachments,
   eliRemoveAttachmentLink,
   eliLoadArchivedFiles,
+  createPlainFile,
 } from '../../actions/org';
 import { parseOrgLink } from '../../lib/eli_org_links';
 import { followOrgLinkSplitAware, openSplitAware } from '../../lib/eli_split_links';
@@ -1034,6 +1044,8 @@ export default function GtdView() {
     return typeof v === 'number' ? v : null;
   });
   const [lastReview, setLastReview] = useState(() => readLS('eliGtdLastReview', null));
+  // (3.40) «Procesar Inbox»: { queue: [{key, path, title}], i, gone: {i: texto} } (null = cerrado)
+  const [proc, setProc] = useState(null);
   const [today, setToday] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -2934,6 +2946,115 @@ export default function GtdView() {
       goToTask(t);
     }
   };
+  // (3.40) Procesar Inbox: una tarea cada vez (las que había en el Inbox al empezar)
+  const inboxNow = () => tasks.filter((t) => !t.isProject && listOf(t, today) === 'inbox');
+  const startProcess = () => {
+    setSideOpen(false);
+    const queue = inboxNow().map((t) => ({ key: t.key, path: t.path, title: t.title }));
+    setProc({ queue, i: 0, gone: {} });
+    goList('inbox');
+  };
+  const procTask = (() => {
+    if (!proc || proc.i >= proc.queue.length || proc.gone[proc.i]) return null;
+    const e = proc.queue[proc.i];
+    const now = inboxNow();
+    return (
+      now.find((t) => t.key === e.key) ||
+      now.find((t) => t.path === e.path && t.title === e.title) ||
+      null
+    );
+  })();
+  const procMove = (delta, goneText) =>
+    setProc((p) =>
+      p
+        ? {
+            ...p,
+            gone: goneText !== undefined ? { ...p.gone, [p.i]: goneText } : p.gone,
+            i: Math.max(0, Math.min(p.queue.length, p.i + delta)),
+          }
+        : p
+    );
+  // tickler.org: el cargado o, si no, junto al fichero de entrada (se carga o se crea)
+  const ticklerFile = async (task) => {
+    const present = store.getState().org.present;
+    const loaded = Array.from(present.get('files').keys()).find(
+      (p) => isTicklerPath(p) && present.getIn(['files', p, 'headers'])
+    );
+    if (loaded) return loaded;
+    const path = ticklerPathNear(inboxPaths[0] || task.path);
+    const load = async () => {
+      dispatch(setLoadingMessage(`Cargando ${fileDisplayName(path)}…`));
+      await Promise.resolve(dispatch(loadFileQuietly(path))).catch(() => null);
+      dispatch(hideLoadingMessage());
+      return !!store.getState().org.present.getIn(['files', path, 'headers']);
+    };
+    if (await load()) return path;
+    const ok = await askConfirm({
+      title: 'Tickler',
+      message: `No se encuentra ${path}. ¿Crearlo?`,
+      okLabel: 'Crear',
+    });
+    if (!ok) return null;
+    if (!(await dispatch(createPlainFile(path, '#+TITLE: Tickler\n')))) return null;
+    return (await load()) ? path : null;
+  };
+  const processDecide = async (d) => {
+    const task = procTask;
+    if (!task) return;
+    const base = (list) => tagsForList(task, list);
+    const dates = {};
+    if (d.scheduled) {
+      dates.scheduled = d.scheduled;
+      dates.scheduledTime = d.scheduledTime || '';
+    }
+    if (d.deadline) dates.deadline = d.deadline;
+    const extra = { ...dates };
+    if (d.area) extra.area = d.area;
+    let label = '';
+    if (d.kind === 'trash') {
+      dispatch(gtdTrash([task]));
+      label = 'Papelera';
+    } else if (d.kind === 'reference') {
+      dispatch(gtdSaveTask(task, { tags: base('reference') }));
+      const target = tasksFileForRefile(store.getState());
+      if (task.isInboxFile && target && target !== task.path)
+        dispatch(gtdRefileTo([task], target, null));
+      label = 'Referencia';
+    } else if (d.kind === 'someday') {
+      dispatch(gtdSaveTask(task, { list: 'someday', tags: base('someday') }));
+      label = 'Someday';
+    } else if (d.kind === 'tickler') {
+      const path = await ticklerFile(task);
+      if (!path) return;
+      const tags = mergeTags(base('reference'), d.tags);
+      if (!dispatch(gtdToTickler(task, path, d.date, d.time, tags))) return;
+      label = `Tickler (${d.date.toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })})`;
+    } else if (d.kind === 'done') {
+      dispatch(gtdSaveMany([[task, doneChangesFor(task)]]));
+      label = 'Hecha';
+    } else if (['waiting', 'next', 'later'].includes(d.kind)) {
+      const tags = mergeTags(base(d.kind), [...(d.tags || []), ...(d.person ? [d.person] : [])]);
+      dispatch(gtdSaveTask(task, { list: d.kind, tags, ...extra }));
+      label = { waiting: 'Waiting', next: 'Next', later: 'Todo (más adelante)' }[d.kind];
+    } else if (d.kind === 'project') {
+      const tags = mergeTags(base('project'), d.tags);
+      dispatch(gtdSaveTask(task, { list: 'project', tags, ...extra }));
+      if (d.first) {
+        const path = pathOfHeader(store.getState, task.id, task.path);
+        if (path)
+          dispatch(
+            gtdAddTask({ path, parentId: task.id }, { title: d.first, list: 'next', created: true })
+          );
+      }
+      label = 'Proyecto';
+    }
+    dispatch(setDisappearingLoadingMessage(`→ ${label}`, 1500));
+    procMove(1, `Procesada: ${label}`);
+  };
   const toggleRapid = (focusIt) => {
     const v = focusIt ? true : !rapidOn;
     setRapidOn(v);
@@ -3883,6 +4004,12 @@ export default function GtdView() {
         onClick: startReview,
         testId: 'gtd-menu-review',
       },
+      {
+        label: 'Procesar Inbox',
+        icon: 'fas fa-inbox',
+        onClick: startProcess,
+        testId: 'gtd-menu-process',
+      },
       { sep: true },
     ];
     // (3.05) en un proyecto: editarlo y abrirlo en su fichero (antes, botones bajo el título)
@@ -4263,6 +4390,19 @@ export default function GtdView() {
       <span className="gtd-side__label">Revisión semanal</span>
     </button>
   );
+  // (3.40) junto a Inbox: Procesar Inbox (asistente de una tarea cada vez)
+  const renderProcessButton = () => (
+    <button
+      key="process"
+      className={'gtd-side__item gtd-side__item--process' + (proc ? ' is-on' : '')}
+      onClick={startProcess}
+      title="Procesar el Inbox: una tarea cada vez"
+      data-testid="gtd-process-start"
+    >
+      <i className="fas fa-filter gtd-side__icon" />
+      <span className="gtd-side__label">Procesar Inbox</span>
+    </button>
+  );
   const renderProjectsBlock = () => (
     <React.Fragment>
       <div className="gtd-side__section">
@@ -4403,6 +4543,8 @@ export default function GtdView() {
         const def = [...LISTS, ...EXTRA_LISTS].find((l) => l.id === id) || sectionDef(id, gtdCfg);
         // (2.16) con el nombre de Ajustes (si se ha cambiado)
         if (def) group.push(renderListItem({ ...def, label: sectionLabel(id, gtdCfg) }));
+        // (3.40) junto a Inbox: Procesar Inbox
+        if (def && id === 'inbox') group.push(renderProcessButton());
       }
     });
     flush();
@@ -5000,6 +5142,27 @@ export default function GtdView() {
             onFinish={finishReview}
             onOpenView={goList}
             onOpenTask={reviewOpenTask}
+          />
+        )}
+        {proc && (
+          <GtdProcessInbox
+            key={proc.i}
+            task={procTask}
+            gone={proc.gone[proc.i]}
+            index={proc.i}
+            total={proc.queue.length}
+            mode={getProcessMode()}
+            areas={areas}
+            today={today}
+            paused={!!(openKey || draft || newProject || menu || showAgenda)}
+            onDecide={processDecide}
+            onSkip={() => procMove(1)}
+            onBack={() => procMove(-1)}
+            onFinish={() => setProc(null)}
+            onOpenTask={(t) => {
+              setSelKey(t.key);
+              setOpenKey(t.key);
+            }}
           />
         )}
         {newProject && renderNewProjectEditor()}

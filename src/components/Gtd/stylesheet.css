@@ -4015,3 +4015,153 @@ html[data-eli-theme] .gtd-editor .gtd-editor__notes {
     animation: none;
   }
 }
+
+/* (3.40) Procesar Inbox: tarjeta como la revisión semanal, con borde azul */
+.gtd-side__item--process .gtd-side__icon {
+  color: var(--blue);
+  opacity: 1;
+}
+.gtd-proc {
+  border-left-color: var(--blue);
+}
+.gtd-proc .gtd-proc__icon {
+  color: var(--blue);
+}
+.gtd-proc__title {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1.05em;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.gtd-proc__question {
+  margin: 10px 0 8px;
+  font-weight: 600;
+}
+.gtd-proc__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+.gtd-proc__options.is-big {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.gtd-proc__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: var(--base2, rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  cursor: pointer;
+}
+.gtd-proc__options.is-big .gtd-proc__opt {
+  flex-wrap: wrap;
+  min-height: 52px;
+  padding: 10px 12px;
+}
+.gtd-proc__opt:hover {
+  border-color: var(--blue);
+}
+.gtd-proc__opt.is-primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.gtd-proc__key {
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  line-height: 18px;
+  text-align: center;
+  background: var(--base3, #fff);
+  color: var(--base1);
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.12));
+}
+.gtd-proc__opt-label {
+  font-weight: 500;
+}
+.gtd-proc__opt-hint {
+  flex-basis: 100%;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+.gtd-proc__options:not(.is-big) .gtd-proc__opt-hint {
+  display: none;
+}
+.gtd-proc__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+}
+.gtd-proc__row--wrap {
+  flex-wrap: wrap;
+}
+.gtd-proc__row .gtd-proc__row {
+  margin: 0;
+}
+.gtd-proc__input {
+  min-width: 0;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 16px; /* el iPhone no amplía la página al enfocar */
+  color: inherit;
+  background: var(--base3, #fff);
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  border-radius: 6px;
+}
+input.gtd-proc__input:not([type]) {
+  width: 100%;
+}
+.gtd-proc__input--grow {
+  flex: 1 1 160px;
+}
+.gtd-proc__input--time {
+  width: auto;
+}
+.gtd-proc__when {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 6px 0;
+}
+.gtd-proc__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85em;
+  color: var(--base1);
+}
+.gtd-proc__group {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.08));
+}
+.gtd-proc__group:first-child {
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: 0;
+}
+.gtd-proc__group-title {
+  font-size: 0.78em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--base1);
+}

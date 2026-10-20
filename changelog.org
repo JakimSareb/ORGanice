@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.40 (octubre de 2026)
+** GTD
+- *Procesar Inbox* (estilo FacileThings): en el menú lateral, junto a Inbox, o en el ⋯ de arriba. Sale una tarjeta encima de la lista con una tarea del Inbox cada vez («n de N»), con *Atrás*, *Saltar* y *Terminar*. Toca el título para abrir la tarea.
+- Las preguntas: ¿Requiere acción? → *No*: Papelera, Referencia, Someday / Maybe (incubar) o *Tickler* (pide el día y, si quieres, la hora). → *Sí*: ¿menos de 2 minutos? «Hecha ya». ¿La hace otra persona? Waiting (la persona va como etiqueta). ¿Varios pasos? Proyecto con su primera acción (Next). Si no: *Next* (esta semana) o *Más adelante* (lista Todo). Al final, *¿Cuándo?*: programada (con hora) y/o fecha límite, o nada; y área y etiquetas.
+- *Tickler*: va a =tickler.org= (el que esté cargado o, si no, junto al fichero de entrada; si no existe, pregunta si crearlo), bajo su año (=* *[ TICKLER 2027 ]*=) y su mes (=** DICIEMBRE=…=** ENERO=, de diciembre a enero), sin palabra de estado y con =SCHEDULED= = el día del recordatorio. Año y mes se crean si faltan.
+- Dos pantallas, en Ajustes → Apariencia → «Procesar Inbox»: *Una a una* (por defecto; botones grandes y atajos 1, 2, 3…) o *Todo junto* (una tarjeta con los grupos «No requiere acción», «Requiere acción» y «¿Cuándo?»).
+
 * 3.39a (octubre de 2026)
 ** GTD
 - *Teclado externo en el móvil* (iPhone en vertical): ← del teclado abre el menú lateral con el foco en la sección actual; ↑ ↓ cambian de sección y → vuelve a la lista.
