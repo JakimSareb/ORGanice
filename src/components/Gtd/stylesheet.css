@@ -3861,3 +3861,92 @@ html[data-eli-theme] .gtd-editor .gtd-editor__notes {
   cursor: pointer;
   font-size: 1.1em;
 }
+
+/* (3.36) Buscar en todas las secciones (resultados agrupados) y filtro por sección */
+.gtd-main.is-searching > :not(.gtd-search):not(.gtd-pull) {
+  display: none !important;
+}
+.gtd-search__group {
+  margin-bottom: 6px;
+}
+.gtd-search__row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.08));
+  background: transparent;
+  color: var(--base01);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gtd-search__row:hover,
+.gtd-search__row:focus-visible {
+  background: var(--base2);
+  outline: 0;
+}
+.gtd-search__row.is-done .gtd-search__title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.gtd-search__title {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.gtd-search__kw {
+  margin-right: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--base1);
+}
+.gtd-search__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+.gtd-main__filter.is-on {
+  color: var(--blue);
+}
+.gtd-secfilter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0 4px 0 10px;
+  height: 36px;
+  border: 1px solid var(--base1);
+  border-radius: 8px;
+  background: var(--base3);
+}
+.gtd-secfilter i {
+  color: var(--base00);
+  opacity: 0.6;
+}
+.gtd-secfilter input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--base01);
+  font-size: 16px; /* 16 px: iOS no amplía al enfocar */
+}
+.gtd-secfilter__clear {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--base1);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gtd-chip--inherit:not(.is-on) {
+  opacity: 0.6;
+}
