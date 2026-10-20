@@ -356,7 +356,7 @@ class Header extends PureComponent {
   }
 
   handleWiden() {
-    this.props.org.widenHeader();
+    this.props.org.widenHeaderToTop();
   }
 
   // ORG Mode para Eli (2.18): «Editar como texto plano»: reduce al encabezado (narrow) y abre el

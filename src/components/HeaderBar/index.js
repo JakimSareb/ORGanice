@@ -479,7 +479,7 @@ class HeaderBar extends PureComponent {
       return (
         <i
           className="fas fa-expand header-bar__actions__item eli-narrow-btn is-active"
-          onClick={() => this.props.org.widenHeader()}
+          onClick={() => this.props.org.widenHeaderToTop()}
           title="Ampliar (widen): volver a ver el fichero entero"
           data-testid="eli-widen"
         />
@@ -804,7 +804,7 @@ class HeaderBar extends PureComponent {
             <button
               type="button"
               className="eli-widen-pill"
-              onClick={() => this.props.org.widenHeader()}
+              onClick={() => this.props.org.widenHeaderToTop()}
               title="Ampliar (widen): volver a ver el fichero entero"
               data-testid="eli-widen"
             >

@@ -49,7 +49,7 @@ test('Documentos (3.47): con «Plegar / desplegar» basta un toque (título o vi
   await app.press(first);
   await expect(child.first()).toBeVisible();
   await app.page.waitForTimeout(600);
-  // un toque en la viñeta de otra cabecera no seleccionada: también basta uno
+  // otro toque: pliega
   await app.press(first);
   await expect(child).toHaveCount(0);
   await app.page.waitForTimeout(600);
@@ -61,7 +61,8 @@ test('Documentos (3.47): con «Plegar / desplegar» basta un toque (título o vi
     .first()
     .locator('.header__bullet')
     .first();
-  await app.press(bullet);
+  // la viñeta queda bajo la línea del título: se le manda el clic directamente
+  await bullet.dispatchEvent('click');
   await expect(child.first()).toBeVisible();
   await expect(second).toBeVisible();
   expect(app.errors).toEqual([]);

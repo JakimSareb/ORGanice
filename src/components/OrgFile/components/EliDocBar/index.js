@@ -834,7 +834,7 @@ export default function EliDocBar({
                 id: 'widen',
                 icon: 'fas fa-expand',
                 label: 'Ver todo (widen)',
-                onClick: () => org('widenHeader'),
+                onClick: () => org('widenHeaderToTop'),
               }
             : {
                 id: 'narrow',
@@ -982,7 +982,7 @@ export default function EliDocBar({
               id: 'widen',
               icon: 'fas fa-expand',
               title: 'Ver todo (widen)',
-              onClick: () => org('widenHeader'),
+              onClick: () => org('widenHeaderToTop'),
             }
           : {
               id: 'narrow',
