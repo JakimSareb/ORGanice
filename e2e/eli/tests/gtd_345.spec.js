@@ -7,7 +7,8 @@ const mouseDrag = async (page, locator, to, { keep = false } = {}) => {
   const b = await locator.boundingBox();
   await page.mouse.move(b.x + 40, b.y + b.height / 2);
   await page.mouse.down();
-  await page.mouse.move(b.x + 50, b.y + b.height / 2 + 4, { steps: 3 });
+  // en vertical: en horizontal sería deslizar (hecha / papelera), no arrastrar
+  await page.mouse.move(b.x + 40, b.y + b.height / 2 + 14, { steps: 3 });
   // el destino se mide ya arrastrando (en un proyecto salen entonces las secciones vacías)
   await page.waitForTimeout(300);
   if (typeof to === 'function') to = await to();
