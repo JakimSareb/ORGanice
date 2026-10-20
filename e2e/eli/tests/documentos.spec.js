@@ -70,12 +70,10 @@ test('Abrir en GTD: una tarea se abre en GTD; un encabezado sin estado avisa (3.
   await app.page.locator('[data-testid=eli-docbar-more]').click();
   await app.page.locator('[data-testid=eli-docbar-gtd]').click();
   await expect(app.page.locator('text=No es una tarea').first()).toBeVisible();
+  // un solo aviso, y se cierra con Esc
+  await expect(app.page.locator('.eli-prompt__overlay')).toHaveCount(1);
   await app.page.keyboard.press('Escape');
-  await app.page
-    .locator('text=Aceptar, text=OK, text=Vale')
-    .first()
-    .click({ timeout: 2000 })
-    .catch(() => {});
+  await expect(app.page.locator('.eli-prompt__overlay')).toHaveCount(0);
   // con estado: va a GTD
   const task = app.page.locator('text=Llamar al banco').first();
   await app.press(task);

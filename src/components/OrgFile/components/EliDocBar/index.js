@@ -762,7 +762,7 @@ export default function EliDocBar({
             text: true,
           },
           {
-            id: 'insert',
+            id: 'date-today',
             icon: 'far fa-calendar-plus',
             label: 'Fecha de hoy',
             onClick: insertDate,

@@ -41,7 +41,7 @@ test('4.0: barra de abajo con 5 botones (Editar · Nueva · Añadir · Mover · 
   await app.page.keyboard.press('Escape');
   // Añadir
   await app.page.locator('[data-testid=eli-docbar-insert]').click();
-  for (const id of ['att-add', 'link-insert', 'insert'])
+  for (const id of ['att-add', 'link-insert', 'date-today'])
     await expect(app.page.locator(`[data-testid=eli-docbar-${id}]`)).toBeVisible();
   await app.page.keyboard.press('Escape');
   // Más (modo completo): también lo de tareas
@@ -161,8 +161,9 @@ test('4.0: Ajustes: Modo Notas arriba y «Más temas»', async ({ app }) => {
   });
   await app.page.locator('[data-testid=eli-settings-appearance] > summary').click();
   await expect(app.page.locator('[data-testid=eli-setting-theme]')).toContainText('Nirvana');
-  await expect(app.page.locator('[data-testid=eli-theme-more-list]')).toHaveCount(0);
-  await app.page.locator('[data-testid=eli-theme-more]').click();
+  // (con un tema clásico puesto, la lista ya sale abierta)
+  if ((await app.page.locator('[data-testid=eli-theme-more-list]').count()) === 0)
+    await app.page.locator('[data-testid=eli-theme-more]').click();
   await expect(app.page.locator('[data-testid=eli-theme-more-list]')).toContainText('Gruvbox');
   // encender el Modo Notas: desaparece lo de GTD
   await app.page.locator('[data-testid=eli-setting-notes-mode] .switch').click();
