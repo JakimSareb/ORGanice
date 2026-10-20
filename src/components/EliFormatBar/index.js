@@ -11,7 +11,9 @@ import {
   emphasisShortcutLabel,
   cycleListType,
   sortList,
+  insertAtCursor,
 } from '../../lib/eli_format';
+import { getCurrentTimestampAsText } from '../../lib/timestamps';
 
 import './stylesheet.css';
 
@@ -53,6 +55,11 @@ export const applyFieldTransform = (el, fn) => {
   requestAnimationFrame(() => el.value === result.value && restore());
   return true;
 };
+// (3.44) fecha y hora de ahora, como en Emacs (C-u C-c !): [2026-10-20 Tue 17:05]
+export const insertNowIn = (el) =>
+  applyFieldTransform(el, (v, s, e) =>
+    insertAtCursor(v, s, e, getCurrentTimestampAsText({ isActive: false, withStartTime: true }))
+  );
 export const cycleListIn = (el) => applyFieldTransform(el, (v, s) => cycleListType(v, s));
 export const sortListIn = (el, mode) => applyFieldTransform(el, (v, s) => sortList(v, s, mode));
 
@@ -214,6 +221,23 @@ export default ({
             <i className={item.icon} />
           </button>
         ))}
+      {/* (3.44) insertar la fecha y la hora de ahora (en las notas y descripciones) */}
+      {open && getListField && (
+        <button
+          type="button"
+          className="eli-format-bar__btn"
+          title="Insertar la fecha y la hora de ahora"
+          aria-label="Insertar la fecha y la hora de ahora"
+          data-testid="eli-format-now"
+          onMouseDown={keep}
+          onClick={(e) => {
+            e.stopPropagation();
+            insertNowIn(getListField());
+          }}
+        >
+          <i className="far fa-clock" />
+        </button>
+      )}
     </div>
   );
 };

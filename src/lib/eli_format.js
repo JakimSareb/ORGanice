@@ -315,3 +315,14 @@ export const emptyOrgTable = (indent = '') =>
     `${indent}|   |   |   |`,
     `${indent}|   |   |   |`,
   ].join('\n');
+
+// ORG Mode para Eli (3.44): inserta `text` en el cursor (sustituye la selección). Si justo antes
+// hay una letra (no un espacio ni el principio de la línea), pone un espacio delante.
+export const insertAtCursor = (value, start, end, text) => {
+  const v = value || '';
+  const s = Math.max(0, Math.min(start == null ? v.length : start, v.length));
+  const e = Math.max(s, Math.min(end == null ? s : end, v.length));
+  const before = v.slice(0, s);
+  const ins = before && !/\s$/.test(before) ? ` ${text}` : text;
+  return { value: before + ins + v.slice(e), start: s + ins.length, end: s + ins.length };
+};
