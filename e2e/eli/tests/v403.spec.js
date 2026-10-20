@@ -85,10 +85,17 @@ test('4.03: la viñeta pliega/despliega con un toque (ajuste por defecto)', asyn
     return !!hit && (hit === el || el.contains(hit));
   });
   expect(onTop).toBe(true);
-  await app.press(bullet);
+  // en el móvil, Chromium corrige los toques cerca del borde: se toca la parte derecha de la viñeta
+  const tapBullet = async () => {
+    const b = await bullet.boundingBox();
+    const position = { x: Math.max(1, b.width - 3), y: b.height / 2 };
+    if (app.mobile) await bullet.tap({ position });
+    else await bullet.click({ position });
+  };
+  await tapBullet();
   await expect(child.first()).toBeVisible();
   await app.page.waitForTimeout(600);
-  await app.press(bullet);
+  await tapBullet();
   await expect(child).toHaveCount(0);
   expect(app.errors).toEqual([]);
 });
