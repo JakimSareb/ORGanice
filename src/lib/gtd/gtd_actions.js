@@ -30,6 +30,7 @@ import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
 import { fileDisplayName } from '../eli_app_name';
 import { getGtdFiles } from './gtd_sections';
+import { ticklerPlan } from './gtd_process';
 
 // Estados que el fichero reconoce (#+TODO:). Si falta uno, Org lo leería como parte del título,
 // así que no se escribe y se avisa.
@@ -993,4 +994,60 @@ export const openSubtasksOf = (tasks, task) => {
     if (t.keyword && !t.isDone) out.push(t);
   }
   return out;
+};
+
+// (3.40) «Procesar Inbox» → Tickler: la tarea pasa (sin estado y con SCHEDULED = el día del
+// recordatorio) bajo el mes de su año en tickler.org; año y mes se crean si faltan (lib/gtd/
+// gtd_process `ticklerPlan`). Todo en un solo paso de Deshacer.
+export const gtdToTickler = (task, ticklerPath, date, time, tags) => (dispatch, getState) => {
+  const files = getState().org.present.get('files');
+  const headers = files.getIn([ticklerPath, 'headers']);
+  if (!headers || !date) return false;
+  const changes = { scheduled: date, scheduledTime: time || '' };
+  if (task.keyword) changes.keyword = null;
+  if (tags) changes.tags = tags;
+  const own = buildSaveTask(getState, task, changes);
+  const plan = ticklerPlan(headers, date);
+  const create = plan.create.map((s) =>
+    s.kind === 'add'
+      ? {
+          type: 'ELI_ADD_HEADER_AT',
+          titleLine: titleLineFrom({ keyword: null, priority: null, rawTitle: s.title, tags: [] }),
+          description: '',
+          parentId: s.parentId,
+          headerId: s.id,
+          dirtying: true,
+        }
+      : {
+          type: 'ELI_MOVE_SUBTREE_NEXT_TO',
+          headerId: s.id,
+          targetId: s.targetId,
+          position: s.position,
+          dirtying: true,
+        }
+  );
+  const actions = [];
+  if (own) actions.push(inFile(own.path, own.inner));
+  if (create.length) actions.push(inFile(ticklerPath, create));
+  actions.push({
+    type: 'REFILE_SUBTREE',
+    sourcePath: task.path,
+    sourceHeaderId: task.id,
+    targetPath: ticklerPath,
+    targetHeaderId: plan.monthId,
+    dirtying: true,
+  });
+  dispatch({ type: 'ELI_BATCH', actions, dirtying: true });
+  syncFile(dispatch, task.path);
+  if (ticklerPath !== task.path) syncFile(dispatch, ticklerPath);
+  return true;
+};
+
+// (3.40) Dónde está ahora una cabecera (tras pasar del Inbox al fichero de tareas): su ruta
+export const pathOfHeader = (getState, headerId, preferred) => {
+  const files = getState().org.present.get('files');
+  const has = (p) =>
+    !!p && !!(files.getIn([p, 'headers']) || List()).find((h) => h.get('id') === headerId);
+  if (has(preferred)) return preferred;
+  return files.keySeq().find((p) => has(p)) || null;
 };

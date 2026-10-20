@@ -1,4 +1,5 @@
 import React from 'react';
+import { getProcessMode, setProcessMode } from '../../lib/gtd/gtd_process';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -79,6 +80,28 @@ const EliTapModeSettings = () => {
         </div>
       ))}
     </>
+  );
+};
+
+// (3.40) «Procesar Inbox»: una a una o todo junto
+const EliProcessModeSettings = () => {
+  const [mode, setMode] = React.useState(getProcessMode());
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-process-mode"
+    >
+      <div className="setting-label">Procesar Inbox (GTD)</div>
+      <TabButtons
+        buttons={['Una a una', 'Todo junto']}
+        values={['step', 'all']}
+        selectedButton={mode}
+        onSelect={(v) => {
+          setProcessMode(v);
+          setMode(getProcessMode());
+        }}
+      />
+    </div>
   );
 };
 
@@ -315,6 +338,7 @@ const Settings = ({
 
         <EliReadabilitySetting />
         <EliTapModeSettings />
+        <EliProcessModeSettings />
         <EliRemindersSettings />
 
         <div className="setting-container">
