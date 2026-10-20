@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.43 (octubre de 2026)
+** GTD
+- Editor de tareas: el botón *＋ Subtarea* pasa al final de su línea de botones (después de Papelera).
+- El icono de notas de cada fila es un poco más grande y más fácil de tocar en el móvil.
+- Los *proyectos con notas* también muestran el icono en su fila; al tocarlo se despliegan sus notas, como en las tareas.
+- *Archivar*: las tareas hechas de un proyecto que sigue abierto ya no se archivan; se quedan con el proyecto y, cuando el proyecto se termina, se archiva todo junto.
+
 * 3.42 (octubre de 2026)
 ** GTD
 - *Procesar Inbox*: botón *Editar* en la tarjeta. Abre el editor normal de la tarea para aclarar qué es exactamente (título), añadir notas o ponerle proyecto. Al guardar, se vuelve a la misma pregunta con la misma tarea (aunque al ponerle proyecto haya salido del Inbox).

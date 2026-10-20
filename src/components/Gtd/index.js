@@ -521,7 +521,7 @@ function TaskRow({
   const isProjectRow = !!task.isProject;
   // (3.05) adjuntos (file: y attachment:) a la vista en las notas
   const notes =
-    notesMode !== 'none' && !isProjectRow
+    notesMode !== 'none'
       ? notesLinesOf(task.description, (uri) => linkTargetFor(uri, task.header))
       : [];
   const shownNotes =
@@ -672,8 +672,8 @@ function TaskRow({
               {task.title || '(sin título)'}
             </span>
             {/* (3.01) icono de notas solo en esta fila; (3.34) alterna Ocultas ⇄ Completas;
-                (3.11) pegado al final del título */}
-            {!isProjectRow && task.description.trim() && notesLinesOf(task.description).length > 0 && (
+                (3.11) pegado al final del título; (3.43) también en los proyectos */}
+            {task.description.trim() && notesLinesOf(task.description).length > 0 && (
               <button
                 type="button"
                 className={'gtd-meta gtd-notes-btn' + (notesMode !== 'none' ? ' is-on' : '')}

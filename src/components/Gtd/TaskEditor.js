@@ -1393,21 +1393,6 @@ export default function TaskEditor({
             <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
           </span>
         )}
-        {!isNew && onAddSubtask && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link"
-            onClick={withCommit(onAddSubtask)}
-            title={
-              isProject
-                ? 'Guardar y añadir una acción al proyecto'
-                : 'Guardar y añadir una subtarea'
-            }
-            data-testid="gtd-editor-add-subtask"
-          >
-            <i className="fas fa-plus" /> Subtarea
-          </button>
-        )}
         {!isNew && (
           <button
             type="button"
@@ -1475,6 +1460,22 @@ export default function TaskEditor({
             data-testid="gtd-editor-trash"
           >
             <i className="fas fa-trash" /> {inTrash ? 'Borrar' : 'Papelera'}
+          </button>
+        )}
+        {/* (3.43) «＋ Subtarea» al final de la línea de botones */}
+        {!isNew && onAddSubtask && (
+          <button
+            type="button"
+            className="gtd-btn gtd-btn--link"
+            onClick={withCommit(onAddSubtask)}
+            title={
+              isProject
+                ? 'Guardar y añadir una acción al proyecto'
+                : 'Guardar y añadir una subtarea'
+            }
+            data-testid="gtd-editor-add-subtask"
+          >
+            <i className="fas fa-plus" /> Subtarea
           </button>
         )}
         <span className="gtd-spacer" />

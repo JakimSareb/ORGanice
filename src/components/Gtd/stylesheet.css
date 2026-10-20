@@ -4213,3 +4213,14 @@ input.gtd-proc__input:not([type]) {
   align-self: center;
   white-space: nowrap;
 }
+
+/* (3.43) icono de notas de la fila un poco más grande y fácil de tocar (sin mover la fila) */
+.gtd-notes-btn {
+  font-size: 14px;
+  padding: 3px 6px;
+  margin-top: -3px;
+  margin-bottom: -3px;
+}
+.gtd-task__title > .gtd-notes-btn {
+  margin-left: 2px;
+}
