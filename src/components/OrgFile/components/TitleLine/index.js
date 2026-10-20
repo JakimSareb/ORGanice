@@ -16,8 +16,8 @@ import { createIsTodoKeywordInDoneState, hasHeaderContent } from '../../../../li
 import { generateTitleLine } from '../../../../lib/export_org';
 import AttributedString from '../AttributedString';
 import { attachmentCountOfHeader } from '../../../../lib/eli_attachments';
+import { legacyHeaderTapOpen } from '../../../../lib/eli_tap_mode';
 import { isDocLocked } from '../../../../lib/eli_doc_lock';
-import { getTapMode, isTouchEvent } from '../../../../lib/eli_tap_mode';
 
 class TitleLine extends PureComponent {
   constructor(props) {
@@ -74,45 +74,24 @@ class TitleLine extends PureComponent {
       event.target &&
       event.target.closest &&
       event.target.closest('a, button, input, .timestamp, .todo-keyword, .eli-attach-indicator');
-    const now = Date.now();
-    const prev = this.lastTap;
-    this.lastTap = { at: now };
-    const isDouble = isSelected && prev && now - prev.at < 380;
-    if (isDouble) {
-      this.lastTap = null;
-      // el primer toque plegó/desplegó: se deja como estaba
-      if (prev.unhid) {
-        // (3.04) el primer toque mostró las notas: se vuelven a ocultar
-        this.props.org.eliSetHideBody(header.get('id'), true);
-      } else if (prev.toggled) {
+    // (4.04) Sin ajuste: el primer toque selecciona; en la ya seleccionada, el título se pone en
+    // edición en su sitio. Plegar/desplegar = la viñeta (con el candado, el toque pliega).
+    if (legacyHeaderTapOpen()) {
+      if (hasContent && !onInner)
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
-      }
-      if (!this.props.shouldDisableActions && !onInner && !isDocLocked()) {
-        this.props.base.activatePopup('title-editor');
-      }
-      return;
-    }
-    // (3.05) el primer toque solo selecciona (sin plegar ni desplegar); el segundo, despliega
-    // (3.07) salvo que en Ajustes se elija «Plegar / desplegar» (móvil y ordenador por separado)
-    const tapMode = getTapMode(isTouchEvent(event) ? 'header-mobile' : 'header-desktop');
-    // (4.03) «Editarla»: un toque en el título lo pone en edición (con el candado, solo selecciona)
-    if (tapMode === 'edit' && !onInner && !this.props.shouldDisableActions && !isDocLocked()) {
-      this.lastTap = null;
-      if (!isSelected) this.props.org.selectHeader(header.get('id'));
-      this.props.base.activatePopup('title-editor');
-      return;
-    }
-    if (!isSelected && tapMode !== 'open') {
       this.props.org.selectHeader(header.get('id'));
       return;
     }
-    if (hasContent && !onInner) {
-      // (3.04) abierto «solo cabeceras»: este toque muestra las notas (no pliega)
-      if (header.get('opened') && header.get('eliHideBody') && hasHeaderContent(header))
-        this.lastTap.unhid = true;
-      else this.lastTap.toggled = true;
-      this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
+    if (!isSelected) {
+      this.props.org.selectHeader(header.get('id'));
+      return;
     }
+    if (onInner) return;
+    if (!this.props.shouldDisableActions && !isDocLocked()) {
+      this.props.base.activatePopup('title-editor');
+      return;
+    }
+    if (hasContent) this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
     this.props.org.selectHeader(header.get('id'));
   }
 

@@ -17,7 +17,9 @@ const titles = (l) => l.map((t) => t.title);
 describe('3.41: revisión semanal con la checklist oficial', () => {
   test('pasos en orden: Despejar → Al día → Crear; semana justo después de Next', () => {
     const ids = REVIEW_STEPS.map((s) => s.id);
-    expect(ids[0]).toBe('inbox');
+    // (4.04) primero, las terminadas desde la última revisión; después, el Inbox
+    expect(ids[0]).toBe('closed');
+    expect(ids[1]).toBe('inbox');
     expect(reviewStepIndex('week')).toBe(reviewStepIndex('next') + 1);
     expect(ids[ids.length - 1]).toBe('someday');
     const phases = REVIEW_STEPS.map((s) => s.phase);

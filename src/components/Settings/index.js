@@ -394,17 +394,29 @@ const Settings = ({
           </>
         )}
 
-        {!notes && (
-          <div className="setting-container">
-            <div className="setting-label">Estilo de viñetas</div>
-            <TabButtons
-              buttons={['Clásico', 'Decorado']}
-              values={['Classic', 'Fancy']}
-              selectedButton={bulletStyle}
-              onSelect={handleBulletStyleChange}
-            />
-          </div>
-        )}
+        {/* (4.04) más estilos (cambian el icono según el nivel); también en el Modo Notas */}
+        <div className="setting-container" data-testid="eli-setting-bullets">
+          <div className="setting-label">Estilo de viñetas</div>
+          <select
+            className="eli-bullet-select"
+            value={bulletStyle || 'Fancy'}
+            onChange={(e) => handleBulletStyleChange(e.target.value)}
+            data-testid="eli-bullet-style"
+          >
+            {[
+              ['Classic', 'Clásico  *'],
+              ['Fancy', 'Decorado  ●'],
+              ['Org', 'Org  ◉ ○ ✸ ✿'],
+              ['Squares', 'Puntos y cuadrados  ● ○ ■ □'],
+              ['Stars', 'Estrellas  ★ ✦ ✧ ·'],
+              ['Diamonds', 'Rombos  ◆ ◇ ◈ ⬩'],
+            ].map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </div>
       </details>
 
       <EliToolsSettings />

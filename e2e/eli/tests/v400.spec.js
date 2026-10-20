@@ -56,32 +56,36 @@ test('4.0: Nueva › Subcabecera crea una hija', async ({ app }) => {
   await select(app, 'Segunda');
   await app.page.locator('[data-testid=eli-docbar-new]').click();
   await app.page.locator('[data-testid=eli-docbar-new-sub]').click();
-  // (4.03) se abre la hoja «Editar»
-  const input = app.page.locator('[data-testid=eli-edit-sheet-title]');
+  // (4.04) la hija aparece en el documento con el título en edición
+  const input = app.page.locator('[data-testid=titleLineInput]');
   await expect(input).toBeVisible();
   await input.fill('Hija nueva');
-  await app.page.locator('[data-testid=eli-edit-sheet-done]').click();
+  await input.press('Enter');
   const text = await app.fileAfterSync('/notas.org');
   expect(text).toMatch(/\* Segunda\n\*\* Hija nueva/);
   expect(app.errors).toEqual([]);
 });
 
-test('4.0: Editar abre una hoja con el título y el texto', async ({ app }) => {
+test('4.0/4.04: Editar pone el título en su sitio; otra vez, las notas', async ({ app }) => {
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org');
   await select(app, 'Primera');
-  await app.page.locator('[data-testid=eli-docbar-edit]').click();
-  const title = app.page.locator('[data-testid=eli-edit-sheet-title]');
-  const notes = app.page.locator('[data-testid=eli-edit-sheet-notes]');
+  const edit = app.page.locator('[data-testid=eli-docbar-edit]');
+  await edit.click();
+  const title = app.page.locator('[data-testid=titleLineInput]');
   await expect(title).toHaveValue('Primera');
-  await expect(notes).toHaveValue(/Texto de la primera/);
-  await expect(app.page.locator('[data-testid=eli-format-bold]')).toBeVisible();
-  await expect(app.page.locator('[data-testid=eli-edit-sheet-table]')).toBeVisible();
-  await title.fill('Primera cambiada');
-  await notes.fill('Otro texto');
-  await app.page.locator('[data-testid=eli-edit-sheet-done]').click();
+  await expect(edit).toContainText('Título');
   await expect(app.page.locator('[data-testid=eli-edit-sheet]')).toHaveCount(0);
+  await title.fill('Primera cambiada');
+  await edit.click();
+  const notes = app.page.locator('[data-testid=description-textarea]');
+  await expect(notes).toBeVisible();
+  await expect(notes).toHaveValue(/Texto de la primera/);
+  await expect(edit).toContainText('Notas');
+  await edit.click();
+  await expect(title).toBeVisible();
+  await title.press('Enter');
   const text = await app.fileAfterSync('/notas.org');
-  expect(text).toContain('* Primera cambiada\nOtro texto');
+  expect(text).toContain('* Primera cambiada\nTexto de la primera');
   expect(app.errors).toEqual([]);
 });
 

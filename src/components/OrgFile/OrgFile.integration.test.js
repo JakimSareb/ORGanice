@@ -10,7 +10,7 @@ import HeaderBar from '../HeaderBar';
 import readFixture from '../../../test_helpers/index';
 import rootReducer from '../../reducers/';
 
-import { setPath, parseFile } from '../../actions/org';
+import { setPath, parseFile, eliDropIfEmptyNewHeader } from '../../actions/org';
 import { setShouldLogIntoDrawer, activatePopup } from '../../actions/base';
 import { getCurrentTimestampAsText } from '../../lib/timestamps';
 import { Map, Set, fromJS, List } from 'immutable';
@@ -188,10 +188,10 @@ describe('Render all views', () => {
         // 'plus' on the first header which is _not_ a todoKeyword header
         fireEvent.click(getByTestId('eli-docbar-new'));
         fireEvent.click(getByTestId('eli-docbar-new-below'));
-        // (4.03) se abre la hoja «Editar» completa
-        expect(getByTestId('eli-edit-sheet-title').value).toEqual('');
+        // (4.04) el título nuevo, en edición en su sitio
+        expect(getByTestId('titleLineInput').value).toEqual('');
         expect(headerAfter('Top level header').getIn(['titleLine', 'todoKeyword'])).toBeFalsy();
-        fireEvent.click(getByTestId('eli-edit-sheet-done'));
+        fireEvent.change(getByTestId('titleLineInput'), { target: { value: 'Nueva' } });
 
         // 'plus' on a header which _is_ a todoKeyword header
         const headerCount = () =>
@@ -203,13 +203,13 @@ describe('Render all views', () => {
         fireEvent.click(queryByText('A todo item with schedule and deadline'));
         fireEvent.click(getByTestId('eli-docbar-new'));
         fireEvent.click(getByTestId('eli-docbar-new-below'));
-        expect(getByTestId('eli-edit-sheet-title').value).toEqual('');
+        expect(getByTestId('titleLineInput').value).toEqual('');
         expect(
           headerAfter('A todo item with schedule and deadline').getIn(['titleLine', 'todoKeyword'])
         ).toEqual('TODO');
-        // (4.03) Cancelar quita la cabecera recién añadida
         expect(headerCount()).toEqual(countBefore + 1);
-        fireEvent.click(getByTestId('eli-edit-sheet-cancel'));
+        // (4.04) si se deja vacía, se borra sola (sin paso en deshacer)
+        store.dispatch(eliDropIfEmptyNewHeader());
         expect(headerCount()).toEqual(countBefore);
       });
 

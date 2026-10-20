@@ -59,6 +59,9 @@ test('GTD (3.24): revisión semanal paso a paso', async ({ app }) => {
   const p = app.page;
   await gtd.side(app, 'gtd-review-start');
   await p.waitForSelector('[data-testid=gtd-review]');
+  // (4.04) el primer paso son las terminadas; luego el Inbox
+  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Terminadas');
+  await app.press(p.locator('[data-testid=gtd-review-next]'));
   await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Inbox');
   expect(await gtd.titles(app)).toContain('Idea');
   // (3.41) pasos nuevos (Next, semana, calendario, Waiting): se salta directo con su punto

@@ -7,6 +7,7 @@ import './stylesheet.css';
 import Header from '../Header';
 
 import * as orgActions from '../../../../actions/org';
+import { startBulletDrag } from './eliBulletDrag';
 import { numSubheadersOfHeaderWithId, hasHeaderContent } from '../../../../lib/org_utils';
 
 import _ from 'lodash';
@@ -49,6 +50,7 @@ class HeaderList extends PureComponent {
       'finishDrag',
       'loopAutoScroll',
       'stopAutoScrollLoop',
+      'handleBulletPointerDown',
     ]);
   }
 
@@ -420,6 +422,21 @@ class HeaderList extends PureComponent {
     this.handleWindowPointerEnd();
   }
 
+  // (4.04) arrastrar una cabecera por su viñeta (con sus subcabeceras)
+  handleBulletPointerDown(headerId, event) {
+    if (this.props.shouldDisableActions) return;
+    startBulletDrag({
+      headerId,
+      event,
+      headers: this.props.headers,
+      narrowedHeaderId: this.props.narrowedHeaderId,
+      onDrop: (id, where) => {
+        this.props.org.eliDropSubtree(id, where);
+        this.props.org.selectHeader(id);
+      },
+    });
+  }
+
   handleHeaderRef(headerId) {
     return (div) => (this.headerRefs[headerId] = div);
   }
@@ -528,6 +545,7 @@ class HeaderList extends PureComponent {
               shouldDisableActions={shouldDisableActions}
               onLongPressPointerStart={this.handleHeaderLongPressStart}
               onLongPressPointerEnd={this.handleHeaderLongPressEnd}
+              onBulletPointerDown={this.handleBulletPointerDown}
               isLongPressDragging={!!draggingHeaderId}
               isDraggedForReorder={draggingHeaderId === headerId}
               reorderDragOffsetY={

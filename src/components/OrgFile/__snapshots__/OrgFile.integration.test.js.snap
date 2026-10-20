@@ -782,6 +782,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *
@@ -834,6 +835,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *
@@ -886,6 +888,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *
@@ -950,6 +953,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *
@@ -1009,6 +1013,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *
@@ -1061,6 +1066,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *
@@ -1113,6 +1119,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *
@@ -1165,6 +1172,7 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         </div>
         <div
           class="header__bullet"
+          data-testid="header-bullet"
           style="margin-left: -16px;"
         >
           *

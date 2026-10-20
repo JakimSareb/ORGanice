@@ -1139,11 +1139,10 @@ export default function GtdView() {
     [scopedFiles, inboxPaths, gtdCfg]
   );
   // (3.24) lo que mira la revisión semanal (solo con ella abierta)
-  const reviewData = useMemo(() => (reviewStep !== null ? weeklyReview(tasks, today) : null), [
-    reviewStep,
-    tasks,
-    today,
-  ]);
+  const reviewData = useMemo(
+    () => (reviewStep !== null ? weeklyReview(tasks, today, lastReview) : null),
+    [reviewStep, tasks, today, lastReview]
+  );
   const counts = useMemo(() => {
     const c = countsFor(tasks, { area }, today);
     // (3.01) secuenciales: en Next cuenta solo la primera acción de cada proyecto
@@ -2923,6 +2922,16 @@ export default function GtdView() {
     if (cmd.view) selectView(cmd.view);
     if (cmd.agenda) setShowAgenda(true);
     if (cmd.shortcuts) setShowShortcuts(true);
+    // (4.04) procesos lanzados desde el Menú ☰ (aunque su sección esté apagada). Si GTD aún
+    // está cargando las tareas, se reintenta un par de veces.
+    if (cmd.process || cmd.review) {
+      if (!tasks.length && (cmd.tries || 0) < 4) {
+        setTimeout(() => gtdCmdRef.current({ ...cmd, tries: (cmd.tries || 0) + 1 }), 500);
+        return;
+      }
+      if (cmd.process) startProcess();
+      else startReview();
+    }
     if (cmd.newProject) addProject();
     if (cmd.sync) syncAll();
     if (cmd.focusAdd) setTimeout(() => openDraft('inbox'), 50);
@@ -2999,7 +3008,8 @@ export default function GtdView() {
   const startReview = () => {
     setSideOpen(false);
     setReview(0);
-    goList('inbox');
+    // (4.04) el primer paso es lo terminado (Logbook)
+    goList(REVIEW_STEPS[0].view || 'inbox');
   };
   const finishReview = () => {
     const now = new Date().toISOString();

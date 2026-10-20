@@ -798,6 +798,40 @@ const eliMoveSubtreeNextTo = (state, action) => {
   return state;
 };
 
+// (4.04) Arrastrar una cabecera por su viñeta: la cabecera con sus subcabeceras se pone delante
+// de «beforeId» (o detrás de «afterId» y las suyas, o al final) con el nivel «level».
+const eliDropSubtree = (state, action) => {
+  let headers = state.get('headers');
+  const { headerId, beforeId, afterId } = action;
+  const src = indexOfHeaderWithId(headers, headerId);
+  if (src < 0) return state;
+  const size = 1 + subheadersOfHeaderWithId(headers, headerId).size;
+  const inside = (id) => {
+    const i = id ? indexOfHeaderWithId(headers, id) : -1;
+    return i >= src && i < src + size;
+  };
+  if (inside(beforeId) || inside(afterId)) return state;
+  const previousParentId = parentIdOfHeaderWithId(headers, headerId);
+  const delta = Math.max(1, action.level || 1) - headers.getIn([src, 'nestingLevel']);
+  const tree = headers
+    .slice(src, src + size)
+    .map((h) => h.set('nestingLevel', Math.max(1, h.get('nestingLevel') + delta)));
+  headers = headers.splice(src, size);
+  let at = headers.size;
+  if (beforeId) {
+    at = indexOfHeaderWithId(headers, beforeId);
+  } else if (afterId) {
+    const a = indexOfHeaderWithId(headers, afterId);
+    if (a >= 0) at = a + 1 + subheadersOfHeaderWithId(headers, afterId).size;
+  }
+  if (at < 0) return state;
+  headers = headers.splice(at, 0, ...tree.toArray());
+  state = state.set('headers', headers);
+  if (previousParentId) state = updateCookiesOfHeaderWithId(state, previousParentId);
+  state = updateCookiesOfParentOfHeaderWithId(state, headerId);
+  return openDirectParent(state, headerId);
+};
+
 // ORG Mode para Eli (2.18): convertir una tarea en subtarea de otra del mismo fichero (pasa a ser
 // su última hija, con sus propias subtareas) y sacarla un nivel (queda justo debajo de su antigua
 // madre). La madre recibe el contador [n/m] si no lo tenía.
@@ -2466,6 +2500,15 @@ const reducer = (state, action) => {
       return inFile(selectPreviousVisibleHeader);
     case 'REMOVE_HEADER':
       return inFile(removeHeader);
+    // (4.04) cabecera nueva que se quedó vacía (no es un paso de deshacer; ver reducers/index.js)
+    case 'ELI_DROP_NEW_HEADER':
+      return inFile((file, a) => {
+        if (!file.get('headers') || indexOfHeaderWithId(file.get('headers'), a.headerId) === -1)
+          return file;
+        const out = removeHeader(file, a);
+        const exists = (hid) => !!hid && out.get('headers').some((h) => h.get('id') === hid);
+        return out.set('selectedHeaderId', exists(a.fromId) ? a.fromId : null);
+      });
     case 'MOVE_HEADER_UP':
       return inFile(moveHeaderUp);
     case 'MOVE_HEADER_DOWN':
@@ -2474,6 +2517,8 @@ const reducer = (state, action) => {
       return inFile(moveHeaderToPosition);
     case 'ELI_MOVE_SUBTREE_NEXT_TO':
       return inFile(eliMoveSubtreeNextTo);
+    case 'ELI_DROP_SUBTREE':
+      return inFile(eliDropSubtree);
     case 'ELI_MAKE_SUBTASK_OF':
       return inFile(eliMakeSubtaskOf);
     case 'ELI_PROMOTE_SUBTASK':

@@ -21,26 +21,8 @@ export const TAP_MODES = {
       { id: 'select', label: 'Seleccionarla' },
     ],
   },
-  'header-mobile': {
-    label: 'Al tocar una cabecera (móvil)',
-    def: 'select',
-    options: [
-      { id: 'select', label: 'Seleccionarla' },
-      { id: 'open', label: 'Plegar / desplegar' },
-      // (4.03) un toque = el título en edición directamente
-      { id: 'edit', label: 'Editarla' },
-    ],
-  },
-  'header-desktop': {
-    label: 'Al hacer clic en una cabecera (ordenador)',
-    def: 'select',
-    options: [
-      { id: 'select', label: 'Seleccionarla' },
-      { id: 'open', label: 'Plegar / desplegar' },
-      // (4.03) un toque = el título en edición directamente
-      { id: 'edit', label: 'Editarla' },
-    ],
-  },
+  // (4.04) las cabeceras de Documentos ya no tienen ajuste: 1.er toque selecciona, 2.º edita
+  // el título; la viñeta pliega/despliega (y arrastrándola, mueve)
 };
 
 const readAll = () => {
@@ -48,6 +30,16 @@ const readAll = () => {
     return JSON.parse(localStorage.getItem(KEY) || '{}') || {};
   } catch (e) {
     return {};
+  }
+};
+
+// (4.04) Solo para las pruebas jest de organice (window.testRunner): «un clic pliega/despliega» en
+// las cabeceras, como en el organice original. En la app ya no hay ajuste.
+export const legacyHeaderTapOpen = () => {
+  try {
+    return !!window.testRunner && readAll()['header-desktop'] === 'open';
+  } catch (e) {
+    return false;
   }
 };
 

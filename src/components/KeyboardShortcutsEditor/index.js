@@ -16,6 +16,8 @@ import {
   keybindingLabel,
 } from '../../lib/keybindings';
 
+import { isNotesMode } from '../../lib/eli_notes_mode';
+
 import './stylesheet.css';
 
 const KeyboardShortcutsEditor = ({ customKeybindings, base }) => {
@@ -39,6 +41,7 @@ const KeyboardShortcutsEditor = ({ customKeybindings, base }) => {
     base.setCustomKeybinding(bindingName, newBinding);
   };
 
+  const notes = isNotesMode();
   return (
     <div className="keyboard-shortcuts-editor-container">
       <h3 className="keyboard-shortcuts-editor__section">Documentos</h3>
@@ -50,17 +53,21 @@ const KeyboardShortcutsEditor = ({ customKeybindings, base }) => {
           onBindingChange={handleBindingChange}
         />
       ))}
-      <h3 className="keyboard-shortcuts-editor__section" data-testid="kb-gtd-section">
-        Vista GTD
-      </h3>
-      {gtd.map(({ name, binding }) => (
-        <ShortcutRow
-          key={name}
-          name={name}
-          binding={binding}
-          onBindingChange={handleBindingChange}
-        />
-      ))}
+      {/* (4.04) en el Modo Notas, solo los de Documentos */}
+      {!notes && (
+        <h3 className="keyboard-shortcuts-editor__section" data-testid="kb-gtd-section">
+          Vista GTD
+        </h3>
+      )}
+      {!notes &&
+        gtd.map(({ name, binding }) => (
+          <ShortcutRow
+            key={name}
+            name={name}
+            binding={binding}
+            onBindingChange={handleBindingChange}
+          />
+        ))}
     </div>
   );
 };

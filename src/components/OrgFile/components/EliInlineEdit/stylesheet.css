@@ -62,3 +62,63 @@
   width: 16px;
   cursor: pointer;
 }
+
+/* (4.04) la viñeta se arrastra: con el dedo no desplaza la página ni selecciona texto */
+.header__bullet {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  white-space: nowrap;
+  cursor: grab;
+}
+.header__bullet-fold {
+  font-size: 0.6em;
+  margin-left: 1px;
+  vertical-align: middle;
+}
+.eli-hdrag-on,
+.eli-hdrag-on * {
+  cursor: grabbing !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+.eli-hdrag-src {
+  opacity: 0.35;
+}
+.eli-hdrag-ghost {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--base3);
+  color: var(--base00);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: inherit;
+}
+.eli-hdrag-ghost__count {
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+.eli-hdrag-line {
+  position: fixed;
+  z-index: 2999;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--blue);
+  pointer-events: none;
+}
+.eli-hdrag-line::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+}

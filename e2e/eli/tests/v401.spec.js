@@ -60,13 +60,15 @@ test('4.01: GTD, fecha y hora entre Rehacer y el formato (notas y título)', asy
   expect(app.errors).toEqual([]);
 });
 
-test('4.01: Menú ☰ de GTD: Buscar la primera, Ajustes la última, sin Agenda', async ({ app }) => {
+test('4.01/4.04: Menú ☰ de GTD: Buscar la primera, Agenda la segunda, Ajustes la última', async ({
+  app,
+}) => {
   await app.open({ '/tasks.org': '* NEXT Algo\n', '/inbox.org': '' });
   await gtd.ready(app);
   const items = await topItems(app);
   expect(items[0]).toBe('eli-palette-btn');
+  expect(items[1]).toBe('eli-agenda-menu');
   expect(items[items.length - 1]).toBe('eli-settings');
-  expect(items).not.toContain('eli-agenda-menu');
   expect(app.errors).toEqual([]);
 });
 
@@ -80,7 +82,7 @@ test('4.01: Menú ☰ de Documentos: Buscar, …, Agenda, …, Ajustes', async (
   const items = await topItems(app);
   expect(items[0]).toBe('eli-palette-btn');
   expect(items[items.length - 1]).toBe('eli-settings');
-  expect(items).toContain('eli-agenda-menu');
+  expect(items[1]).toBe('eli-agenda-menu');
   await page.locator('[data-testid=eli-agenda-menu]').click();
   await expect(page.locator('.agenda__tab-container')).toBeVisible();
   expect(app.errors).toEqual([]);

@@ -3,6 +3,20 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.04 (octubre de 2026)
+** Menú ☰ (GTD y Documentos)
+- *Agenda* es la segunda opción, también en GTD (en el Modo Notas no sale).
+- Nuevo *Procesos*: los procesos guiados de GTD por bloques (*Diarios*: Procesar Inbox; *Periódicos*: Revisión semanal), aunque su sección del menú de GTD esté apagada. Desde Documentos te lleva a GTD. En el Modo Notas no sale.
+- *Atajos de teclado* pasa a *Ayuda* y abre siempre la ventana de atajos (también desde Documentos). En el Modo Notas, esa ventana y Ajustes › Atajos solo traen los de Documentos.
+** Documentos
+- *Editar* (barra de abajo) ya no abre una hoja: pone el *título* en edición en su sitio; otra vez, las *notas*; otra vez, el título. El botón dice dónde estás (*Título* / *Notas*).
+- *Nueva* (arriba, debajo o subcabecera) aparece en el documento con el título listo para escribir. Si sales sin escribir nada, se borra sola (sin dejar paso en deshacer).
+- Tocar el título: el primer toque selecciona y el segundo edita. La *viñeta* pliega y despliega. Fuera de Ajustes las opciones de «Al tocar una cabecera».
+- *Arrastrar cabeceras por la viñeta*, con sus subcabeceras y una línea que marca dónde caen. Ratón: arrastrar. Móvil: mantener la viñeta medio segundo y arrastrar (la página se desplaza sola en los bordes). A la derecha / izquierda cambia el nivel. Mantener pulsado el texto sigue siendo «Ver sola».
+- *Estilos de viñeta* nuevos que cambian el icono según el nivel: *Org* (◉ ○ ✸ ✿), *Puntos y cuadrados* (● ○ ■ □), *Estrellas* (★ ✦ ✧ ·) y *Rombos* (◆ ◇ ◈ ⬩). Plegada: el icono en naranja con un triangulito. El ajuste sale también en el Modo Notas.
+** GTD
+- *Revisión semanal*: el primer paso es repasar las tareas *terminadas desde la última revisión* (sin revisión anterior, las de los últimos 7 días).
+
 * 4.03 (octubre de 2026)
 ** Documentos
 - *Nueva* (barra de abajo) tiene ahora tres opciones: *Arriba* (nueva), *Debajo* y *Subcabecera*. Las tres abren la hoja *Editar* completa (título y texto). *Cancelar* en esa hoja quita la cabecera que acabas de añadir.

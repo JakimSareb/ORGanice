@@ -236,6 +236,17 @@ class OrgFile extends PureComponent {
         this.container.focus({ preventScroll: true });
       } catch (e) {}
     }
+    // (4.04) al salir de editar una cabecera recién añadida con «Nueva» sin escribir nada, se
+    // quita sola
+    if (
+      !editingKind &&
+      ['title-editor', 'description-editor'].includes(prevProps.activePopupType)
+    ) {
+      setTimeout(() => {
+        if (!['title-editor', 'description-editor'].includes(this.props.activePopupType))
+          this.props.org.eliDropIfEmptyNewHeader();
+      }, 0);
+    }
     if (!editingKind && this.state.eliInlineFallback) {
       this.setState({ eliInlineFallback: false });
     } else if (
@@ -1341,6 +1352,8 @@ class OrgFile extends PureComponent {
                   !['title-editor', 'description-editor', 'note-editor'].includes(activePopupType))
               }
               commitEditing={this.handleActivePopupClose}
+              editingKind={this.state.captureMode ? null : activePopupType}
+              switchEditor={this.eliSwitchInlineEditor}
             />
           )}
 

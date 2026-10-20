@@ -12,10 +12,13 @@ test('Documentos: abre el fichero y despliega una cabecera', async ({ app }) => 
   const first = app.page.locator('text=Primera cabecera').first();
   await expect(first).toBeVisible({ timeout: 20000 });
   await expect(app.page.locator('text=Segunda cabecera').first()).toBeVisible();
-  // 1.er toque = seleccionar; 2.º = desplegar
-  await app.press(first);
-  await app.page.waitForTimeout(500);
-  await app.press(first);
+  // (4.04) tocar la viñeta = desplegar (el 2.º toque en el título lo edita)
+  const bullet = app.page
+    .locator('.header', { hasText: 'Primera cabecera' })
+    .first()
+    .locator('[data-testid=header-bullet]');
+  if (app.mobile) await bullet.dispatchEvent('click');
+  else await bullet.click();
   await expect(app.page.locator('text=Hija de la primera').first()).toBeVisible();
   expect(app.errors).toEqual([]);
 });
