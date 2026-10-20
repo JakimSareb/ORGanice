@@ -287,10 +287,11 @@ test('GTD (3.35): flechas solo entre secciones; menú lateral con ↑ ↓, borde
     await app.touchDrag({ x: 8, y: 400 }, { x: 180, y: 405 }, { hold: 0, steps: 8 });
     await page.waitForTimeout(400);
     expect(await sideOpen()).toBe(true);
-    await page.click('.gtd-scrim');
-    await page.waitForTimeout(400);
+    // con el menú ya abierto, se elige Next en él (y se cierra)
+    await app.press(page.locator('[data-testid=gtd-list-next]'));
+    await page.waitForTimeout(600);
+    expect(await sideOpen()).toBe(false);
     // (d) arrastre: al borde se abre; al alejar la tarea se oculta
-    await gtd.openList(app, 'Next');
     const box = await page
       .locator('[data-testid=gtd-task-title]', { hasText: 'Suelta' })
       .first()
