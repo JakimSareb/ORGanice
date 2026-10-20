@@ -8,6 +8,9 @@ const mouseDrag = async (page, locator, to, { keep = false } = {}) => {
   await page.mouse.move(b.x + 40, b.y + b.height / 2);
   await page.mouse.down();
   await page.mouse.move(b.x + 50, b.y + b.height / 2 + 4, { steps: 3 });
+  // el destino se mide ya arrastrando (en un proyecto salen entonces las secciones vacías)
+  await page.waitForTimeout(300);
+  if (typeof to === 'function') to = await to();
   await page.mouse.move(to.x, to.y, { steps: 15 });
   await page.waitForTimeout(300);
   if (!keep) await page.mouse.up();
@@ -66,7 +69,7 @@ test('GTD (3.45): en un proyecto, soltar en «Waiting» cambia el estado', async
   await app.press(page.locator('[data-testid=gtd-project]', { hasText: 'Casa' }).first());
   await page.waitForTimeout(800);
   const row = page.locator('[data-testid=gtd-task-title]:has-text("Pintar")').first();
-  await mouseDrag(page, row, await belowHeader(page.locator('[data-testid=gtd-psec-waiting]')));
+  await mouseDrag(page, row, () => belowHeader(page.locator('[data-testid=gtd-psec-waiting]')));
   await page.waitForTimeout(3000);
   const text = await app.fileAfterSync('/tasks.org');
   expect(text).toMatch(/\*\* WAITING Pintar/);
@@ -91,7 +94,7 @@ test('GTD (3.45): Focus agrupado por estado: soltar en otro grupo cambia el esta
   const waiting = page.locator('[data-testid=gtd-group-status]', { hasText: 'Waiting' }).first();
   await expect(waiting).toHaveCount(1);
   const row = page.locator('[data-testid=gtd-task-title]:has-text("Pintar")').first();
-  await mouseDrag(page, row, await belowHeader(waiting));
+  await mouseDrag(page, row, () => belowHeader(waiting));
   await page.waitForTimeout(3000);
   const text = await app.fileAfterSync('/tasks.org');
   expect(text).toMatch(/\* WAITING \[#A\] Pintar/);
