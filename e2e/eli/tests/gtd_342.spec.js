@@ -43,12 +43,7 @@ test('GTD (3.42): editar la tarea mientras se procesa el Inbox', async ({ app })
   await expect(page.locator('[data-testid=gtd-process-count]')).toContainText('1 de 2');
 
   // Se termina de procesar: Next
-  // (3.43) con clics: tras cerrar el editor, los atajos de teclado no llegaban en la prueba
-  const opts = page.locator('[data-testid=gtd-proc-opt]');
-  for (const n of [1, 1, 1, 0]) {
-    await opts.nth(n).click();
-    await page.waitForTimeout(250);
-  }
+  for (const k of ['2', '2', '2', '1']) await page.keyboard.press(k);
   await opt(app, 'Guardar').click();
   await expect(page.locator('[data-testid=gtd-process-count]')).toContainText('2 de 2');
   await expect(page.locator('[data-testid=gtd-process-title]')).toContainText('Otra cosa');
