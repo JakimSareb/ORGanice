@@ -33,11 +33,6 @@ test('4.01: GTD, fecha y hora entre Rehacer y el formato (notas y título)', asy
     'gtd-editor-now',
     'eli-format-toggle',
   ]);
-  // dentro del «Aa» ya no está repetido
-  const toggle = page.locator('.gtd-editor [data-testid=eli-format-toggle]');
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
-  await expect(page.locator('.gtd-editor [data-testid=eli-format-now]')).toHaveCount(0);
-
   // con el cursor en las notas: en las notas
   const notes = page.locator('[data-testid=gtd-editor-notes]');
   const preview = page.locator('[data-testid=gtd-editor-notes-preview]');
@@ -45,6 +40,11 @@ test('4.01: GTD, fecha y hora entre Rehacer y el formato (notas y título)', asy
   else await notes.click();
   await page.waitForTimeout(400);
   await page.keyboard.press('End');
+  // dentro del «Aa» ya no está repetido (en el móvil, la fila sale al editar)
+  const toggle = page.locator('.gtd-editor [data-testid=eli-format-toggle]');
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+  await expect(page.locator('.gtd-editor [data-testid=eli-format-now]')).toHaveCount(0);
+
   await page.click('.gtd-editor [data-testid=gtd-editor-now]');
   await expect(notes).toHaveValue(new RegExp('Notas de pintar\\s*' + STAMP.source));
 
