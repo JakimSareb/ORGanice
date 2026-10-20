@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.02 (octubre de 2026)
+** GTD
+- Proyectos con *Acciones siguientes secuenciales*: las tareas en espera y las programadas mezcladas con las Next llevan ahora una *W* (Waiting) o una *S* (programada) en gris clarito *dentro de la casilla*, en vez de la E y la P delante del título. La casilla sigue sirviendo para completarlas.
+- En el móvil, la *estrella ★* va a la derecha del todo de la fila.
+- En el ordenador vuelve la *flecha ▾* al final de cada fila, con el menú de la tarea (en el móvil, sigue con el clic derecho).
+
 * 4.01 (octubre de 2026)
 ** GTD
 - En el editor de la tarea, el botón del *reloj* (fecha y hora de ahora) está en la barra de arriba, entre *rehacer* y *Aa*. Inserta en el título si estás escribiendo en él y, si no, en las notas. Ya no está repetido dentro de *Aa*.

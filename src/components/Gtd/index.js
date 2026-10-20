@@ -219,6 +219,12 @@ const isNarrowGtd = () =>
   typeof window !== 'undefined' &&
   !!window.matchMedia &&
   window.matchMedia('(max-width: 720px)').matches;
+// (4.02) móvil (estrecho o táctil): sin el ▾ de la fila (el menú sale con el clic derecho)
+const isTouchGtd = () =>
+  isNarrowGtd() ||
+  (typeof window !== 'undefined' &&
+    !!window.matchMedia &&
+    window.matchMedia('(hover: none) and (pointer: coarse)').matches);
 const LS_AREA = 'eliGtdArea';
 const readLS = (k, fallback) => {
   try {
@@ -632,6 +638,19 @@ function TaskRow({
               >
                 {task.isDone ? (
                   <i className={task.keyword === 'CANCELLED' ? 'fas fa-times' : 'fas fa-check'} />
+                ) : seqMark ? (
+                  /* (4.02) proyecto secuencial: W = en espera, S = programada, dentro de la casilla */
+                  <span
+                    className="gtd-check__seq"
+                    title={
+                      seqMark === 'W'
+                        ? 'Waiting: en espera (bloquea las de después)'
+                        : 'Programada (bloquea las de después)'
+                    }
+                    data-testid="gtd-seq-mark"
+                  >
+                    {seqMark}
+                  </span>
                 ) : null}
               </button>
             )}
@@ -651,20 +670,6 @@ function TaskRow({
         )}
         <div className="gtd-task__main" ref={mainRef}>
           <div className={'gtd-task__title' + (wrapTitle ? '' : ' is-nowrap')}>
-            {/* (3.05) proyecto secuencial: en espera (E) o programada (P) mezclada con las Next */}
-            {seqMark && (
-              <span
-                className="gtd-task__seq"
-                title={
-                  seqMark === 'E'
-                    ? 'En espera (bloquea las de después)'
-                    : 'Programada (bloquea las de después)'
-                }
-                data-testid="gtd-seq-mark"
-              >
-                {seqMark}
-              </span>
-            )}
             {/* (3.05) con el ratón, clic justo sobre el texto del título = editar */}
             <span
               className={'gtd-task__title-text' + (onTitleClick ? ' is-link' : '')}
@@ -4799,8 +4804,8 @@ export default function GtdView() {
         item.section === 'next' &&
         isSeqBlocker(item.task, today)
           ? isFutureScheduled(item.task, today)
-            ? 'P'
-            : 'E'
+            ? 'S'
+            : 'W'
           : null
       }
       onRowDoubleClick={() => {
@@ -4814,6 +4819,7 @@ export default function GtdView() {
         onPointerDown(item.task)(e);
       }}
       onContextMenu={(e) => openTaskMenu(item.task, e)}
+      onMenuButton={isTouchGtd() ? null : (e) => openTaskMenu(item.task, e)}
       onDotsDown={item.isRef ? null : dotsDown(item.task)}
       onToggleDone={(e) => toggleDone(item.task, e)}
       onToggleStar={() => dispatch(gtdToggleStar(item.task))}
