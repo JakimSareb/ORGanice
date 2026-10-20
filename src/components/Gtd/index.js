@@ -3360,7 +3360,10 @@ export default function GtdView() {
     if (!item || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       const all = Array.from(
-        document.querySelectorAll('.gtd-side .gtd-side__item:not(.gtd-side__item--agenda)')
+        // (3.40) sin los botones que abren algo (Agenda, Revisión, Procesar Inbox)
+        document.querySelectorAll(
+          '.gtd-side .gtd-side__item:not(.gtd-side__item--agenda):not(.gtd-side__item--review):not(.gtd-side__item--process)'
+        )
       ).filter((b) => b.offsetParent);
       const i = all.indexOf(item);
       const next = all[i + (e.key === 'ArrowDown' ? 1 : -1)];
