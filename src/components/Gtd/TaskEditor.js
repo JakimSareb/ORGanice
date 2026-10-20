@@ -227,6 +227,12 @@ export default function TaskEditor({
   const [deadline, setDeadline] = useState(toDateInput(task.deadline));
   // ORG Mode para Eli: repeticiones («+1w», «.+2d»…) de la fecha programada y de la límite
   const [sRepeat, setSRepeat] = useState(task.scheduledRepeat || '');
+  // (3.34) hora de la programada ('HH:MM' o '')
+  const [sTime, setSTime] = useState(
+    task.scheduled && task.scheduledTimed
+      ? `${pad(task.scheduled.getHours())}:${pad(task.scheduled.getMinutes())}`
+      : ''
+  );
   const [dRepeat, setDRepeat] = useState(task.deadlineRepeat || '');
   const [star, setStar] = useState(task.priority === 'A');
   const [showContexts, setShowContexts] = useState(false);
@@ -317,6 +323,7 @@ export default function TaskEditor({
     scheduled,
     deadline,
     sRepeat,
+    sTime,
     dRepeat,
     project,
     parent,
@@ -372,6 +379,7 @@ export default function TaskEditor({
     if (c.scheduled !== b.scheduled) changes.scheduled = fromDateInput(c.scheduled);
     if (c.deadline !== b.deadline) changes.deadline = fromDateInput(c.deadline);
     if (c.sRepeat !== b.sRepeat) changes.scheduledRepeat = c.sRepeat;
+    if (c.sTime !== b.sTime) changes.scheduledTime = c.sTime;
     if (c.dRepeat !== b.dRepeat) changes.deadlineRepeat = c.dRepeat;
     if (!enc && c.notes !== b.notes) changes.notes = c.notes;
     if (c.list !== b.list) changes.list = c.list;
@@ -1262,7 +1270,10 @@ export default function TaskEditor({
           onChange={(v, r) => {
             setScheduled(v);
             setSRepeat(v ? r || '' : '');
+            if (!v) setSTime('');
           }}
+          time={sTime}
+          onTime={setSTime}
           deadline={deadline}
           deadlineRepeat={dRepeat}
           onDeadline={(v, r) => {

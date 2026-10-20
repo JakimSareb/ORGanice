@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.34 (octubre de 2026)
+** GTD
+- *Fecha programada*: en el iPhone, el botón «Restablecer» del selector de fecha pone *hoy* (para quitarla sigue «Quitar la fecha»). Debajo, un campo *Hora* para ponerle hora (sirve para los avisos de hora exacta) o quitarla con ×.
+- *Tareas hechas*: ya no se ven transparentes: título verde y tarjeta con un tono verde. *Canceladas*: título tachado y tarjeta gris.
+- El *icono de notas* de cada fila alterna entre notas ocultas y completas (sin el paso de «parciales»).
+
 * 3.33 (octubre de 2026)
 ** GTD
 - *Editor de tarea* (móvil): la hoja se cierra arrastrándola hacia abajo aunque se empiece sobre un campo como la fecha o el proyecto (antes no cerraba y se movía la lista de debajo).

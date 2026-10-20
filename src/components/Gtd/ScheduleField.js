@@ -195,6 +195,9 @@ export default function ScheduleField({
   deadlineRepeat,
   onDeadline,
   label = 'empieza',
+  // (3.34) hora ('HH:MM' o '') para los avisos de hora exacta (3.25)
+  time = '',
+  onTime,
 }) {
   const [open, setOpen] = useState(false);
   const [dialog, setDialog] = useState(false);
@@ -216,7 +219,9 @@ export default function ScheduleField({
     onChange(toInput(d), d ? repeat : '');
     setOpen(false);
   };
-  const summary = date ? `${fmt(date)}${repeat ? ` · ${describeRepeat(repeat)}` : ''}` : '';
+  const summary = date
+    ? `${fmt(date)}${time ? ` ${time}` : ''}${repeat ? ` · ${describeRepeat(repeat)}` : ''}`
+    : '';
 
   return (
     <div className="gtd-sched" ref={ref}>
@@ -245,11 +250,40 @@ export default function ScheduleField({
             type="date"
             value={value}
             onChange={(e) => {
-              onChange(e.target.value, e.target.value ? repeat : '');
+              // (3.34) el «Restablecer» del selector de iOS deja el campo vacío: aquí pone hoy
+              // (para quitar la fecha está «Quitar la fecha»)
+              const v = e.target.value || toInput(t0);
+              onChange(v, repeat);
               setOpen(false);
             }}
             data-testid="gtd-editor-scheduled"
           />
+          {value && onTime && (
+            <label className="gtd-schedtime">
+              <i className="far fa-clock" aria-hidden="true" />
+              <span>Hora</span>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => onTime(e.target.value || '')}
+                data-testid="gtd-editor-scheduled-time"
+              />
+              {time && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onTime('');
+                  }}
+                  aria-label="Quitar la hora"
+                  title="Quitar la hora"
+                  data-testid="gtd-editor-scheduled-time-clear"
+                >
+                  ×
+                </button>
+              )}
+            </label>
+          )}
           <div className="gtd-sched__quick">
             <button type="button" onClick={() => pick(t0)}>
               Hoy

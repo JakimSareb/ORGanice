@@ -537,6 +537,7 @@ function TaskRow({
       className={
         'gtd-task' +
         (task.isDone ? ' is-done' : '') +
+        (task.isDone && task.keyword === 'CANCELLED' ? ' is-cancelled' : '') +
         (isDragging ? ' is-dragging' : '') +
         (isSelected ? ' is-selected' : '') +
         (isProjectRow ? ' is-project-row' : '') +
@@ -650,7 +651,7 @@ function TaskRow({
             >
               {task.title || '(sin título)'}
             </span>
-            {/* (3.01) icono de notas: cambia Ocultas → Parciales → Completas solo en esta fila;
+            {/* (3.01) icono de notas solo en esta fila; (3.34) alterna Ocultas ⇄ Completas;
                 (3.11) pegado al final del título */}
             {!isProjectRow && task.description.trim() && notesLinesOf(task.description).length > 0 && (
               <button
@@ -663,11 +664,9 @@ function TaskRow({
                 onDoubleClick={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
                 title={
-                  notesMode === 'none'
-                    ? 'Tiene notas (clic: verlas en parte)'
-                    : notesMode === 'partial'
-                    ? 'Notas parciales (clic: completas)'
-                    : 'Notas completas (clic: ocultarlas)'
+                  notesMode === 'full'
+                    ? 'Notas visibles (clic: ocultarlas)'
+                    : 'Tiene notas (clic: verlas)'
                 }
                 data-testid="gtd-notes-toggle"
               >
@@ -4361,7 +4360,8 @@ export default function GtdView() {
       onCycleNotes={() =>
         setNotesOverride((o) => {
           const cur = o[item.task.key] || notesMode;
-          const next = cur === 'none' ? 'partial' : cur === 'partial' ? 'full' : 'none';
+          // (3.34) el icono alterna entre nada y todo (sin «parciales»)
+          const next = cur === 'full' ? 'none' : 'full';
           return { ...o, [item.task.key]: next };
         })
       }
