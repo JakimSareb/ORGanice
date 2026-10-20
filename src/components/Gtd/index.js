@@ -521,7 +521,7 @@ function TaskRow({
   const isProjectRow = !!task.isProject;
   // (3.05) adjuntos (file: y attachment:) a la vista en las notas
   const notes =
-    notesMode !== 'none' && !isProjectRow
+    notesMode !== 'none'
       ? notesLinesOf(task.description, (uri) => linkTargetFor(uri, task.header))
       : [];
   const shownNotes =
@@ -672,8 +672,8 @@ function TaskRow({
               {task.title || '(sin título)'}
             </span>
             {/* (3.01) icono de notas solo en esta fila; (3.34) alterna Ocultas ⇄ Completas;
-                (3.11) pegado al final del título */}
-            {!isProjectRow && task.description.trim() && notesLinesOf(task.description).length > 0 && (
+                (3.11) pegado al final del título; (3.43) también en los proyectos */}
+            {task.description.trim() && notesLinesOf(task.description).length > 0 && (
               <button
                 type="button"
                 className={'gtd-meta gtd-notes-btn' + (notesMode !== 'none' ? ' is-on' : '')}
@@ -945,6 +945,15 @@ export default function GtdView() {
   const [projNotesOpen, setProjNotesOpen] = useState(
     () => readLS('eliGtdProjNotes', true) !== false
   );
+  // (3.43) «Todos los proyectos»: notas desplegadas con su icono, por proyecto
+  const [overviewNotes, setOverviewNotes] = useState(() => new Set());
+  const toggleOverviewNotes = (key) =>
+    setOverviewNotes((cur) => {
+      const next = new Set(cur);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const [openKey, setOpenKey] = useState(null);
   // (3.05) cabeceras del menú lateral plegadas
   const [sepFolded, setSepFolded] = useState(() => {
@@ -1634,7 +1643,15 @@ export default function GtdView() {
         (label ? ` (${label.toLowerCase()})` : '') +
         '?\n\nSe moverán con sus subencabezados al fichero _archive de su fichero' +
         (archiveInSubfolder ? ', en la subcarpeta archive de su carpeta' : '') +
-        ', como hace Emacs (org-archive-subtree).',
+        ', como hace Emacs (org-archive-subtree).' +
+        // (3.43) aviso de las que se quedan
+        (!label && archivable.blocked.length
+          ? `\n\n${archivable.blocked.length} no se archiva${
+              archivable.blocked.length === 1 ? '' : 'n'
+            }: tiene${
+              archivable.blocked.length === 1 ? '' : 'n'
+            } alguna subtarea abierta o es de un proyecto que sigue abierto.`
+          : ''),
       okLabel: 'Archivar',
     });
     if (!ok) return;
@@ -5289,43 +5306,99 @@ export default function GtdView() {
                     {label} <span className="gtd-overview__n">{overview[id].length}</span>
                   </div>
                   {overview[id].map((r) => (
-                    <button
-                      key={r.project.key}
-                      className="gtd-overview__row"
-                      onClick={() => selectView({ type: 'project', key: r.project.key })}
-                      onContextMenu={(e) => openTaskMenu(r.project, e)}
-                      data-testid="gtd-overview-row"
-                    >
-                      <span className="gtd-overview__title">
-                        <i className="fas fa-project-diagram" /> {r.project.title}
-                      </span>
-                      <span className="gtd-overview__meta">
-                        {r.project.area && (
-                          <span className="gtd-meta gtd-meta--area">{r.project.area}</span>
-                        )}
-                        {r.start && (
-                          <span className="gtd-date" title="Empieza (SCHEDULED)">
-                            <i className="far fa-calendar-alt" /> {fmtDate(r.start)}
+                    <React.Fragment key={r.project.key}>
+                      <button
+                        className="gtd-overview__row"
+                        onClick={() => selectView({ type: 'project', key: r.project.key })}
+                        onContextMenu={(e) => openTaskMenu(r.project, e)}
+                        data-testid="gtd-overview-row"
+                      >
+                        <span className="gtd-overview__title">
+                          <i className="fas fa-project-diagram" /> {r.project.title}
+                          {/* (3.43) icono de notas, como en las filas de tareas */}
+                          {r.project.description.trim() &&
+                            notesLinesOf(r.project.description).length > 0 && (
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                className={
+                                  'gtd-meta gtd-notes-btn' +
+                                  (overviewNotes.has(r.project.key) ? ' is-on' : '')
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleOverviewNotes(r.project.key);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key !== 'Enter' && e.key !== ' ') return;
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleOverviewNotes(r.project.key);
+                                }}
+                                title={
+                                  overviewNotes.has(r.project.key)
+                                    ? 'Notas visibles (clic: ocultarlas)'
+                                    : 'Tiene notas (clic: verlas)'
+                                }
+                                data-testid="gtd-notes-toggle"
+                              >
+                                <i
+                                  className={
+                                    overviewNotes.has(r.project.key)
+                                      ? 'fas fa-sticky-note'
+                                      : 'far fa-sticky-note'
+                                  }
+                                />
+                              </span>
+                            )}
+                        </span>
+                        <span className="gtd-overview__meta">
+                          {r.project.area && (
+                            <span className="gtd-meta gtd-meta--area">{r.project.area}</span>
+                          )}
+                          {r.start && (
+                            <span className="gtd-date" title="Empieza (SCHEDULED)">
+                              <i className="far fa-calendar-alt" /> {fmtDate(r.start)}
+                            </span>
+                          )}
+                          {r.deadline && (
+                            <span
+                              className={'gtd-date' + (r.deadline < today ? ' gtd-date--due' : '')}
+                              title="Vence (DEADLINE)"
+                            >
+                              <i className="fas fa-flag" /> {fmtDate(r.deadline)}
+                            </span>
+                          )}
+                          <span className="gtd-meta" title="Acciones pendientes">
+                            <i className="fas fa-tasks" /> {r.pending}
+                          </span>
+                        </span>
+                        {r.next && (
+                          <span className="gtd-overview__next" title="Siguiente acción">
+                            <i className="fas fa-play" /> {r.next.title}
                           </span>
                         )}
-                        {r.deadline && (
-                          <span
-                            className={'gtd-date' + (r.deadline < today ? ' gtd-date--due' : '')}
-                            title="Vence (DEADLINE)"
-                          >
-                            <i className="fas fa-flag" /> {fmtDate(r.deadline)}
-                          </span>
-                        )}
-                        <span className="gtd-meta" title="Acciones pendientes">
-                          <i className="fas fa-tasks" /> {r.pending}
-                        </span>
-                      </span>
-                      {r.next && (
-                        <span className="gtd-overview__next" title="Siguiente acción">
-                          <i className="fas fa-play" /> {r.next.title}
-                        </span>
+                      </button>
+                      {overviewNotes.has(r.project.key) && (
+                        <div className="gtd-overview__notes" data-testid="gtd-overview-notes">
+                          <NotesLines
+                            task={r.project}
+                            lines={notesLinesOf(r.project.description, (uri) =>
+                              linkTargetFor(uri, r.project.header)
+                            )}
+                            notesMode="full"
+                            onToggleCheck={(index) =>
+                              dispatch(
+                                gtdSaveTask(r.project, {
+                                  notes: toggleCheckboxLine(r.project.description, index),
+                                })
+                              )
+                            }
+                            onOpenLink={(target) => openLinkAny(r.project, target)}
+                          />
+                        </div>
                       )}
-                    </button>
+                    </React.Fragment>
                   ))}
                 </section>
               ) : null

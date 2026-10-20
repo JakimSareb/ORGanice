@@ -4,7 +4,7 @@
 // o todo junto (grupos «No requiere acción» / «Requiere acción» / «¿Cuándo?»).
 // La decisión se entrega a `onDecide(d)`: d.kind = trash | reference | someday | tickler | done |
 // waiting | project | next | later, con los datos que haga falta (fechas, persona, área, etiquetas…).
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { toDateInput, fromDateInput } from './TaskEditor';
 import { parseTagsInput, personTag } from '../../lib/gtd/gtd_process';
 
@@ -227,8 +227,9 @@ export default function GtdProcessInbox({
   }
   optionsRef.current = options;
 
-  // Atajos 1, 2, 3… (fuera de los campos de texto)
-  useEffect(() => {
+  // Atajos 1, 2, 3… (fuera de los campos de texto). (3.43) useLayoutEffect: con useEffect, justo
+  // al cambiar de tarjeta había un momento sin atajos y se perdían las teclas pulsadas deprisa
+  useLayoutEffect(() => {
     const onKey = (e) => {
       if (paused || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
       const t = e.target;

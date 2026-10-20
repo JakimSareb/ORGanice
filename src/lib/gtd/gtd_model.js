@@ -850,10 +850,17 @@ export const logbookGroupOf = (closed, today = new Date()) => {
 
 // ORG Mode para Eli: tareas terminadas que se pueden archivar (Logbook → «Archivar»). Una tarea
 // terminada con alguna subtarea todavía abierta NO se archiva (se llevaría la subtarea).
+// (3.43) Tampoco las terminadas de un proyecto que sigue abierto: se quedan con él y, cuando el
+// proyecto se termina, se archiva todo junto.
 export const archivableDone = (tasks, onlyPaths = null) => {
   const ok = [];
   const blocked = [];
   const byPath = {};
+  const openProjects = new Set(
+    tasks.filter((t) => t.isProject && !t.isDone).map((t) => `${t.path}::${t.id}`)
+  );
+  const inOpenProject = (t) =>
+    !t.isProject && !!t.project && openProjects.has(`${t.project.path}::${t.project.id}`);
   // (2.17) solo los ficheros elegidos en Ajustes (vacío: todos)
   const allowed = onlyPaths && onlyPaths.length ? new Set(onlyPaths) : null;
   tasks
@@ -863,7 +870,7 @@ export const archivableDone = (tasks, onlyPaths = null) => {
     const sorted = [...list].sort((a, b) => a.index - b.index);
     sorted.forEach((t, i) => {
       if (!t.isDone) return;
-      let open = false;
+      let open = inOpenProject(t);
       for (let j = i + 1; j < sorted.length && sorted[j].level > t.level; j++) {
         if (sorted[j].keyword && !sorted[j].isDone) {
           open = true;
