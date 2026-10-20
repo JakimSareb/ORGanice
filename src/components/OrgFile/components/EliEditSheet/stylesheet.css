@@ -1,0 +1,32 @@
+/* ORG Mode para Eli (4.0): hoja «Editar» (título + texto) */
+.eli-edit-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eli-edit-sheet__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.eli-edit-sheet__heading {
+  margin: 0;
+  font-size: 17px;
+  flex: 1;
+  text-align: center;
+}
+.eli-edit-sheet__title {
+  font-weight: 600;
+  font-size: 17px;
+  resize: none;
+}
+.eli-edit-sheet__notes {
+  min-height: 9em;
+}
+.eli-edit-sheet__format {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}

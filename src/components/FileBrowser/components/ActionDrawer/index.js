@@ -28,6 +28,7 @@ import {
 import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
 import { newFileHeaderLines } from '../../../../lib/eli_todo_defaults';
 import { newFountainTemplate } from '../../../../lib/eli_fountain';
+import { useNotesMode } from '../../../../lib/eli_notes_mode';
 
 const ensureCompleteFilename = (fileName) => {
   return /\.org(\.gpg|\.asc)?$/.test(fileName) ? fileName : `${fileName}.org`;
@@ -46,6 +47,7 @@ const ActionDrawer = ({
   // ORG Mode para Eli: agenda también desde el explorador de ficheros
   const [showAgenda, setShowAgenda] = useState(false);
   const history = useHistory();
+  const notes = useNotesMode();
   const openAgenda = () => {
     // Descargar los ficheros de la agenda que aún no estén cargados
     // (en silencio: si alguno no existe, no se muestra ningún error)
@@ -176,22 +178,21 @@ const ActionDrawer = ({
   // (3.29) Sin fichero abierto: la misma barra de herramientas que dentro de un documento, con solo
   // lo que tiene sentido aquí (antes eran botones propios en la parte de arriba)
   const browserBar = {
+    // (4.0) Ficheros principales (Menú › Mis ficheros) y Agenda (GTD) ya no se repiten aquí;
+    // Capturar, solo en el modo completo
     items: [
-      {
-        id: 'favorites',
-        icon: 'fas fa-copy',
-        title: 'Ficheros principales',
-        onClick: openFavorites,
-      },
-      { id: 'new', icon: 'fas fa-plus', title: 'Nuevo fichero', sub: 'new' },
-      { id: 'agenda', icon: 'far fa-calendar-check', title: 'Agenda', onClick: openAgenda },
-      {
-        id: 'capture',
-        icon: 'fas fa-inbox',
-        badge: '+',
-        title: 'Capturar (plantillas de captura)',
-        onClick: startCapture,
-      },
+      { id: 'new', icon: 'fas fa-plus', label: 'Nuevo', title: 'Nuevo fichero', sub: 'new' },
+      ...(notes
+        ? []
+        : [
+            {
+              id: 'capture',
+              icon: 'fas fa-inbox',
+              label: 'Capturar',
+              title: 'Capturar (plantillas de captura)',
+              onClick: startCapture,
+            },
+          ]),
     ],
     subs: {
       new: [

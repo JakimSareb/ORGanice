@@ -10,8 +10,8 @@ const editNotes = async (app, title) => {
   await expect(t).toBeVisible({ timeout: 20000 });
   await app.press(t);
   await app.page.waitForTimeout(500);
-  await app.page.locator('[data-testid=eli-docbar-edit]').click();
-  await app.page.locator('[data-testid=eli-docbar-edit-notes]').click();
+  // (4.0) «Editar» abre la hoja (título + texto); en su sitio, con el atajo (Ctrl+D)
+  await app.page.keyboard.press('Control+d');
   const ta = app.page.locator('[data-testid=description-textarea]');
   await expect(ta).toBeVisible();
   await app.page.waitForTimeout(500);

@@ -360,3 +360,12 @@
   background: var(--base3);
   color: var(--base01);
 }
+
+/* (4.0) Modo Notas y «Más temas» */
+.eli-notes-mode-setting {
+  margin-bottom: 8px;
+}
+.eli-theme-more {
+  margin-top: 8px;
+  align-self: flex-start;
+}

@@ -57,8 +57,7 @@ test('GTD (3.24): revisión semanal paso a paso', async ({ app }) => {
   });
   await gtd.ready(app);
   const p = app.page;
-  await app.press(p.locator('[data-testid=gtd-view-menu-button]'));
-  await app.press(p.locator('[data-testid=gtd-menu-review]'));
+  await gtd.side(app, 'gtd-review-start');
   await p.waitForSelector('[data-testid=gtd-review]');
   await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Inbox');
   expect(await gtd.titles(app)).toContain('Idea');

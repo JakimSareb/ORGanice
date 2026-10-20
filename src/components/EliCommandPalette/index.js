@@ -39,6 +39,7 @@ import {
 } from '../../actions/base';
 import { openFavorites, openMoonPhases, openRawEditor, openPrintPreview } from '../EliTools';
 import { openAcomodadores } from '../EliAcomodadores';
+import { isNotesMode, toolOn } from '../../lib/eli_notes_mode';
 
 const selectIsAuthenticated = (s) => s.syncBackend.get('isAuthenticated');
 const MAX_RESULTS = 50;
@@ -639,7 +640,30 @@ export default function EliCommandPalette() {
           search: t,
         })
       );
-    return items;
+    // (4.0) Herramientas apagadas en Ajustes y, en el Modo Notas, nada de GTD ni de tareas
+    const toolOf = { calendar: 'cal', calculator: 'calc', moon: 'moon', acomodadores: 'acom' };
+    const notesHidden = new Set([
+      'inbox-new',
+      'agenda',
+      'gtd',
+      'docs',
+      'new-project',
+      'gtd-cleanup',
+      'archive-done',
+      'review-attachments',
+      'all-projects',
+      'raw',
+      'split',
+    ]);
+    const notesMode = isNotesMode();
+    return items.filter((it) => {
+      const aid = it.kind === 'action' ? it.rid.slice(2) : null;
+      if (aid && toolOf[aid] && !toolOn(toolOf[aid])) return false;
+      if (!notesMode) return true;
+      if (it.kind === 'gtd' || it.kind === 'project') return false;
+      if (aid && (notesHidden.has(aid) || aid.startsWith('capture:'))) return false;
+      return true;
+    });
     // goToFile/goToHeader solo usan dispatch/history (estables)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, remoteFiles, location.pathname, store, dispatch, history, showArch, rev]);

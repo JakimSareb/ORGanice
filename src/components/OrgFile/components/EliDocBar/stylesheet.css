@@ -291,3 +291,35 @@ body.eli-docbar-on .action-drawer-container {
 .eli-docbar.is-browser {
   width: auto;
 }
+
+/* (4.0) Barra de 5 botones grandes con texto (Editar · Nueva · Añadir · Mover · Más): reparten el
+   ancho; icono arriba y texto debajo */
+.eli-docbar.is-main {
+  border-radius: 22px;
+}
+.eli-docbar.is-main .eli-docbar__row {
+  justify-content: space-between;
+  -webkit-mask-image: none;
+  mask-image: none;
+  padding: 4px 6px;
+}
+.eli-docbar__btn.is-big {
+  flex: 1 1 0;
+  min-width: 56px;
+  height: 54px;
+  flex-direction: column;
+  gap: 3px;
+  border-radius: 16px;
+  padding: 0 4px;
+}
+.eli-docbar.is-touch .eli-docbar__btn.is-big {
+  height: 56px;
+}
+.eli-docbar__btn.is-big .eli-docbar__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.eli-docbar.is-desk.is-main {
+  min-width: min(520px, calc(100% - 24px));
+}

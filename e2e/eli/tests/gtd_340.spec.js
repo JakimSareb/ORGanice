@@ -12,8 +12,7 @@ const TICKLER = `* *[ TICKLER 2027 ]*
 `;
 
 const start = async (app) => {
-  await app.page.click('[data-testid=gtd-view-menu-button]');
-  await app.page.click('[data-testid=gtd-menu-process]');
+  await gtd.side(app, 'gtd-process-start');
   await expect(app.page.locator('[data-testid=gtd-process]')).toHaveCount(1);
 };
 const count = (app) => app.page.locator('[data-testid=gtd-process-count]');

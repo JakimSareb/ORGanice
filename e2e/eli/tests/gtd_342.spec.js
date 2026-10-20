@@ -10,8 +10,7 @@ test('GTD (3.42): editar la tarea mientras se procesa el Inbox', async ({ app })
     '/inbox.org': '* lo del grifo\n* Otra cosa\n',
   });
   await gtd.ready(app);
-  await page.click('[data-testid=gtd-view-menu-button]');
-  await page.click('[data-testid=gtd-menu-process]');
+  await gtd.side(app, 'gtd-process-start');
   await expect(page.locator('[data-testid=gtd-process-title]')).toContainText('lo del grifo');
 
   // Primera pregunta respondida: «Sí, requiere acción»

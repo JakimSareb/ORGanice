@@ -14,6 +14,7 @@ import {
   insertAtCursor,
 } from '../../lib/eli_format';
 import { getCurrentTimestampAsText } from '../../lib/timestamps';
+import { useNotesMode } from '../../lib/eli_notes_mode';
 
 import './stylesheet.css';
 
@@ -147,6 +148,8 @@ export default ({
   before = null, // (3.04) botones antes del «Aa» (p. ej. deshacer/rehacer en GTD)
 }) => {
   const [open, setOpen] = React.useState(!collapsible || readOpen());
+  // (4.0) en el Modo Notas no sale el reloj (fecha y hora); la fecha de hoy está en «Añadir»
+  const notes = useNotesMode();
   const keep = (e) => e.preventDefault();
   const toggle = (e) => {
     e.stopPropagation();
@@ -222,7 +225,7 @@ export default ({
           </button>
         ))}
       {/* (3.44) insertar la fecha y la hora de ahora (en las notas y descripciones) */}
-      {open && getListField && (
+      {open && getListField && !notes && (
         <button
           type="button"
           className="eli-format-bar__btn"

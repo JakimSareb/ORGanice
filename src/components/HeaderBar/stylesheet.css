@@ -302,3 +302,10 @@
 body:has(.loading-indicator) .header-bar__title {
   visibility: hidden;
 }
+
+/* (4.0) arriba: ← → ↶ ↷ nube Menú (un poco más juntos en el teléfono) */
+@media (max-width: 420px) {
+  .header-bar--mode .header-bar__actions__item {
+    margin-left: 0.4em;
+  }
+}

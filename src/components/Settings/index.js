@@ -25,12 +25,73 @@ import {
   parseTagsLine,
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
+import { TOOLS, useNotesMode, setNotesMode, toolOn, setToolOn } from '../../lib/eli_notes_mode';
 import {
   getReminderSettings,
   setReminderSettings,
   notificationPermission,
   requestReminderPermission,
 } from '../../lib/eli_reminders';
+
+// (4.0) Temas: tres a la vista y el resto tras «⋯ Más temas»
+const MAIN_THEMES = ['Unicornio', 'Cuki', 'Nirvana'];
+const MORE_THEMES = ['Solarized', 'One', 'Gruvbox', 'Smyck', 'Code'];
+const EliThemeSetting = ({ theme, onSelect }) => {
+  const [more, setMore] = React.useState(MORE_THEMES.includes(theme));
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-theme"
+    >
+      <div className="setting-label">Tema</div>
+      <TabButtons buttons={MAIN_THEMES} selectedButton={theme} onSelect={onSelect} />
+      {more ? (
+        <div data-testid="eli-theme-more-list">
+          <TabButtons buttons={MORE_THEMES} selectedButton={theme} onSelect={onSelect} />
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="btn-passive eli-theme-more"
+          onClick={() => setMore(true)}
+          data-testid="eli-theme-more"
+        >
+          <i className="fas fa-ellipsis-h" /> Más temas
+        </button>
+      )}
+    </div>
+  );
+};
+
+// (4.0) Modo Notas: arriba de los Ajustes
+const EliNotesModeSetting = ({ notes }) => (
+  <div className="setting-container eli-notes-mode-setting" data-testid="eli-setting-notes-mode">
+    <div className="setting-label">
+      Modo Notas
+      <div className="setting-label__description">
+        Solo notas: oculta GTD y lo de tareas (estados, fechas, reloj, agenda…). Tus ficheros no
+        cambian; puedes volver al modo completo cuando quieras.
+      </div>
+    </div>
+    <Switch isEnabled={notes} onToggle={() => setNotesMode(!notes)} />
+  </div>
+);
+
+// (4.0) Herramientas opcionales (apagadas de inicio en el Modo Notas)
+const EliToolsSettings = () => (
+  <details className="eli-settings-section" data-testid="eli-settings-tools">
+    <summary>
+      <span className="eli-settings-section__title">Herramientas</span>
+      <span className="eli-settings-section__hint">Qué herramientas salen en el Menú</span>
+    </summary>
+    {TOOLS.map((t) => (
+      <div key={t.id} className="setting-container" data-testid={`eli-tool-${t.id}`}>
+        <div className="setting-label">{t.label}</div>
+        <Switch isEnabled={toolOn(t.id)} onToggle={() => setToolOn(t.id, !toolOn(t.id))} />
+      </div>
+    ))}
+  </details>
+);
 
 // ORG Mode para Eli: campo de texto que se guarda al salir de él (o con Intro)
 
@@ -225,6 +286,7 @@ const Settings = ({
   org,
 }) => {
   const history = useHistory();
+  const notes = useNotesMode();
 
   const handleSignOutClick = () => {
     if (window.confirm('¿Seguro que quieres cerrar sesión?')) {
@@ -292,11 +354,14 @@ const Settings = ({
     base.setOrgHabitFollowingDays(parseInt(event.target.value, 10) || 0);
 
   return (
-    <div className="settings-container">
+    <div className={'settings-container' + (notes ? ' is-notes-mode' : '')}>
+      <EliNotesModeSetting notes={notes} />
       <details className="eli-settings-section" data-testid="eli-settings-appearance">
         <summary>
           <span className="eli-settings-section__title">Apariencia</span>
-          <span className="eli-settings-section__hint">Tema, colores, letra y viñetas</span>
+          <span className="eli-settings-section__hint">
+            {notes ? 'Tema, colores y letra' : 'Tema, colores, letra y viñetas'}
+          </span>
         </summary>
         <div className="setting-container">
           <div className="setting-label">Tamaño de letra</div>
@@ -318,92 +383,88 @@ const Settings = ({
           />
         </div>
 
-        <div className="setting-container setting-container--vertical eli-theme-setting">
-          <div className="setting-label">Tema</div>
-          <TabButtons
-            buttons={[
-              'Unicornio',
-              'Cuki',
-              'Solarized',
-              'One',
-              'Gruvbox',
-              'Smyck',
-              'Code',
-              'Nirvana',
-            ]}
-            selectedButton={theme}
-            onSelect={handleThemeClick}
-          />
-        </div>
+        <EliThemeSetting theme={theme} onSelect={handleThemeClick} />
 
-        <EliReadabilitySetting />
-        <EliTapModeSettings />
-        <EliProcessModeSettings />
-        <EliRemindersSettings />
+        {!notes && (
+          <>
+            <EliReadabilitySetting />
+            <EliTapModeSettings />
+            <EliProcessModeSettings />
+            <EliRemindersSettings />
+          </>
+        )}
 
-        <div className="setting-container">
-          <div className="setting-label">Estilo de viñetas</div>
-          <TabButtons
-            buttons={['Clásico', 'Decorado']}
-            values={['Classic', 'Fancy']}
-            selectedButton={bulletStyle}
-            onSelect={handleBulletStyleChange}
-          />
-        </div>
-      </details>
-
-      <details className="eli-settings-section" data-testid="eli-settings-tasks">
-        <summary>
-          <span className="eli-settings-section__title">Tareas y etiquetas</span>
-          <span className="eli-settings-section__hint">Estados y etiquetas por defecto</span>
-        </summary>
-        <EliLineSetting
-          label="Estados de las tareas"
-          description="Para los ficheros sin línea #+TODO (como la configuración global de Emacs). Antes de | los activos y después los terminados. Se aplica al volver a abrir los ficheros."
-          value={eliTodoKeywordsLine}
-          fallback={DEFAULT_TODO_LINE}
-          isValid={(l) => /^#\+(SEQ_|TYP_)?TODO:\s*\S/i.test(l) && !!parseTodoLine(l)}
-          onSave={(l) => base.setEliSetting('eliTodoKeywordsLine', l)}
-          testId="eli-setting-todo"
-        />
-        <EliLineSetting
-          label="Etiquetas por defecto (contextos)"
-          description="Se ofrecen al editar etiquetas (además de las #+TAGS de cada fichero) y se escriben en los ficheros nuevos."
-          value={eliDefaultTagsLine}
-          fallback={DEFAULT_TAGS_LINE}
-          isValid={(l) => /^#\+TAGS:\s*\S/i.test(l) && parseTagsLine(l).length > 0}
-          onSave={(l) => base.setEliSetting('eliDefaultTagsLine', l)}
-          testId="eli-setting-tags"
-        />
-        <div className="setting-container">
-          <div className="setting-label">
-            Archivar en
-            <div className="setting-label__description">
-              Dónde van las tareas archivadas (si el fichero o la tarea no dicen otra cosa con
-              #+ARCHIVE:). «Subcarpeta archive»: en la carpeta archive de la carpeta de cada
-              fichero, p. ej. proyectos/archive/tareas.org_archive (se crea si no existe).
-            </div>
-          </div>
-          <div data-testid="eli-setting-archive">
+        {!notes && (
+          <div className="setting-container">
+            <div className="setting-label">Estilo de viñetas</div>
             <TabButtons
-              buttons={['Junto al fichero', 'Subcarpeta archive']}
-              values={['same', 'subfolder']}
-              selectedButton={eliArchiveInSubfolder ? 'subfolder' : 'same'}
-              onSelect={(v) => base.setEliSetting('eliArchiveInSubfolder', v === 'subfolder')}
+              buttons={['Clásico', 'Decorado']}
+              values={['Classic', 'Fancy']}
+              selectedButton={bulletStyle}
+              onSelect={handleBulletStyleChange}
             />
           </div>
-        </div>
+        )}
       </details>
 
-      <details className="eli-settings-section" data-testid="eli-settings-gtd">
-        <summary>
-          <span className="eli-settings-section__title">Vista GTD y gestos</span>
-          <span className="eli-settings-section__hint">
-            Deslizar, y qué se ve en cada sección de la vista GTD
-          </span>
-        </summary>
-        <GtdSectionsSettings />
-      </details>
+      <EliToolsSettings />
+
+      {!notes && (
+        <details className="eli-settings-section" data-testid="eli-settings-tasks">
+          <summary>
+            <span className="eli-settings-section__title">Tareas y etiquetas</span>
+            <span className="eli-settings-section__hint">Estados y etiquetas por defecto</span>
+          </summary>
+          <EliLineSetting
+            label="Estados de las tareas"
+            description="Para los ficheros sin línea #+TODO (como la configuración global de Emacs). Antes de | los activos y después los terminados. Se aplica al volver a abrir los ficheros."
+            value={eliTodoKeywordsLine}
+            fallback={DEFAULT_TODO_LINE}
+            isValid={(l) => /^#\+(SEQ_|TYP_)?TODO:\s*\S/i.test(l) && !!parseTodoLine(l)}
+            onSave={(l) => base.setEliSetting('eliTodoKeywordsLine', l)}
+            testId="eli-setting-todo"
+          />
+          <EliLineSetting
+            label="Etiquetas por defecto (contextos)"
+            description="Se ofrecen al editar etiquetas (además de las #+TAGS de cada fichero) y se escriben en los ficheros nuevos."
+            value={eliDefaultTagsLine}
+            fallback={DEFAULT_TAGS_LINE}
+            isValid={(l) => /^#\+TAGS:\s*\S/i.test(l) && parseTagsLine(l).length > 0}
+            onSave={(l) => base.setEliSetting('eliDefaultTagsLine', l)}
+            testId="eli-setting-tags"
+          />
+          <div className="setting-container">
+            <div className="setting-label">
+              Archivar en
+              <div className="setting-label__description">
+                Dónde van las tareas archivadas (si el fichero o la tarea no dicen otra cosa con
+                #+ARCHIVE:). «Subcarpeta archive»: en la carpeta archive de la carpeta de cada
+                fichero, p. ej. proyectos/archive/tareas.org_archive (se crea si no existe).
+              </div>
+            </div>
+            <div data-testid="eli-setting-archive">
+              <TabButtons
+                buttons={['Junto al fichero', 'Subcarpeta archive']}
+                values={['same', 'subfolder']}
+                selectedButton={eliArchiveInSubfolder ? 'subfolder' : 'same'}
+                onSelect={(v) => base.setEliSetting('eliArchiveInSubfolder', v === 'subfolder')}
+              />
+            </div>
+          </div>
+        </details>
+      )}
+
+      {!notes && (
+        <details className="eli-settings-section" data-testid="eli-settings-gtd">
+          <summary>
+            <span className="eli-settings-section__title">Vista GTD y gestos</span>
+            <span className="eli-settings-section__hint">
+              Deslizar, y qué se ve en cada sección de la vista GTD
+            </span>
+          </summary>
+          <GtdSectionsSettings />
+        </details>
+      )}
 
       <details className="eli-settings-section" data-testid="eli-settings-offline">
         <summary>
@@ -415,268 +476,277 @@ const Settings = ({
         <OfflineSettings />
       </details>
 
-      <details className="eli-settings-section" data-testid="eli-settings-advanced">
-        <summary>
-          <span className="eli-settings-section__title">Opciones avanzadas</span>
-          <span className="eli-settings-section__hint">
-            Sincronización, agenda, hábitos, editor…
-          </span>
-        </summary>
-        <div className="setting-container">
-          <div className="setting-label">Tocar el estado TODO para avanzarlo</div>
-          <Switch
-            isEnabled={shouldTapTodoToAdvance}
-            onToggle={handleShouldTapTodoToAdvanceChange}
-          />
-        </div>
-
-        <div className="setting-container">
-          <div className="setting-label">
-            Sincronizar en directo
-            <div className="setting-label__description">
-              Si está activado, los cambios se envían automáticamente al servicio de sincronización
-              a medida que los haces.
-            </div>
-          </div>
-          <Switch isEnabled={shouldLiveSync} onToggle={handleShouldLiveSyncChange} />
-        </div>
-
-        <div className="setting-container">
-          <div className="setting-label">
-            Sincronizar al volver a la aplicación
-            <div className="setting-label__description">
-              Si está activado, el fichero org actual se descarga del servicio de sincronización
-              cuando la pestaña del navegador vuelve a estar visible. Así evitas trabajar sobre una
-              versión desactualizada del fichero.
-            </div>
-          </div>
-          <Switch
-            isEnabled={shouldSyncOnBecomingVisibile}
-            onToggle={handleShouldSyncOnBecomingVisibleChange}
-          />
-        </div>
-
-        <div className="setting-container">
-          <div className="setting-label">
-            Mostrar el nombre del fichero Org como título
-            <div className="setting-label__description">
-              Al ver un fichero Org, muestra su nombre en la barra superior.
-            </div>
-          </div>
-          <Switch isEnabled={shouldShowTitleInOrgFile} onToggle={handleShouldShowTitleInOrgFile} />
-        </div>
-
-        {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
-        <div className="setting-container">
-          <div className="setting-label">
-            Al plegar un encabezado, plegar también sus subencabezados
-            <div className="setting-label__description">
-              Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de modo
-              que al volver a abrirlo aparecen todos plegados, sea cual sea su estado anterior. Es
-              el comportamiento por defecto de Org mode en Emacs. Si está desactivado, se conserva
-              el estado de plegado de los subencabezados al desplegar el encabezado.
-            </div>
-          </div>
-          <Switch
-            isEnabled={closeSubheadersRecursively}
-            onToggle={handleCloseSubheadersRecursively}
-          />
-        </div>
-
-        <div className="setting-container">
-          <div className="setting-label">
-            Sangrar como el Emacs antiguo
-            <div className="setting-label__description">
-              Desactivado (recomendado): SCHEDULED, DEADLINE, CLOSED y los cajones (:PROPERTIES:,
-              :LOGBOOK:) se escriben pegados al margen, como Emacs con{' '}
-              <ExternalLink href="https://orgmode.org/manual/Hard-indentation.html">
-                <code>org-adapt-indentation nil</code>
-              </ExternalLink>{' '}
-              (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
-              <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
-              encabezado. El texto de las notas no se toca.
-            </div>
-          </div>
-          <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
-        </div>
-
-        <div className="setting-container">
-          <div className="setting-label">
-            Guardar los ajustes en el servicio de sincronización
-            <div className="setting-label__description">
-              Guarda los ajustes y los atajos de teclado en un fichero .organice-config.json en tu
-              servicio de sincronización para compartirlos entre varios dispositivos.
-            </div>
-          </div>
-          <Switch
-            isEnabled={shouldStoreSettingsInSyncBackend}
-            onToggle={handleShouldStoreSettingsInSyncBackendChange}
-          />
-        </div>
-
-        <div className="setting-container setting-container--vertical">
-          <div className="setting-label">Antelación de aviso por defecto para DEADLINE</div>
-
-          <div className="default-deadline-warning-container">
-            <input
-              type="number"
-              min="0"
-              className="textfield default-deadline-value-textfield"
-              value={agendaDefaultDeadlineDelayValue}
-              onChange={handleAgendaDefaultDeadlineDelayValueChange}
+      {!notes && (
+        <details className="eli-settings-section" data-testid="eli-settings-advanced">
+          <summary>
+            <span className="eli-settings-section__title">Opciones avanzadas</span>
+            <span className="eli-settings-section__hint">
+              Sincronización, agenda, hábitos, editor…
+            </span>
+          </summary>
+          <div className="setting-container">
+            <div className="setting-label">Tocar el estado TODO para avanzarlo</div>
+            <Switch
+              isEnabled={shouldTapTodoToAdvance}
+              onToggle={handleShouldTapTodoToAdvanceChange}
             />
+          </div>
 
+          <div className="setting-container">
+            <div className="setting-label">
+              Sincronizar en directo
+              <div className="setting-label__description">
+                Si está activado, los cambios se envían automáticamente al servicio de
+                sincronización a medida que los haces.
+              </div>
+            </div>
+            <Switch isEnabled={shouldLiveSync} onToggle={handleShouldLiveSyncChange} />
+          </div>
+
+          <div className="setting-container">
+            <div className="setting-label">
+              Sincronizar al volver a la aplicación
+              <div className="setting-label__description">
+                Si está activado, el fichero org actual se descarga del servicio de sincronización
+                cuando la pestaña del navegador vuelve a estar visible. Así evitas trabajar sobre
+                una versión desactualizada del fichero.
+              </div>
+            </div>
+            <Switch
+              isEnabled={shouldSyncOnBecomingVisibile}
+              onToggle={handleShouldSyncOnBecomingVisibleChange}
+            />
+          </div>
+
+          <div className="setting-container">
+            <div className="setting-label">
+              Mostrar el nombre del fichero Org como título
+              <div className="setting-label__description">
+                Al ver un fichero Org, muestra su nombre en la barra superior.
+              </div>
+            </div>
+            <Switch
+              isEnabled={shouldShowTitleInOrgFile}
+              onToggle={handleShouldShowTitleInOrgFile}
+            />
+          </div>
+
+          {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
+          <div className="setting-container">
+            <div className="setting-label">
+              Al plegar un encabezado, plegar también sus subencabezados
+              <div className="setting-label__description">
+                Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de modo
+                que al volver a abrirlo aparecen todos plegados, sea cual sea su estado anterior. Es
+                el comportamiento por defecto de Org mode en Emacs. Si está desactivado, se conserva
+                el estado de plegado de los subencabezados al desplegar el encabezado.
+              </div>
+            </div>
+            <Switch
+              isEnabled={closeSubheadersRecursively}
+              onToggle={handleCloseSubheadersRecursively}
+            />
+          </div>
+
+          <div className="setting-container">
+            <div className="setting-label">
+              Sangrar como el Emacs antiguo
+              <div className="setting-label__description">
+                Desactivado (recomendado): SCHEDULED, DEADLINE, CLOSED y los cajones (:PROPERTIES:,
+                :LOGBOOK:) se escriben pegados al margen, como Emacs con{' '}
+                <ExternalLink href="https://orgmode.org/manual/Hard-indentation.html">
+                  <code>org-adapt-indentation nil</code>
+                </ExternalLink>{' '}
+                (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
+                <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
+                encabezado. El texto de las notas no se toca.
+              </div>
+            </div>
+            <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
+          </div>
+
+          <div className="setting-container">
+            <div className="setting-label">
+              Guardar los ajustes en el servicio de sincronización
+              <div className="setting-label__description">
+                Guarda los ajustes y los atajos de teclado en un fichero .organice-config.json en tu
+                servicio de sincronización para compartirlos entre varios dispositivos.
+              </div>
+            </div>
+            <Switch
+              isEnabled={shouldStoreSettingsInSyncBackend}
+              onToggle={handleShouldStoreSettingsInSyncBackendChange}
+            />
+          </div>
+
+          <div className="setting-container setting-container--vertical">
+            <div className="setting-label">Antelación de aviso por defecto para DEADLINE</div>
+
+            <div className="default-deadline-warning-container">
+              <input
+                type="number"
+                min="0"
+                className="textfield default-deadline-value-textfield"
+                value={agendaDefaultDeadlineDelayValue}
+                onChange={handleAgendaDefaultDeadlineDelayValueChange}
+              />
+
+              <TabButtons
+                buttons={['h', 'd', 's', 'm', 'a']}
+                values={'hdwmy'.split('')}
+                titles={['Horas', 'Días', 'Semanas', 'Meses', 'Años']}
+                selectedButton={agendaDefaultDeadlineDelayUnit}
+                onSelect={handleAgendaDefaultDeadlineDelayUnitChange}
+              />
+            </div>
+          </div>
+
+          <div className="setting-container setting-container--vertical">
+            <div className="setting-label">Altura del editor de descripción</div>
+            <div className="setting-label__description">
+              Controla la altura del editor de descripción solo en ordenadores. La altura se limita
+              para que todos los botones queden siempre visibles. En móviles este ajuste se ignora y
+              el editor tiene siempre 8 líneas de alto.
+            </div>
+
+            <div className="default-deadline-warning-container">
+              <input
+                type="number"
+                min="2"
+                className="textfield default-deadline-value-textfield"
+                value={editorDescriptionHeightValue}
+                onChange={handleEditorDescriptionHeightValueChange}
+              />
+            </div>
+          </div>
+
+          <div className="setting-container">
+            <div className="setting-label">
+              Primer día de la semana en la agenda semanal
+              <div className="setting-label__description">
+                Equivale a{' '}
+                <ExternalLink href="https://orgmode.org/manual/Weekly_002fdaily-agenda.html">
+                  <code>org-agenda-start-on-weekday</code>
+                </ExternalLink>
+              </div>
+            </div>
             <TabButtons
-              buttons={['h', 'd', 's', 'm', 'a']}
-              values={'hdwmy'.split('')}
-              titles={['Horas', 'Días', 'Semanas', 'Meses', 'Años']}
-              selectedButton={agendaDefaultDeadlineDelayUnit}
-              onSelect={handleAgendaDefaultDeadlineDelayUnitChange}
+              buttons={['D', 'L', 'M', 'X', 'J', 'V', 'S', 'Hoy']}
+              values={[0, 1, 2, 3, 4, 5, 6, -1]}
+              titles={[
+                'Domingo',
+                'Lunes',
+                'Martes',
+                'Miércoles',
+                'Jueves',
+                'Viernes',
+                'Sábado',
+                'Hoy',
+              ]}
+              selectedButton={agendaStartOnWeekday}
+              onSelect={handleAgendaStartOnWeekdayChange}
             />
           </div>
-        </div>
 
-        <div className="setting-container setting-container--vertical">
-          <div className="setting-label">Altura del editor de descripción</div>
-          <div className="setting-label__description">
-            Controla la altura del editor de descripción solo en ordenadores. La altura se limita
-            para que todos los botones queden siempre visibles. En móviles este ajuste se ignora y
-            el editor tiene siempre 8 líneas de alto.
+          <div className="setting-container">
+            <div className="setting-label">
+              Mostrar hoy todos los hábitos
+              <div className="setting-label__description">
+                Si está activado, se muestran todos los hábitos en la agenda de hoy, aunque no estén
+                programados o ya estén marcados como DONE hoy. Solo se aplica al día de hoy en la
+                agenda.
+              </div>
+            </div>
+            <Switch isEnabled={orgHabitShowAllToday} onToggle={handleOrgHabitShowAllToday} />
           </div>
 
-          <div className="default-deadline-warning-container">
-            <input
-              type="number"
-              min="2"
-              className="textfield default-deadline-value-textfield"
-              value={editorDescriptionHeightValue}
-              onChange={handleEditorDescriptionHeightValueChange}
-            />
-          </div>
-        </div>
-
-        <div className="setting-container">
-          <div className="setting-label">
-            Primer día de la semana en la agenda semanal
+          <div className="setting-container setting-container--vertical">
+            <div className="setting-label">
+              Días anteriores en el gráfico de constancia de hábitos
+            </div>
             <div className="setting-label__description">
-              Equivale a{' '}
-              <ExternalLink href="https://orgmode.org/manual/Weekly_002fdaily-agenda.html">
-                <code>org-agenda-start-on-weekday</code>
-              </ExternalLink>
+              Número de días antes de hoy que se muestran en el gráfico de constancia de hábitos.
+            </div>
+
+            <div className="default-deadline-warning-container">
+              <input
+                type="number"
+                min="0"
+                className="textfield default-deadline-value-textfield"
+                value={orgHabitPrecedingDays}
+                onChange={handleOrgHabitPrecedingDaysChange}
+              />
             </div>
           </div>
-          <TabButtons
-            buttons={['D', 'L', 'M', 'X', 'J', 'V', 'S', 'Hoy']}
-            values={[0, 1, 2, 3, 4, 5, 6, -1]}
-            titles={[
-              'Domingo',
-              'Lunes',
-              'Martes',
-              'Miércoles',
-              'Jueves',
-              'Viernes',
-              'Sábado',
-              'Hoy',
-            ]}
-            selectedButton={agendaStartOnWeekday}
-            onSelect={handleAgendaStartOnWeekdayChange}
-          />
-        </div>
 
-        <div className="setting-container">
-          <div className="setting-label">
-            Mostrar hoy todos los hábitos
+          <div className="setting-container setting-container--vertical">
+            <div className="setting-label">
+              Días posteriores en el gráfico de constancia de hábitos
+            </div>
             <div className="setting-label__description">
-              Si está activado, se muestran todos los hábitos en la agenda de hoy, aunque no estén
-              programados o ya estén marcados como DONE hoy. Solo se aplica al día de hoy en la
-              agenda.
+              Número de días después de hoy que se muestran en el gráfico de constancia de hábitos.
+            </div>
+
+            <div className="default-deadline-warning-container">
+              <input
+                type="number"
+                min="0"
+                className="textfield default-deadline-value-textfield"
+                value={orgHabitFollowingDays}
+                onChange={handleOrgHabitFollowingDaysChange}
+              />
             </div>
           </div>
-          <Switch isEnabled={orgHabitShowAllToday} onToggle={handleOrgHabitShowAllToday} />
-        </div>
 
-        <div className="setting-container setting-container--vertical">
-          <div className="setting-label">
-            Días anteriores en el gráfico de constancia de hábitos
-          </div>
-          <div className="setting-label__description">
-            Número de días antes de hoy que se muestran en el gráfico de constancia de hábitos.
-          </div>
-
-          <div className="default-deadline-warning-container">
-            <input
-              type="number"
-              min="0"
-              className="textfield default-deadline-value-textfield"
-              value={orgHabitPrecedingDays}
-              onChange={handleOrgHabitPrecedingDaysChange}
-            />
-          </div>
-        </div>
-
-        <div className="setting-container setting-container--vertical">
-          <div className="setting-label">
-            Días posteriores en el gráfico de constancia de hábitos
-          </div>
-          <div className="setting-label__description">
-            Número de días después de hoy que se muestran en el gráfico de constancia de hábitos.
-          </div>
-
-          <div className="default-deadline-warning-container">
-            <input
-              type="number"
-              min="0"
-              className="textfield default-deadline-value-textfield"
-              value={orgHabitFollowingDays}
-              onChange={handleOrgHabitFollowingDaysChange}
-            />
-          </div>
-        </div>
-
-        <div className="setting-container">
-          <div className="setting-label">
-            Mostrar resúmenes de tiempo
-            <div className="setting-label__description">
-              Muestra al final de cada encabezado el tiempo total registrado en él, incluido el de
-              sus subencabezados.
+          <div className="setting-container">
+            <div className="setting-label">
+              Mostrar resúmenes de tiempo
+              <div className="setting-label__description">
+                Muestra al final de cada encabezado el tiempo total registrado en él, incluido el de
+                sus subencabezados.
+              </div>
             </div>
+            <Switch isEnabled={showClockDisplay} onToggle={handleShowClockDisplayClick} />
           </div>
-          <Switch isEnabled={showClockDisplay} onToggle={handleShowClockDisplayClick} />
-        </div>
 
-        <div className="setting-container">
-          <div className="setting-label">
-            Mostrar la fecha límite
-            <div className="setting-label__description">
-              Si está activado, la fecha límite (DEADLINE) se muestra en la línea de cada
-              encabezado.
+          <div className="setting-container">
+            <div className="setting-label">
+              Mostrar la fecha límite
+              <div className="setting-label__description">
+                Si está activado, la fecha límite (DEADLINE) se muestra en la línea de cada
+                encabezado.
+              </div>
             </div>
+            <Switch isEnabled={showDeadlineDisplay} onToggle={handleShowDeadlineDisplayChange} />
           </div>
-          <Switch isEnabled={showDeadlineDisplay} onToggle={handleShowDeadlineDisplayChange} />
-        </div>
 
-        <div className="setting-container">
-          <div className="setting-label">
-            Preferir el texto sin procesar
-            <div className="setting-label__description">
-              Al editar el título o la descripción de un encabezado, puedes alternar entre editar
-              solo el texto o el contenido completo (con la representación en texto de los estados
-              TODO, etiquetas, fechas, propiedades, etc.) pulsando el icono «editar título» o
-              «editar descripción» de la ventana. Esta opción muestra primero el contenido completo
-              en lugar de hacerlo con un segundo clic.
+          <div className="setting-container">
+            <div className="setting-label">
+              Preferir el texto sin procesar
+              <div className="setting-label__description">
+                Al editar el título o la descripción de un encabezado, puedes alternar entre editar
+                solo el texto o el contenido completo (con la representación en texto de los estados
+                TODO, etiquetas, fechas, propiedades, etc.) pulsando el icono «editar título» o
+                «editar descripción» de la ventana. Esta opción muestra primero el contenido
+                completo en lugar de hacerlo con un segundo clic.
+              </div>
             </div>
+            <Switch isEnabled={preferEditRawValues} onToggle={handlePreferEditRawValues} />
           </div>
-          <Switch isEnabled={preferEditRawValues} onToggle={handlePreferEditRawValues} />
-        </div>
-      </details>
+        </details>
+      )}
 
       <div className="settings-buttons-container">
-        <button className="btn settings-btn" onClick={handleCaptureTemplatesClick}>
-          Plantillas de captura
-        </button>
-        <button className="btn settings-btn" onClick={handleKeyboardShortcutsClick}>
-          Atajos de teclado
-        </button>
+        {!notes && (
+          <button className="btn settings-btn" onClick={handleCaptureTemplatesClick}>
+            Plantillas de captura
+          </button>
+        )}
+        {!notes && (
+          <button className="btn settings-btn" onClick={handleKeyboardShortcutsClick}>
+            Atajos de teclado
+          </button>
+        )}
         <button className="btn settings-btn" onClick={handleFileSettingsClick}>
           Ajustes de ficheros
         </button>
@@ -688,9 +758,11 @@ const Settings = ({
           <i className="fas fa-lock" /> Seguridad y cifrado
         </Link>
 
-        <a href="capture.html" className="btn settings-btn" data-testid="eli-capture-setup">
-          <i className="fas fa-share-square" /> Captura rápida (Atajos / marcador)
-        </a>
+        {!notes && (
+          <a href="capture.html" className="btn settings-btn" data-testid="eli-capture-setup">
+            <i className="fas fa-share-square" /> Captura rápida (Atajos / marcador)
+          </a>
+        )}
 
         <hr className="settings-button-separator" />
 

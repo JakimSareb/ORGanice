@@ -187,12 +187,14 @@ describe('Render all views', () => {
         fireEvent.click(queryByText('Top level header'));
         // 'plus' on the first header which is _not_ a todoKeyword header
         fireEvent.click(getByTestId('eli-docbar-new'));
+        fireEvent.click(getByTestId('eli-docbar-new-below'));
         expect(getByTestId('titleLineInput').value).toEqual('');
         expect(headerAfter('Top level header').getIn(['titleLine', 'todoKeyword'])).toBeFalsy();
 
         // 'plus' on a header which _is_ a todoKeyword header
         fireEvent.click(queryByText('A todo item with schedule and deadline'));
         fireEvent.click(getByTestId('eli-docbar-new'));
+        fireEvent.click(getByTestId('eli-docbar-new-below'));
         expect(getByTestId('titleLineInput').value).toEqual('');
         expect(
           headerAfter('A todo item with schedule and deadline').getIn(['titleLine', 'todoKeyword'])
@@ -322,10 +324,12 @@ describe('Render all views', () => {
       });
 
       describe('Undo / Redo', () => {
-        // (3.21b) Deshacer/Rehacer están en la barra de abajo
+        // (4.0) Deshacer/Rehacer están arriba (barra superior)
+        const isOff = (id) =>
+          getByTestId(id).classList.contains('header-bar__actions__item--disabled');
         test('On loading an Org file, both are disabled', () => {
-          expect(getByTestId('eli-docbar-undo').disabled).toBe(true);
-          expect(getByTestId('eli-docbar-redo').disabled).toBe(true);
+          expect(isOff('eli-undo')).toBe(true);
+          expect(isOff('eli-redo')).toBe(true);
         });
 
         test('Undo becomes available on "edit header"', () => {
@@ -334,11 +338,11 @@ describe('Render all views', () => {
           expect(queryByText('DONE')).toBeTruthy();
 
           // Undo should become available
-          expect(getByTestId('eli-docbar-undo').disabled).toBe(false);
-          expect(getByTestId('eli-docbar-redo').disabled).toBe(true);
+          expect(isOff('eli-undo')).toBe(false);
+          expect(isOff('eli-redo')).toBe(true);
 
           // …and undo the change
-          fireEvent.click(getByTestId('eli-docbar-undo'));
+          fireEvent.click(getByTestId('eli-undo'));
           expect(queryByText('DONE')).toBeFalsy();
           const todo = store
             .getState()
@@ -347,7 +351,7 @@ describe('Render all views', () => {
               (h) => h.getIn(['titleLine', 'rawTitle']) === 'A todo item with schedule and deadline'
             );
           expect(todo.getIn(['titleLine', 'todoKeyword'])).toEqual('TODO');
-          expect(getByTestId('eli-docbar-redo').disabled).toBe(false);
+          expect(isOff('eli-redo')).toBe(false);
         });
       });
 
@@ -421,7 +425,8 @@ describe('Render all views', () => {
 
         test('sends the selected header and its body as an email', () => {
           fireEvent.click(queryByText('Another top level header'));
-          // (3.21b) Compartir › Compartir / correo, en la barra de abajo
+          // (4.0) Más › Compartir o PDF › Compartir / correo, en la barra de abajo
+          fireEvent.click(getByTestId('eli-docbar-more'));
           fireEvent.click(getByTestId('eli-docbar-share'));
           fireEvent.click(getByTestId('eli-docbar-mail'));
           expect(global.open).toBeCalledWith(
@@ -557,7 +562,7 @@ describe('Render all views', () => {
           expect(queryByText('Mes')).toBeFalsy();
           expect(queryByText('A scheduled todo item')).toBeFalsy();
 
-          fireEvent.click(getByTestId('eli-docbar-agenda'));
+          store.dispatch(activatePopup('agenda'));
 
           expect(queryByText('Agenda')).toBeTruthy();
           expect(queryByText('Día')).toBeTruthy();
@@ -566,7 +571,7 @@ describe('Render all views', () => {
         });
 
         test('Agenda starts on Monday by default', () => {
-          fireEvent.click(getByTestId('eli-docbar-agenda'));
+          store.dispatch(activatePopup('agenda'));
           expect(container.querySelectorAll('.agenda-day__title__day-name')[0]).toHaveTextContent(
             'lunes'
           );
@@ -574,7 +579,7 @@ describe('Render all views', () => {
 
         test('Clicking a TODO within the agenda highlights it in the main view', () => {
           expect(queryByText('A todo item with schedule and deadline')).toBeFalsy();
-          fireEvent.click(getByTestId('eli-docbar-agenda'));
+          store.dispatch(activatePopup('agenda'));
           expect(queryByText('Agenda')).toBeTruthy();
           fireEvent.click(queryAllByText('A todo item with schedule and deadline')[0]);
           expect(queryByText('Agenda')).toBeFalsy();
@@ -585,13 +590,13 @@ describe('Render all views', () => {
         // días que han pasado, el tipo y la fecha (dd/MM)
         test('Shows the date and the days since it for an overdue TODO within the agenda', () => {
           const expectedDate = new Date(2019, 8, 19, 12, 0);
-          fireEvent.click(getByTestId('eli-docbar-agenda'));
+          store.dispatch(activatePopup('agenda'));
           const days = differenceInCalendarDays(new Date(), expectedDate);
           expect(getByTestId('drawer')).toHaveTextContent(`${days} díasprogramada 19/09`);
         });
 
         test('Agenda shows only actionable TODOs, not with a DONE state', () => {
-          fireEvent.click(getByTestId('eli-docbar-agenda'));
+          store.dispatch(activatePopup('agenda'));
 
           const drawerElem = getByTestId('drawer');
           expect(drawerElem).not.toHaveTextContent("A headline that's done since a loong time");
