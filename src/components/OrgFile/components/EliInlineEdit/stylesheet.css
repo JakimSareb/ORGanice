@@ -55,3 +55,10 @@
 .header__bullet {
   touch-action: manipulation;
 }
+/* (4.03) la viñeta, solo en su margen y por encima de la línea del título: se puede tocar */
+.header__bullet {
+  position: relative;
+  z-index: 1;
+  width: 16px;
+  cursor: pointer;
+}

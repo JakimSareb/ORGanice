@@ -632,6 +632,18 @@ export const eliAddSubheaderAndEdit = (headerId) => (dispatch) => {
   dispatch(activatePopup('title-editor'));
 };
 
+// (4.03) «Nueva» de la barra de abajo (arriba / debajo / subcabecera): se añade la cabecera y se
+// abre la hoja «Editar» completa (título + texto); «Cancelar» en esa hoja la quita
+export const eliAddHeaderWithSheet = (headerId, where) => (dispatch) => {
+  if (where === 'sub') dispatch({ type: 'ELI_ADD_SUBHEADER', headerId, dirtying: false });
+  else if (where === 'above') dispatch({ type: 'ELI_ADD_HEADER_ABOVE', headerId, dirtying: false });
+  else {
+    dispatch(addHeader(headerId));
+    dispatch(selectNextSiblingHeader(headerId));
+  }
+  dispatch(activatePopup('eli-edit-sheet', { eliNew: true, fromId: headerId }));
+};
+
 export const selectNextVisibleHeader = (headerId) => ({
   type: 'SELECT_NEXT_VISIBLE_HEADER',
   headerId,

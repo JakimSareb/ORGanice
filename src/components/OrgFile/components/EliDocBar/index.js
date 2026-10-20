@@ -663,19 +663,25 @@ export default function EliDocBar({
           onClick: () => withNotes((f) => sortListIn(f, mode)),
         })),
         todo: todoMenu(),
-        // (4.0) Nueva: debajo o como subcabecera
+        // (4.0) Nueva: debajo o como subcabecera; (4.03) también arriba, y se abre la hoja Editar
         new: [
+          {
+            id: 'new-above',
+            icon: 'fas fa-level-up-alt',
+            label: 'Arriba',
+            onClick: () => org('eliAddHeaderWithSheet', id, 'above'),
+          },
           {
             id: 'new-below',
             icon: 'fas fa-level-down-alt',
             label: 'Debajo',
-            onClick: () => org('addHeaderAndEdit', id),
+            onClick: () => org('eliAddHeaderWithSheet', id, 'below'),
           },
           {
             id: 'new-sub',
             icon: 'fas fa-indent',
             label: 'Subcabecera',
-            onClick: () => org('eliAddSubheaderAndEdit', id),
+            onClick: () => org('eliAddHeaderWithSheet', id, 'sub'),
           },
         ],
         // (4.0) Mover: el menú se queda abierto para mover varias veces seguidas
@@ -1325,6 +1331,11 @@ export default function EliDocBar({
     };
     const onKey = (e) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
+        // (4.03) con un aviso abierto (eli-prompt), Esc es para él: el menú solo se cierra
+        if (document.querySelector('.eli-prompt__overlay')) {
+          setSub(null);
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         setSub(null);

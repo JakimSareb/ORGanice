@@ -547,6 +547,26 @@ const eliAddSubheader = (state, action) => {
     .set('selectedHeaderId', newHeader.get('id'));
 };
 
+// (4.03) «Nueva › Arriba»: una hermana justo antes de esta (con su mismo estado, como «Debajo»),
+// y la nueva seleccionada
+const eliAddHeaderAbove = (state, action) => {
+  const headers = state.get('headers');
+  const { header, headerIndex } = indexAndHeaderWithId(headers, action.headerId);
+  if (!header) return state;
+  const todoKeyword = header.getIn(['titleLine', 'todoKeyword']);
+  const newHeader = newHeaderWithTitle(
+    todoKeyword ? todoKeyword + ' ' : '',
+    header.get('nestingLevel'),
+    state.get('todoKeywordSets')
+  );
+  if (action.headerId === state.get('narrowedHeaderId')) {
+    state = state.set('narrowedHeaderId', null);
+  }
+  return state
+    .update('headers', (hs) => hs.insert(headerIndex, newHeader))
+    .set('selectedHeaderId', newHeader.get('id'));
+};
+
 const duplicateHeader = (state, action) => {
   const headers = state.get('headers');
   const { header: originalHeader, headerIndex: originalHeaderIndex } = indexAndHeaderWithId(
@@ -2434,6 +2454,8 @@ const reducer = (state, action) => {
       return inFile(duplicateHeader);
     case 'ELI_ADD_SUBHEADER':
       return inFile(eliAddSubheader);
+    case 'ELI_ADD_HEADER_ABOVE':
+      return inFile(eliAddHeaderAbove);
     case 'CREATE_FIRST_HEADER':
       return inFile(createFirstHeader);
     case 'SELECT_NEXT_SIBLING_HEADER':
