@@ -268,6 +268,13 @@ test('GTD (3.35): flechas solo entre secciones; menú lateral con ↑ ↓, borde
   await page.locator('[data-testid=eli-nav-forward]').click();
   await page.waitForTimeout(500);
   expect(await on()).toBe('Next');
+  if (isMobile) {
+    // (b) en vertical, cambiar de sección con ← → muestra el menú; tocar la lista lo oculta
+    expect(await sideOpen()).toBe(true);
+    await page.mouse.click(370, 400);
+    await page.waitForTimeout(400);
+    expect(await sideOpen()).toBe(false);
+  }
 
   if (!isMobile) {
     // (b) ↑ ↓ en el menú: cambia de sección y el menú sigue con el foco

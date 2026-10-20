@@ -1692,7 +1692,16 @@ export default function GtdView() {
     return history.listen((location, action) => {
       if (action !== 'POP' || !/^\/gtd(\/|$)/.test(location.pathname)) return;
       const v = location.state && location.state.eliGtdView;
-      if (v && JSON.stringify(v) !== JSON.stringify(viewRef.current)) applyView(v);
+      if (v && JSON.stringify(v) !== JSON.stringify(viewRef.current)) {
+        applyView(v);
+        // 3.35 (b): en el móvil en vertical, al cambiar de sección con ← → se muestra el menú
+        // lateral (se ve dónde se está); tocar la lista (el velo) lo vuelve a ocultar
+        if (
+          window.matchMedia &&
+          window.matchMedia('(max-width: 720px) and (orientation: portrait)').matches
+        )
+          setSideOpen(true);
+      }
     });
   }, [history, applyView]);
   const selectArea = (a) => {
