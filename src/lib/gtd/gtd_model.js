@@ -852,15 +852,19 @@ export const logbookGroupOf = (closed, today = new Date()) => {
 // terminada con alguna subtarea todavía abierta NO se archiva (se llevaría la subtarea).
 // (3.43) Tampoco las terminadas de un proyecto que sigue abierto: se quedan con él y, cuando el
 // proyecto se termina, se archiva todo junto.
+// (3.44) ¿Es una tarea (no proyecto) de un proyecto que sigue abierto? (Archivar y Limpieza)
+export const inOpenProjectFn = (tasks) => {
+  const openProjects = new Set(
+    tasks.filter((t) => t.isProject && !t.isDone).map((t) => `${t.path}::${t.id}`)
+  );
+  return (t) =>
+    !t.isProject && !!t.project && openProjects.has(`${t.project.path}::${t.project.id}`);
+};
 export const archivableDone = (tasks, onlyPaths = null) => {
   const ok = [];
   const blocked = [];
   const byPath = {};
-  const openProjects = new Set(
-    tasks.filter((t) => t.isProject && !t.isDone).map((t) => `${t.path}::${t.id}`)
-  );
-  const inOpenProject = (t) =>
-    !t.isProject && !!t.project && openProjects.has(`${t.project.path}::${t.project.id}`);
+  const inOpenProject = inOpenProjectFn(tasks);
   // (2.17) solo los ficheros elegidos en Ajustes (vacío: todos)
   const allowed = onlyPaths && onlyPaths.length ? new Set(onlyPaths) : null;
   tasks
@@ -971,7 +975,12 @@ export const doneForView = (tasks, view, filters = {}) => {
     .sort((a, b) => (b.closed || 0) - (a.closed || 0));
 };
 // Todas las que están en algún grupo «Hecho» (lo que se lleva la «Limpieza»)
-export const doneWaitingCleanup = (tasks) => tasks.filter((t) => t.isDone && !!t.doneIn);
+// (3.44) salvo las de un proyecto que sigue abierto: se quedan con él y, cuando el proyecto se
+// termina, la Limpieza se las lleva todas juntas
+export const doneWaitingCleanup = (tasks) => {
+  const inOpenProject = inOpenProjectFn(tasks);
+  return tasks.filter((t) => t.isDone && !!t.doneIn && !inOpenProject(t));
+};
 
 // (3.0) Lista en la que está una tarea (para DONE_IN): su lista y, si tiene ★, también «focus»
 export const doneInValueFor = (task, today = new Date()) => {

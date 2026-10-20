@@ -156,6 +156,7 @@ import EliMedia from '../OrgFile/components/EliMedia';
 import {
   setGtdConfig,
   isSectionShown,
+  isActionSection,
   sectionLabel,
   sectionDef,
   isCustomId,
@@ -1181,7 +1182,7 @@ export default function GtdView() {
     if (!q) return null;
     const out = [];
     gtdCfg.order.forEach((id) => {
-      if (isSepId(id) || id === 'agenda' || !isSectionShown(id, gtdCfg)) return;
+      if (isSepId(id) || isActionSection(id) || !isSectionShown(id, gtdCfg)) return;
       const label = sectionLabel(id, gtdCfg);
       if (id === 'projects') {
         const lq = q.toLowerCase();
@@ -1807,7 +1808,7 @@ export default function GtdView() {
           !isSectionShown(view.id, gtdCfg) || (isCustomId(view.id) && !gtdCfg.sections[view.id]);
     if (!hidden) return;
     const first = gtdCfg.order.find(
-      (id) => !['agenda', 'projects'].includes(id) && isSectionShown(id, gtdCfg)
+      (id) => id !== 'projects' && !isActionSection(id) && isSectionShown(id, gtdCfg)
     );
     if (first && first !== view.id) selectView({ id: first });
   }, [view, gtdCfg, selectView]);
@@ -2463,12 +2464,17 @@ export default function GtdView() {
   };
   const cleanupNow = () => {
     const n = dispatch(gtdCleanup(tasks));
+    // (3.44) las hechas de proyectos abiertos se quedan (se avisa de cuántas)
+    const kept = tasks.filter((t) => t.isDone && !!t.doneIn).length - (n || 0);
+    const keptText = kept
+      ? ` (${kept === 1 ? 'se queda 1' : `se quedan ${kept}`} con su proyecto abierto)`
+      : '';
     dispatch(
       setDisappearingLoadingMessage(
-        n
+        (n
           ? `${n === 1 ? '1 hecha pasada' : `${n} hechas pasadas`} al Logbook`
-          : 'No hay nada hecho que limpiar',
-        2500
+          : 'No hay nada hecho que limpiar') + keptText,
+        kept ? 3500 : 2500
       )
     );
   };
@@ -2915,7 +2921,7 @@ export default function GtdView() {
   const sidebarViews = () => {
     const out = [];
     gtdCfg.order.forEach((id) => {
-      if (!isSectionShown(id, gtdCfg) || id === 'agenda' || isSepId(id)) return;
+      if (!isSectionShown(id, gtdCfg) || isActionSection(id) || isSepId(id)) return;
       if (id === 'projects') {
         if (gtdCfg.sections.projects.allProjects !== false) out.push({ id: 'projects' });
         projectGroups.active.forEach((p) => out.push({ type: 'project', key: p.key }));
@@ -3643,7 +3649,7 @@ export default function GtdView() {
     const out = [];
     gtdCfg.order.forEach((id) => {
       if (!isSectionShown(id, gtdCfg)) return;
-      if (['agenda', 'projects', 'logbook', 'trash', 'deadline'].includes(id)) return;
+      if (isActionSection(id) || ['projects', 'logbook', 'trash', 'deadline'].includes(id)) return;
       const def = [...LISTS, ...EXTRA_LISTS].find((l) => l.id === id) || sectionDef(id, gtdCfg);
       if (def) out.push({ id, label: sectionLabel(id, gtdCfg), icon: def.icon });
     });
@@ -4432,9 +4438,10 @@ export default function GtdView() {
       <span className="gtd-side__label">Agenda</span>
     </button>
   );
-  // (3.24) junto a Agenda: Revisión semanal
+  // (3.24) Revisión semanal; (3.44) sección propia del menú (Ajustes)
   const renderReviewButton = () => (
     <button
+      key="review"
       className={'gtd-side__item gtd-side__item--review' + (reviewStep !== null ? ' is-on' : '')}
       onClick={startReview}
       title="Revisión semanal guiada"
@@ -4444,7 +4451,7 @@ export default function GtdView() {
       <span className="gtd-side__label">Revisión semanal</span>
     </button>
   );
-  // (3.40) junto a Inbox: Procesar Inbox (asistente de una tarea cada vez)
+  // (3.40) Procesar Inbox (asistente de una tarea cada vez); (3.44) sección propia del menú
   const renderProcessButton = () => (
     <button
       key="process"
@@ -4583,12 +4590,10 @@ export default function GtdView() {
       if (!isSectionShown(id, gtdCfg)) return;
       if (id === 'agenda') {
         flush();
-        out.push(
-          <React.Fragment key="agenda">
-            {renderAgendaButton()}
-            {renderReviewButton()}
-          </React.Fragment>
-        );
+        out.push(<React.Fragment key="agenda">{renderAgendaButton()}</React.Fragment>);
+      } else if (id === 'process' || id === 'review') {
+        // (3.44) secciones propias del menú (se muestran/ocultan y ordenan en Ajustes)
+        group.push(id === 'process' ? renderProcessButton() : renderReviewButton());
       } else if (id === 'projects') {
         flush();
         out.push(<React.Fragment key="projects">{renderProjectsBlock()}</React.Fragment>);
@@ -4597,8 +4602,6 @@ export default function GtdView() {
         const def = [...LISTS, ...EXTRA_LISTS].find((l) => l.id === id) || sectionDef(id, gtdCfg);
         // (2.16) con el nombre de Ajustes (si se ha cambiado)
         if (def) group.push(renderListItem({ ...def, label: sectionLabel(id, gtdCfg) }));
-        // (3.40) junto a Inbox: Procesar Inbox
-        if (def && id === 'inbox') group.push(renderProcessButton());
       }
     });
     flush();

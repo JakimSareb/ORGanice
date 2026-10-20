@@ -179,7 +179,7 @@ export default function GtdSectionsSettings() {
     const s = cfg.sections[id];
     const custom = isCustomId(id);
     const nameField =
-      def.kind === 'agenda' || id === 'projects' ? null : custom ? (
+      def.kind === 'agenda' || def.kind === 'action' || id === 'projects' ? null : custom ? (
         <>
           <NameInput
             value={def.label}
@@ -212,6 +212,15 @@ export default function GtdSectionsSettings() {
       );
     if (def.kind === 'agenda') {
       return <div className="eli-gtdsec__note">La agenda solo se puede mostrar u ocultar.</div>;
+    }
+    // (3.44) Procesar Inbox y Revisión semanal: botones del menú lateral (también en el ⋯)
+    if (def.kind === 'action') {
+      return (
+        <div className="eli-gtdsec__note">
+          Botón del menú lateral: solo se puede mostrar u ocultar y cambiar de sitio. Sigue también
+          en el ⋯ de arriba.
+        </div>
+      );
     }
     if (id === 'logbook' || id === 'trash') {
       return (

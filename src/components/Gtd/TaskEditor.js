@@ -1370,15 +1370,31 @@ export default function TaskEditor({
       </div>
 
       <div className="gtd-editor__actions">
-        {/* (3.09) el nombre del fichero abre «Mover a» (refile) */}
-        {onMove && !isNew ? (
+        {/* (3.44) «＋ Subtarea» otra vez al principio de la línea de botones */}
+        {!isNew && onAddSubtask && (
           <button
             type="button"
-            className="gtd-ed__file gtd-ed__file--move"
-            title={`Fichero: ${task.path} · Mover a…`}
+            className="gtd-btn gtd-btn--link"
+            onClick={withCommit(onAddSubtask)}
+            title={
+              isProject
+                ? 'Guardar y añadir una acción al proyecto'
+                : 'Guardar y añadir una subtarea'
+            }
+            data-testid="gtd-editor-add-subtask"
+          >
+            <i className="fas fa-plus" /> Subtarea
+          </button>
+        )}
+        {/* (3.44) el nombre del fichero abre la tarea en su fichero (antes, «Abrir») */}
+        {onOpen && !isNew ? (
+          <button
+            type="button"
+            className="gtd-ed__file gtd-ed__file--open"
+            title={`Fichero: ${task.path} · Abrir en su fichero`}
             onClick={(e) => {
               commit();
-              onMove(e);
+              onOpen(e);
             }}
             data-testid="gtd-editor-file"
           >
@@ -1393,17 +1409,19 @@ export default function TaskEditor({
             <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
           </span>
         )}
-        {!isNew && (
+        {/* (3.44) «Mover a…» (lo que hacía el nombre del fichero), donde estaba «Abrir» */}
+        {onMove && !isNew && (
           <button
             type="button"
             className="gtd-btn gtd-btn--link"
             onClick={(e) => {
               commit();
-              if (onOpen) onOpen(e);
+              onMove(e);
             }}
-            title="Abrir en su fichero"
+            title="Mover a otra lista, proyecto o fichero"
+            data-testid="gtd-editor-move"
           >
-            <i className="fas fa-external-link-alt" /> Abrir
+            <i className="fas fa-share" /> Mover
           </button>
         )}
         {/* (3.11) ver y editar las PROPERTIES de la tarea */}
@@ -1460,22 +1478,6 @@ export default function TaskEditor({
             data-testid="gtd-editor-trash"
           >
             <i className="fas fa-trash" /> {inTrash ? 'Borrar' : 'Papelera'}
-          </button>
-        )}
-        {/* (3.43) «＋ Subtarea» al final de la línea de botones */}
-        {!isNew && onAddSubtask && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link"
-            onClick={withCommit(onAddSubtask)}
-            title={
-              isProject
-                ? 'Guardar y añadir una acción al proyecto'
-                : 'Guardar y añadir una subtarea'
-            }
-            data-testid="gtd-editor-add-subtask"
-          >
-            <i className="fas fa-plus" /> Subtarea
           </button>
         )}
         <span className="gtd-spacer" />

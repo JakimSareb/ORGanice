@@ -9,6 +9,7 @@
 // - 'view': vistas que cruzan listas (Focus, Scheduled, Deadline, Logbook), con su criterio propio
 //   (fechas, ★, terminadas) y, si se quiere, reglas extra que añaden tareas.
 // - 'agenda' y 'projects': solo se pueden mostrar/ocultar y ordenar.
+// - 'action' (3.44): botones que abren algo (Procesar Inbox, Revisión semanal): igual que Agenda.
 //
 // Ticks de cada sección: habits (incluir hábitos), future (incluir tareas programadas a futuro),
 // futurePriority (… pero sí las que tienen prioridad), parked (incluir tareas de proyectos
@@ -27,10 +28,18 @@ export const SECTION_DEFS = [
   { id: 'projects', kind: 'projects', label: 'Proyectos', icon: 'fas fa-project-diagram' },
   { id: 'reference', kind: 'list', label: 'Reference', icon: 'far fa-file-alt' },
   { id: 'logbook', kind: 'view', label: 'Logbook', icon: 'fas fa-check' },
+  // (3.44) también en el menú lateral como secciones (por defecto, después de Logbook)
+  { id: 'process', kind: 'action', label: 'Procesar Inbox', icon: 'fas fa-filter' },
+  { id: 'review', kind: 'action', label: 'Revisión semanal', icon: 'fas fa-clipboard-check' },
   // (3.0) Papelera, como Nirvana
   { id: 'trash', kind: 'view', label: 'Papelera', icon: 'fas fa-trash' },
 ];
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);
+// (3.44) Las que no son listas de tareas (botones que abren algo): Agenda, Procesar Inbox, Revisión
+export const ACTION_SECTION_IDS = SECTION_DEFS.filter(
+  (s) => s.kind === 'agenda' || s.kind === 'action'
+).map((s) => s.id);
+export const isActionSection = (id) => ACTION_SECTION_IDS.includes(id);
 
 // (2.16) Secciones propias (creadas en Ajustes): son VISTAS como Focus: una tarea sigue en su
 // lista de siempre y además sale aquí si cumple sus reglas (sin reglas: todas las abiertas).
@@ -98,6 +107,8 @@ export const DEFAULT_SECTIONS = {
   },
   reference: { ...base, ...listTicks, noStateLeaf: true },
   logbook: { ...base, habits: true, future: true, futurePriority: true, parked: true },
+  process: { ...base },
+  review: { ...base },
   trash: { ...base, habits: true, future: true, futurePriority: true, parked: true },
 };
 

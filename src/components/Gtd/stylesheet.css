@@ -3341,8 +3341,8 @@ html[data-eli-theme] .gtd-editor .gtd-editor__notes {
 .gtd-ed__today:hover {
   opacity: 1;
 }
-/* (3.09) nombre del fichero = «Mover a»: subrayado al pasar el ratón (no en el móvil) */
-button.gtd-ed__file--move {
+/* (3.09; 3.44 = «Abrir») nombre del fichero: subrayado al pasar el ratón (no en el móvil) */
+button.gtd-ed__file--open {
   border: 0;
   background: transparent;
   padding: 0;
@@ -3352,7 +3352,7 @@ button.gtd-ed__file--move {
   cursor: pointer;
 }
 @media (hover: hover) and (pointer: fine) {
-  button.gtd-ed__file--move:hover {
+  button.gtd-ed__file--open:hover {
     text-decoration: underline;
     opacity: 0.85;
   }

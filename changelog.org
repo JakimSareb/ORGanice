@@ -3,6 +3,14 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.44 (octubre de 2026)
+** GTD
+- *Limpieza*: las tareas hechas de un proyecto que sigue abierto se quedan con él (como al Archivar); cuando el proyecto se termina, la Limpieza se las lleva todas juntas. Se avisa de cuántas se quedan.
+- Editor de tareas: *＋ Subtarea* vuelve al principio de la línea de botones.
+- Editor de tareas: el botón «Abrir» desaparece; ahora es el *nombre del fichero* el que abre la tarea en su fichero. «Mover a…» (lo que hacía antes el nombre) tiene su propio botón *Mover*, donde estaba «Abrir».
+- Notas: en la fila de formato (botón *Aa*), un botón con un reloj inserta la *fecha y la hora de ahora* (=[2026-10-20 Tue 17:05]=).
+- *Procesar Inbox* y *Revisión semanal* son secciones del menú lateral: en Ajustes se muestran u ocultan y se cambian de sitio como las demás. Por defecto van al final, después de Logbook. (Siguen también en el ⋯ de arriba.)
+
 * 3.43 (octubre de 2026)
 ** GTD
 - Editor de tareas: el botón *＋ Subtarea* pasa al final de su línea de botones (después de Papelera).

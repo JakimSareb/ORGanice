@@ -25,22 +25,7 @@ test('GTD (3.43): botón Subtarea, icono de notas y notas de proyecto', async ({
   const size = await toggle.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   expect(size).toBeGreaterThanOrEqual(14);
 
-  // «＋ Subtarea» es el último de la línea de botones (tras «Papelera»)
-  const t = page.locator('[data-testid=gtd-task-title]:has-text("Pintar")');
-  if (app.mobile) await app.press(t);
-  else await t.dblclick();
-  await expect(page.locator('.gtd-editor')).toHaveCount(1);
-  await page.waitForTimeout(600);
-  const order = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('.gtd-editor__actions [data-testid]')).map((e) =>
-      e.getAttribute('data-testid')
-    )
-  );
-  const sub = order.indexOf('gtd-editor-add-subtask');
-  expect(sub).toBeGreaterThan(order.indexOf('gtd-editor-trash'));
-  expect(sub).toBeLessThan(order.indexOf('gtd-editor-cancel'));
-  await page.click('[data-testid=gtd-editor-cancel]');
-  await expect(page.locator('.gtd-editor')).toHaveCount(0);
+  // (3.44) el sitio de «＋ Subtarea» se comprueba en gtd_344.spec.js
   // También en «Todos los proyectos»
   await gtd.openList(app, 'Todos los proyectos');
   const ovRow = page.locator('[data-testid=gtd-overview-row]:has-text("Casa")');
