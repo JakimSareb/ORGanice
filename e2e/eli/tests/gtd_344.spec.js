@@ -44,16 +44,15 @@ test('GTD (3.44): botones del editor y fecha y hora en las notas', async ({ app 
     /Abrir en su fichero/
   );
 
-  // Botón de fecha y hora en la fila de formato de las notas
+  // Botón de fecha y hora (4.01: en la barra de arriba del editor)
   const notes = page.locator('[data-testid=gtd-editor-notes]');
   const preview = page.locator('[data-testid=gtd-editor-notes-preview]');
   if (await preview.isVisible()) await preview.click();
   else await notes.click();
   await page.waitForTimeout(400);
   await page.keyboard.press('End');
-  const toggle = page.locator('.gtd-editor [data-testid=eli-format-toggle]');
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
-  await page.click('.gtd-editor [data-testid=eli-format-now]');
+  // (4.01) el reloj está fuera del «Aa», tras deshacer/rehacer
+  await page.click('.gtd-editor [data-testid=gtd-editor-now]');
   await expect(notes).toHaveValue(/Notas de pintar\s+\[\d{4}-\d\d-\d\d \w+ \d\d:\d\d\]/);
   await page.click('[data-testid=gtd-editor-cancel]');
   await expect(page.locator('.gtd-editor')).toHaveCount(0);
