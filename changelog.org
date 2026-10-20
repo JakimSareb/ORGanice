@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 3.38 (octubre de 2026)
+** GTD
+- *Programada*: al abrir el selector de fecha ya no se pone hoy solo (en el iPhone el selector lo marcaba al abrirse); hoy sale como referencia y se aplica lo que eliges, a la primera. Si lo cierras sin elegir, no se pone fecha (para hoy está el botón «Hoy»).
+- *Esc guarda*: en el editor, Esc guarda y cierra siempre; solo el botón Cancelar descarta los cambios.
+- *Cerrar la hoja deslizando* (móvil): deslizar hacia abajo desde el título o las notas ya no saca el teclado.
+- *＋ Subtarea*: botón nuevo en el editor; guarda la tarea abierta y abre el editor de una subtarea suya, con el cursor en el título (en un proyecto, una acción del proyecto).
+
 * 3.37 (octubre de 2026)
 ** GTD
 - *Editor*: Cancelar y Guardar van siempre juntos en la misma línea.
