@@ -24,6 +24,24 @@ const sideRight = () => {
   return Math.max(r && r.right > 0 ? r.right : 0, 200);
 };
 const SPEED = 14;
+// (3.46) con el dedo, la franja que hace desplazar es más ancha
+const TOUCH_EDGE = 90;
+// (3.46) parte VISIBLE de una caja: en el iPhone el menú lateral puede seguir por debajo del borde
+// de la pantalla (barra de inicio, zona segura), y entonces su franja de abajo no se alcanzaba
+export const visibleSpan = (r, viewH) => ({
+  top: Math.max(r.top, 0),
+  bottom: Math.min(r.bottom, viewH),
+});
+// (3.46) -1 = subir, 1 = bajar, 0 = quieto
+export const edgeDir = (y, span, edge) => {
+  const e = Math.min(edge, Math.max(20, (span.bottom - span.top) / 3));
+  return y < span.top + e ? -1 : y > span.bottom - e ? 1 : 0;
+};
+const viewportHeight = () => {
+  const vv = window.visualViewport;
+  const h = window.innerHeight || 0;
+  return vv && vv.height ? Math.min(h || vv.height, vv.height + (vv.offsetTop || 0)) : h;
+};
 // (3.45) con la tarea encima del menú lateral, el menú se desplaza solo al acercarse a sus extremos
 const sideScrollerAt = (x) => {
   const el = document.querySelector('.gtd-side');
@@ -204,18 +222,26 @@ export default function useRowDrag({
       if (!d) return;
       const sp = sideScrollerAt(e.clientX) || d.scroller;
       if (!sp) return;
+      const viewH = viewportHeight();
       const r =
         sp === document.scrollingElement || sp === document.documentElement
-          ? { top: 0, bottom: window.innerHeight }
+          ? { top: 0, bottom: viewH }
           : sp.getBoundingClientRect();
-      const dir = e.clientY < r.top + EDGE ? -1 : e.clientY > r.bottom - EDGE ? 1 : 0;
+      const dir = edgeDir(
+        e.clientY,
+        visibleSpan(r, viewH),
+        d.pointerType === 'mouse' ? EDGE : TOUCH_EDGE
+      );
       if (dir !== d.scrollDir || sp !== d.scrollEl) {
         d.scrollDir = dir;
         d.scrollEl = sp;
         stopAutoScroll(d);
         if (dir) {
           d.scrollTimer = setInterval(() => {
-            sp.scrollTop += dir * SPEED;
+            // (3.46) en iOS «scrollTop +=» con decimales a veces no avanza: se redondea
+            const max = sp.scrollHeight - sp.clientHeight;
+            const next = Math.max(0, Math.min(max, Math.round(sp.scrollTop) + dir * SPEED));
+            if (next !== sp.scrollTop) sp.scrollTop = next;
             update();
           }, 16);
         }

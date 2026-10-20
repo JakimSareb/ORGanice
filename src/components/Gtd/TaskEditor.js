@@ -1031,12 +1031,6 @@ export default function TaskEditor({
             }
           />
         )}
-        {/* (3.37) la vista previa (móvil) se marca como tal */}
-        {!editingText && !encrypted && (
-          <span className="gtd-ed__preview-label" data-testid="gtd-editor-preview-label">
-            Vista previa
-          </span>
-        )}
         {/* (3.09) vista previa (móvil) con enlaces: se pueden pulsar sin entrar en edición; un
             toque en el resto edita, con el cursor donde se ha tocado */}
         {notesPreviewLinks && (
@@ -1135,6 +1129,16 @@ export default function TaskEditor({
           data-eli-orgpath={task.path}
           data-testid="gtd-editor-notes"
         />
+        {/* (3.46) «Vista previa» ya no va sobre las notas, sino sobre lo que se ve ya presentado
+            debajo de ellas (tablas y casillas) */}
+        {!encrypted && (tableBlocks(notes).length > 0 || checkboxes.length > 0) && (
+          <span
+            className="gtd-ed__preview-label gtd-ed__preview-label--below"
+            data-testid="gtd-editor-preview-label"
+          >
+            Vista previa
+          </span>
+        )}
         {/* (3.02) tablas Org de las notas, vistas como tabla (se pueden editar en su sitio) */}
         {!encrypted && tableBlocks(notes).length > 0 && (
           <div className="gtd-editor__tables" data-testid="gtd-editor-tables">

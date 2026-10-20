@@ -485,6 +485,7 @@ function NotesLines({
 
 function TaskRow({
   task,
+  noSubtasks = false, // (3.46) interruptor «Subtareas» apagado: sin el indicador [1/3]
   today,
   showProject,
   onPointerDown,
@@ -695,7 +696,7 @@ function TaskRow({
                 <i className={notesMode === 'none' ? 'far fa-sticky-note' : 'fas fa-sticky-note'} />
               </button>
             )}
-            {task.cookie && (
+            {task.cookie && !noSubtasks && (
               <span
                 className="gtd-task__cookie"
                 title="Subtareas terminadas"
@@ -977,6 +978,9 @@ export default function GtdView() {
   // (3.0) Entrada rápida (Mayús+E), notas bajo las filas, orden por fecha límite (d), vista de
   // la lista (unificada, por proyecto o por estado) y grupo «Hecho» abierto o plegado
   const [rapidOn, setRapidOn] = useState(() => readLS('eliGtdRapid', false) === true);
+  // (3.46) interruptor «Subtareas» del ⋯ (apagado por defecto): apagado, no se ve nada de
+  // subtareas y las hijas salen como tareas normales; los ficheros .org no cambian
+  const [subtasksOn, setSubtasksOn] = useState(() => readLS('eliGtdSubtasks', false) === true);
   const [rapidText, setRapidText] = useState('');
   // (3.01) autorrelleno de la Entrada rápida (# etiquetas y palabras, > proyectos)
   const [rapidCaret, setRapidCaret] = useState(0);
@@ -1359,14 +1363,19 @@ export default function GtdView() {
     const p = t && t.parentId ? tasksByKey.get(`${t.path}::${t.parentId}`) : null;
     return p && p.keyword && !p.isProject ? p : null;
   };
+  // (3.46) la madre que se enseña (con el interruptor «Subtareas» apagado, ninguna); para mover
+  // y reordenar se sigue usando la de verdad (parentTaskOf)
+  const shownParentOf = (t) => (subtasksOn ? parentTaskOf(t) : null);
   const parentTitleOf = (t) => {
-    const p = parentTaskOf(t);
+    const p = shownParentOf(t);
     return p ? p.title : null;
   };
   const items = useMemo(() => {
     // (2.17) subtareas bajo su tarea (no en las vistas ordenadas por fecha)
     const byDate = ['focus', 'scheduled', 'deadline', 'logbook', 'trash', 'tag'].includes(view.id);
-    const nested = nestSubtasks(buildItems(), byDate ? () => true : null);
+    const nested = subtasksOn
+      ? nestSubtasks(buildItems(), byDate ? () => true : null)
+      : buildItems();
     // (3.02) subtareas plegadas (▸): se ocultan los descendientes de las tareas plegadas
     const out = [];
     let hideBelow = null;
@@ -1408,7 +1417,7 @@ export default function GtdView() {
     }
     return out;
     // eslint-disable-next-line
-  }, [buildDeps, openKey, tasks, view.id, folded]);
+  }, [buildDeps, openKey, tasks, view.id, folded, subtasksOn]);
   function buildItems() {
     const out = buildMainItems();
     // (3.01) Vista de una etiqueta con «cabeceras sin tarea»: los encabezados sin estado que la
@@ -2324,6 +2333,7 @@ export default function GtdView() {
   // (3.06) Completar una tarea con subtareas abiertas: «¿Marcar también las subtareas como
   // hechas?». Devuelve las entradas a guardar con ellas ([] = solo esta) o null (cancelar).
   const subtaskEntries = async (list, opts = {}) => {
+    if (!subtasksOn) return [];
     const subs = [];
     const keys = new Set(list.map((t) => t.key));
     list
@@ -3271,6 +3281,7 @@ export default function GtdView() {
   // (2.18) Tab: la tarea seleccionada pasa a ser subtarea de la de encima (de su hermana anterior
   // si la de encima es una subtarea de esta); Mayús+Tab: la saca un nivel
   const indentSelected = (task, rows, idx, out) => {
+    if (!subtasksOn) return;
     if (out) {
       if (parentTaskOf(task)) dispatch(gtdSetParent(task, null));
       return;
@@ -4202,6 +4213,16 @@ export default function GtdView() {
         onClick: () => toggleRapid(false),
       },
       {
+        label: 'Subtareas',
+        checked: subtasksOn,
+        onClick: () => {
+          const v = !subtasksOn;
+          setSubtasksOn(v);
+          writeLS('eliGtdSubtasks', v);
+        },
+        testId: 'gtd-menu-subtasks',
+      },
+      {
         label: 'Pasar las hechas al Logbook al momento',
         checked: autoCollectOn,
         onClick: () => {
@@ -4317,7 +4338,9 @@ export default function GtdView() {
         dispatch(gtdArchiveTask(task));
       }}
       onCloseProject={task.isProject ? () => closeProject(task) : undefined}
-      onAddSubtask={task.isTrashed || task.isDone ? undefined : () => addSubtask(task)}
+      onAddSubtask={
+        !subtasksOn || task.isTrashed || task.isDone ? undefined : () => addSubtask(task)
+      }
       onAttachFiles={(list, target) =>
         openUploadDialog({ files: list, source: 'attach', path: task.path, target })
       }
@@ -4325,13 +4348,13 @@ export default function GtdView() {
       energyOptions={energyOptions}
       effortOptions={effortOptions}
       parentOptions={
-        task.isProject
+        task.isProject || !subtasksOn
           ? []
           : tasks
               .filter((p) => canBeParentOf(p, task, tasks, tasksByKey))
               .map((p) => ({ id: p.id, title: p.title }))
       }
-      parentTaskId={(parentTaskOf(task) || {}).id || ''}
+      parentTaskId={(shownParentOf(task) || {}).id || ''}
       onGoToParent={() => goToTask(parentTaskOf(task))}
       noAutoFocus={jumpedKey === task.key}
       preview={previewKey === task.key}
@@ -4861,6 +4884,7 @@ export default function GtdView() {
       folded={!!item.folded}
       onToggleFold={() => toggleFold(item.task)}
       parentTitle={parentTitleOf(item.task)}
+      noSubtasks={!subtasksOn}
       onGoParent={() => goToTask(parentTaskOf(item.task))}
       notesMode={notesOverride[item.task.key] || notesMode}
       onCycleNotes={() =>
