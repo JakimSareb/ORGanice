@@ -44,3 +44,36 @@ test('GTD (3.39): lupa enfocada y «Heredadas» en tres estados', async ({ app }
   expect((await gtd.titles(app)).length).toBe(3);
   expect(app.errors).toEqual([]);
 });
+
+test('GTD (3.39a): teclado externo en pantalla estrecha — ← abre el menú lateral', async ({
+  app,
+}) => {
+  test.skip(!app.mobile);
+  const { page } = app;
+  await app.open({ '/tasks.org': TASKS, '/inbox.org': '' });
+  await gtd.ready(app);
+  await gtd.openList(app, 'Next');
+  const sideOpen = () => page.$eval('.gtd', (g) => g.classList.contains('is-side-open'));
+  const focused = () =>
+    page.evaluate(() => {
+      const el = document.activeElement;
+      return el && el.classList.contains('gtd-side__item') ? el.textContent.trim() : null;
+    });
+  await page.waitForTimeout(400);
+  expect(await sideOpen()).toBe(false);
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(400);
+  expect(await sideOpen()).toBe(true);
+  expect(await focused()).toContain('Next');
+  // ↑ cambia de sección y el menú sigue abierto
+  await page.keyboard.press('ArrowUp');
+  await page.waitForTimeout(400);
+  expect(await sideOpen()).toBe(true);
+  expect(await focused()).not.toContain('Next');
+  // → vuelve a la lista y cierra el menú
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(400);
+  expect(await sideOpen()).toBe(false);
+  expect(app.errors).toEqual([]);
+});

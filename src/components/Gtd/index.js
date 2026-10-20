@@ -203,6 +203,11 @@ const EMPTY_FILTERS = {
 };
 const LS_TAG_INHERIT = 'eliGtdTagInherit';
 const LS_GROUP = 'eliGtdGroupByProject';
+// 3.39a: pantalla en la que el menú lateral se despliega (mismo límite que el CSS)
+const isNarrowGtd = () =>
+  typeof window !== 'undefined' &&
+  !!window.matchMedia &&
+  window.matchMedia('(max-width: 720px)').matches;
 const LS_AREA = 'eliGtdArea';
 const readLS = (k, fallback) => {
   try {
@@ -1022,9 +1027,6 @@ export default function GtdView() {
   const [newTitle, setNewTitle] = useState('');
   const [sideOpen, setSideOpen] = useState(false);
   const keepSideRef = useRef(false);
-  // 3.39: menú lateral abierto por ← → (POP); el velo no lo cierra en los 450 ms siguientes
-  const sidePopRef = useRef(0);
-  const [sidePopTick, setSidePopTick] = useState(0);
   const [showAgenda, setShowAgenda] = useState(false);
   // (3.24) Revisión semanal guiada: paso en curso (null = cerrada; se recuerda)
   const [reviewStep, setReviewStep] = useState(() => {
@@ -1754,26 +1756,11 @@ export default function GtdView() {
       const v = location.state && location.state.eliGtdView;
       if (v && JSON.stringify(v) !== JSON.stringify(viewRef.current)) {
         applyView(v);
-        // 3.35 (b): en el móvil, al cambiar de sección con ← → se muestra el menú lateral (se ve
-        // dónde se está); tocar la lista (el velo) lo vuelve a ocultar.
-        // 3.39: en el iPhone en vertical no salía. Ahora: misma condición que el CSS del menú
-        // desplegable (≤720 px, sin mirar la orientación) y se abre DESPUÉS de pintar la vista
-        // nueva (efecto con `sidePopRef`), no en el mismo paso que `applyView` lo cierra.
-        if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
-          sidePopRef.current = Date.now();
-          setSidePopTick((n) => n + 1);
-        }
+        // 3.39a: las flechas de arriba (historial) solo cambian de sección; ya no abren el
+        // menú lateral (eso lo hace ← del teclado)
       }
     });
   }, [history, applyView]);
-  useEffect(() => {
-    if (!sidePopTick) return;
-    setSideOpen(true);
-    const id = window.requestAnimationFrame
-      ? window.requestAnimationFrame(() => setSideOpen(true))
-      : null;
-    return () => id && window.cancelAnimationFrame && window.cancelAnimationFrame(id);
-  }, [sidePopTick]);
   const selectArea = (a) => {
     setArea(a);
     writeLS(LS_AREA, a);
@@ -3177,10 +3164,24 @@ export default function GtdView() {
     }
     if (e.key === 'ArrowLeft' && !e.shiftKey) {
       const on = document.querySelector('.gtd-side .gtd-side__item.is-on');
-      if (!on || !on.offsetParent) return false;
+      if (on && on.offsetParent && (sideOpen || !isNarrowGtd())) {
+        e.preventDefault();
+        setSelKey(null);
+        on.focus();
+        return true;
+      }
+      // 3.39a: en pantalla estrecha (iPhone en vertical con teclado externo) el menú está
+      // oculto: ← lo abre y pone el foco en la sección actual (→ vuelve a la lista)
+      if (!isNarrowGtd()) return false;
       e.preventDefault();
       setSelKey(null);
-      on.focus();
+      setSideOpen(true);
+      const focusOn = (n) => {
+        const el = document.querySelector('.gtd-side .gtd-side__item.is-on');
+        if (el && el.offsetParent) el.focus();
+        else if (n > 0) setTimeout(() => focusOn(n - 1), 50);
+      };
+      setTimeout(() => focusOn(6), 0);
       return true;
     }
     if (e.key === 'Tab' && (idx < 0 || (t && t.closest && t.closest('button, a, select')))) {
@@ -4777,13 +4778,7 @@ export default function GtdView() {
         )}
       </aside>
 
-      <div
-        className="gtd-scrim"
-        onClick={() => {
-          if (Date.now() - sidePopRef.current < 450) return; // 3.39: toque «fantasma» de la flecha
-          setSideOpen(false);
-        }}
-      />
+      <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
 
       <main
         className={
