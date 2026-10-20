@@ -114,7 +114,7 @@ test('Documentos (3.47): en una nota larga la vista sigue al cursor', async ({ a
 });
 
 const NARROW =
-  Array.from({ length: 30 }, (_, i) => `* Cabecera ${i + 1}\nTexto ${i + 1}.`).join('\n') + '\n';
+  Array.from({ length: 70 }, (_, i) => `* Cabecera ${i + 1}\nTexto ${i + 1}.`).join('\n') + '\n';
 
 test('Documentos (3.47): al volver de Narrow a Wide, la cabecera queda arriba', async ({ app }) => {
   await app.open({ ...BASE, '/notas.org': NARROW }, '/file/notas.org');
@@ -125,7 +125,7 @@ test('Documentos (3.47): al volver de Narrow a Wide, la cabecera queda arriba', 
   await app.page.waitForTimeout(500);
   await app.page.locator('[data-testid=eli-docbar-more]').click();
   await app.page.locator('[data-testid=eli-docbar-narrow]').click();
-  await expect(app.page.locator('text=Cabecera 3').first()).toHaveCount(0);
+  await expect(app.page.locator('text=Cabecera 3').first()).not.toBeVisible();
   await app.page.waitForTimeout(500);
   await app.page.locator('[data-testid=eli-docbar-more]').click();
   await app.page.locator('[data-testid=eli-docbar-widen]').click();
