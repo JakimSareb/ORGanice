@@ -55,10 +55,12 @@ test('GTD (3.45): en un proyecto, soltar en «Waiting» cambia el estado', async
   isMobile,
 }) => {
   test.skip(isMobile, 'con el ratón');
-  await app.open({
-    '/tasks.org': '* PROJECT Casa\n** NEXT Pintar\n** WAITING Llave\n',
-    '/inbox.org': '',
-  });
+  // (sin «Acciones siguientes secuenciales», que mezcla Waiting con Next)
+  await app.open(
+    { '/tasks.org': '* PROJECT Casa\n** NEXT Pintar\n** WAITING Llave\n', '/inbox.org': '' },
+    undefined,
+    { localStorage: { eliGtdGroup: JSON.stringify('none') } }
+  );
   await gtd.ready(app);
   const { page } = app;
   await app.press(page.locator('[data-testid=gtd-project]', { hasText: 'Casa' }).first());
