@@ -1919,6 +1919,19 @@ export const setLogEntryStop = (state, action) => {
   return state.setIn(['headers', headerIdx, 'logBookEntries', entryIndex, 'end'], fromJS(time));
 };
 
+// (4.11) quitar un registro de tiempo (CLOCK) del cajón :LOGBOOK:
+export const deleteLogEntry = (state, action) => {
+  const { headerId, entryId } = action;
+  const headerIdx = indexOfHeaderWithId(state.get('headers'), headerId);
+  if (headerIdx === -1) return state;
+  const entries = state.getIn(['headers', headerIdx, 'logBookEntries']) || List();
+  const entryIndex = entries.findIndex((entry) => entry.get('id') === entryId);
+  if (entryIndex === -1) return state;
+  const entry = entries.get(entryIndex);
+  if (entry.get('start') && !entry.get('end')) state = state.update('activeClocks', (i) => i - 1);
+  return state.setIn(['headers', headerIdx, 'logBookEntries'], entries.delete(entryIndex));
+};
+
 export const createLogEntryStart = (state, action) => {
   const { headerId, time } = action;
   const headerIdx = indexOfHeaderWithId(state.get('headers'), headerId);
@@ -2633,6 +2646,8 @@ const reducer = (state, action) => {
       return inFile(setLogEntryStop);
     case 'CREATE_LOG_ENTRY_START':
       return inFile(createLogEntryStart);
+    case 'DELETE_LOG_ENTRY':
+      return inFile(deleteLogEntry);
     case 'UPDATE_LOG_ENTRY_TIME':
       return inFile(updateLogEntryTime);
     case 'SET_SEARCH_FILTER_INFORMATION':

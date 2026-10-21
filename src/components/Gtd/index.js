@@ -87,7 +87,10 @@ import {
   assignProjectEntries,
   gtdToTickler,
   pathOfHeader,
+  gtdEnsureOrgId,
 } from '../../lib/gtd/gtd_actions';
+import { clockSummary, taskLinkText, isClockRunning } from '../../lib/gtd/gtd_tools';
+import { copyTaskLink, shareTaskOrg, exportTaskPdf, toggleTaskClock } from './gtdTaskActions';
 import GtdProcessInbox from './GtdProcessInbox';
 import {
   getProcessMode,
@@ -502,6 +505,12 @@ function NotesLines({
           </div>
         )
       )}
+      {/* (4.11) al final de las notas, el tiempo registrado (CLOCK) */}
+      {notesMode === 'full' && task.header && clockSummary(task.header) ? (
+        <div className="gtd-task__note-line gtd-task__clock" data-testid="gtd-notes-clock">
+          {clockSummary(task.header)}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -3174,6 +3183,11 @@ export default function GtdView() {
   };
   // (4.06) Procesos puntuales y periódicos
   const toast = (label) => dispatch(setDisappearingLoadingMessage(label, 1500));
+  // (4.11) herramientas de la tarea (reloj, enlace, exportar) con su aviso
+  const runTool = (fn, task) => async () => {
+    const label = await dispatch(fn(task));
+    if (label) toast(label);
+  };
   const guidedCapture = (title) => {
     const path = inboxFile || tasksFile;
     if (!path || !files.getIn([path, 'headers'])) return false;
@@ -4417,6 +4431,36 @@ export default function GtdView() {
             },
           ]
         : []),
+      // (4.11) reloj, enlace propio y exportar (con notas y subtareas)
+      ...(single
+        ? [
+            { sep: true },
+            {
+              label: isClockRunning(single.header) ? 'Parar el reloj' : 'Iniciar el reloj',
+              icon: isClockRunning(single.header) ? 'fas fa-stop' : 'fas fa-play',
+              onClick: runTool(toggleTaskClock, single),
+              testId: 'gtd-menu-clock',
+            },
+            {
+              label: 'Copiar el enlace de la tarea',
+              icon: 'fas fa-share-alt',
+              onClick: runTool(copyTaskLink, single),
+              testId: 'gtd-menu-copy-link',
+            },
+            {
+              label: 'Exportar a PDF…',
+              icon: 'far fa-file-pdf',
+              onClick: runTool(exportTaskPdf, single),
+              testId: 'gtd-menu-pdf',
+            },
+            {
+              label: 'Compartir como Org…',
+              icon: 'far fa-file-alt',
+              onClick: runTool(shareTaskOrg, single),
+              testId: 'gtd-menu-org',
+            },
+          ]
+        : []),
       { sep: true },
       {
         label: 'Hacer una copia',
@@ -4621,6 +4665,21 @@ export default function GtdView() {
     );
     return (o && o.title) || ref.title || 'Objetivo';
   };
+  // (4.11) enlace a otra tarea ([[id:…][Título]]; se le pone :ID: si no lo tiene)
+  const pickTaskLink = async (from) => {
+    const items = tasks
+      .filter((t) => t.key !== from.key && !t.isTrashed)
+      .map((t) => ({ id: t.key, label: t.title, hint: fileDisplayName(t.path) }));
+    const key = await askPick({
+      title: 'Enlace a otra tarea',
+      message: from.title,
+      placeholder: 'Buscar tarea…',
+      items,
+      emptyText: 'No hay otras tareas.',
+    });
+    const target = key && tasks.find((t) => t.key === key);
+    return target ? taskLinkText(dispatch(gtdEnsureOrgId(target)), target.title) : '';
+  };
   const renderEditor = (task) => (
     <TaskEditor
       key={task.key + task.header.hashCode() + ':' + editorRev}
@@ -4632,6 +4691,7 @@ export default function GtdView() {
       onOpenLink={(target) => openLink(task, target)}
       onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
       onSaveProperties={(rows) => dispatch(gtdSetProperties(task, rows))}
+      onPickTaskLink={() => pickTaskLink(task)}
       onClose={() => {
         setOpenKey(null);
         if (newKey === task.key) setNewKey(null);

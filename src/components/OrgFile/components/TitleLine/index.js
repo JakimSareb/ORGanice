@@ -16,7 +16,7 @@ import { createIsTodoKeywordInDoneState, hasHeaderContent } from '../../../../li
 import { generateTitleLine } from '../../../../lib/export_org';
 import AttributedString from '../AttributedString';
 import { attachmentCountOfHeader } from '../../../../lib/eli_attachments';
-import { legacyHeaderTapOpen } from '../../../../lib/eli_tap_mode';
+import { legacyHeaderTapOpen, headerTapMode } from '../../../../lib/eli_tap_mode';
 import { isDocLocked } from '../../../../lib/eli_doc_lock';
 
 class TitleLine extends PureComponent {
@@ -80,6 +80,14 @@ class TitleLine extends PureComponent {
       if (hasContent && !onInner)
         this.props.org.toggleHeaderOpened(header.get('id'), closeSubheadersRecursively);
       this.props.org.selectHeader(header.get('id'));
+      return;
+    }
+    if (headerTapMode() === 'edit' && !onInner) {
+      // (4.11) ajuste «Editar»: el primer toque ya edita el título (con el candado, solo selecciona)
+      this.props.org.selectHeader(header.get('id'));
+      if (!this.props.shouldDisableActions && !isDocLocked()) {
+        this.props.base.activatePopup('title-editor');
+      }
       return;
     }
     if (!isSelected) {

@@ -4,10 +4,13 @@ import { createPortal } from 'react-dom';
 import { focusField } from '../../lib/eli_keyboard_bridge';
 import { askPick } from '../../lib/eli_prompt';
 import EliFormatBar, { insertNowIn } from '../EliFormatBar';
+import { insertLinkInto } from '../../lib/eli_links';
+import { insertIntoField } from '../EliTools';
 import { continueListOnEnter, insertEmptyTable } from '../../lib/eli_format';
 import { noteTextParts, hasNoteLinks, isWebUri } from '../../lib/eli_note_links';
 import ScheduleField from './ScheduleField';
 import GtdPropertiesDialog from './GtdPropertiesDialog';
+import TaskTools from './TaskTools';
 import { fileLinkTarget } from '../../lib/eli_media';
 import { linkTargetFor } from '../../lib/eli_org_attach';
 import { removeLinksToTarget, fileTargetsInText } from '../../lib/eli_attachments';
@@ -168,6 +171,7 @@ export default function TaskEditor({
   onAddSubtask = null, // (3.38) «＋ Subtarea»: guarda esta y abre el editor de una hija nueva
   objective = null, // (4.07) objetivo del proyecto (nombre) y elegirlo (fichero de horizontes)
   onPickObjective = null,
+  onPickTaskLink = null, // (4.11) elegir otra tarea y devolver su enlace [[id:…][Título]]
 }) {
   const [propsOpen, setPropsOpen] = useState(false);
   const [editingText, setEditingText] = useState(!preview);
@@ -527,6 +531,35 @@ export default function TaskEditor({
     el.readOnly = false;
     setEditingText(true);
     insertNowIn(el);
+  };
+  // (4.11) enlaces: campo con el cursor (título o notas; si no, las notas, al final)
+  const linkField = () => {
+    const t = titleRef.current;
+    const el = t && document.activeElement === t ? t : notesRef.current;
+    if (!el) return null;
+    if (document.activeElement !== el) {
+      try {
+        el.setSelectionRange(el.value.length, el.value.length);
+      } catch (err) {}
+    }
+    el.readOnly = false;
+    setEditingText(true);
+    return el;
+  };
+  // 🔗 enlace web o de Org (diálogo; con un enlace copiado, ya viene puesto)
+  const insertLink = (e) => {
+    if (e) e.stopPropagation();
+    insertLinkInto(linkField(), insertIntoField);
+  };
+  // enlace a otra tarea (se le pone :ID: si no lo tiene): para saltar entre tareas
+  const insertTaskLink = async (e) => {
+    if (e) e.stopPropagation();
+    const el = linkField();
+    if (!el || !onPickTaskLink) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = await onPickTaskLink();
+    if (text) insertIntoField(el, text, start, end);
   };
   // (4.09) tabla vacía en las notas (como Formato › Tabla de Documentos) y su 1.ª celda abierta
   const insertTable = (e) => {
@@ -1092,6 +1125,28 @@ export default function TaskEditor({
                 >
                   <i className="fas fa-table" />
                 </button>
+                <button
+                  type="button"
+                  className="eli-format-bar__btn"
+                  onClick={insertLink}
+                  title="Insertar un enlace"
+                  aria-label="Insertar un enlace"
+                  data-testid="gtd-editor-link"
+                >
+                  <i className="fas fa-link" />
+                </button>
+                {onPickTaskLink && !isNew && (
+                  <button
+                    type="button"
+                    className="eli-format-bar__btn"
+                    onClick={insertTaskLink}
+                    title="Insertar un enlace a otra tarea"
+                    aria-label="Insertar un enlace a otra tarea"
+                    data-testid="gtd-editor-link-task"
+                  >
+                    <i className="fas fa-sitemap" />
+                  </button>
+                )}
               </>
             }
           />
@@ -1437,6 +1492,9 @@ export default function TaskEditor({
           </label>
         )}
       </div>
+
+      {/* (4.11) reloj, enlace propio y exportar (PDF / Org) */}
+      {!isNew && <TaskTools task={task} commit={commit} />}
 
       <div className="gtd-editor__actions">
         {/* (3.44) «＋ Subtarea» otra vez al principio de la línea de botones */}
