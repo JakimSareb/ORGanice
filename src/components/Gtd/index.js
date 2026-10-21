@@ -49,6 +49,8 @@ import {
   PROJECT_LINK_PROPERTY,
   projectLinkFor,
   newOrgId,
+  STATUS_PROPERTY,
+  SLEEP_STATUS,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -105,6 +107,8 @@ import GtdMenu from './GtdMenu';
 import GtdWeeklyReview from './GtdWeeklyReview';
 import GtdDailyProcess from './GtdDailyProcess';
 import { planDay, closeDay, DAILY_PROCESSES } from '../../lib/gtd/gtd_daily';
+import GtdGuidedProcess from './GtdGuidedProcess';
+import { GUIDED_PROCESSES, chaseTitle, chaseMessage } from '../../lib/gtd/gtd_guided';
 import { weeklyReview, REVIEW_STEPS } from '../../lib/gtd/gtd_review';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
@@ -2353,10 +2357,11 @@ export default function GtdView() {
         t.project.id === project.id
     );
     const answer = await askCloseProject({ title: project.title, openCount: open.length });
-    if (!answer) return;
+    if (!answer) return false;
     setOpenKey(null);
     dispatch(gtdCloseProject(project, answer.state, answer.cancelOpen ? open : []));
     if (view.type === 'project' && view.key === project.key) selectView({ id: 'projects' });
+    return true;
   };
 
   // (3.06) Completar una tarea con subtareas abiertas: «¿Marcar también las subtareas como
@@ -2949,12 +2954,12 @@ export default function GtdView() {
     if (cmd.shortcuts) setShowShortcuts(true);
     // (4.04) procesos lanzados desde el Menú ☰ (aunque su sección esté apagada). Si GTD aún
     // está cargando las tareas, se reintenta un par de veces.
-    if (cmd.process || cmd.review || cmd.daily) {
+    if (cmd.process || cmd.review || cmd.daily || cmd.guided) {
       if (!tasks.length && (cmd.tries || 0) < 4) {
         setTimeout(() => gtdCmdRef.current({ ...cmd, tries: (cmd.tries || 0) + 1 }), 500);
         return;
       }
-      if (cmd.daily) startDaily(cmd.daily);
+      if (cmd.daily || cmd.guided) startDaily(cmd.daily || cmd.guided);
       else if (cmd.process) startProcess();
       else startReview();
     }
@@ -3062,11 +3067,17 @@ export default function GtdView() {
     }
   };
   // (4.05) Procesos diarios (Menú ☰ › Procesos › Diarios)
+  // (4.06) también los puntuales y periódicos (GUIDED_PROCESSES: tarjeta GtdGuidedProcess)
   const startDaily = (kind) => {
-    if (!DAILY_PROCESSES[kind]) return;
+    if (!DAILY_PROCESSES[kind] && !GUIDED_PROCESSES[kind]) return;
     setSideOpen(false);
-    setDaily({ kind, step: 0 });
-    if (kind === 'plan') {
+    setDaily({ kind, step: 0, rev: Date.now() });
+    if (GUIDED_PROCESSES[kind]) {
+      const list = { sweep: 'inbox', stuck: 'projects', waiting: 'waiting', someday: 'someday' }[
+        kind
+      ];
+      if (list) goList(list);
+    } else if (kind === 'plan') {
       // el Tickler: el cargado o, si no, junto al fichero de entrada (sin crearlo)
       const present = store.getState().org.present;
       const loaded = Array.from(present.get('files').keys()).some(
@@ -3101,6 +3112,105 @@ export default function GtdView() {
       label = '→ Inbox';
     }
     if (label) dispatch(setDisappearingLoadingMessage(label, 1500));
+  };
+  // (4.06) Procesos puntuales y periódicos
+  const toast = (label) => dispatch(setDisappearingLoadingMessage(label, 1500));
+  const guidedCapture = (title) => {
+    const path = inboxFile || tasksFile;
+    if (!path || !files.getIn([path, 'headers'])) return false;
+    const id = dispatch(
+      gtdAddTask(
+        { path },
+        {
+          title,
+          list: 'inbox',
+          tags: inboxPaths.includes(path) ? [] : [inboxTag()],
+          created: true,
+        }
+      )
+    );
+    if (!id) return false;
+    toast('→ Inbox');
+    return true;
+  };
+  const guidedCreateProject = (title, plan) => {
+    if (!tasksFile) return;
+    const id = dispatch(
+      gtdAddTask({ path: tasksFile }, { title, list: 'project', notes: plan.notes })
+    );
+    if (!id) return;
+    plan.tasks.forEach((x) =>
+      dispatch(
+        gtdAddTask(
+          { path: tasksFile, parentId: id },
+          { title: x.title, list: x.list, created: true }
+        )
+      )
+    );
+    toast('Proyecto creado');
+    selectView({ type: 'project', key: `${tasksFile}::${id}` });
+  };
+  const guidedProjectAction = (p, kind, text) => {
+    if (kind === 'close') return closeProject(p);
+    if (kind === 'next') {
+      const id = dispatch(
+        gtdAddTask({ path: p.path, parentId: p.id }, { title: text, list: 'next', created: true })
+      );
+      if (!id) return false;
+      if (p.ownSleep) dispatch(gtdSaveTask(p, { props: { [STATUS_PROPERTY]: null } }));
+      toast('→ Next');
+    } else if (kind === 'sleep') {
+      dispatch(gtdSaveTask(p, { props: { [STATUS_PROPERTY]: SLEEP_STATUS } }));
+      toast('Dormido (Someday)');
+    }
+    return true;
+  };
+  const guidedMove = (t, kind, person) => {
+    if (kind === 'done') {
+      dispatch(gtdSaveMany([[t, doneChangesFor(t)]]));
+      toast(t.keyword === 'WAITING' ? 'Recibida' : 'Hecha');
+    } else if (kind === 'chase') {
+      const path = tasksFile || t.path;
+      dispatch(
+        gtdAddTask(
+          { path },
+          {
+            title: chaseTitle(t, person),
+            list: 'next',
+            tags: person ? [person] : [],
+            created: true,
+          }
+        )
+      );
+      toast('→ Next');
+    } else if (kind === 'next') {
+      reviewMove(t, 'next');
+    } else if (kind === 'trash') {
+      dispatch(gtdTrash([t]));
+      toast('A la Papelera');
+    } else if (kind === 'wake') {
+      dispatch(gtdSaveTask(t, { props: { [STATUS_PROPERTY]: null } }));
+      toast('Activado');
+    }
+  };
+  const guidedCopy = (t, person) => {
+    const text = chaseMessage(t, person);
+    const done = () => toast('Mensaje copiado');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, () => null);
+        return;
+      }
+    } catch (e) {}
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      done();
+    } catch (e) {}
+    document.body.removeChild(ta);
   };
   // (3.40) Procesar Inbox: una tarea cada vez (las que había en el Inbox al empezar)
   const inboxNow = () => tasks.filter((t) => !t.isProject && listOf(t, today) === 'inbox');
@@ -5291,7 +5401,23 @@ export default function GtdView() {
             onAgenda={() => setShowAgenda(true)}
           />
         )}
-        {daily && (
+        {daily && GUIDED_PROCESSES[daily.kind] && (
+          <GtdGuidedProcess
+            key={daily.kind + daily.rev}
+            kind={daily.kind}
+            tasks={tasks}
+            today={today}
+            skipTags={[inboxTag()]}
+            onClose={() => setDaily(null)}
+            onOpenTask={reviewOpenTask}
+            onCapture={guidedCapture}
+            onCreateProject={guidedCreateProject}
+            onProjectAction={guidedProjectAction}
+            onMove={guidedMove}
+            onCopy={guidedCopy}
+          />
+        )}
+        {daily && DAILY_PROCESSES[daily.kind] && (
           <GtdDailyProcess
             key={daily.kind}
             kind={daily.kind}

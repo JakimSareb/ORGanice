@@ -632,7 +632,31 @@ class HeaderBar extends PureComponent {
           },
         ],
       },
-      { heading: 'Puntuales', id: 'oneoff', items: [] },
+      // (4.06) puntuales y periódicos (tarjeta por pasos en GTD: components/Gtd/GtdGuidedProcess)
+      {
+        heading: 'Puntuales',
+        id: 'oneoff',
+        items: [
+          {
+            icon: 'fas fa-box-open',
+            label: 'Volcado mental',
+            onClick: () => run({ guided: 'sweep' }),
+            testId: 'eli-proc-sweep',
+          },
+          {
+            icon: 'fas fa-drafting-compass',
+            label: 'Planificar un proyecto nuevo',
+            onClick: () => run({ guided: 'project' }),
+            testId: 'eli-proc-project',
+          },
+          {
+            icon: 'fas fa-unlock-alt',
+            label: 'Aclarar un proyecto atascado',
+            onClick: () => run({ guided: 'stuck' }),
+            testId: 'eli-proc-stuck',
+          },
+        ],
+      },
       {
         heading: 'Periódicos',
         id: 'periodic',
@@ -642,6 +666,18 @@ class HeaderBar extends PureComponent {
             label: 'Revisión semanal',
             onClick: () => run({ review: true }),
             testId: 'eli-proc-review',
+          },
+          {
+            icon: 'fas fa-hourglass-half',
+            label: 'Repaso de Waiting',
+            onClick: () => run({ guided: 'waiting' }),
+            testId: 'eli-proc-waiting',
+          },
+          {
+            icon: 'fas fa-cloud',
+            label: 'Repaso de Someday/Maybe',
+            onClick: () => run({ guided: 'someday' }),
+            testId: 'eli-proc-someday',
           },
         ],
       },
