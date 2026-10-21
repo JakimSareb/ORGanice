@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.05 (octubre de 2026)
+** Procesos diarios (Menú ☰ › Procesos › Diarios)
+- *Planificar el día*: tarjeta por pasos en GTD. 1) Lo programado para hoy y lo vencido (✓ hecha o → mañana); 2) los *Waiting* cuya fecha ya ha llegado (✓ recibida o → mañana); 3) el *Tickler* de hoy (botón *Al Inbox* para procesarlo); 4) *Elegir para Focus*: pon ★ a 3–5 acciones (te dice cuántas llevas).
+- *Cerrar el día*: 1) marcar lo hecho (Focus y Next); 2) apuntar las capturas sueltas al Inbox (y procesarlo si quieres); 3) lo de Focus sin hacer: *se queda*, *quitar la ★*, *mañana* u *otra fecha* (al reprogramarla pierde la ★ hasta ese día).
+- *¿Qué hago ahora?*: eliges dónde estás (etiquetas @), el tiempo que tienes y tu energía, o *Rápido* (QuickWin o 10 min), y te propone hasta 3 acciones de Next (★ y lo que vence primero; *Otras* para ver más).
+- El menú *Procesos* vuelve a tener icono.
+
 * 4.04 (octubre de 2026)
 ** Menú ☰ (GTD y Documentos)
 - *Agenda* es la segunda opción, también en GTD (en el Modo Notas no sale).

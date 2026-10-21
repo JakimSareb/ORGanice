@@ -103,6 +103,8 @@ import {
 } from '../../lib/gtd/gtd_rapid';
 import GtdMenu from './GtdMenu';
 import GtdWeeklyReview from './GtdWeeklyReview';
+import GtdDailyProcess from './GtdDailyProcess';
+import { planDay, closeDay, DAILY_PROCESSES } from '../../lib/gtd/gtd_daily';
 import { weeklyReview, REVIEW_STEPS } from '../../lib/gtd/gtd_review';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
@@ -1065,6 +1067,8 @@ export default function GtdView() {
   const [lastReview, setLastReview] = useState(() => readLS('eliGtdLastReview', null));
   // (3.40) «Procesar Inbox»: { queue: [{key, path, title}], i, gone: {i: texto} } (null = cerrado)
   const [proc, setProc] = useState(null);
+  // (4.05) proceso diario en curso: { kind: 'plan' | 'close' | 'now', step } (null = cerrado)
+  const [daily, setDaily] = useState(null);
   const [today, setToday] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -1137,6 +1141,27 @@ export default function GtdView() {
     () => buildTasks(scopedFiles, inboxPaths),
     // eslint-disable-next-line
     [scopedFiles, inboxPaths, gtdCfg]
+  );
+  // (4.05) procesos diarios: las entradas de tickler.org (aunque GTD no lo cargue) y lo de cada paso
+  const dailyKind = daily ? daily.kind : null;
+  const ticklerTasks = useMemo(
+    () =>
+      dailyKind === 'plan'
+        ? buildTasks(
+            files.filter((_f, p) => isTicklerPath(p)),
+            []
+          )
+        : [],
+    [dailyKind, files]
+  );
+  const dailyData = useMemo(
+    () =>
+      dailyKind === 'plan'
+        ? planDay(tasks, today, ticklerTasks)
+        : dailyKind === 'close'
+        ? closeDay(tasks, today)
+        : null,
+    [dailyKind, tasks, today, ticklerTasks]
   );
   // (3.24) lo que mira la revisión semanal (solo con ella abierta)
   const reviewData = useMemo(
@@ -2924,12 +2949,13 @@ export default function GtdView() {
     if (cmd.shortcuts) setShowShortcuts(true);
     // (4.04) procesos lanzados desde el Menú ☰ (aunque su sección esté apagada). Si GTD aún
     // está cargando las tareas, se reintenta un par de veces.
-    if (cmd.process || cmd.review) {
+    if (cmd.process || cmd.review || cmd.daily) {
       if (!tasks.length && (cmd.tries || 0) < 4) {
         setTimeout(() => gtdCmdRef.current({ ...cmd, tries: (cmd.tries || 0) + 1 }), 500);
         return;
       }
-      if (cmd.process) startProcess();
+      if (cmd.daily) startDaily(cmd.daily);
+      else if (cmd.process) startProcess();
       else startReview();
     }
     if (cmd.newProject) addProject();
@@ -3034,6 +3060,47 @@ export default function GtdView() {
     } else {
       goToTask(t);
     }
+  };
+  // (4.05) Procesos diarios (Menú ☰ › Procesos › Diarios)
+  const startDaily = (kind) => {
+    if (!DAILY_PROCESSES[kind]) return;
+    setSideOpen(false);
+    setDaily({ kind, step: 0 });
+    if (kind === 'plan') {
+      // el Tickler: el cargado o, si no, junto al fichero de entrada (sin crearlo)
+      const present = store.getState().org.present;
+      const loaded = Array.from(present.get('files').keys()).some(
+        (p) => isTicklerPath(p) && present.getIn(['files', p, 'headers'])
+      );
+      const near = inboxPaths[0] || inboxFile;
+      if (!loaded && near)
+        Promise.resolve(dispatch(loadFileQuietly(ticklerPathNear(near)))).catch(() => null);
+      goList('focus');
+    } else if (kind === 'close') {
+      goList('focus');
+    } else {
+      goList('next');
+    }
+  };
+  const dailyMove = (t, kind, date) => {
+    let label = '';
+    if (kind === 'done') {
+      dispatch(gtdSaveMany([[t, doneChangesFor(t)]]));
+      label = t.keyword === 'WAITING' ? 'Recibida' : 'Hecha';
+    } else if (kind === 'star' || kind === 'unstar') {
+      dispatch(gtdSaveTask(t, { priority: t.priority === 'A' ? null : 'A' }));
+      label = t.priority === 'A' ? 'Sin ★' : '★ Focus';
+    } else if (kind === 'schedule' && date) {
+      // reprogramada: sin ★ hasta su nueva fecha (entonces se le vuelve a poner sola)
+      dispatch(gtdSaveTask(t, { scheduled: date, scheduledTime: '', priority: null }));
+      label = `Para el ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`;
+    } else if (kind === 'inbox') {
+      if (!inboxFile) return;
+      dispatch(gtdSaveTask(t, { tags: tagsForList(t, 'inbox') }));
+      if (t.path !== inboxFile) dispatch(gtdRefileTo([t], inboxFile, null));
+      label = '→ Inbox';
+    }
+    if (label) dispatch(setDisappearingLoadingMessage(label, 1500));
   };
   // (3.40) Procesar Inbox: una tarea cada vez (las que había en el Inbox al empezar)
   const inboxNow = () => tasks.filter((t) => !t.isProject && listOf(t, today) === 'inbox');
@@ -5222,6 +5289,23 @@ export default function GtdView() {
             onProcess={startProcess}
             onCapture={() => openDraft('inbox')}
             onAgenda={() => setShowAgenda(true)}
+          />
+        )}
+        {daily && (
+          <GtdDailyProcess
+            key={daily.kind}
+            kind={daily.kind}
+            data={dailyData}
+            tasks={tasks}
+            step={daily.step}
+            today={today}
+            skipTags={[inboxTag()]}
+            onStep={(i) => setDaily((d) => (d ? { ...d, step: i } : d))}
+            onClose={() => setDaily(null)}
+            onOpenTask={reviewOpenTask}
+            onMove={dailyMove}
+            onCapture={() => openDraft('inbox')}
+            onProcess={startProcess}
           />
         )}
         {proc && (
