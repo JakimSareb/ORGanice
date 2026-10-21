@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.12 (octubre de 2026)
+** Ajustes
+- Apariencia → *Menú ☰*: ordena las entradas del Menú (flechas ↑ ↓) y apaga las que no quieras ver. *Ajustes* sale siempre, la última. Se guarda en este dispositivo.
+- Apariencia → *Margen izquierdo de Documentos (móvil)*: los píxeles libres a la izquierda de la lista cuando se usa con el dedo (antes fijos, 14; por defecto siguen siendo 14).
+- Ficheros → con *Todos los ficheros .org, automáticamente*: *Carpetas excluidas*. *Excluir una carpeta* la elige de las tuyas; sus ficheros (y los de sus subcarpetas) dejan de cargarse solos y, si ya estaban, se quitan de la lista. La ✕ la vuelve a incluir.
+
 * 4.11 (octubre de 2026)
 ** Documentos
 - Con el dedo, la lista deja *14 píxeles libres a la izquierda*: la viñeta de 1.er nivel ya no queda pegada al borde y se toca más fácil. En el ordenador no cambia.

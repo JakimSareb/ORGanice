@@ -376,3 +376,20 @@
   font-size: 16px;
   padding: 4px 6px;
 }
+
+/* (4.12) Menú ☰: orden y visibilidad */
+.eli-menu-layout__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.eli-menu-layout__label {
+  flex: 1;
+}
+.eli-menu-layout__btn {
+  padding: 4px 8px;
+}
+.eli-menu-layout__btn:disabled {
+  opacity: 0.3;
+}

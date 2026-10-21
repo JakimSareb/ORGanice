@@ -209,6 +209,7 @@ export default (state = Map(), action) => {
         'eliTodoKeywordsLine',
         'eliDefaultTagsLine',
         'eliAllOrgFiles',
+        'eliExcludedFolders',
         'eliArchiveInSubfolder',
         'eliNoSwipeDocs',
         'eliNoSwipeGtd',

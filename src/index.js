@@ -11,6 +11,7 @@ import './eli_readability.css';
 import { applyReadability } from './lib/eli_readability';
 import './eli_font.css';
 import { applyFont } from './lib/eli_font';
+import { applyDocMargin } from './lib/eli_menu_layout';
 import App from './App';
 import EliSplitView from './components/EliSplitView';
 import { BASE_PATH } from './lib/base_path';
@@ -20,6 +21,7 @@ import { flushLocalSaves } from './util/file_persister';
 
 applyReadability();
 applyFont();
+applyDocMargin();
 
 const rootElement = document.getElementById('root');
 

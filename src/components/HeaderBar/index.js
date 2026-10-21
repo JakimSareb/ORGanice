@@ -54,6 +54,7 @@ import * as orgActions from '../../actions/org';
 import { ActionCreators as undoActions } from 'redux-undo';
 
 import ExternalLink from '../UI/ExternalLink';
+import { applyMenuLayout } from '../../lib/eli_menu_layout';
 
 import { List } from 'immutable';
 import _ from 'lodash';
@@ -811,6 +812,7 @@ class HeaderBar extends PureComponent {
               label: 'Buscar',
               onClick: openPalette,
               testId: 'eli-palette-btn',
+              menuId: 'search',
             },
             // (4.01) la agenda (antes solo con la tecla «a»); (4.04) la segunda, también en GTD.
             // En el Modo Notas no sale
@@ -819,6 +821,7 @@ class HeaderBar extends PureComponent {
               (!notes || notesAgendaOn()) && {
                 icon: 'far fa-calendar-check',
                 label: 'Agenda',
+                menuId: 'agenda',
                 onClick: () =>
                   inGtd
                     ? window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { agenda: true } }))
@@ -831,11 +834,13 @@ class HeaderBar extends PureComponent {
               label: 'Mostrar tareas con reloj activo',
               onClick: () => this.showRunningClocks(inGtd),
               testId: 'eli-running-clocks',
+              menuId: 'clocks',
             },
             {
               icon: 'far fa-folder-open',
               label: 'Mis ficheros',
               testId: 'eli-menu-file',
+              menuId: 'files',
               items: [
                 {
                   icon: 'far fa-copy',
@@ -876,6 +881,7 @@ class HeaderBar extends PureComponent {
               icon: 'far fa-eye',
               label: 'Vista',
               testId: 'eli-menu-view',
+              menuId: 'view',
               items: [
                 {
                   icon: 'fas fa-angle-double-up',
@@ -903,20 +909,23 @@ class HeaderBar extends PureComponent {
                 label: 'Dos columnas',
                 onClick: () => this.openSplitView(),
                 testId: 'eli-split-open',
+                menuId: 'split',
               },
             tools.length > 0 && {
               icon: 'fas fa-toolbox',
               label: 'Herramientas',
               testId: 'eli-menu-tools',
+              menuId: 'tools',
               items: tools,
             },
             // (4.04) los procesos guiados de GTD, por tipo (aunque su sección del menú de GTD
             // esté apagada). En el Modo Notas no salen. (4.09) Justo debajo de Herramientas
-            !notes && this.processesMenu(inGtd),
+            !notes && { ...this.processesMenu(inGtd), menuId: 'processes' },
             {
               icon: 'far fa-question-circle',
               label: 'Ayuda',
               testId: 'eli-menu-help',
+              menuId: 'help',
               items: [
                 {
                   icon: 'fas fa-book',
@@ -1089,7 +1098,7 @@ class HeaderBar extends PureComponent {
 
           {isAuthenticated && (
             <EliMoreMenu
-              items={moreItems}
+              items={applyMenuLayout(moreItems.filter(Boolean))}
               icon="fas fa-bars"
               title={'Menú' + (this.props.activeClocks ? ' · hay un reloj en marcha' : '')}
               buttonClassName={
