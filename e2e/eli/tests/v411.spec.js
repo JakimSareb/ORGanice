@@ -177,7 +177,9 @@ test('4.11: GTD, enlace a otra tarea en las notas (con :ID: en la otra)', async 
   await expect
     .poll(() => app.fileAfterSync('/tasks.org'), { timeout: 15000 })
     .toMatch(/\* NEXT Barnizar\n:PROPERTIES:\n:ID: [^\n]+\n:END:/);
-  expect(await app.fileAfterSync('/tasks.org')).toMatch(/Notas de pintar\n\[\[id:[^\]]+\]\[Barnizar\]\]/);
+  expect(await app.fileAfterSync('/tasks.org')).toMatch(
+    /Notas de pintar\n\[\[id:[^\]]+\]\[Barnizar\]\]/
+  );
   expect(app.errors).toEqual([]);
 });
 
