@@ -59,7 +59,10 @@
 .header__bullet {
   position: relative;
   z-index: 1;
-  width: 16px;
+  /* (4.10) mínimo 16 px, pero crece si el icono (◉ + ▸ de plegada) es más ancho: así no pisa el título */
+  min-width: 16px;
+  padding-right: 4px;
+  box-sizing: content-box;
   cursor: pointer;
 }
 
