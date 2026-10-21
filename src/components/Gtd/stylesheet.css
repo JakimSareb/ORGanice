@@ -4297,3 +4297,76 @@ input.gtd-proc__input:not([type]) {
   background: var(--blue);
   color: #fff;
 }
+
+/* (4.06) Procesos puntuales y periódicos (Volcado mental, Planificar un proyecto…) */
+.gtd-guided__line {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0;
+}
+.gtd-guided__line input,
+.gtd-guided__name,
+.gtd-guided__text {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  padding: 6px 8px;
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+}
+.gtd-guided__name,
+.gtd-guided__text {
+  display: block;
+  margin: 6px 0;
+}
+.gtd-guided__text {
+  resize: vertical;
+}
+.gtd-guided__captured {
+  padding: 3px 4px;
+  font-size: 0.9em;
+}
+.gtd-guided__captured i {
+  color: var(--green, #859900);
+  margin-right: 4px;
+}
+.gtd-guided__total {
+  margin: 6px 0 0;
+  font-size: 0.8em;
+  color: var(--base1);
+}
+.gtd-guided__warn {
+  margin: 6px 0 0;
+  font-size: 0.85em;
+  color: var(--orange, #cb4b16);
+}
+.gtd-guided__n {
+  display: inline-block;
+  min-width: 1.4em;
+  font-size: 0.8em;
+  color: var(--base1);
+}
+.gtd-guided__project {
+  width: 100%;
+  margin: 4px 0;
+}
+.gtd-guided__progress {
+  height: 3px;
+  margin: 0 12px;
+  border-radius: 2px;
+  background: var(--base1-soft, rgba(0, 0, 0, 0.1));
+  overflow: hidden;
+}
+.gtd-guided__progress > div {
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.2s;
+}
+.gtd-guided .gtd-review__tools {
+  flex-wrap: wrap;
+}
