@@ -90,7 +90,14 @@ import {
   gtdEnsureOrgId,
 } from '../../lib/gtd/gtd_actions';
 import { clockSummary, taskLinkText, isClockRunning } from '../../lib/gtd/gtd_tools';
-import { copyTaskLink, shareTaskOrg, exportTaskPdf, toggleTaskClock } from './gtdTaskActions';
+import {
+  copyTaskLink,
+  shareTaskOrg,
+  exportTaskPdf,
+  toggleTaskClock,
+  exportViewPdf,
+  exportViewOrg,
+} from './gtdTaskActions';
 import GtdProcessInbox from './GtdProcessInbox';
 import {
   getProcessMode,
@@ -885,6 +892,16 @@ function TaskRow({
           >
             <i className="fas fa-caret-down" />
           </button>
+        )}
+        {/* (4.13) reloj en marcha: icono naranja en la esquina superior derecha */}
+        {!task.isDone && task.header && isClockRunning(task.header) && (
+          <span
+            className="gtd-task__running"
+            title="Reloj en marcha"
+            data-testid="gtd-task-running"
+          >
+            <i className="fas fa-clock" />
+          </span>
         )}
       </div>
       {/* (3.11) notas DEBAJO de la fila (la fila no se mueve), sangradas y con una línea gris
@@ -4495,6 +4512,25 @@ export default function GtdView() {
   };
 
   // Menú ⋯ de la cabecera: opciones de la vista (como Nirvana) y lo que se usa menos
+  // (4.13) las tareas que se ven ahora (en el orden de la vista) y el título de la vista: con una
+  // búsqueda del menú lateral, sus resultados; en «Todos los proyectos», los proyectos
+  const exportView = () => {
+    let list;
+    let vTitle = title;
+    if (searchGroups) {
+      list = searchGroups.flatMap((g) => g.list);
+      vTitle = `Búsqueda: ${searchText.trim()}`;
+    } else if (view.id === 'projects') {
+      list = ['active', 'scheduled', 'sleep'].flatMap((id) => overview[id].map((r) => r.project));
+    } else if (view.id === 'horizons') {
+      list = [];
+    } else {
+      list = items.filter((i) => i.kind === 'task' && !i.isRef).map((i) => i.task);
+    }
+    const seen = new Set();
+    list = list.filter((t) => t && t.header && !seen.has(t.key) && seen.add(t.key));
+    return { list, title: vTitle || 'GTD' };
+  };
   const viewMenuItems = () => {
     const setGroup = (g) => {
       setGroupMode(g);
@@ -4632,6 +4668,29 @@ export default function GtdView() {
             items.filter((i) => i.kind === 'task' && !i.task.isDone).map((i) => i.task),
             title
           ),
+      },
+      // (4.13) exportar lo que muestra la vista en este momento (sección, proyecto, filtro,
+      // búsqueda…)
+      {
+        label: 'Exportar la vista a PDF',
+        icon: 'far fa-file-pdf',
+        disabled: !exportView().list.length,
+        onClick: () => {
+          const v = exportView();
+          exportViewPdf(v.list, v.title);
+        },
+        testId: 'gtd-view-export-pdf',
+      },
+      {
+        label: 'Exportar la vista como ORG',
+        icon: 'far fa-file-alt',
+        disabled: !exportView().list.length,
+        onClick: async () => {
+          const v = exportView();
+          const msg = await exportViewOrg(tasksToOrg(v.title, v.list), v.title);
+          if (msg) dispatch(setDisappearingLoadingMessage(msg, 2000));
+        },
+        testId: 'gtd-view-export-org',
       }
     );
     if (view.id === 'logbook') {
@@ -5597,6 +5656,25 @@ export default function GtdView() {
             ) : (
               title
             )}
+            {/* (4.13) icono de notas del proyecto al final del nombre, como en las tareas */}
+            {projectTask && projectTask.description.trim() && openKey !== projectTask.key && (
+              <button
+                type="button"
+                className={'gtd-meta gtd-notes-btn' + (projNotesOpen ? ' is-on' : '')}
+                aria-expanded={projNotesOpen}
+                onClick={() => {
+                  const v = !projNotesOpen;
+                  setProjNotesOpen(v);
+                  writeLS('eliGtdProjNotes', v);
+                }}
+                title={
+                  projNotesOpen ? 'Notas visibles (clic: ocultarlas)' : 'Tiene notas (clic: verlas)'
+                }
+                data-testid="gtd-project-notes-toggle"
+              >
+                <i className={projNotesOpen ? 'fas fa-sticky-note' : 'far fa-sticky-note'} />
+              </button>
+            )}
             <span className="gtd-main__count">
               {view.id === 'projects'
                 ? overview.active.length + overview.scheduled.length + overview.sleep.length
@@ -5892,43 +5970,32 @@ export default function GtdView() {
               )}
             </div>
           )}
-        {projectTask && projectTask.description.trim() && openKey !== projectTask.key && (
-          <div className="gtd-project-notes" data-testid="gtd-project-notes">
-            <button
-              type="button"
-              className="gtd-project-notes__toggle"
-              aria-expanded={projNotesOpen}
-              onClick={() => {
-                const v = !projNotesOpen;
-                setProjNotesOpen(v);
-                writeLS('eliGtdProjNotes', v);
-              }}
-              data-testid="gtd-project-notes-toggle"
-            >
-              <i className={projNotesOpen ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
-              <i className="far fa-sticky-note" /> Notas
-            </button>
-            {projNotesOpen && (
-              // (3.09) como en las tareas: enlaces clicables, imágenes y adjuntos a la vista
-              <NotesLines
-                task={projectTask}
-                lines={notesLinesOf(projectTask.description, (uri) =>
-                  linkTargetFor(uri, projectTask.header)
-                )}
-                notesMode="full"
-                onToggleCheck={(index) =>
-                  dispatch(
-                    gtdSaveTask(projectTask, {
-                      notes: toggleCheckboxLine(projectTask.description, index),
-                    })
-                  )
-                }
-                onOpenLink={(target) => openLinkAny(projectTask, target)}
-                className="gtd-project-notes__body"
-              />
-            )}
-          </div>
-        )}
+        {projectTask &&
+          projectTask.description.trim() &&
+          openKey !== projectTask.key &&
+          projNotesOpen && (
+            <div className="gtd-project-notes" data-testid="gtd-project-notes">
+              {
+                // (3.09) como en las tareas: enlaces clicables, imágenes y adjuntos a la vista
+                <NotesLines
+                  task={projectTask}
+                  lines={notesLinesOf(projectTask.description, (uri) =>
+                    linkTargetFor(uri, projectTask.header)
+                  )}
+                  notesMode="full"
+                  onToggleCheck={(index) =>
+                    dispatch(
+                      gtdSaveTask(projectTask, {
+                        notes: toggleCheckboxLine(projectTask.description, index),
+                      })
+                    )
+                  }
+                  onOpenLink={(target) => openLinkAny(projectTask, target)}
+                  className="gtd-project-notes__body"
+                />
+              }
+            </div>
+          )}
         {projectTask && openKey === projectTask.key && renderEditor(projectTask)}
 
         {view.id === 'projects' && (

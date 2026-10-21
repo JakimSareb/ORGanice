@@ -36,6 +36,7 @@ import {
   setDocMargin,
   DOC_MARGIN_MAX,
 } from '../../lib/eli_menu_layout';
+import { getPomodoroCfg, setPomodoroCfg } from '../../lib/eli_pomodoro';
 import {
   TOOLS,
   useNotesMode,
@@ -109,6 +110,52 @@ const EliNotesAgendaSetting = () => (
   </div>
 );
 
+// (4.13) Tiempos del Pomodoro (minutos): trabajo, descanso corto, largo y cada cuántos el largo
+const EliPomodoroSettings = () => {
+  const [cfg, setCfg] = React.useState(getPomodoroCfg());
+  const fields = [
+    ['work', 'Pomodoro (min)'],
+    ['short', 'Descanso corto (min)'],
+    ['long', 'Descanso largo (min)'],
+    ['every', 'Descanso largo cada (pomodoros)'],
+  ];
+  return (
+    <div
+      className="setting-container setting-container--vertical"
+      data-testid="eli-setting-pomodoro"
+    >
+      <div className="setting-label">
+        Pomodoro
+        <div className="setting-label__description">
+          Cada pomodoro de trabajo se guarda como un CLOCK en la tarea «Pomodoro» del fichero de
+          tareas.
+        </div>
+      </div>
+      {fields.map(([id, label]) => (
+        <label key={id} className="eli-pomodoro-field">
+          <span>{label}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={id === 'every' ? 2 : 1}
+            max={id === 'every' ? 12 : 180}
+            value={cfg[id]}
+            onChange={(e) => {
+              const v = e.target.value;
+              setCfg({ ...cfg, [id]: v });
+              if (v !== '') {
+                setPomodoroCfg({ [id]: v });
+              }
+            }}
+            onBlur={() => setCfg(getPomodoroCfg())}
+            data-testid={`eli-pomodoro-${id}`}
+          />
+        </label>
+      ))}
+    </div>
+  );
+};
+
 // (4.0) Herramientas opcionales (apagadas de inicio en el Modo Notas)
 const EliToolsSettings = () => (
   <details className="eli-settings-section" data-testid="eli-settings-tools">
@@ -122,6 +169,7 @@ const EliToolsSettings = () => (
         <Switch isEnabled={toolOn(t.id)} onToggle={() => setToolOn(t.id, !toolOn(t.id))} />
       </div>
     ))}
+    {toolOn('pomo') && <EliPomodoroSettings />}
   </details>
 );
 

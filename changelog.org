@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.13 (octubre de 2026)
+** GTD
+- *Reloj en marcha*: la fila de una tarea o proyecto con el reloj corriendo enseña un relojito naranja en la esquina superior derecha.
+- *Editor de la tarea*: los botones están ordenados en un pie: primero las herramientas (Iniciar reloj, Enlace, PDF, Org), luego Subtarea, fichero, Mover, Propiedades, Adjuntar, Archivar y Papelera, y *la última fila es siempre Cancelar + Guardar*.
+- *Proyecto abierto*: el icono de notas vuelve a ir pegado al final del nombre (como en las tareas); tocarlo muestra u oculta las notas.
+- *Exportar la vista* (⋯): «Exportar la vista a PDF» y «Exportar la vista como ORG» sacan lo que se ve en ese momento (sección, proyecto, etiqueta, filtro, búsqueda del menú lateral o «Todos los proyectos»).
+** Herramientas
+- *Pomodoro* (Ajustes → Herramientas, apagado de inicio): un chip con el tiempo que queda (trabajo o descanso) junto al ☰; tocarlo permite pausar/seguir, saltar al siguiente tramo o parar. Empieza desde el Menú ☰ › *Iniciar pomodoro*. Al acabar un tramo avisa y espera a que lo inicies. Cada pomodoro de trabajo se guarda como un =CLOCK= en la tarea sin estado «Pomodoro» del fichero de tareas (se crea si falta). Tiempos configurables: pomodoro (25), descanso corto (5), largo (15) y cada cuántos pomodoros el largo (4).
+
 * 4.12 (octubre de 2026)
 ** Ajustes
 - Apariencia → *Menú ☰*: ordena las entradas del Menú (flechas ↑ ↓) y apaga las que no quieras ver. *Ajustes* sale siempre, la última. Se guarda en este dispositivo.

@@ -1493,144 +1493,123 @@ export default function TaskEditor({
         )}
       </div>
 
-      {/* (4.11) reloj, enlace propio y exportar (PDF / Org) */}
-      {!isNew && <TaskTools task={task} commit={commit} />}
+      {/* (4.13) pie del editor: herramientas, botones y, siempre la última, Cancelar + Guardar */}
+      <div className="gtd-editor__footer" data-testid="gtd-editor-footer">
+        {/* (4.11) reloj, enlace propio y exportar (PDF / Org) */}
+        {!isNew && <TaskTools task={task} commit={commit} />}
 
-      <div className="gtd-editor__actions">
-        {/* (3.44) «＋ Subtarea» otra vez al principio de la línea de botones */}
-        {!isNew && onAddSubtask && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link"
-            onClick={withCommit(onAddSubtask)}
-            title={
-              isProject
-                ? 'Guardar y añadir una acción al proyecto'
-                : 'Guardar y añadir una subtarea'
-            }
-            data-testid="gtd-editor-add-subtask"
-          >
-            <i className="fas fa-plus" /> Subtarea
-          </button>
-        )}
-        {/* (3.44) el nombre del fichero abre la tarea en su fichero (antes, «Abrir») */}
-        {onOpen && !isNew ? (
-          <button
-            type="button"
-            className="gtd-ed__file gtd-ed__file--open"
-            title={`Fichero: ${task.path} · Abrir en su fichero`}
-            onClick={(e) => {
-              commit();
-              onOpen(e);
-            }}
-            data-testid="gtd-editor-file"
-          >
-            <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
-          </button>
-        ) : (
-          <span
-            className="gtd-ed__file"
-            title={`Fichero: ${task.path}`}
-            data-testid="gtd-editor-file"
-          >
-            <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
-          </span>
-        )}
-        {/* (3.44) «Mover a…» (lo que hacía el nombre del fichero), donde estaba «Abrir» */}
-        {onMove && !isNew && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link"
-            onClick={(e) => {
-              commit();
-              onMove(e);
-            }}
-            title="Mover a otra lista, proyecto o fichero"
-            data-testid="gtd-editor-move"
-          >
-            <i className="fas fa-share" /> Mover
-          </button>
-        )}
-        {/* (3.11) ver y editar las PROPERTIES de la tarea */}
-        {!isNew && onSaveProperties && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link"
-            onClick={() => {
-              commit();
-              setPropsOpen(true);
-            }}
-            title="Ver y editar las propiedades (PROPERTIES)"
-            data-testid="gtd-editor-props"
-          >
-            <i className="fas fa-list-ul" /> Propiedades
-          </button>
-        )}
-        {onAttachFiles && !encrypted && (
-          <label className="gtd-btn gtd-btn--link gtd-ed__attach" title="Adjuntar archivos">
-            <i className="fas fa-paperclip" /> Adjuntar
-            <input
-              type="file"
-              multiple
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                e.target.value = '';
-                if (!files.length) return;
-                const el = notesRef.current;
-                const end = el ? el.value.length : 0;
-                onAttachFiles(files, el ? { el, start: end, end } : null);
+        <div className="gtd-editor__actions">
+          {/* (3.44) «＋ Subtarea» otra vez al principio de la línea de botones */}
+          {!isNew && onAddSubtask && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link"
+              onClick={withCommit(onAddSubtask)}
+              title={
+                isProject
+                  ? 'Guardar y añadir una acción al proyecto'
+                  : 'Guardar y añadir una subtarea'
+              }
+              data-testid="gtd-editor-add-subtask"
+            >
+              <i className="fas fa-plus" /> Subtarea
+            </button>
+          )}
+          {/* (3.44) el nombre del fichero abre la tarea en su fichero (antes, «Abrir») */}
+          {onOpen && !isNew ? (
+            <button
+              type="button"
+              className="gtd-ed__file gtd-ed__file--open"
+              title={`Fichero: ${task.path} · Abrir en su fichero`}
+              onClick={(e) => {
+                commit();
+                onOpen(e);
               }}
-              data-testid="gtd-editor-attach"
-            />
-          </label>
-        )}
-        {!isNew && onArchive && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link"
-            onClick={withCommit(onArchive)}
-            title="Archivar (como en Emacs: al fichero _archive)"
-            data-testid="gtd-editor-archive"
-          >
-            <i className="fas fa-archive" /> Archivar
-          </button>
-        )}
-        {!isNew && (
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--link gtd-btn--danger"
-            onClick={onDelete}
-            title={inTrash ? 'Borrar para siempre' : 'A la Papelera'}
-            data-testid="gtd-editor-trash"
-          >
-            <i className="fas fa-trash" /> {inTrash ? 'Borrar' : 'Papelera'}
-          </button>
-        )}
-        <span className="gtd-spacer" />
-        {/* (3.37) Cancelar y Guardar siempre juntos en la misma línea */}
-        <span className="gtd-ed__save-pair">
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--cancel"
-            onClick={cancelEditor}
-            title={
-              onCancelNew ? 'Descartar la tarea nueva (se borra)' : 'Descartar los cambios y cerrar'
-            }
-            data-testid="gtd-editor-cancel"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="gtd-btn gtd-btn--primary"
-            onClick={() => closeEditor()}
-            title="Guardar y cerrar"
-            data-testid="gtd-editor-save"
-          >
-            Guardar
-          </button>
-        </span>
+              data-testid="gtd-editor-file"
+            >
+              <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
+            </button>
+          ) : (
+            <span
+              className="gtd-ed__file"
+              title={`Fichero: ${task.path}`}
+              data-testid="gtd-editor-file"
+            >
+              <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
+            </span>
+          )}
+          {/* (3.44) «Mover a…» (lo que hacía el nombre del fichero), donde estaba «Abrir» */}
+          {onMove && !isNew && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link"
+              onClick={(e) => {
+                commit();
+                onMove(e);
+              }}
+              title="Mover a otra lista, proyecto o fichero"
+              data-testid="gtd-editor-move"
+            >
+              <i className="fas fa-share" /> Mover
+            </button>
+          )}
+          {/* (3.11) ver y editar las PROPERTIES de la tarea */}
+          {!isNew && onSaveProperties && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link"
+              onClick={() => {
+                commit();
+                setPropsOpen(true);
+              }}
+              title="Ver y editar las propiedades (PROPERTIES)"
+              data-testid="gtd-editor-props"
+            >
+              <i className="fas fa-list-ul" /> Propiedades
+            </button>
+          )}
+          {onAttachFiles && !encrypted && (
+            <label className="gtd-btn gtd-btn--link gtd-ed__attach" title="Adjuntar archivos">
+              <i className="fas fa-paperclip" /> Adjuntar
+              <input
+                type="file"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  e.target.value = '';
+                  if (!files.length) return;
+                  const el = notesRef.current;
+                  const end = el ? el.value.length : 0;
+                  onAttachFiles(files, el ? { el, start: end, end } : null);
+                }}
+                data-testid="gtd-editor-attach"
+              />
+            </label>
+          )}
+          {!isNew && onArchive && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link"
+              onClick={withCommit(onArchive)}
+              title="Archivar (como en Emacs: al fichero _archive)"
+              data-testid="gtd-editor-archive"
+            >
+              <i className="fas fa-archive" /> Archivar
+            </button>
+          )}
+          {!isNew && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link gtd-btn--danger"
+              onClick={onDelete}
+              title={inTrash ? 'Borrar para siempre' : 'A la Papelera'}
+              data-testid="gtd-editor-trash"
+            >
+              <i className="fas fa-trash" /> {inTrash ? 'Borrar' : 'Papelera'}
+            </button>
+          )}
+        </div>
         {isProject && !isNew && !task.isDone && onCloseProject && (
           <div className="gtd-ed__close-row">
             <button
@@ -1644,6 +1623,34 @@ export default function TaskEditor({
             </button>
           </div>
         )}
+        <div className="gtd-editor__actions gtd-editor__saverow">
+          <span className="gtd-spacer" />
+          {/* (3.37) Cancelar y Guardar siempre juntos en la misma línea */}
+          <span className="gtd-ed__save-pair">
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--cancel"
+              onClick={cancelEditor}
+              title={
+                onCancelNew
+                  ? 'Descartar la tarea nueva (se borra)'
+                  : 'Descartar los cambios y cerrar'
+              }
+              data-testid="gtd-editor-cancel"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--primary"
+              onClick={() => closeEditor()}
+              title="Guardar y cerrar"
+              data-testid="gtd-editor-save"
+            >
+              Guardar
+            </button>
+          </span>
+        </div>
       </div>
       {propsOpen && (
         <GtdPropertiesDialog

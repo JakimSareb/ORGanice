@@ -57,6 +57,9 @@ export const openFavorites = () => window.dispatchEvent(new CustomEvent('eli:fav
 // (2.18) con headerId: solo ese encabezado y sus subencabezados (como en modo narrow)
 export const openRawEditor = (headerId = null) =>
   window.dispatchEvent(new CustomEvent('eli:raw-edit', { detail: { headerId } }));
+// (4.13) varias tareas (la vista de GTD): items = [{ path, headerId }], cada una con sus notas
+export const openPrintTasks = (items, title) =>
+  window.dispatchEvent(new CustomEvent('eli:print', { detail: { items, title } }));
 // (4.11) `filePath`: fichero de la tarea (desde GTD, donde no hay un fichero abierto)
 export const openPrintPreview = (headerId = null, filePath = null) =>
   window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId, path: filePath } }));
@@ -507,6 +510,56 @@ function PrintHeader({ header, baseLevel }) {
         </div>
       )}
     </section>
+  );
+}
+
+// (4.13) Vista previa de impresión de varias tareas (lo que muestra una vista de GTD): título del
+// documento y, debajo, cada tarea con su estado, fechas y notas (sin subtareas que no se vean)
+function PrintTasks({ files, items, title, onClose }) {
+  const selected = (items || [])
+    .map(({ path, headerId }) => {
+      const headers = files.getIn([path, 'headers']);
+      return headers ? headers.find((h) => h.get('id') === headerId) : null;
+    })
+    .filter(Boolean);
+
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = (title || 'GTD').replace(/[\\/:*?"<>|]/g, '-');
+    document.documentElement.classList.add('eli-printing');
+    return () => {
+      document.title = prevTitle;
+      document.documentElement.classList.remove('eli-printing');
+    };
+  }, [title]);
+
+  return ReactDOM.createPortal(
+    <div className="eli-print" role="dialog" aria-label="Exportar a PDF">
+      <div className="eli-print__bar eli-no-print">
+        <button className="btn eli-raw__btn" onClick={onClose}>
+          Cerrar
+        </button>
+        <div className="eli-raw__title">Vista previa</div>
+        <button
+          className="btn eli-raw__btn eli-raw__btn--primary"
+          onClick={() => window.print()}
+          data-testid="eli-print-go"
+        >
+          <i className="fas fa-file-pdf" /> PDF / Imprimir
+        </button>
+      </div>
+      <div className="eli-print__hint eli-no-print">
+        En el diálogo elige <strong>Guardar como PDF</strong> (Mac/Windows) o, en el iPhone,
+        compartir → <strong>Guardar en Archivos</strong>.
+      </div>
+      <article className="eli-print__doc" data-testid="eli-print-tasks">
+        <h1 className="eli-print__doctitle">{title || 'GTD'}</h1>
+        {selected.map((h) => (
+          <PrintHeader key={h.get('id')} header={h} baseLevel={h.get('nestingLevel') - 1} />
+        ))}
+      </article>
+    </div>,
+    ensurePortal('eli-print-portal')
   );
 }
 
@@ -1094,7 +1147,7 @@ export default function EliTools() {
   const [moon, setMoon] = useState(false);
   const [acom, setAcom] = useState(false);
   // (4.11) PDF de una tarea de GTD: print.path = su fichero
-  const printPath = print ? print.path || (usable ? path : null) : null;
+  const printPath = print && !print.items ? print.path || (usable ? path : null) : null;
   const printFile = printPath && files ? files.get(printPath) : null;
   const uploadPath = (upload && upload.path) || (usable ? path : null);
   const uploadFile = uploadPath && files ? files.get(uploadPath) : null;
@@ -1183,6 +1236,10 @@ export default function EliTools() {
       setRaw({ path, text: exportOrg({ headers, linesBeforeHeadings, dontIndent }) });
     };
     const onPrint = (e) => {
+      if (e.detail && e.detail.items) {
+        setPrint({ items: e.detail.items, title: e.detail.title || '' });
+        return;
+      }
       const forPath = e.detail && e.detail.path;
       if (!usable && !forPath) return;
       setPrint({ headerId: (e.detail && e.detail.headerId) || null, path: forPath || null });
@@ -1216,6 +1273,14 @@ export default function EliTools() {
           path={uploadPath}
           headers={uploadFile.get('headers')}
           onClose={() => setUpload(null)}
+        />
+      )}
+      {print && print.items && (
+        <PrintTasks
+          files={files}
+          items={print.items}
+          title={print.title}
+          onClose={() => setPrint(null)}
         />
       )}
       {print && printFile && printFile.get('headers') && (

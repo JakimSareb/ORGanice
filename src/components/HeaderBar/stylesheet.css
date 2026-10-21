@@ -309,3 +309,14 @@ body:has(.loading-indicator) .header-bar__title {
     margin-left: 0.4em;
   }
 }
+
+/* (4.13) chip del Pomodoro: naranja trabajando, verde descansando, apagado en pausa/espera */
+.header-bar__actions__item.eli-pomodoro.is-work {
+  color: var(--orange);
+}
+.header-bar__actions__item.eli-pomodoro.is-break {
+  color: var(--green, #859900);
+}
+.header-bar__actions__item.eli-pomodoro.is-paused {
+  opacity: 0.6;
+}

@@ -115,3 +115,10 @@
   padding: 1px;
   line-height: 1;
 }
+
+/* (4.13) texto junto al icono del botón (p. ej. el tiempo del Pomodoro) */
+.eli-more__btn-label {
+  margin-left: 4px;
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
+}

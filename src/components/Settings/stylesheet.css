@@ -393,3 +393,16 @@
 .eli-menu-layout__btn:disabled {
   opacity: 0.3;
 }
+
+/* (4.13) campos de tiempo del Pomodoro */
+.eli-pomodoro-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+.eli-pomodoro-field input {
+  width: 5em;
+  text-align: right;
+}

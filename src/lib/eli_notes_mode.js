@@ -13,6 +13,8 @@ export const TOOLS = [
   { id: 'moon', label: 'Fases de la luna' },
   { id: 'acom', label: 'Acomodadores' },
   { id: 'cal', label: 'Calendario' },
+  // (4.13) apagado de inicio en los dos modos: se enciende en Ajustes → Herramientas
+  { id: 'pomo', label: 'Pomodoro', defaultOff: true },
 ];
 
 const read = (k) => {
@@ -60,7 +62,11 @@ export const setNotesMode = (v) => {
   notify();
 };
 
-export const toolOn = (id) => (typeof tools[id] === 'boolean' ? tools[id] : !notes);
+export const toolOn = (id) => {
+  if (typeof tools[id] === 'boolean') return tools[id];
+  const t = TOOLS.find((x) => x.id === id);
+  return t && t.defaultOff ? false : !notes;
+};
 
 export const setToolOn = (id, v) => {
   tools = { ...tools, [id]: !!v };

@@ -80,6 +80,7 @@ const syncFile = (dispatch, path) => {
 // tasks.org (el de ruta más corta); solo si está cargado
 export const tasksFileForRefile = (state) => {
   const files = state.org.present.get('files');
+  if (!files || !files.keySeq) return null;
   const loaded = (p) => !!p && !!files.getIn([p, 'headers']);
   const chosen = getGtdFiles().tasks;
   if (chosen) return loaded(chosen) ? chosen : null;
@@ -1098,6 +1099,36 @@ export const gtdClockSetTime = (task, entryId, type, date) => (dispatch, getStat
 export const gtdClockDelete = (task, entryId) => (dispatch) => {
   dispatch(inFile(task.path, deleteLogEntry(task.id, entryId)));
   syncFile(dispatch, task.path);
+};
+
+// (4.13) Pomodoro: guarda un CLOCK cerrado (inicio → fin) en la tarea «Pomodoro» (sin estado) del
+// fichero de tareas; si no existe, se crea. Devuelve true si se guardó.
+export const pomodoroLog = (start, end, title = 'Pomodoro') => (dispatch, getState) => {
+  const path = tasksFileForRefile(getState());
+  if (!path) return false;
+  const find = () =>
+    (getState().org.present.getIn(['files', path, 'headers']) || List()).find(
+      (h) =>
+        h.get('nestingLevel') === 1 &&
+        !h.getIn(['titleLine', 'todoKeyword']) &&
+        String(h.getIn(['titleLine', 'rawTitle']) || '').trim() === title
+    );
+  let header = find();
+  let headerId = header && header.get('id');
+  if (!headerId) {
+    headerId = dispatch(gtdAddTask({ path }, { title }));
+    if (!headerId) return false;
+  }
+  const opts = { isActive: false, withStartTime: true };
+  dispatch(inFile(path, createLogEntryStart(headerId, timestampForDate(start, opts))));
+  header = headerOf(getState, path, headerId);
+  const open = header
+    ? (header.get('logBookEntries') || List()).find((e) => e.get('start') && !e.get('end'))
+    : null;
+  if (open)
+    dispatch(inFile(path, setLogEntryStop(headerId, open.get('id'), timestampForDate(end, opts))));
+  syncFile(dispatch, path);
+  return true;
 };
 
 // (4.11) «:ID:» de la tarea (se le pone si no lo tiene, como org-id) para enlazarla con [[id:…]]
