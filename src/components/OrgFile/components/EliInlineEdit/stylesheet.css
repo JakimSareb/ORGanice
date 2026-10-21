@@ -86,7 +86,7 @@
 }
 .header__bullet--folded {
   /* (4.10) plegada: el icono + el ▸ son más anchos que 16 px; hueco a la derecha para no pisar el título */
-  margin-right: 8px;
+  margin-right: 12px;
 }
 .header__bullet-fold {
   font-size: 0.6em;
