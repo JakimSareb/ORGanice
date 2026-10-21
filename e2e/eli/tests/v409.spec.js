@@ -166,6 +166,13 @@ test('4.09: móvil: la viñeta se toca también a su izquierda (área mayor)', a
   await expect(page.locator('text=Otro').first()).toBeVisible({ timeout: 20000 });
   const coarse = await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches);
   test.skip(!coarse, 'sin pointer: coarse');
+  if (!(await page.locator('text=Hija').first().isVisible())) {
+    await page.locator('[data-testid=eli-more-top]').click();
+    await page.locator('[data-testid=eli-menu-view]').click();
+    await page.locator('[data-testid=eli-expand-all]').click();
+    await expect(page.locator('text=Nieta').first()).toBeVisible();
+    await page.waitForTimeout(400);
+  }
   // la de «Hija» (sangrada: la de primer nivel está pegada al borde de la pantalla)
   const bullet = page.locator('[data-testid=header-bullet]').nth(1);
   const box = await bullet.boundingBox();
