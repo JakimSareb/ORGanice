@@ -213,6 +213,18 @@ export default function GtdSectionsSettings() {
     if (def.kind === 'agenda') {
       return <div className="eli-gtdsec__note">La agenda solo se puede mostrar u ocultar.</div>;
     }
+    // (4.07) Horizontes: página con los objetivos y las áreas (fichero en «Ficheros de la vista GTD»)
+    if (def.kind === 'horizons') {
+      return (
+        <div className="eli-gtdsec__options">
+          {nameField}
+          <div className="eli-gtdsec__note">
+            Los objetivos y las áreas del fichero de horizontes, cada uno con sus proyectos (se
+            marca lo que no tiene nada activo). El fichero se elige en «Ficheros de la vista GTD».
+          </div>
+        </div>
+      );
+    }
     // (3.44) Procesar Inbox y Revisión semanal: botones del menú lateral (también en el ⋯)
     if (def.kind === 'action') {
       return (
@@ -429,6 +441,24 @@ export default function GtdSectionsSettings() {
           >
             <option value="">Automático (tasks.org)</option>
             {orgPaths.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+        {/* (4.07) objetivos, áreas, visión y propósito (Horizontes y su revisión) */}
+        <label className="eli-gtdsec__rule">
+          <span>Fichero de horizontes</span>
+          <select
+            value={cfg.files.horizons}
+            onChange={(e) => setFiles({ horizons: e.target.value })}
+            data-testid="eli-gtdfiles-horizons"
+          >
+            <option value="">Automático (horizons.org, junto al de entrada)</option>
+            {Array.from(
+              new Set([...(cfg.files.horizons ? [cfg.files.horizons] : []), ...orgPaths])
+            ).map((p) => (
               <option key={p} value={p}>
                 {p}
               </option>

@@ -104,6 +104,12 @@ export const GUIDED_PROCESSES = {
     icon: 'fas fa-cloud',
     steps: [],
   },
+  // (4.07) tarjeta propia: Gtd/GtdHorizonsReview (pasos en gtd_horizons)
+  horizons: {
+    label: 'Revisión de horizontes',
+    icon: 'fas fa-binoculars',
+    steps: [],
+  },
 };
 
 const byTitle = (a, b) => (a.title || '').localeCompare(b.title || '');

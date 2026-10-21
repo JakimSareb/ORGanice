@@ -165,6 +165,8 @@ export default function TaskEditor({
   onMove = null, // (3.06) hoja del móvil: «→ Mover» (abre el menú Mover a)
   onSaveProperties = null, // (3.11) ver y editar PROPERTIES
   onAddSubtask = null, // (3.38) «＋ Subtarea»: guarda esta y abre el editor de una hija nueva
+  objective = null, // (4.07) objetivo del proyecto (nombre) y elegirlo (fichero de horizontes)
+  onPickObjective = null,
 }) {
   const [propsOpen, setPropsOpen] = useState(false);
   const [editingText, setEditingText] = useState(!preview);
@@ -929,6 +931,20 @@ export default function TaskEditor({
             >
               <i className="far fa-folder" aria-hidden="true" />{' '}
               {task.area && !task.ownArea ? task.area : 'Área'}
+            </button>
+          )}
+          {/* (4.07) objetivo del proyecto (:OBJETIVO:), elegido de la lista de horizontes */}
+          {isProject && onPickObjective && (
+            <button
+              type="button"
+              className={'gtd-chip gtd-chip--area' + (objective ? '' : ' is-empty')}
+              onClick={onPickObjective}
+              title={
+                objective ? `Objetivo: ${objective} (tocar para cambiarlo)` : 'Poner un objetivo'
+              }
+              data-testid="gtd-editor-objective"
+            >
+              <i className="fas fa-bullseye" aria-hidden="true" /> {objective || 'Objetivo'}
             </button>
           )}
           {tags.map((t) => (

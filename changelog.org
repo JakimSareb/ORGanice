@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.07 (octubre de 2026)
+** Horizontes GTD (fichero horizons.org)
+- Nuevo *fichero de horizontes* (por defecto =horizons.org=, junto al de entrada, como el Tickler; se elige en Ajustes › Ficheros de la vista GTD). Si no existe, la app pregunta si crearlo con la plantilla: *Propósito y principios*, *Visión (3–5 años)*, *Objetivos (1–2 años)* (cada =**= es un objetivo, con =:ID:= y =:AREA:=) y *Áreas de responsabilidad* (cada =**= es un área, el valor de =:AREA:=).
+- *Objetivo del proyecto*: en el editor de un proyecto, el botón 🎯 *Objetivo* lo elige de la lista (o lo quita). Se guarda como =:OBJETIVO: [[id:…][Título]]=, igual que =:PROYECTO:=. Si el proyecto no tiene área, toma la del objetivo. Sin objetivo, cuenta su área. El botón sale con la sección Horizontes encendida (o si el proyecto ya tiene objetivo).
+- Sección *Horizontes* en el menú de GTD, *apagada por defecto* (Ajustes › Secciones de la vista GTD): cada objetivo y cada área con sus proyectos; se marca lo que no tiene ningún proyecto activo (el número del menú cuenta cuántos). Abajo, los proyectos sin objetivo ni área.
+- *Revisión de horizontes* (Menú ☰ › Procesos › Periódicos), de abajo arriba: 1) *Áreas*: ¿tienen proyecto activo?; las áreas que usas en tareas y faltan en el fichero se añaden con un toque; 2) *Objetivos*: ¿algún proyecto lo mueve? Si no, *Planificar un proyecto* abre «Planificar un proyecto nuevo» con el objetivo puesto y al crearlo vuelve a la revisión; también se apuntan objetivos nuevos; 3) *Visión* y 4) *Propósito*: leer y editar.
+
 * 4.06 (octubre de 2026)
 ** Procesos puntuales y periódicos (Menú ☰ › Procesos)
 - *Volcado mental* (Puntuales): recorre la lista de disparadores de GTD (40, de Trabajo y Personal), uno por paso. Lo que se te ocurra lo apuntas y va directo al Inbox; al final te dice cuántas has apuntado.

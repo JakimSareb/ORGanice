@@ -9,6 +9,7 @@
 // - 'view': vistas que cruzan listas (Focus, Scheduled, Deadline, Logbook), con su criterio propio
 //   (fechas, ★, terminadas) y, si se quiere, reglas extra que añaden tareas.
 // - 'agenda' y 'projects': solo se pueden mostrar/ocultar y ordenar.
+// - 'horizons' (4.07): página con los objetivos y las áreas del fichero de horizontes.
 // - 'action' (3.44): botones que abren algo (Procesar Inbox, Revisión semanal): igual que Agenda.
 //
 // Ticks de cada sección: habits (incluir hábitos), future (incluir tareas programadas a futuro),
@@ -26,6 +27,8 @@ export const SECTION_DEFS = [
   { id: 'deadline', kind: 'view', label: 'Deadline', icon: 'fas fa-flag' },
   { id: 'someday', kind: 'list', label: 'Someday', icon: 'fas fa-cloud' },
   { id: 'projects', kind: 'projects', label: 'Proyectos', icon: 'fas fa-project-diagram' },
+  // (4.07) Horizontes (objetivos y áreas con sus proyectos): apagada por defecto
+  { id: 'horizons', kind: 'horizons', label: 'Horizontes', icon: 'fas fa-binoculars' },
   { id: 'reference', kind: 'list', label: 'Reference', icon: 'far fa-file-alt' },
   { id: 'logbook', kind: 'view', label: 'Logbook', icon: 'fas fa-check' },
   // (3.44) también en el menú lateral como secciones (por defecto, después de Logbook)
@@ -37,7 +40,7 @@ export const SECTION_DEFS = [
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);
 // (3.44) Las que no son listas de tareas (botones que abren algo): Agenda, Procesar Inbox, Revisión
 export const ACTION_SECTION_IDS = SECTION_DEFS.filter(
-  (s) => s.kind === 'agenda' || s.kind === 'action'
+  (s) => s.kind === 'agenda' || s.kind === 'action' || s.kind === 'horizons'
 ).map((s) => s.id);
 export const isActionSection = (id) => ACTION_SECTION_IDS.includes(id);
 
@@ -105,6 +108,7 @@ export const DEFAULT_SECTIONS = {
     futurePriority: true,
     parked: true,
   },
+  horizons: { ...base, show: false },
   reference: { ...base, ...listTicks, noStateLeaf: true },
   logbook: { ...base, habits: true, future: true, futurePriority: true, parked: true },
   process: { ...base },
@@ -161,6 +165,8 @@ export const normalizeGtdSections = (stored) => {
   const files = {
     inbox: normPath(rf.inbox),
     tasks: normPath(rf.tasks),
+    // (4.07) fichero de horizontes ('' = horizons.org junto al de entrada)
+    horizons: normPath(rf.horizons),
     // al darle estado a una tarea sin estado del fichero de entrada, pasa al de tareas
     moveFromInbox: rf.moveFromInbox !== false,
     // «Archivar todas»: solo las de estos ficheros (vacío: de todos)

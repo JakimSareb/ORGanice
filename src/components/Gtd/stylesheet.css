@@ -4370,3 +4370,83 @@ input.gtd-proc__input:not([type]) {
 .gtd-guided .gtd-review__tools {
   flex-wrap: wrap;
 }
+
+/* (4.07) Horizontes: página (objetivos y áreas con sus proyectos) y su revisión */
+.gtd-horizons__group {
+  margin-bottom: 6px;
+}
+.gtd-horizons__title i,
+.gtd-horizons__head > i {
+  margin-right: 4px;
+  opacity: 0.7;
+}
+.gtd-horizons__title .gtd-meta {
+  margin-left: 6px;
+}
+.gtd-horizons__warn {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 0.75em;
+  font-weight: normal;
+  color: var(--orange, #cb4b16);
+  border: 1px solid var(--orange, #cb4b16);
+  white-space: nowrap;
+}
+.gtd-horizons .gtd-overview__row.is-parked,
+.gtd-horizons__project.is-parked {
+  opacity: 0.6;
+}
+.gtd-horizons__item {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--base2);
+}
+.gtd-horizons__item.is-empty .gtd-horizons__name {
+  color: var(--orange, #cb4b16);
+}
+.gtd-horizons__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.gtd-horizons__name {
+  font-weight: 500;
+}
+.gtd-horizons__projects {
+  list-style: none;
+  margin: 4px 0 4px 18px;
+  padding: 0;
+}
+.gtd-horizons__project {
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 3px 0;
+  text-align: left;
+  font: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+.gtd-horizons__project .gtd-review__date {
+  margin-left: 6px;
+}
+.gtd-horizons__area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85em;
+  color: var(--base1);
+}
+.gtd-horizons__area select {
+  font: inherit;
+  font-size: 16px;
+}
+.gtd-guided__for {
+  margin: 4px 12px 0;
+  font-size: 0.85em;
+  color: var(--base1);
+}
+.gtd-horizons__text {
+  min-height: 8em;
+}

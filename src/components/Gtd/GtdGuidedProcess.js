@@ -14,7 +14,7 @@ import {
 } from '../../lib/gtd/gtd_guided';
 
 // Campo de una línea con botón (Intro = el botón)
-function LineInput({ placeholder, button, icon, onSubmit, testId, autoFocus }) {
+export function LineInput({ placeholder, button, icon, onSubmit, testId, autoFocus }) {
   const [v, setV] = useState('');
   const go = () => {
     const t = v.trim();
@@ -64,6 +64,7 @@ export default function GtdGuidedProcess({
   onProjectAction,
   onMove,
   onCopy,
+  preset = null, // (4.07) proyecto para un objetivo ({ objective }) o un área ({ area })
 }) {
   const proc = GUIDED_PROCESSES[kind];
   const [step, setStep] = useState(0);
@@ -272,7 +273,7 @@ export default function GtdGuidedProcess({
   const canCreate = !!plan.name.trim() && !!plan.first.trim();
   const createProject = () => {
     if (!canCreate) return;
-    onCreateProject(plan.name.trim(), projectPlan(plan));
+    onCreateProject(plan.name.trim(), { ...projectPlan(plan), preset });
     onClose();
   };
 
@@ -594,6 +595,19 @@ export default function GtdGuidedProcess({
         <div className="gtd-guided__progress" aria-hidden="true">
           <div style={{ width: `${Math.round(((step + 1) / total) * 100)}%` }} />
         </div>
+      )}
+      {kind === 'project' && preset && (preset.objective || preset.area) && (
+        <p className="gtd-guided__for" data-testid="gtd-plan-for">
+          {preset.objective ? (
+            <React.Fragment>
+              <i className="fas fa-bullseye" /> Objetivo: {preset.objective.title}
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <i className="fas fa-map-signs" /> Área: {preset.area}
+            </React.Fragment>
+          )}
+        </p>
       )}
       <div className="gtd-review__body">{body()}</div>
       <div className="gtd-review__nav">
