@@ -80,6 +80,7 @@ const syncFile = (dispatch, path) => {
 // tasks.org (el de ruta más corta); solo si está cargado
 export const tasksFileForRefile = (state) => {
   const files = state.org.present.get('files');
+  if (!files || !files.keySeq) return null;
   const loaded = (p) => !!p && !!files.getIn([p, 'headers']);
   const chosen = getGtdFiles().tasks;
   if (chosen) return loaded(chosen) ? chosen : null;

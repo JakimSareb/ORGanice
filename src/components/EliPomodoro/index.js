@@ -65,10 +65,16 @@ export default function EliPomodoro() {
   // reintenta cuando cambien los ficheros)
   useEffect(() => {
     const logs = pendingLogs();
-    if (!logs.length) return;
+    if (!logs.length || !files || !files.size) return;
     let done = 0;
     for (const l of logs) {
-      if (!dispatch(pomodoroLog(new Date(l.start), new Date(l.end)))) break;
+      let ok = false;
+      try {
+        ok = dispatch(pomodoroLog(new Date(l.start), new Date(l.end)));
+      } catch (e) {
+        ok = false;
+      }
+      if (!ok) break;
       done += 1;
     }
     if (done) ackLogs(done);
