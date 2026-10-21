@@ -611,6 +611,25 @@ class HeaderBar extends PureComponent {
             onClick: () => run({ process: true }),
             testId: 'eli-proc-inbox',
           },
+          // (4.05) procesos diarios (tarjeta por pasos en GTD: components/Gtd/GtdDailyProcess)
+          {
+            icon: 'fas fa-sun',
+            label: 'Planificar el día',
+            onClick: () => run({ daily: 'plan' }),
+            testId: 'eli-proc-plan',
+          },
+          {
+            icon: 'fas fa-moon',
+            label: 'Cerrar el día',
+            onClick: () => run({ daily: 'close' }),
+            testId: 'eli-proc-close',
+          },
+          {
+            icon: 'fas fa-bolt',
+            label: '¿Qué hago ahora?',
+            onClick: () => run({ daily: 'now' }),
+            testId: 'eli-proc-now',
+          },
         ],
       },
       { heading: 'Puntuales', id: 'oneoff', items: [] },
@@ -633,7 +652,13 @@ class HeaderBar extends PureComponent {
       items.push({ heading: b.heading, testId: 'eli-proc-h-' + b.id });
       items.push(...b.items);
     });
-    return { icon: 'fas fa-route', label: 'Procesos', testId: 'eli-menu-processes', items };
+    // (4.05) «fa-route» no existe en Font Awesome 5.1.1 (salía sin icono)
+    return {
+      icon: 'fas fa-project-diagram',
+      label: 'Procesos',
+      testId: 'eli-menu-processes',
+      items,
+    };
   }
 
   handleSettingsClick() {

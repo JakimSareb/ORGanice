@@ -4246,3 +4246,54 @@ input.gtd-proc__input:not([type]) {
     order: 1;
   }
 }
+
+/* (4.05) Procesos diarios (Planificar el día, Cerrar el día, ¿Qué hago ahora?): como la revisión */
+.gtd-review__act--star.is-on,
+.gtd-daily__stars {
+  color: var(--yellow, #b58900);
+}
+.gtd-daily__stars.is-many {
+  color: var(--orange, #cb4b16);
+}
+.gtd-daily__stars {
+  margin: 4px 0;
+  font-size: 0.9em;
+}
+.gtd-daily__date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 8px 28px;
+}
+.gtd-daily__date input {
+  font: inherit;
+  padding: 2px 6px;
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+.gtd-daily__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+}
+.gtd-daily__label {
+  min-width: 4.5em;
+  font-size: 0.8em;
+  color: var(--base1);
+}
+.gtd-daily__chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  font-size: 0.85em;
+  color: inherit;
+}
+.gtd-daily__chip.is-on {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
