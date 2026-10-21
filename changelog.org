@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.08 (octubre de 2026)
+** Documentos: el título se edita siempre en su sitio
+- Ya no sale la caja *Editar título* (ni *Editar título completo*) al crear o editar una cabecera: el título y las notas se escriben siempre en el propio documento. Si la cabecera no estaba a la vista (dentro de otra plegada, o fuera de la vista reducida con *Narrow*, p. ej. *Nueva › Debajo* de la cabecera reducida), se despliega lo necesario (o se vuelve al fichero entero) y se edita allí.
+
 * 4.07 (octubre de 2026)
 ** Horizontes GTD (fichero horizons.org)
 - Nuevo *fichero de horizontes* (por defecto =horizons.org=, junto al de entrada, como el Tickler; se elige en Ajustes › Ficheros de la vista GTD). Si no existe, la app pregunta si crearlo con la plantilla: *Propósito y principios*, *Visión (3–5 años)*, *Objetivos (1–2 años)* (cada =**= es un objetivo, con =:ID:= y =:AREA:=) y *Áreas de responsabilidad* (cada =**= es un área, el valor de =:AREA:=).

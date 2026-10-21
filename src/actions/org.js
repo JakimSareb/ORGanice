@@ -60,6 +60,7 @@ import {
   headerWithPath,
   STATIC_FILE_PREFIX,
   createIsTodoKeywordInDoneState,
+  parentIdOfHeaderWithId,
 } from '../lib/org_utils';
 
 import sampleCaptureTemplates from '../lib/sample_capture_templates';
@@ -822,6 +823,25 @@ export const eliSetAllHeadersOpened = (opened) => ({ type: 'ELI_SET_ALL_OPENED',
 export const widenHeader = () => ({
   type: 'WIDEN_HEADER',
 });
+
+// (4.08) Editar en su sitio una cabecera que no está a la vista (plegada dentro de otra o fuera de
+// la vista reducida): se despliega lo de encima (y se sale del narrow si hace falta) en vez de
+// abrir la caja «Editar título»
+export const eliRevealHeader = (headerId) => (dispatch, getState) => {
+  if (!headerId) return;
+  const present = getState().org.present;
+  const file = present.getIn(['files', present.get('path')]);
+  if (!file) return;
+  const headers = file.get('headers');
+  const narrowedId = file.get('narrowedHeaderId');
+  if (narrowedId && narrowedId !== headerId) {
+    let parent = parentIdOfHeaderWithId(headers, headerId);
+    while (parent && parent !== narrowedId) parent = parentIdOfHeaderWithId(headers, parent);
+    if (!parent) dispatch(widenHeader());
+  }
+  dispatch({ type: 'OPEN_PARENTS_OF_HEADER', headerId });
+  centerHeaderInView(headerId);
+};
 
 export const setOpennessState = (path, opennessState) => ({
   type: 'SET_OPENNESS_STATE',

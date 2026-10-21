@@ -193,6 +193,7 @@ class OrgFile extends PureComponent {
 
   componentWillUnmount() {
     if (this.eliUnsubLock) this.eliUnsubLock();
+    if (this.eliInlineWait) clearTimeout(this.eliInlineWait);
     setCaptureActive(false);
     document.removeEventListener('keydown', this.handleEliKeyDown);
     window.removeEventListener('blur', releaseStuckModifiers);
@@ -216,6 +217,33 @@ class OrgFile extends PureComponent {
     if (exists(pending.headerId)) this.props.org.eliNarrowAndExpand(pending.headerId);
     const select = exists(pending.selectId) ? pending.selectId : pending.headerId;
     if (exists(select)) this.props.org.selectHeader(select);
+  }
+
+  // (4.08) El título/las notas se editan SIEMPRE en el documento (nunca en la caja «Editar
+  // título»). Si al empezar el editor aún no se ha pintado (cabecera recién creada, plegada dentro
+  // de otra o fuera del narrow), se espera un momento, se despliega lo necesario y se vuelve a
+  // mirar. Si aun así no aparece, se deja de editar (sin caja).
+  eliEnsureInlineEditor() {
+    if (this.eliInlineWait) return;
+    const editingNow = () =>
+      ['title-editor', 'description-editor'].includes(this.props.activePopupType) &&
+      !this.state.captureMode;
+    const found = () => this.container && this.container.querySelector('.eli-inline-edit');
+    let tries = 0;
+    const check = () => {
+      this.eliInlineWait = null;
+      if (!editingNow() || found()) return;
+      tries++;
+      if (tries === 2 && this.props.selectedHeader) {
+        this.props.org.eliRevealHeader(this.props.selectedHeader.get('id'));
+      }
+      if (tries > 20) {
+        this.handleActivePopupClose();
+        return;
+      }
+      this.eliInlineWait = setTimeout(check, 100);
+    };
+    this.eliInlineWait = setTimeout(check, 0);
   }
 
   componentDidUpdate(prevProps) {
@@ -256,7 +284,7 @@ class OrgFile extends PureComponent {
       this.container &&
       !this.container.querySelector('.eli-inline-edit')
     ) {
-      this.setState({ eliInlineFallback: true });
+      this.eliEnsureInlineEditor();
     }
     if (!!pendingCapture && !!headers && headers.size > 0) {
       this.props.org.insertPendingCapture();
