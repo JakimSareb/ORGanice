@@ -21,8 +21,17 @@ export const TAP_MODES = {
       { id: 'select', label: 'Seleccionarla' },
     ],
   },
-  // (4.04) las cabeceras de Documentos ya no tienen ajuste: 1.er toque selecciona, 2.º edita
-  // el título; la viñeta pliega/despliega (y arrastrándola, mueve)
+  // (4.11) toque en el TÍTULO de una cabecera de Documentos (la viñeta siempre pliega/despliega y,
+  // arrastrándola, mueve). Por defecto (4.04): 1.er toque selecciona y el 2.º edita.
+  header: {
+    label: 'Al tocar el título de una cabecera',
+    def: 'select',
+    options: [
+      { id: 'select', label: 'Seleccionar, luego editar' },
+      { id: 'edit', label: 'Editar' },
+      { id: 'open', label: 'Desplegar' },
+    ],
+  },
 };
 
 const readAll = () => {
@@ -37,11 +46,16 @@ const readAll = () => {
 // las cabeceras, como en el organice original. En la app ya no hay ajuste.
 export const legacyHeaderTapOpen = () => {
   try {
-    return !!window.testRunner && readAll()['header-desktop'] === 'open';
+    return (
+      (!!window.testRunner && readAll()['header-desktop'] === 'open') || readAll().header === 'open'
+    );
   } catch (e) {
     return false;
   }
 };
+
+// (4.11) ajuste del toque en el título de las cabeceras: 'select' | 'edit' | 'open'
+export const headerTapMode = () => getTapMode('header');
 
 export const getTapMode = (which) => {
   const spec = TAP_MODES[which];

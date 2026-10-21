@@ -57,8 +57,9 @@ export const openFavorites = () => window.dispatchEvent(new CustomEvent('eli:fav
 // (2.18) con headerId: solo ese encabezado y sus subencabezados (como en modo narrow)
 export const openRawEditor = (headerId = null) =>
   window.dispatchEvent(new CustomEvent('eli:raw-edit', { detail: { headerId } }));
-export const openPrintPreview = (headerId = null) =>
-  window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId } }));
+// (4.11) `filePath`: fichero de la tarea (desde GTD, donde no hay un fichero abierto)
+export const openPrintPreview = (headerId = null, filePath = null) =>
+  window.dispatchEvent(new CustomEvent('eli:print', { detail: { headerId, path: filePath } }));
 
 // (2.16) ¿El texto del portapapeles es solo el nombre (o la ruta) de los archivos copiados?
 export const isJustFileNames = (text, files) => {
@@ -1092,6 +1093,9 @@ export default function EliTools() {
   const [upload, setUpload] = useState(null); // { files, headerId?, target?, source }
   const [moon, setMoon] = useState(false);
   const [acom, setAcom] = useState(false);
+  // (4.11) PDF de una tarea de GTD: print.path = su fichero
+  const printPath = print ? print.path || (usable ? path : null) : null;
+  const printFile = printPath && files ? files.get(printPath) : null;
   const uploadPath = (upload && upload.path) || (usable ? path : null);
   const uploadFile = uploadPath && files ? files.get(uploadPath) : null;
 
@@ -1179,8 +1183,9 @@ export default function EliTools() {
       setRaw({ path, text: exportOrg({ headers, linesBeforeHeadings, dontIndent }) });
     };
     const onPrint = (e) => {
-      if (!usable) return;
-      setPrint({ headerId: (e.detail && e.detail.headerId) || null });
+      const forPath = e.detail && e.detail.path;
+      if (!usable && !forPath) return;
+      setPrint({ headerId: (e.detail && e.detail.headerId) || null, path: forPath || null });
     };
     window.addEventListener('eli:raw-edit', onRaw);
     window.addEventListener('eli:print', onPrint);
@@ -1213,10 +1218,10 @@ export default function EliTools() {
           onClose={() => setUpload(null)}
         />
       )}
-      {print && usable && (
+      {print && printFile && printFile.get('headers') && (
         <PrintPreview
-          path={path}
-          file={file}
+          path={printPath}
+          file={printFile}
           headerId={print.headerId}
           onClose={() => setPrint(null)}
         />

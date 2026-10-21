@@ -20,3 +20,11 @@
 .header-list-container--reordering {
   user-select: none;
 }
+
+/* (4.11) con el dedo, unos píxeles libres a la izquierda de la lista: la viñeta de 1.er nivel ya no
+   queda pegada al borde de la pantalla y se pulsa más fácil (el ancho de la viñeta no cambia) */
+@media (pointer: coarse) {
+  .header-list-container {
+    padding-left: 14px;
+  }
+}

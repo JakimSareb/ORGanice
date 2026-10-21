@@ -7,10 +7,19 @@ import {
   createRawDescriptionText,
   generateTitleLine,
   attributedStringToRawText,
+  exportHeaderWithSubheaders,
 } from '../export_org';
 import { timestampForDate } from '../timestamps';
 import generateId from '../id_generator';
-import { sync, setDirty, archiveSubtree } from '../../actions/org';
+import {
+  sync,
+  setDirty,
+  archiveSubtree,
+  createLogEntryStart,
+  setLogEntryStop,
+  updateLogEntryTime,
+  deleteLogEntry,
+} from '../../actions/org';
 import {
   keywordForList,
   PRIORITY_RE,
@@ -1054,4 +1063,60 @@ export const pathOfHeader = (getState, headerId, preferred) => {
     !!p && !!(files.getIn([p, 'headers']) || List()).find((h) => h.get('id') === headerId);
   if (has(preferred)) return preferred;
   return files.keySeq().find((p) => has(p)) || null;
+};
+
+// (4.11) Reloj de la tarea (CLOCK en :LOGBOOK:): iniciar/parar; devuelve true si queda en marcha
+export const gtdClockToggle = (task) => (dispatch, getState) => {
+  const header = headerOf(getState, task.path, task.id);
+  if (!header) return null;
+  const open = (header.get('logBookEntries') || List()).find(
+    (e) => e.get('start') && !e.get('end')
+  );
+  const now = timestampForDate(new Date(), { isActive: false, withStartTime: true });
+  dispatch(
+    inFile(
+      task.path,
+      open ? setLogEntryStop(task.id, open.get('id'), now) : createLogEntryStart(task.id, now)
+    )
+  );
+  syncFile(dispatch, task.path);
+  return !open;
+};
+
+// Cambiar el inicio ('start') o el fin ('end') de un registro (date = Date)
+export const gtdClockSetTime = (task, entryId, type, date) => (dispatch, getState) => {
+  const header = headerOf(getState, task.path, task.id);
+  if (!header || !date || isNaN(date.getTime())) return false;
+  const index = (header.get('logBookEntries') || List()).findIndex((e) => e.get('id') === entryId);
+  if (index < 0) return false;
+  const time = timestampForDate(date, { isActive: false, withStartTime: true });
+  dispatch(inFile(task.path, updateLogEntryTime(task.id, index, type, time)));
+  syncFile(dispatch, task.path);
+  return true;
+};
+
+export const gtdClockDelete = (task, entryId) => (dispatch) => {
+  dispatch(inFile(task.path, deleteLogEntry(task.id, entryId)));
+  syncFile(dispatch, task.path);
+};
+
+// (4.11) «:ID:» de la tarea (se le pone si no lo tiene, como org-id) para enlazarla con [[id:…]]
+export const gtdEnsureOrgId = (task) => (dispatch) => {
+  if (task.orgId) return task.orgId;
+  const orgId = newOrgId();
+  dispatch(gtdSaveTask(task, { props: { ID: orgId } }));
+  return orgId;
+};
+
+// (4.11) La tarea con sus notas y subtareas, como texto Org (para compartir o copiar)
+export const gtdOrgText = (task) => (dispatch, getState) => {
+  const headers = getState().org.present.getIn(['files', task.path, 'headers']);
+  const header = headerOf(getState, task.path, task.id);
+  if (!headers || !header) return '';
+  return exportHeaderWithSubheaders(header, headers, {
+    includeSubheaders: true,
+    recursive: true,
+    includeTitle: true,
+    dontIndent: false,
+  });
 };

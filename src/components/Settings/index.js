@@ -162,28 +162,30 @@ const EliFontSetting = () => {
 };
 
 // (3.07) qué hace un toque/clic en tareas y cabeceras, en el móvil y en el ordenador
-const EliTapModeSettings = () => {
+const EliTapModeSettings = ({ onlyHeader }) => {
   const [, force] = React.useState(0);
   return (
     <>
-      {Object.keys(TAP_MODES).map((k) => (
-        <div
-          key={k}
-          className="setting-container setting-container--vertical eli-theme-setting"
-          data-testid={`eli-setting-tap-${k}`}
-        >
-          <div className="setting-label">{TAP_MODES[k].label}</div>
-          <TabButtons
-            buttons={TAP_MODES[k].options.map((o) => o.label)}
-            values={TAP_MODES[k].options.map((o) => o.id)}
-            selectedButton={getTapMode(k)}
-            onSelect={(v) => {
-              setTapMode(k, v);
-              force((n) => n + 1);
-            }}
-          />
-        </div>
-      ))}
+      {Object.keys(TAP_MODES)
+        .filter((k) => !onlyHeader || k === 'header')
+        .map((k) => (
+          <div
+            key={k}
+            className="setting-container setting-container--vertical eli-theme-setting"
+            data-testid={`eli-setting-tap-${k}`}
+          >
+            <div className="setting-label">{TAP_MODES[k].label}</div>
+            <TabButtons
+              buttons={TAP_MODES[k].options.map((o) => o.label)}
+              values={TAP_MODES[k].options.map((o) => o.id)}
+              selectedButton={getTapMode(k)}
+              onSelect={(v) => {
+                setTapMode(k, v);
+                force((n) => n + 1);
+              }}
+            />
+          </div>
+        ))}
     </>
   );
 };
@@ -431,6 +433,8 @@ const Settings = ({
         <EliThemeSetting theme={theme} onSelect={handleThemeClick} />
 
         <EliFontSetting />
+
+        {notes && <EliTapModeSettings onlyHeader />}
 
         {!notes && (
           <>

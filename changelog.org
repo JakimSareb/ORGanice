@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.11 (octubre de 2026)
+** Documentos
+- Con el dedo, la lista deja *14 píxeles libres a la izquierda*: la viñeta de 1.er nivel ya no queda pegada al borde y se toca más fácil. En el ordenador no cambia.
+** Ajustes
+- Apariencia → *Al tocar el título de una cabecera*: *Seleccionar, luego editar* (como hasta ahora), *Editar* (el primer toque ya edita) o *Desplegar* (el toque pliega y despliega). La viñeta siempre pliega y, arrastrándola, mueve. También sale en el Modo Notas.
+** GTD
+- Editor de la tarea: iconos de *enlace* en la barra de arriba: 🔗 inserta un enlace web o de Org (si has copiado uno, ya viene puesto) y el icono de *otra tarea* busca una tarea y pone su enlace =[[id:…][Título]]= (le pone :ID: si no lo tiene), para saltar entre tareas.
+- *Enlace* copia el enlace propio de la tarea (=[[id:…][Título]]=) para pegarlo en otra.
+- *PDF* y *Org* exportan la tarea con sus notas y subtareas (PDF: vista previa para guardar o imprimir; Org: hoja de compartir del móvil o copiado al portapapeles). Los dos, también en el menú de la fila.
+- *Reloj*: *Iniciar reloj* / *Parar reloj* desde el editor y desde el menú de la fila. El resumen del tiempo (⏱ total y nº de registros) sale en el editor y al final de las notas de la fila; al tocarlo se ven los registros =CLOCK=: se pueden cambiar el inicio y el fin, o borrar, y sale el total.
+
 * 4.10 (octubre de 2026)
 ** Documentos
 - Arreglo: con el estilo de viñetas *Org*, la viñeta (◉ y el ▸ de plegada) ya no pisa el texto de la cabecera: deja su hueco, como en los otros estilos.
