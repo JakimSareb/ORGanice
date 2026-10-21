@@ -159,26 +159,34 @@ test('4.09: sin reloj en marcha, ni relojito ni opción', async ({ app }) => {
 test('4.09: móvil: la viñeta se toca también a su izquierda (área mayor)', async ({ app }) => {
   test.skip(!app.mobile, 'solo con el dedo');
   const { page } = app;
-  await app.open({ ...BASE, '/notas.org': '* Padre\n** Hija\n* Otro\n' }, '/file/notas.org');
+  await app.open(
+    { ...BASE, '/notas.org': '* Padre\n** Hija\n*** Nieta\n* Otro\n' },
+    '/file/notas.org'
+  );
   await expect(page.locator('text=Otro').first()).toBeVisible({ timeout: 20000 });
   const coarse = await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches);
   test.skip(!coarse, 'sin pointer: coarse');
-  const bullet = page.locator('[data-testid=header-bullet]').first();
+  // la de «Hija» (sangrada: la de primer nivel está pegada al borde de la pantalla)
+  const bullet = page.locator('[data-testid=header-bullet]').nth(1);
   const box = await bullet.boundingBox();
   // a la izquierda, encima y debajo del icono también es la viñeta
   for (const [dx, dy] of [
-    [-12, box.height / 2],
+    [-Math.min(12, box.x - 2), box.height / 2],
     [box.width / 2, -4],
     [box.width / 2, box.height + 4],
   ]) {
     const hit = await page.evaluate(
       ([x, y]) => {
         const el = document.elementFromPoint(x, y);
-        return !!(el && el.closest && el.closest('.header__bullet'));
+        return el && el.closest && el.closest('.header__bullet')
+          ? 'bullet'
+          : `${el && el.tagName}.${el && el.className}`;
       },
       [box.x + dx, box.y + dy]
     );
-    expect(hit).toBe(true);
+    expect(`${Math.round(dx)},${Math.round(dy)}: ${hit}`).toBe(
+      `${Math.round(dx)},${Math.round(dy)}: bullet`
+    );
   }
   // y no tapa el título
   const title = await page.locator('.title-line').first().boundingBox();
