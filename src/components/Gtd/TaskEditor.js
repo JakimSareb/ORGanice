@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { focusField } from '../../lib/eli_keyboard_bridge';
+import { askPick } from '../../lib/eli_prompt';
 import EliFormatBar, { insertNowIn } from '../EliFormatBar';
-import { continueListOnEnter } from '../../lib/eli_format';
+import { continueListOnEnter, insertEmptyTable } from '../../lib/eli_format';
 import { noteTextParts, hasNoteLinks, isWebUri } from '../../lib/eli_note_links';
 import ScheduleField from './ScheduleField';
 import GtdPropertiesDialog from './GtdPropertiesDialog';
@@ -222,7 +223,6 @@ export default function TaskEditor({
   // Lista a la que vuelve al reabrirla (se recuerda aunque el editor se vuelva a crear al guardar)
   const reopenList = useRef(reopenMemory.get(task.key) || currentListOf(task));
   const [area, setArea] = useState(task.ownArea || '');
-  const [editingArea, setEditingArea] = useState(false);
   // ORG Mode para Eli: en un proyecto, «Activo / Dormido» = propiedad «:STATUS: sleep» (3.17)
   const isProject = !!task.isProject;
   const [sleep, setSleep] = useState(isProject && !!task.ownSleep);
@@ -528,6 +528,42 @@ export default function TaskEditor({
     setEditingText(true);
     insertNowIn(el);
   };
+  // (4.09) tabla vacía en las notas (como Formato › Tabla de Documentos) y su 1.ª celda abierta
+  const insertTable = (e) => {
+    if (e) e.stopPropagation();
+    const el = notesRef.current;
+    if (!el) return;
+    const cur = document.activeElement === el ? el.selectionStart : null;
+    const r = insertEmptyTable(el.value, cur);
+    setNotes(r.value);
+    let tries = 0;
+    const open = () => {
+      const box = document.querySelector('[data-testid="gtd-editor-tables"]');
+      const tables = box ? box.querySelectorAll('[data-testid="gtd-editor-table"]') : [];
+      const t = tables[Math.min(r.ord, tables.length - 1)];
+      const cell = t && t.querySelector('[data-testid="eli-table-cell"]');
+      if (cell) cell.click();
+      else if (tries++ < 20) setTimeout(open, 50);
+    };
+    setTimeout(open, 60);
+  };
+  // (4.09) Área: buscador con las áreas que ya hay (como el del 🎯 Objetivo) o escribir una nueva
+  const pickArea = async () => {
+    const items = (areas || []).map((a) => ({ id: a, label: a }));
+    if (area) items.unshift({ id: '__none', label: 'Sin área', hint: 'Quitar el área' });
+    const r = await askPick({
+      title: 'Área',
+      message: task.area && !task.ownArea ? `Heredada: ${task.area}` : '',
+      placeholder: 'Buscar o escribir un área…',
+      items,
+      emptyText: 'No hay áreas todavía: escribe una nueva.',
+      newItem: (q) => ({ label: `＋ Nueva área: ${q}` }),
+    });
+    if (r == null) return;
+    if (r === '__none') setArea('');
+    else if (typeof r === 'object') setArea(r.new);
+    else setArea(r);
+  };
   const withCommit = (fn) => () => {
     commit();
     if (fn) fn();
@@ -631,7 +667,7 @@ export default function TaskEditor({
   // (Mayús+Tab al revés); desde ahí y en el resto de campos, el orden normal de la ventana.
   const TAB_ORDER = [
     ['gtd-editor-title'],
-    ['gtd-editor-tag', 'gtd-editor-area'],
+    ['gtd-editor-tag', 'gtd-editor-area-add', 'gtd-editor-area-chip'],
     ['gtd-editor-notes'],
     ['gtd-editor-list', 'gtd-editor-project-state'],
     ['gtd-editor-project'],
@@ -879,40 +915,13 @@ export default function TaskEditor({
           {sheet && <i className="fas fa-tag gtd-sheet__icon" aria-hidden="true" />}
           {!sheet && showDone && renderStar()}
           {/* (3.06) el área va dentro del cuadro de etiquetas, como un chip distinto */}
-          {editingArea ? (
-            <span className="gtd-chip gtd-chip--area is-editing">
-              <i className="far fa-folder" aria-hidden="true" />
-              <input
-                list="gtd-areas"
-                value={area}
-                autoFocus
-                size={Math.max(6, (area || '').length + 1)}
-                onChange={(e) => setArea(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === 'Escape') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setEditingArea(false);
-                  }
-                }}
-                onBlur={() => setEditingArea(false)}
-                placeholder={task.area && !task.ownArea ? `${task.area} (heredada)` : 'área'}
-                aria-label="Área"
-                data-testid="gtd-editor-area"
-              />
-              <datalist id="gtd-areas">
-                {areas.map((a) => (
-                  <option key={a} value={a} />
-                ))}
-              </datalist>
-            </span>
-          ) : area ? (
+          {area ? (
             <span className="gtd-chip gtd-chip--area" title="Área (tocar para cambiarla)">
               <span
                 className="gtd-chip__label"
                 role="button"
                 tabIndex={0}
-                onClick={() => setEditingArea(true)}
+                onClick={pickArea}
                 data-testid="gtd-editor-area-chip"
               >
                 <i className="far fa-folder" aria-hidden="true" /> {area}
@@ -925,7 +934,7 @@ export default function TaskEditor({
             <button
               type="button"
               className={'gtd-chip gtd-chip--area is-empty'}
-              onClick={() => setEditingArea(true)}
+              onClick={pickArea}
               title={task.area ? `Área heredada: ${task.area}` : 'Poner un área'}
               data-testid="gtd-editor-area-add"
             >
@@ -1072,6 +1081,16 @@ export default function TaskEditor({
                   data-testid="gtd-editor-now"
                 >
                   <i className="far fa-clock" />
+                </button>
+                <button
+                  type="button"
+                  className="eli-format-bar__btn"
+                  onClick={insertTable}
+                  title="Insertar una tabla"
+                  aria-label="Insertar una tabla"
+                  data-testid="gtd-editor-table-btn"
+                >
+                  <i className="fas fa-table" />
                 </button>
               </>
             }

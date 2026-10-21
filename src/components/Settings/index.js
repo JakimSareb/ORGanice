@@ -25,7 +25,15 @@ import {
   parseTagsLine,
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
-import { TOOLS, useNotesMode, setNotesMode, toolOn, setToolOn } from '../../lib/eli_notes_mode';
+import {
+  TOOLS,
+  useNotesMode,
+  setNotesMode,
+  toolOn,
+  setToolOn,
+  notesAgendaOn,
+  setNotesAgendaOn,
+} from '../../lib/eli_notes_mode';
 import {
   getReminderSettings,
   setReminderSettings,
@@ -69,11 +77,24 @@ const EliNotesModeSetting = ({ notes }) => (
     <div className="setting-label">
       Modo Notas
       <div className="setting-label__description">
-        Solo notas: oculta GTD y lo de tareas (estados, fechas, reloj, agenda…). Tus ficheros no
-        cambian; puedes volver al modo completo cuando quieras.
+        Solo notas: oculta GTD y lo de tareas (estados, fechas, reloj…). Tus ficheros no cambian;
+        puedes volver al modo completo cuando quieras.
       </div>
     </div>
     <Switch isEnabled={notes} onToggle={() => setNotesMode(!notes)} />
+  </div>
+);
+
+// (4.09) Modo Notas: la Agenda en el Menú ☰ (o no)
+const EliNotesAgendaSetting = () => (
+  <div className="setting-container" data-testid="eli-setting-notes-agenda">
+    <div className="setting-label">
+      Agenda en el Menú
+      <div className="setting-label__description">
+        En el Modo Notas, la Agenda sale en el Menú ☰.
+      </div>
+    </div>
+    <Switch isEnabled={notesAgendaOn()} onToggle={() => setNotesAgendaOn(!notesAgendaOn())} />
   </div>
 );
 
@@ -356,6 +377,7 @@ const Settings = ({
   return (
     <div className={'settings-container' + (notes ? ' is-notes-mode' : '')}>
       <EliNotesModeSetting notes={notes} />
+      {notes && <EliNotesAgendaSetting />}
       <details className="eli-settings-section" data-testid="eli-settings-appearance">
         <summary>
           <span className="eli-settings-section__title">Apariencia</span>

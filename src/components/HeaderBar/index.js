@@ -19,7 +19,8 @@ import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
 import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
-import { isNotesMode, toolOn, subscribeNotesMode } from '../../lib/eli_notes_mode';
+import { isNotesMode, toolOn, subscribeNotesMode, notesAgendaOn } from '../../lib/eli_notes_mode';
+import { askPick } from '../../lib/eli_prompt';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
 const isStaticFile = (p) => !p || p.startsWith(ELI_STATIC_PREFIX);
 // (memorizado: la lista solo cambia si cambian los ficheros)
@@ -703,6 +704,37 @@ class HeaderBar extends PureComponent {
     };
   }
 
+  // (4.09) Menú ☰ › «Mostrar tareas con reloj activo»: buscador con esas tareas; al elegir una,
+  // en GTD se va a ella (si no está en GTD, a su fichero) y en Documentos, a su cabecera
+  async showRunningClocks(inGtd) {
+    const list = this.props.org.eliRunningClocks() || [];
+    const id = await askPick({
+      title: 'Tareas con reloj activo',
+      placeholder: 'Buscar…',
+      items: list.map((c, i) => ({
+        id: String(i),
+        label: c.title || '(sin título)',
+        hint: fileDisplayName(c.path),
+      })),
+      emptyText: 'No hay ningún reloj en marcha.',
+    });
+    if (id == null) return;
+    const c = list[Number(id)];
+    if (!c) return;
+    if (inGtd) {
+      window.dispatchEvent(
+        new CustomEvent('eli:gtd', {
+          detail: { openTask: { path: c.path, id: c.headerId }, orFile: true },
+        })
+      );
+      return;
+    }
+    this.props.org.selectHeaderAndOpenParents(c.path, c.headerId, { widen: true });
+    if (this.props.path !== c.path || this.getPathRoot() !== 'file') {
+      this.props.history.push(`/file${c.path}`);
+    }
+  }
+
   handleSettingsClick() {
     this.props.base.setLastViewedFile(this.props.path);
   }
@@ -782,8 +814,9 @@ class HeaderBar extends PureComponent {
             },
             // (4.01) la agenda (antes solo con la tecla «a»); (4.04) la segunda, también en GTD.
             // En el Modo Notas no sale
+            // (4.09) en el Modo Notas también, salvo que se apague en Ajustes › Modo Notas
             (inFile || inGtd) &&
-              !notes && {
+              (!notes || notesAgendaOn()) && {
                 icon: 'far fa-calendar-check',
                 label: 'Agenda',
                 onClick: () =>
@@ -792,9 +825,13 @@ class HeaderBar extends PureComponent {
                     : this.props.base.activatePopup('agenda'),
                 testId: 'eli-agenda-menu',
               },
-            // (4.04) los procesos guiados de GTD, por tipo (aunque su sección del menú de GTD
-            // esté apagada). En el Modo Notas no salen.
-            !notes && this.processesMenu(inGtd),
+            // (4.09) con algún reloj en marcha: la lista de esas tareas (al tocar una, va a ella)
+            this.props.activeClocks > 0 && {
+              icon: 'far fa-clock',
+              label: 'Mostrar tareas con reloj activo',
+              onClick: () => this.showRunningClocks(inGtd),
+              testId: 'eli-running-clocks',
+            },
             {
               icon: 'far fa-folder-open',
               label: 'Mis ficheros',
@@ -873,6 +910,9 @@ class HeaderBar extends PureComponent {
               testId: 'eli-menu-tools',
               items: tools,
             },
+            // (4.04) los procesos guiados de GTD, por tipo (aunque su sección del menú de GTD
+            // esté apagada). En el Modo Notas no salen. (4.09) Justo debajo de Herramientas
+            !notes && this.processesMenu(inGtd),
             {
               icon: 'far fa-question-circle',
               label: 'Ayuda',
@@ -1055,6 +1095,7 @@ class HeaderBar extends PureComponent {
               buttonClassName={
                 'header-bar__actions__item' + (this.props.activeClocks ? ' eli-search-clock' : '')
               }
+              badge={this.props.activeClocks ? 'far fa-clock' : null}
               testId="eli-more-top"
             />
           )}

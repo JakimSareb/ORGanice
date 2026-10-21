@@ -291,12 +291,21 @@ export const askDate = ({ title, message = '', value = new Date(), okLabel = 'Ac
 
 // (3.01) Elegir de una lista con buscador (p. ej. «Asignar a proyecto…»). items: [{ id, label,
 // hint }]. ↑ ↓ para moverse, Intro elige, Esc cancela. Devuelve Promise<id|null>.
+// (4.09) newItem(texto) → { label, hint }: con algo escrito que no está en la lista, sale al final
+// una opción para crearlo; si se elige, devuelve { new: texto }.
 const plainText = (s) =>
   String(s || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '');
-export const askPick = ({ title, message = '', placeholder = 'Buscar…', items = [], emptyText = 'Nada que elegir.' }) =>
+export const askPick = ({
+  title,
+  message = '',
+  placeholder = 'Buscar…',
+  items = [],
+  emptyText = 'Nada que elegir.',
+  newItem = null,
+}) =>
   new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'eli-prompt__overlay';
@@ -320,6 +329,10 @@ export const askPick = ({ title, message = '', placeholder = 'Buscar…', items 
     const paint = () => {
       const q = plainText(input.value.trim());
       shown = items.filter((it) => !q || plainText(`${it.label} ${it.hint || ''}`).includes(q));
+      const raw = input.value.trim();
+      if (newItem && raw && !items.some((it) => plainText(it.label) === plainText(raw))) {
+        shown = shown.concat([{ ...newItem(raw), id: { new: raw }, isNew: true }]);
+      }
       if (active >= shown.length) active = Math.max(0, shown.length - 1);
       listEl.innerHTML = '';
       if (!shown.length) {
@@ -333,7 +346,7 @@ export const askPick = ({ title, message = '', placeholder = 'Buscar…', items 
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'eli-pick__item' + (i === active ? ' is-active' : '');
-        b.setAttribute('data-testid', 'eli-pick-item');
+        b.setAttribute('data-testid', it.isNew ? 'eli-pick-new' : 'eli-pick-item');
         const label = document.createElement('span');
         label.textContent = it.label;
         b.appendChild(label);

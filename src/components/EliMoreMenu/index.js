@@ -19,6 +19,7 @@ export default ({
   title = 'Más opciones',
   keepFocus = false,
   icon = 'fas fa-ellipsis-h',
+  badge = null, // (4.09) icono pequeño en una esquina del botón (p. ej. el reloj en marcha)
   label = null,
 }) => {
   const [open, setOpenRaw] = useState(false);
@@ -93,6 +94,13 @@ export default ({
         }}
       >
         <i className={icon} />
+        {badge && (
+          <i
+            className={`${badge} eli-more__badge`}
+            aria-hidden="true"
+            data-testid={`${testId}-badge`}
+          />
+        )}
         {label && <span className="eli-more__btn-label">{label}</span>}
       </button>
       {open && (

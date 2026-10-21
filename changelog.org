@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.09 (octubre de 2026)
+** Documentos
+- La *viñeta* (plegar y desplegar) se toca mucho más fácil con el dedo: vale tocar cerca, también un poco a su izquierda, encima o debajo. Arrastrarla y tocar el título siguen igual.
+** GTD
+- Editor de la tarea: botón de *tabla* en la barra de arriba (junto al reloj), como en Documentos: pone una tabla vacía en las notas y abre su primera celda.
+- El campo *Área* abre un buscador (como el de 🎯 Objetivo) con las áreas que ya usas; si escribes una que no está, *＋ Nueva área*.
+** Menú ☰
+- *Procesos* va justo debajo de *Herramientas*.
+- Con un reloj en marcha, el ☰ sigue en naranja y además lleva un *relojito* en una esquina. En el Menú, *Mostrar tareas con reloj activo*: la lista de esas tareas; al tocar una, vas a ella (en GTD, a la tarea; en Documentos, a su cabecera).
+- *Modo Notas*: la *Agenda* sale en el Menú. En Ajustes, con el Modo Notas encendido, *Agenda en el Menú* la quita o la vuelve a poner.
+
 * 4.08 (octubre de 2026)
 ** Documentos: el título se edita siempre en su sitio
 - Ya no sale la caja *Editar título* (ni *Editar título completo*) al crear o editar una cabecera: el título y las notas se escriben siempre en el propio documento. Si la cabecera no estaba a la vista (dentro de otra plegada, o fuera de la vista reducida con *Narrow*, p. ej. *Nueva › Debajo* de la cabecera reducida), se despliega lo necesario (o se vuelve al fichero entero) y se edita allí.
