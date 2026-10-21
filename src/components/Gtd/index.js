@@ -3017,7 +3017,14 @@ export default function GtdView() {
       const target = tasksByKey.get(key);
       if (target) goToTask(target);
       else if (!cmd.retried) {
-        setTimeout(() => gtdCmdRef.current({ openTask: cmd.openTask, retried: true }), 600);
+        setTimeout(
+          () => gtdCmdRef.current({ openTask: cmd.openTask, orFile: cmd.orFile, retried: true }),
+          600
+        );
+      } else if (cmd.orFile) {
+        // (4.09) reloj en marcha en una cabecera que no está en GTD: a su fichero
+        dispatch(selectHeaderAndOpenParents(cmd.openTask.path, cmd.openTask.id, { widen: true }));
+        history.push(`/file${cmd.openTask.path}`);
       } else {
         showMessage(
           'No está en GTD',

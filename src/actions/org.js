@@ -49,6 +49,7 @@ const eliDefaultArchiveLocation = (getState) =>
 import { isEncryptedPath, decryptFile } from '../lib/eli_crypto';
 import { pendingLocalVersion, clearPendingLocalVersion } from '../lib/eli_offline_store';
 import { List } from 'immutable';
+import { hasActiveClock } from '../lib/clocking';
 import {
   decryptCryptEntryInText,
   encryptCryptEntries,
@@ -841,6 +842,22 @@ export const eliRevealHeader = (headerId) => (dispatch, getState) => {
   }
   dispatch({ type: 'OPEN_PARENTS_OF_HEADER', headerId });
   centerHeaderInView(headerId);
+};
+
+// (4.09) Tareas con el reloj en marcha (en todos los ficheros cargados): [{ path, headerId, title }]
+export const eliRunningClocks = () => (dispatch, getState) => {
+  const out = [];
+  const files = getState().org.present.get('files');
+  if (!files) return out;
+  files.forEach((f, path) => {
+    if (!f || !f.get('activeClocks')) return;
+    (f.get('headers') || List()).forEach((h) => {
+      if (hasActiveClock(h)) {
+        out.push({ path, headerId: h.get('id'), title: h.getIn(['titleLine', 'rawTitle']) || '' });
+      }
+    });
+  });
+  return out;
 };
 
 export const setOpennessState = (path, opennessState) => ({

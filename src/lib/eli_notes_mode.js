@@ -68,6 +68,15 @@ export const setToolOn = (id, v) => {
   notify();
 };
 
+// (4.09) En el Modo Notas, la Agenda sale en el Menú ☰ salvo que se apague (localStorage
+// eliNotesAgenda; no cambia al cambiar de modo)
+const AGENDA_KEY = 'eliNotesAgenda';
+export const notesAgendaOn = () => read(AGENDA_KEY) !== 'false';
+export const setNotesAgendaOn = (v) => {
+  write(AGENDA_KEY, v ? 'true' : 'false');
+  notify();
+};
+
 export const subscribeNotesMode = (fn) => {
   listeners.add(fn);
   return () => listeners.delete(fn);

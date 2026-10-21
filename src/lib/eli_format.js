@@ -316,6 +316,28 @@ export const emptyOrgTable = (indent = '') =>
     `${indent}|   |   |   |`,
   ].join('\n');
 
+// ORG Mode para Eli (4.09): tabla vacía en líneas propias, después de la línea del cursor (si tiene
+// texto). Devuelve { value, ord } (ord = nº de tablas que hay antes, para encontrarla en la vista)
+export const insertEmptyTable = (value, cursor) => {
+  const v = value || '';
+  const s0 = cursor == null ? v.length : Math.max(0, Math.min(cursor, v.length));
+  const lineStart = v.lastIndexOf('\n', s0 - 1) + 1;
+  const lineText = v.slice(lineStart, s0);
+  const indent = /^\s*([-+]|\d+[.)])\s/.test(v.slice(lineStart).split('\n')[0])
+    ? ' '.repeat((/^\s*/.exec(lineText) || [''])[0].length + 2)
+    : (/^\s*/.exec(lineText) || [''])[0];
+  const lineEnd = v.indexOf('\n', s0) < 0 ? v.length : v.indexOf('\n', s0);
+  const at = lineText.trim() || v.slice(s0, lineEnd).trim() ? lineEnd : lineStart;
+  const pre = at > 0 && v[at - 1] !== '\n' ? '\n' : '';
+  const post = at < v.length && v[at] !== '\n' ? '\n' : '';
+  const before = v.slice(0, at).split('\n');
+  let ord = 0;
+  before.forEach((l, i) => {
+    if (/^\s*\|/.test(l) && !(i > 0 && /^\s*\|/.test(before[i - 1]))) ord++;
+  });
+  return { value: v.slice(0, at) + pre + emptyOrgTable(indent) + post + v.slice(at), ord };
+};
+
 // ORG Mode para Eli (3.44): inserta `text` en el cursor (sustituye la selección). Si justo antes
 // hay una letra (no un espacio ni el principio de la línea), pone un espacio delante.
 export const insertAtCursor = (value, start, end, text) => {

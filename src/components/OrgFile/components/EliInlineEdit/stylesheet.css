@@ -72,6 +72,18 @@
   white-space: nowrap;
   cursor: grab;
 }
+/* (4.09) con el dedo, la viñeta se toca en un área mucho mayor que el icono: hacia la izquierda
+   (en el margen de la sangría) y por arriba y por abajo; no se mete en el título */
+@media (pointer: coarse) {
+  .header__bullet::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    right: 0;
+    top: -6px;
+    bottom: -6px;
+  }
+}
 .header__bullet-fold {
   font-size: 0.6em;
   margin-left: 1px;

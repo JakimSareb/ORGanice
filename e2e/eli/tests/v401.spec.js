@@ -27,10 +27,12 @@ test('4.01: GTD, fecha y hora entre Rehacer y el formato (notas y título)', asy
   const order = await page
     .locator('.gtd-editor [data-testid=eli-format-bar] > button')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
-  expect(order.slice(0, 4)).toEqual([
+  // (4.09) y luego la tabla
+  expect(order.slice(0, 5)).toEqual([
     'gtd-editor-undo',
     'gtd-editor-redo',
     'gtd-editor-now',
+    'gtd-editor-table-btn',
     'eli-format-toggle',
   ]);
   // con el cursor en las notas: en las notas
@@ -88,12 +90,13 @@ test('4.01: Menú ☰ de Documentos: Buscar, …, Agenda, …, Ajustes', async (
   expect(app.errors).toEqual([]);
 });
 
-test('4.01: Modo Notas: sin Agenda en el Menú', async ({ app }) => {
+// (4.09) en el Modo Notas sale salvo que se apague (eliNotesAgenda = 'false')
+test('4.01/4.09: Modo Notas con la Agenda apagada: sin Agenda en el Menú', async ({ app }) => {
   const { page } = app;
   await app.open(
     { '/tasks.org': '', '/inbox.org': '', '/notas.org': '* Una\n* Dos\n' },
     '/file/notas.org',
-    { localStorage: { eliNotesMode: 'true' } }
+    { localStorage: { eliNotesMode: 'true', eliNotesAgenda: 'false' } }
   );
   await expect(page.locator('text=Dos').first()).toBeVisible({ timeout: 20000 });
   const items = await topItems(app);
