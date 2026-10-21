@@ -117,6 +117,7 @@ test('4.13: Pomodoro: se inicia desde el Menú y el chip se puede parar', async 
 test('4.13: Pomodoro: un pomodoro terminado pendiente se guarda como CLOCK en «Pomodoro»', async ({
   app,
 }) => {
+  const { page } = app;
   const start = Date.UTC(2026, 9, 21, 12, 0);
   const pending = [{ start, end: start + 25 * 60000, ms: 25 * 60000 }];
   await app.open({ '/tasks.org': '* NEXT Pintar\n', '/inbox.org': '' }, '/gtd', {
@@ -126,8 +127,16 @@ test('4.13: Pomodoro: un pomodoro terminado pendiente se guarda como CLOCK en «
     },
   });
   await gtd.ready(app);
+  // si falla, el mensaje incluye lo que quedó pendiente y los errores de la página
   await expect
-    .poll(() => app.fileAfterSync('/tasks.org'), { timeout: 20000 })
+    .poll(
+      async () => {
+        const file = await app.fileAfterSync('/tasks.org');
+        const left = await page.evaluate(() => localStorage.getItem('eliPomodoroState'));
+        return `${file}\n--- pendiente: ${left}\n--- errores: ${JSON.stringify(app.errors)}`;
+      },
+      { timeout: 20000 }
+    )
     .toMatch(/\* Pomodoro\n:LOGBOOK:\nCLOCK: \[\d{4}-\d\d-\d\d \w+ \d\d:\d\d\]--\[/);
   expect(app.errors).toEqual([]);
 });

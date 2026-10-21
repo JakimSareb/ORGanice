@@ -61,23 +61,27 @@ export default function EliPomodoro() {
     [dispatch, cfg]
   );
 
-  // los pomodoros terminados se guardan en el fichero de tareas (si aún no está cargado, se
-  // reintenta cuando cambien los ficheros)
+  // los pomodoros terminados se guardan en el fichero de tareas. Se espera a que los ficheros
+  // dejen de cambiar (al arrancar la app aún se están cargando y sincronizando) y, si el fichero
+  // de tareas no está cargado, se reintenta cuando cambien los ficheros.
   useEffect(() => {
-    const logs = pendingLogs();
-    if (!logs.length || !files || !files.size) return;
-    let done = 0;
-    for (const l of logs) {
-      let ok = false;
-      try {
-        ok = dispatch(pomodoroLog(new Date(l.start), new Date(l.end)));
-      } catch (e) {
-        ok = false;
+    if (!pending || !files || !files.size) return undefined;
+    const id = setTimeout(() => {
+      const logs = pendingLogs();
+      let done = 0;
+      for (const l of logs) {
+        let ok = false;
+        try {
+          ok = dispatch(pomodoroLog(new Date(l.start), new Date(l.end)));
+        } catch (e) {
+          ok = false;
+        }
+        if (!ok) break;
+        done += 1;
       }
-      if (!ok) break;
-      done += 1;
-    }
-    if (done) ackLogs(done);
+      if (done) ackLogs(done);
+    }, 1500);
+    return () => clearTimeout(id);
   }, [dispatch, pending, files]);
 
   if (state.status === 'idle') return null;
