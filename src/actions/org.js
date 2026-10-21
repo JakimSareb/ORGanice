@@ -75,6 +75,7 @@ import {
 } from '../util/file_persister';
 import { lastSyncAtFor } from '../lib/eli_offline_client';
 import { localStorageAvailable, readOpennessState } from '../util/settings_persister';
+import { parseExcludedFolders, withoutExcluded } from '../lib/eli_excluded_folders';
 
 export const parseFile = (path, contents) => (dispatch) => {
   if (localStorageAvailable && !path.startsWith(STATIC_FILE_PREFIX)) {
@@ -1364,6 +1365,8 @@ export const eliRefreshAllOrgFiles = ({ force = false } = {}) => async (dispatch
     return null;
   }
   if (!paths || !paths.length || !getState().base.get('eliAllOrgFiles')) return null;
+  // (4.12) sin los de las carpetas excluidas (si ya estaban, se quitan con «prune»)
+  paths = withoutExcluded(paths, parseExcludedFolders(getState().base.get('eliExcludedFolders')));
   dispatch({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths, prune: true });
   return paths;
 };

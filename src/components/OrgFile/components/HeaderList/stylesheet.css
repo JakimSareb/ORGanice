@@ -22,9 +22,10 @@
 }
 
 /* (4.11) con el dedo, unos píxeles libres a la izquierda de la lista: la viñeta de 1.er nivel ya no
-   queda pegada al borde de la pantalla y se pulsa más fácil (el ancho de la viñeta no cambia) */
+   queda pegada al borde de la pantalla y se pulsa más fácil (el ancho de la viñeta no cambia).
+   (4.12) Los píxeles se eligen en Ajustes › Apariencia (variable --eli-doc-margin; por defecto 14) */
 @media (pointer: coarse) {
   .header-list-container {
-    padding-left: 14px;
+    padding-left: var(--eli-doc-margin, 14px);
   }
 }

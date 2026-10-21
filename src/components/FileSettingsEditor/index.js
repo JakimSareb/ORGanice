@@ -14,7 +14,13 @@ import FileSetting from './components/FileSetting';
 
 import { List } from 'immutable';
 import { STATIC_FILE_PREFIX } from '../../lib/org_utils';
-import { askConfirm, showMessage } from '../../lib/eli_prompt';
+import { askConfirm, askPick, showMessage } from '../../lib/eli_prompt';
+import {
+  parseExcludedFolders,
+  serializeExcludedFolders,
+  withoutExcluded,
+  foldersOfPaths,
+} from '../../lib/eli_excluded_folders';
 
 const FileSettingsEditor = ({
   fileSettings,
@@ -22,9 +28,11 @@ const FileSettingsEditor = ({
   currentPathIfWithoutFileSetting,
   client,
   allOrgFiles,
+  excludedFoldersText,
   org,
   base,
 }) => {
+  const excludedFolders = parseExcludedFolders(excludedFoldersText);
   // ORG Mode para Eli: añadir de una vez todos los ficheros .org de la carpeta y subcarpetas
   const [isListing, setIsListing] = React.useState(false);
   const handleAddAllClick = async () => {
@@ -42,6 +50,8 @@ const FileSettingsEditor = ({
       return;
     }
     setIsListing(false);
+    // (4.12) sin los de las carpetas excluidas
+    paths = withoutExcluded(paths, excludedFolders);
     if (!paths.length) {
       showMessage('Ficheros', 'No se han encontrado ficheros .org en tu carpeta.');
       return;
@@ -76,6 +86,40 @@ const FileSettingsEditor = ({
     const paths = await org.eliRefreshAllOrgFiles({ force: true });
     setIsListing(false);
     if (!paths) showMessage('Ficheros', 'No se ha podido leer la carpeta. Comprueba la conexión.');
+  };
+
+  // (4.12) carpetas excluidas del modo automático (y todo lo que tienen dentro)
+  const saveExcluded = async (list) => {
+    base.setEliSetting('eliExcludedFolders', serializeExcludedFolders(list));
+    setIsListing(true);
+    await org.eliRefreshAllOrgFiles({ force: true });
+    setIsListing(false);
+  };
+  const handleExcludeClick = async () => {
+    if (!client || !client.listOrgFiles) return;
+    setIsListing(true);
+    let paths = [];
+    try {
+      paths = await client.listOrgFiles();
+    } catch (e) {
+      paths = null;
+    }
+    setIsListing(false);
+    if (!paths) {
+      showMessage('Ficheros', 'No se ha podido leer la carpeta. Comprueba la conexión.');
+      return;
+    }
+    const folders = foldersOfPaths(paths).filter(
+      (f) => !excludedFolders.some((x) => x.toLowerCase() === f.toLowerCase())
+    );
+    const chosen = await askPick({
+      title: 'Excluir una carpeta',
+      message: 'Sus ficheros (y los de sus subcarpetas) dejarán de cargarse solos.',
+      placeholder: 'Buscar carpeta…',
+      items: folders.map((f) => ({ id: f, label: '📁 ' + f })),
+      emptyText: 'No hay subcarpetas con ficheros .org.',
+    });
+    if (chosen) saveExcluded([...excludedFolders, chosen]);
   };
 
   const startupSetting = fileSettings.find((setting) => setting.get('defaultOnStartup'));
@@ -128,6 +172,47 @@ const FileSettingsEditor = ({
             >
               Buscar ficheros nuevos ahora
             </button>
+          </div>
+        )}
+        {allOrgFiles && (
+          <div
+            className="file-setting__field eli-file-settings__excluded"
+            data-testid="eli-excluded-folders"
+          >
+            <div>
+              <div>Carpetas excluidas</div>
+              <div className="file-setting__help-text">
+                Sus ficheros (y los de sus subcarpetas) no se cargan solos.
+              </div>
+              {excludedFolders.map((f) => (
+                <div
+                  key={f}
+                  className="eli-file-settings__excluded-row"
+                  data-testid="eli-excluded-row"
+                >
+                  <span>📁 {f}</span>
+                  <button
+                    type="button"
+                    className="eli-file-settings__refresh"
+                    onClick={() => saveExcluded(excludedFolders.filter((x) => x !== f))}
+                    disabled={isListing}
+                    title="Volver a incluirla"
+                    data-testid="eli-excluded-remove"
+                  >
+                    <i className="fas fa-times" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="eli-file-settings__refresh"
+                onClick={handleExcludeClick}
+                disabled={isListing}
+                data-testid="eli-excluded-add"
+              >
+                <i className="fas fa-ban" /> Excluir una carpeta
+              </button>
+            </div>
           </div>
         )}
         {fileSettings.size > 0 && (
@@ -216,6 +301,7 @@ const mapStateToProps = (state) => {
   return {
     client: state.syncBackend.get('client'),
     allOrgFiles: !!state.base.get('eliAllOrgFiles'),
+    excludedFoldersText: state.base.get('eliExcludedFolders') || '',
     fileSettings,
     loadedFilepaths,
     currentPathIfWithoutFileSetting,

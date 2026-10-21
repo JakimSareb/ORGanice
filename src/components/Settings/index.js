@@ -27,6 +27,16 @@ import {
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
 import {
+  MENU_ENTRIES,
+  getMenuLayout,
+  setMenuLayout,
+  moveEntry,
+  toggleHidden,
+  getDocMargin,
+  setDocMargin,
+  DOC_MARGIN_MAX,
+} from '../../lib/eli_menu_layout';
+import {
   TOOLS,
   useNotesMode,
   setNotesMode,
@@ -114,6 +124,91 @@ const EliToolsSettings = () => (
     ))}
   </details>
 );
+
+// (4.12) Menú ☰: orden y qué entradas salen (en este dispositivo). «Ajustes», siempre la última
+const EliMenuLayoutSetting = () => {
+  const [layout, setLayout] = React.useState(getMenuLayout());
+  const save = (l) => {
+    setMenuLayout(l);
+    setLayout(getMenuLayout());
+  };
+  const label = (id) => (MENU_ENTRIES.find((e) => e.id === id) || {}).label || id;
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-menu-layout"
+    >
+      <div className="setting-label">
+        Menú ☰
+        <div className="setting-label__description">
+          Ordena las entradas con las flechas y apaga las que no quieras ver. Algunas solo salen
+          donde tienen sentido (p. ej. Vista, dentro de un fichero). «Ajustes» sale siempre, al
+          final.
+        </div>
+      </div>
+      {layout.order.map((id, i) => (
+        <div key={id} className="eli-menu-layout__row" data-testid={`eli-menu-layout-${id}`}>
+          <span className="eli-menu-layout__label">{label(id)}</span>
+          <button
+            type="button"
+            className="btn-passive eli-menu-layout__btn"
+            disabled={i === 0}
+            onClick={() => save(moveEntry(layout, id, -1))}
+            title="Subir"
+            data-testid={`eli-menu-layout-up-${id}`}
+          >
+            <i className="fas fa-arrow-up" />
+          </button>
+          <button
+            type="button"
+            className="btn-passive eli-menu-layout__btn"
+            disabled={i === layout.order.length - 1}
+            onClick={() => save(moveEntry(layout, id, 1))}
+            title="Bajar"
+            data-testid={`eli-menu-layout-down-${id}`}
+          >
+            <i className="fas fa-arrow-down" />
+          </button>
+          <Switch
+            isEnabled={!layout.hidden.includes(id)}
+            onToggle={() => save(toggleHidden(layout, id))}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// (4.12) Margen izquierdo de Documentos con el dedo (móvil/tableta); antes fijo, 14 px
+const EliDocMarginSetting = () => {
+  const [px, setPx] = React.useState(getDocMargin());
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-doc-margin"
+    >
+      <div className="setting-label">
+        Margen izquierdo de Documentos (móvil): {px} px
+        <div className="setting-label__description">
+          Espacio libre a la izquierda de la lista de cabeceras cuando se usa con el dedo.
+        </div>
+      </div>
+      <input
+        type="range"
+        min="0"
+        max={DOC_MARGIN_MAX}
+        step="1"
+        value={px}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          setPx(v);
+          setDocMargin(v);
+        }}
+        data-testid="eli-doc-margin"
+      />
+    </div>
+  );
+};
 
 // ORG Mode para Eli: campo de texto que se guarda al salir de él (o con Intro)
 
@@ -468,6 +563,9 @@ const Settings = ({
             ))}
           </select>
         </div>
+
+        <EliDocMarginSetting />
+        <EliMenuLayoutSetting />
       </details>
 
       <EliToolsSettings />

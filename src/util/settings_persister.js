@@ -189,6 +189,11 @@ export const persistableFields = [
   },
   {
     category: 'base',
+    name: 'eliExcludedFolders',
+    type: 'string',
+  },
+  {
+    category: 'base',
     name: 'eliDefaultTagsLine',
     type: 'string',
   },

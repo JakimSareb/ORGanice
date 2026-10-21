@@ -9,6 +9,11 @@ const launchOptions = process.env.E2E_CHROME ? { executablePath: process.env.E2E
 
 export default defineConfig({
   testDir: './e2e/eli/tests',
+  // (4.12) en GitHub, las E2E nuevas de la versión ya se han pasado antes (E2E_SKIP = sus rutas)
+  testIgnore: (process.env.E2E_SKIP || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((f) => '**/' + f.split('/').pop()),
   fullyParallel: true,
   retries: 0,
   timeout: 60 * 1000,
