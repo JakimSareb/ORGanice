@@ -2,7 +2,7 @@
 // Los usan el editor de la tarea y el menú de la fila.
 import { shareContent, isWebShareSupported } from '../../lib/share_utils';
 import { showMessage } from '../../lib/eli_prompt';
-import { openPrintPreview } from '../EliTools';
+import { openPrintPreview, openPrintTasks } from '../EliTools';
 import { gtdEnsureOrgId, gtdOrgText, gtdClockToggle } from '../../lib/gtd/gtd_actions';
 import { taskLinkText, copyText } from '../../lib/gtd/gtd_tools';
 
@@ -32,3 +32,22 @@ export const exportTaskPdf = (task) => () => openPrintPreview(task.id, task.path
 
 export const toggleTaskClock = (task) => (dispatch) =>
   dispatch(gtdClockToggle(task)) ? 'Reloj en marcha' : 'Reloj parado';
+
+// (4.13) Lo que muestra una vista de GTD (lista de tareas): PDF (vista previa de impresión) u
+// ORG (hoja de compartir del móvil o portapapeles)
+export const exportViewPdf = (list, title) =>
+  openPrintTasks(
+    list.map((t) => ({ path: t.path, headerId: t.id })),
+    title
+  );
+
+export const exportViewOrg = async (text, title) => {
+  if (!text) return '';
+  if (isWebShareSupported()) {
+    await shareContent({ title, text });
+    return '';
+  }
+  if (await copyText(text)) return 'Vista copiada como texto Org';
+  showMessage(title, text);
+  return '';
+};

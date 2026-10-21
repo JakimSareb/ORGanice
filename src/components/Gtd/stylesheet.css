@@ -4496,3 +4496,58 @@ input.gtd-proc__input:not([type]) {
   opacity: 0.75;
   font-size: 0.9em;
 }
+
+/* (4.13) reloj en marcha en la fila: esquina superior derecha, naranja */
+.gtd-task__row {
+  position: relative;
+}
+.gtd-task__running {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 0.7em;
+  line-height: 1;
+  color: var(--orange);
+  pointer-events: none;
+}
+
+/* (4.13) pie del editor de tarea: herramientas, botones y, la última, Cancelar + Guardar */
+.gtd-editor__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  grid-area: actions;
+  padding-left: 34px;
+  min-width: 0;
+}
+.gtd-editor__footer .gtd-editor__actions,
+.gtd-editor--nirvana .gtd-editor__footer .gtd-editor__actions,
+.gtd-editor--sheet .gtd-editor__footer .gtd-editor__actions {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  grid-area: auto;
+}
+.gtd-editor__footer .gtd-editor__saverow {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+.gtd-editor__footer .gtd-editor__saverow .gtd-spacer {
+  flex: 1;
+  height: auto;
+  flex-basis: 0;
+}
+.gtd-editor--sheet .gtd-editor__footer {
+  padding: 12px 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--base1-soft, rgba(128, 128, 128, 0.25));
+}
+.gtd-editor__footer .gtd-editor__tools {
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--base1-soft, rgba(128, 128, 128, 0.25));
+}
+@media (max-width: 720px) {
+  .gtd-editor__footer {
+    padding-left: 34px;
+  }
+}

@@ -19,6 +19,13 @@ import { fileDisplayName, windowTitleFor } from '../../lib/eli_app_name';
 import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
 import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
+import EliPomodoro from '../EliPomodoro';
+import {
+  getPomodoroState,
+  subscribePomodoro,
+  pomodoroToggle,
+  pomodoroStop,
+} from '../../lib/eli_pomodoro';
 import { isNotesMode, toolOn, subscribeNotesMode, notesAgendaOn } from '../../lib/eli_notes_mode';
 import { askPick } from '../../lib/eli_prompt';
 import { STATIC_FILE_PREFIX as ELI_STATIC_PREFIX } from '../../lib/org_utils';
@@ -215,6 +222,14 @@ class HeaderBar extends PureComponent {
     // (3.04) el candado está en ⋯ › Fichero; el nombre del fichero lo muestra cuando está puesto
     this.eliUnsubLock = subscribeDocLock(() => this.forceUpdate());
     this.eliUnsubNotes = subscribeNotesMode(() => this.forceUpdate());
+    // (4.13) el Menú ☰ cambia «Iniciar/Parar pomodoro» solo cuando cambia el estado (no cada segundo)
+    this.eliPomoStatus = getPomodoroState().status;
+    this.eliUnsubPomo = subscribePomodoro((st) => {
+      if (st.status !== this.eliPomoStatus) {
+        this.eliPomoStatus = st.status;
+        this.forceUpdate();
+      }
+    });
   }
 
   // (2.16) Atrás / adelante con el teclado: Alt+← / Alt+→ (y ⌘[ / ⌘] en el Mac), como en el
@@ -255,6 +270,7 @@ class HeaderBar extends PureComponent {
     window.removeEventListener('keydown', this.eliNavKey);
     if (this.eliUnsubLock) this.eliUnsubLock();
     if (this.eliUnsubNotes) this.eliUnsubNotes();
+    if (this.eliUnsubPomo) this.eliUnsubPomo();
   }
 
   eliNavChanged = () => this.forceUpdate();
@@ -794,6 +810,21 @@ class HeaderBar extends PureComponent {
           onClick: openMoonPhases,
           testId: 'eli-moon',
         },
+        // (4.13) Pomodoro: empezar desde aquí; con uno en marcha, el chip de arriba lo controla
+        toolOn('pomo') &&
+          (getPomodoroState().status === 'idle'
+            ? {
+                icon: 'fas fa-hourglass-half',
+                label: 'Iniciar pomodoro',
+                onClick: pomodoroToggle,
+                testId: 'eli-pomodoro-menu',
+              }
+            : {
+                icon: 'fas fa-stop',
+                label: 'Parar el pomodoro',
+                onClick: pomodoroStop,
+                testId: 'eli-pomodoro-menu',
+              }),
         // (3.05) líneas «- State …» sueltas → al cajón :LOGBOOK: (en el fichero abierto)
         !notes &&
           inRealFile && {
@@ -1095,6 +1126,8 @@ class HeaderBar extends PureComponent {
               title="Novedades"
             />
           )}
+
+          {isAuthenticated && toolOn('pomo') && <EliPomodoro />}
 
           {isAuthenticated && (
             <EliMoreMenu
