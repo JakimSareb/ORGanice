@@ -679,6 +679,12 @@ class HeaderBar extends PureComponent {
             onClick: () => run({ guided: 'someday' }),
             testId: 'eli-proc-someday',
           },
+          {
+            icon: 'fas fa-binoculars',
+            label: 'Revisión de horizontes',
+            onClick: () => run({ guided: 'horizons' }),
+            testId: 'eli-proc-horizons',
+          },
         ],
       },
     ];

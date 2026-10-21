@@ -728,6 +728,10 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (fields.energy) props = setProperty(props, ENERGY_PROPERTY, fields.energy);
   if (fields.effort) props = setProperty(props, EFFORT_PROPERTY, fields.effort);
   if (fields.created) props = setProperty(props, CREATED_PROPERTY, createdStamp());
+  // (4.07) otras propiedades ({ ID: …, OBJETIVO: … })
+  Object.keys(fields.props || {}).forEach((name) => {
+    if (fields.props[name]) props = setProperty(props, name, fields.props[name]);
+  });
   let planning = List();
   if (fields.scheduled)
     planning = setPlanning(planning, 'SCHEDULED', fields.scheduled, fields.scheduledRepeat);

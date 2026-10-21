@@ -109,6 +109,17 @@ import GtdDailyProcess from './GtdDailyProcess';
 import { planDay, closeDay, DAILY_PROCESSES } from '../../lib/gtd/gtd_daily';
 import GtdGuidedProcess from './GtdGuidedProcess';
 import { GUIDED_PROCESSES, chaseTitle, chaseMessage } from '../../lib/gtd/gtd_guided';
+import GtdHorizonsReview from './GtdHorizonsReview';
+import {
+  HORIZONS_TEMPLATE,
+  OBJECTIVE_PROPERTY,
+  horizonsPathNear,
+  parseHorizons,
+  horizonsView,
+  missingAreas,
+  objectivePickItems,
+  objectiveRefOf,
+} from '../../lib/gtd/gtd_horizons';
 import { weeklyReview, REVIEW_STEPS } from '../../lib/gtd/gtd_review';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
@@ -1113,17 +1124,25 @@ export default function GtdView() {
       ),
     [files]
   );
+  // ORG Mode para Eli: secciones configurables (Ajustes → Vista GTD: secciones). Al cambiar la
+  // configuración se vuelve a calcular todo.
+  const gtdCfg = setGtdConfig(useSelector(selectGtdSections));
+  // (4.07) el fichero de horizontes no es de tareas (aunque esté en la agenda)
+  const horizonsSet = gtdCfg.files.horizons;
   const scopePaths = useMemo(
-    () => loadedPaths.filter((p) => wanted.includes(p) || !wanted.length),
-    [loadedPaths, wanted]
+    () =>
+      loadedPaths.filter(
+        (p) =>
+          (wanted.includes(p) || !wanted.length) &&
+          p !== horizonsSet &&
+          !/(^|\/)horizons\.org$/i.test(p)
+      ),
+    [loadedPaths, wanted, horizonsSet]
   );
   const scopedFiles = useMemo(() => files.filter((_f, p) => scopePaths.includes(p)), [
     files,
     scopePaths,
   ]);
-  // ORG Mode para Eli: secciones configurables (Ajustes → Vista GTD: secciones). Al cambiar la
-  // configuración se vuelve a calcular todo.
-  const gtdCfg = setGtdConfig(useSelector(selectGtdSections));
   // (2.17) ficheros elegidos en Ajustes (si están cargados); si no, los de siempre
   const chosenInbox =
     gtdCfg.files.inbox && scopePaths.includes(gtdCfg.files.inbox) ? gtdCfg.files.inbox : null;
@@ -1146,6 +1165,21 @@ export default function GtdView() {
     // eslint-disable-next-line
     [scopedFiles, inboxPaths, gtdCfg]
   );
+  // (4.07) Horizontes: el fichero elegido en Ajustes o horizons.org junto al de entrada
+  const horizonsPath =
+    horizonsSet || horizonsPathNear(inboxPaths[0] || inboxFile || tasksFile || '/inbox.org');
+  const horizonsFile = files.get(horizonsPath);
+  const horizons = useMemo(() => parseHorizons(horizonsFile, horizonsPath), [
+    horizonsFile,
+    horizonsPath,
+  ]);
+  const horizonsOn = isSectionShown('horizons', gtdCfg);
+  // con la sección a la vista, se carga en silencio (sin crearlo)
+  useEffect(() => {
+    if (!horizonsOn || horizonsFile) return;
+    Promise.resolve(dispatch(loadFileQuietly(horizonsPath))).catch(() => null);
+    // eslint-disable-next-line
+  }, [horizonsOn, horizonsPath]);
   // (4.05) procesos diarios: las entradas de tickler.org (aunque GTD no lo cargue) y lo de cada paso
   const dailyKind = daily ? daily.kind : null;
   const ticklerTasks = useMemo(
@@ -1193,6 +1227,14 @@ export default function GtdView() {
         : { active: [], scheduled: [], sleep: [] },
     [view.id, tasks, area, today]
   );
+  // (4.07) página «Horizontes» y su revisión
+  const horizonsBusy = horizonsOn || view.id === 'horizons' || dailyKind === 'horizons';
+  const hView = useMemo(() => (horizonsBusy ? horizonsView(horizons, tasks, today) : null), [
+    horizonsBusy,
+    horizons,
+    tasks,
+    today,
+  ]);
   // ORG Mode para Eli: proyectos activos, programados (SCHEDULED a futuro) y dormidos (:STATUS: sleep)
   const projectGroups = useMemo(() => {
     const g = { active: [], scheduled: [], sleep: [] };
@@ -1923,7 +1965,7 @@ export default function GtdView() {
     let list = kind;
     if (kind === 'current') {
       if (isProjectView) list = 'next';
-      else if (view.id === 'projects') return null;
+      else if (view.id === 'projects' || view.id === 'horizons') return null;
       else list = view.id;
     }
     const d = {
@@ -3068,10 +3110,16 @@ export default function GtdView() {
   };
   // (4.05) Procesos diarios (Menú ☰ › Procesos › Diarios)
   // (4.06) también los puntuales y periódicos (GUIDED_PROCESSES: tarjeta GtdGuidedProcess)
-  const startDaily = (kind) => {
+  const startDaily = (kind, extra = null) => {
     if (!DAILY_PROCESSES[kind] && !GUIDED_PROCESSES[kind]) return;
+    // (4.07) la Revisión de horizontes necesita su fichero (si no está, se pregunta si crearlo)
+    if (kind === 'horizons' && !horizonsLoaded()) {
+      ensureHorizons().then((ok) => ok && startDaily(kind, extra));
+      return;
+    }
     setSideOpen(false);
-    setDaily({ kind, step: 0, rev: Date.now() });
+    setDaily({ kind, step: 0, rev: Date.now(), ...(extra || {}) });
+    if (kind === 'horizons' || (extra && extra.back)) return;
     if (GUIDED_PROCESSES[kind]) {
       const list = { sweep: 'inbox', stuck: 'projects', waiting: 'waiting', someday: 'someday' }[
         kind
@@ -3135,8 +3183,16 @@ export default function GtdView() {
   };
   const guidedCreateProject = (title, plan) => {
     if (!tasksFile) return;
+    // (4.07) desde la Revisión de horizontes: con su objetivo (:OBJETIVO:) y su área
+    const pre = plan.preset || {};
+    const props = {};
+    if (pre.objective) {
+      const orgId = objectiveIdFor(pre.objective);
+      if (orgId) props[OBJECTIVE_PROPERTY] = projectLinkFor(orgId, pre.objective.title);
+    }
+    const area = pre.area || (pre.objective && pre.objective.area) || undefined;
     const id = dispatch(
-      gtdAddTask({ path: tasksFile }, { title, list: 'project', notes: plan.notes })
+      gtdAddTask({ path: tasksFile }, { title, list: 'project', notes: plan.notes, area, props })
     );
     if (!id) return;
     plan.tasks.forEach((x) =>
@@ -3212,6 +3268,110 @@ export default function GtdView() {
     } catch (e) {}
     document.body.removeChild(ta);
   };
+  // (4.07) Horizontes (fichero aparte: objetivos, áreas, visión y propósito)
+  const horizonsLoaded = () =>
+    !!store.getState().org.present.getIn(['files', horizonsPath, 'headers']);
+  const freshHorizons = () =>
+    parseHorizons(store.getState().org.present.getIn(['files', horizonsPath]), horizonsPath);
+  const ensureHorizons = async (create = true) => {
+    const load = async () => {
+      dispatch(setLoadingMessage(`Cargando ${fileDisplayName(horizonsPath)}…`));
+      await Promise.resolve(dispatch(loadFileQuietly(horizonsPath))).catch(() => null);
+      dispatch(hideLoadingMessage());
+      return horizonsLoaded();
+    };
+    if (horizonsLoaded() || (await load())) return true;
+    if (!create) return false;
+    const ok = await askConfirm({
+      title: 'Horizontes',
+      message: `No se encuentra ${horizonsPath}. ¿Crearlo con la plantilla (propósito, visión, objetivos y áreas)?`,
+      okLabel: 'Crear',
+    });
+    if (!ok) return false;
+    if (!(await dispatch(createPlainFile(horizonsPath, HORIZONS_TEMPLATE)))) return false;
+    return load();
+  };
+  // :ID: del objetivo (se le pone si no lo tiene, como org-id)
+  const objectiveIdFor = (o) => {
+    if (o.orgId) return o.orgId;
+    const orgId = newOrgId();
+    dispatch(gtdSaveTask(o.task, { props: { ID: orgId } }));
+    return orgId;
+  };
+  // Editor del proyecto: elegir su objetivo (o quitarlo)
+  const pickObjective = async (project) => {
+    if (!(await ensureHorizons())) return;
+    const h = freshHorizons();
+    const items = objectivePickItems(h);
+    if (objectiveRefOf(project))
+      items.unshift({ id: '__none', label: 'Sin objetivo', hint: 'Quitar el objetivo' });
+    const id = await askPick({
+      title: 'Objetivo del proyecto',
+      message: project.title,
+      placeholder: 'Buscar objetivo…',
+      items,
+      emptyText: `No hay objetivos en ${fileDisplayName(
+        horizonsPath
+      )} (cabeceras «**» bajo «* Objetivos»).`,
+    });
+    if (!id) return;
+    if (id === '__none') {
+      dispatch(gtdSaveTask(project, { props: { [OBJECTIVE_PROPERTY]: null } }));
+      toast('Sin objetivo');
+      return;
+    }
+    const o = h.objectives.find((x) => x.key === id);
+    if (!o) return;
+    const changes = {
+      props: { [OBJECTIVE_PROPERTY]: projectLinkFor(objectiveIdFor(o), o.title) },
+    };
+    if (o.area && !project.ownArea) changes.area = o.area;
+    dispatch(gtdSaveTask(project, changes));
+    toast(`Objetivo: ${o.title}`);
+  };
+  const HORIZON_TITLES = {
+    purpose: 'Propósito y principios',
+    vision: 'Visión (3–5 años)',
+    goals: 'Objetivos (1–2 años)',
+    areas: 'Áreas de responsabilidad',
+  };
+  // cabecera de primer nivel de esa parte (se crea al final si falta)
+  const horizonSection = (kind) => {
+    const h = freshHorizons();
+    if (h[kind]) return h[kind].id;
+    return dispatch(gtdAddTask({ path: horizonsPath }, { title: HORIZON_TITLES[kind] }));
+  };
+  const horizonsAddArea = (name) => {
+    const parentId = horizonSection('areas');
+    if (!parentId) return false;
+    if (!dispatch(gtdAddTask({ path: horizonsPath, parentId }, { title: name }))) return false;
+    toast('Área añadida');
+    return true;
+  };
+  const horizonsAddObjective = (title, area) => {
+    const parentId = horizonSection('goals');
+    if (!parentId) return false;
+    const id = dispatch(
+      gtdAddTask(
+        { path: horizonsPath, parentId },
+        { title, area: area || undefined, props: { ID: newOrgId() } }
+      )
+    );
+    if (!id) return false;
+    toast('Objetivo añadido');
+    return true;
+  };
+  const horizonsSaveText = (kind, text) => {
+    const h = freshHorizons();
+    if (h[kind]) dispatch(gtdSaveTask(h[kind], { notes: text }));
+    else dispatch(gtdAddTask({ path: horizonsPath }, { title: HORIZON_TITLES[kind], notes: text }));
+    toast('Guardado');
+  };
+  // «Planificar un proyecto nuevo» (4.06) para un objetivo o un área; al terminar se vuelve aquí
+  const horizonsPlan = (preset, step) =>
+    startDaily('project', { preset, back: { kind: 'horizons', step } });
+  const closeGuided = () =>
+    setDaily(daily && daily.back ? { ...daily.back, rev: Date.now() } : null);
   // (3.40) Procesar Inbox: una tarea cada vez (las que había en el Inbox al empezar)
   const inboxNow = () => tasks.filter((t) => !t.isProject && listOf(t, today) === 'inbox');
   const startProcess = () => {
@@ -4435,6 +4595,15 @@ export default function GtdView() {
     return out;
   };
 
+  // (4.07) nombre del objetivo de un proyecto (el del fichero de horizontes o el del enlace)
+  const objectiveLabelOf = (task) => {
+    const ref = objectiveRefOf(task);
+    if (!ref) return null;
+    const o = horizons.objectives.find(
+      (x) => x.orgId && x.orgId.toLowerCase() === ref.id.toLowerCase()
+    );
+    return (o && o.title) || ref.title || 'Objetivo';
+  };
   const renderEditor = (task) => (
     <TaskEditor
       key={task.key + task.header.hashCode() + ':' + editorRev}
@@ -4480,6 +4649,12 @@ export default function GtdView() {
         dispatch(gtdArchiveTask(task));
       }}
       onCloseProject={task.isProject ? () => closeProject(task) : undefined}
+      objective={task.isProject ? objectiveLabelOf(task) : null}
+      onPickObjective={
+        task.isProject && (horizonsOn || objectiveRefOf(task))
+          ? () => pickObjective(task)
+          : undefined
+      }
       onAddSubtask={
         !subtasksOn || task.isTrashed || task.isDone ? undefined : () => addSubtask(task)
       }
@@ -4647,6 +4822,27 @@ export default function GtdView() {
     </button>
   );
   // (3.40) Procesar Inbox (asistente de una tarea cada vez); (3.44) sección propia del menú
+  const renderHorizonsButton = () => (
+    <button
+      key="horizons"
+      className={
+        'gtd-side__item' + (view.id === 'horizons' && view.type !== 'project' ? ' is-on' : '')
+      }
+      onClick={(e) => {
+        selectView({ id: 'horizons' });
+        afterSideClick(e);
+      }}
+      data-testid="gtd-list-horizons"
+    >
+      <i className="fas fa-binoculars gtd-side__icon" />
+      <span className="gtd-side__label">{sectionLabel('horizons', gtdCfg)}</span>
+      {hGaps > 0 && (
+        <span className="gtd-side__count" title="Sin nada activo">
+          {hGaps}
+        </span>
+      )}
+    </button>
+  );
   const renderProcessButton = () => (
     <button
       key="process"
@@ -4789,6 +4985,9 @@ export default function GtdView() {
       } else if (id === 'process' || id === 'review') {
         // (3.44) secciones propias del menú (se muestran/ocultan y ordenan en Ajustes)
         group.push(id === 'process' ? renderProcessButton() : renderReviewButton());
+      } else if (id === 'horizons') {
+        // (4.07) página de Horizontes (apagada por defecto)
+        group.push(renderHorizonsButton());
       } else if (id === 'projects') {
         flush();
         out.push(<React.Fragment key="projects">{renderProjectsBlock()}</React.Fragment>);
@@ -4803,12 +5002,109 @@ export default function GtdView() {
     return out;
   };
 
+  // (4.07) página «Horizontes»: cada objetivo y cada área con sus proyectos
+  const hGaps =
+    horizonsOn && hView
+      ? hView.objectives.filter((o) => o.empty).length + hView.areas.filter((a) => a.empty).length
+      : 0;
+  const renderHorizonProject = (p) => {
+    const st = projectState(p, today);
+    return (
+      <button
+        key={p.key}
+        className={'gtd-overview__row' + (st !== 'active' ? ' is-parked' : '')}
+        onClick={() => selectView({ type: 'project', key: p.key })}
+        onContextMenu={(e) => openTaskMenu(p, e)}
+        data-testid="gtd-hz-row"
+      >
+        <span className="gtd-overview__title">
+          <i className="fas fa-project-diagram" /> {p.title}
+        </span>
+        <span className="gtd-overview__meta">
+          {st !== 'active' && (
+            <span className="gtd-meta">{st === 'sleep' ? 'Dormido' : 'Por empezar'}</span>
+          )}
+          {p.area && <span className="gtd-meta gtd-meta--area">{p.area}</span>}
+        </span>
+      </button>
+    );
+  };
+  const renderHorizonGroup = (x, icon, label, kind, extra = null) => (
+    <section key={x.key} className="gtd-horizons__group" data-testid={`gtd-hz-${kind}`}>
+      <div className={'gtd-section gtd-horizons__title' + (x.empty ? ' is-empty' : '')}>
+        <i className={icon} /> {label}
+        {extra}
+        <span className="gtd-overview__n">{x.projects.length}</span>
+        {x.empty && (
+          <span className="gtd-horizons__warn" data-testid="gtd-hz-empty">
+            {kind === 'goal' ? 'Ningún proyecto lo mueve' : 'Sin proyecto activo'}
+          </span>
+        )}
+      </div>
+      {x.projects.map(renderHorizonProject)}
+    </section>
+  );
+  const renderHorizonsPage = () => {
+    if (!horizonsFile || !horizonsFile.get('headers'))
+      return (
+        <div className="gtd-empty" data-testid="gtd-horizons-nofile">
+          <p>No se encuentra {fileDisplayName(horizonsPath)}.</p>
+          <button
+            type="button"
+            className="gtd-review__btn is-primary"
+            onClick={() => ensureHorizons()}
+            data-testid="gtd-horizons-create"
+          >
+            Cargar o crear el fichero
+          </button>
+        </div>
+      );
+    const v = hView || { objectives: [], areas: [], loose: [] };
+    return (
+      <div className="gtd-projects-overview gtd-horizons" data-testid="gtd-horizons">
+        <div className="gtd-section gtd-section--group">
+          <i className="fas fa-bullseye" /> Objetivos
+        </div>
+        {v.objectives.length ? (
+          v.objectives.map((o) =>
+            renderHorizonGroup(
+              o,
+              'fas fa-bullseye',
+              o.title,
+              'goal',
+              o.area && <span className="gtd-meta gtd-meta--area">{o.area}</span>
+            )
+          )
+        ) : (
+          <div className="gtd-empty">No hay objetivos (cabeceras «**» bajo «* Objetivos»).</div>
+        )}
+        <div className="gtd-section gtd-section--group">
+          <i className="fas fa-map-signs" /> Áreas
+        </div>
+        {v.areas.length ? (
+          v.areas.map((a) => renderHorizonGroup(a, 'fas fa-map-signs', a.name, 'area'))
+        ) : (
+          <div className="gtd-empty">No hay áreas (cabeceras «**» bajo «* Áreas»).</div>
+        )}
+        {v.loose.length > 0 && (
+          <section className="gtd-horizons__group" data-testid="gtd-hz-loose">
+            <div className="gtd-section gtd-section--group">
+              <i className="fas fa-question" /> Sin objetivo ni área{' '}
+              <span className="gtd-overview__n">{v.loose.length}</span>
+            </div>
+            {v.loose.map(renderHorizonProject)}
+          </section>
+        )}
+      </div>
+    );
+  };
+
   const loading = pendingLoads;
   const isTrash = view.id === 'trash';
   // (3.0) «Nuevo elemento» y Entrada rápida: en las listas donde se crean cosas
-  const canCreate = !['logbook', 'trash', 'projects'].includes(view.id);
+  const canCreate = !['logbook', 'trash', 'projects', 'horizons'].includes(view.id);
   // 3.36: lupa de la cabecera (filtro de la sección); el Logbook tiene su propio buscador
-  const canFilterSection = !['logbook', 'projects'].includes(view.id);
+  const canFilterSection = !['logbook', 'projects', 'horizons'].includes(view.id);
   // 3.36 (a): resultados del buscador del menú lateral, agrupados por sección (plegables)
   const openSearchResult = (group, task) => {
     setSearchText('');
@@ -5226,6 +5522,10 @@ export default function GtdView() {
             <span className="gtd-main__count">
               {view.id === 'projects'
                 ? overview.active.length + overview.scheduled.length + overview.sleep.length
+                : view.id === 'horizons'
+                ? hView
+                  ? hView.objectives.length + hView.areas.length
+                  : 0
                 : visible.length}
             </span>
           </h1>
@@ -5266,6 +5566,16 @@ export default function GtdView() {
               data-testid="gtd-new"
             >
               <i className="fas fa-plus" /> <span>Nuevo elemento</span>
+            </button>
+          )}
+          {view.id === 'horizons' && (
+            <button
+              className="gtd-main__new"
+              onClick={() => startDaily('horizons')}
+              title="Revisión de horizontes"
+              data-testid="gtd-horizons-review"
+            >
+              <i className="fas fa-binoculars" /> <span>Revisión</span>
             </button>
           )}
           {view.id === 'projects' && (
@@ -5401,14 +5711,32 @@ export default function GtdView() {
             onAgenda={() => setShowAgenda(true)}
           />
         )}
-        {daily && GUIDED_PROCESSES[daily.kind] && (
+        {daily && daily.kind === 'horizons' && (
+          <GtdHorizonsReview
+            key={daily.kind + daily.rev}
+            horizons={horizons}
+            data={hView}
+            missing={missingAreas(horizons, tasks)}
+            startStep={daily.step || 0}
+            fileName={fileDisplayName(horizonsPath)}
+            today={today}
+            onClose={() => setDaily(null)}
+            onOpenTask={reviewOpenTask}
+            onAddArea={horizonsAddArea}
+            onAddObjective={horizonsAddObjective}
+            onSaveText={horizonsSaveText}
+            onPlan={horizonsPlan}
+          />
+        )}
+        {daily && GUIDED_PROCESSES[daily.kind] && daily.kind !== 'horizons' && (
           <GtdGuidedProcess
             key={daily.kind + daily.rev}
             kind={daily.kind}
             tasks={tasks}
             today={today}
             skipTags={[inboxTag()]}
-            onClose={() => setDaily(null)}
+            preset={daily.preset || null}
+            onClose={closeGuided}
             onOpenTask={reviewOpenTask}
             onCapture={guidedCapture}
             onCreateProject={guidedCreateProject}
@@ -5641,8 +5969,10 @@ export default function GtdView() {
           </div>
         )}
 
+        {view.id === 'horizons' && renderHorizonsPage()}
+
         {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
-        {hasFacets && view.id !== 'projects' && (
+        {hasFacets && view.id !== 'projects' && view.id !== 'horizons' && (
           <div className="gtd-filterbar" data-testid="gtd-filters">
             {Array.from(new Set([...facets.tags, ...filters.tags, ...filters.notTags]))
               .filter((t) => t !== NO_TAGS)
@@ -5879,7 +6209,7 @@ export default function GtdView() {
 
         <div
           className={'gtd-list' + (reorderingKey ? ' is-reordering' : '')}
-          style={view.id === 'projects' ? { display: 'none' } : undefined}
+          style={view.id === 'projects' || view.id === 'horizons' ? { display: 'none' } : undefined}
           data-reorder-container=""
           onClick={(e) => {
             // clic en el hueco de la lista: quita la selección
