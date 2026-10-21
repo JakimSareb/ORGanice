@@ -17,10 +17,9 @@ test('4.10: viñeta Org plegada (◉ + ▸) no pisa el texto de la cabecera', as
   await expect(bullet).toContainText('▸');
   const box = await bullet.boundingBox();
   const text = await header.locator('.title-line-text').first().boundingBox();
-  // el contenido de la viñeta cabe dentro de su caja y la caja acaba antes del texto
-  const overflow = await bullet.evaluate((el) => el.scrollWidth - el.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(1);
-  expect(box.x + box.width).toBeLessThanOrEqual(text.x + 1);
+  // el contenido de la viñeta (con su ▸) acaba antes de que empiece el texto
+  const contentW = await bullet.evaluate((el) => el.scrollWidth);
+  expect(box.x + contentW).toBeLessThanOrEqual(text.x + 1);
   expect(app.errors).toEqual([]);
 });
 

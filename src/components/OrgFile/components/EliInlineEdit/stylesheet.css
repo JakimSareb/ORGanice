@@ -59,10 +59,7 @@
 .header__bullet {
   position: relative;
   z-index: 1;
-  /* (4.10) mínimo 16 px, pero crece si el icono (◉ + ▸ de plegada) es más ancho: así no pisa el título */
-  min-width: 16px;
-  padding-right: 4px;
-  box-sizing: content-box;
+  width: 16px;
   cursor: pointer;
 }
 
@@ -86,6 +83,10 @@
     top: -6px;
     bottom: -6px;
   }
+}
+.header__bullet--folded {
+  /* (4.10) plegada: el icono + el ▸ son más anchos que 16 px; hueco a la derecha para no pisar el título */
+  margin-right: 8px;
 }
 .header__bullet-fold {
   font-size: 0.6em;
