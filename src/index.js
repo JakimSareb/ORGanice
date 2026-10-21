@@ -9,6 +9,8 @@ import '@fontsource/atkinson-hyperlegible/400.css';
 import '@fontsource/atkinson-hyperlegible/700.css';
 import './eli_readability.css';
 import { applyReadability } from './lib/eli_readability';
+import './eli_font.css';
+import { applyFont } from './lib/eli_font';
 import App from './App';
 import EliSplitView from './components/EliSplitView';
 import { BASE_PATH } from './lib/base_path';
@@ -17,6 +19,7 @@ import { initOfflineStore, isOfflineStoreReady } from './lib/eli_offline_store';
 import { flushLocalSaves } from './util/file_persister';
 
 applyReadability();
+applyFont();
 
 const rootElement = document.getElementById('root');
 

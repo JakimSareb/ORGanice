@@ -15,6 +15,7 @@ import './stylesheet.css';
 
 import TabButtons from '../UI/TabButtons';
 import { READABILITY, getReadability, setReadability } from '../../lib/eli_readability';
+import { FONTS, getFont, setFont } from '../../lib/eli_font';
 import Switch from '../UI/Switch';
 import ExternalLink from '../UI/ExternalLink';
 import { APP_NAME, APP_VERSION } from '../../lib/eli_app_name';
@@ -132,6 +133,28 @@ const EliReadabilitySetting = () => {
         onSelect={(v) => {
           setValue(v);
           setReadability(v);
+        }}
+      />
+    </div>
+  );
+};
+
+// (4.10) Tipo de letra de toda la app (en este dispositivo; también en el Modo Notas)
+const EliFontSetting = () => {
+  const [value, setValue] = React.useState(getFont());
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-font"
+    >
+      <div className="setting-label">Tipo de letra</div>
+      <TabButtons
+        buttons={FONTS.map((f) => f.label)}
+        values={FONTS.map((f) => f.id)}
+        selectedButton={value}
+        onSelect={(v) => {
+          setValue(v);
+          setFont(v);
         }}
       />
     </div>
@@ -406,6 +429,8 @@ const Settings = ({
         </div>
 
         <EliThemeSetting theme={theme} onSelect={handleThemeClick} />
+
+        <EliFontSetting />
 
         {!notes && (
           <>

@@ -84,9 +84,13 @@
     bottom: -6px;
   }
 }
+.header__bullet--folded {
+  /* (4.10) plegada: icono + ▸ no pueden ser más anchos que el hueco de la viñeta (si no, pisan el título) */
+  letter-spacing: -1px;
+}
 .header__bullet-fold {
-  font-size: 0.6em;
-  margin-left: 1px;
+  font-size: 0.45em;
+  margin-left: -2px;
   vertical-align: middle;
 }
 .eli-hdrag-on,

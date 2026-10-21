@@ -533,6 +533,7 @@ function TaskRow({
   onGoProject = null,
   showTags = true,
   showEffort = true,
+  showArea = true,
   wrapTitle = true,
   badProject = false,
   hasKids = false,
@@ -731,7 +732,7 @@ function TaskRow({
               (parentTitle && !depth) ||
               (showProject && task.project) ||
               badProject ||
-              task.area) && (
+              (showArea && task.area)) && (
               <span className="gtd-task__meta">
                 {archivedFrom && (
                   <span className="gtd-meta" title="Archivada en">
@@ -792,7 +793,9 @@ function TaskRow({
                     <i className="fas fa-unlink" /> proyecto no encontrado
                   </span>
                 )}
-                {task.area && <span className="gtd-meta gtd-meta--area">{task.area}</span>}
+                {showArea && task.area && (
+                  <span className="gtd-meta gtd-meta--area">{task.area}</span>
+                )}
               </span>
             )}
           </div>
@@ -1017,6 +1020,7 @@ export default function GtdView() {
     wrap: true,
     tags: true,
     effort: true,
+    area: true,
     ...readLS('eliGtdDetails', {}),
   }));
   const setDetail = (k, v) => {
@@ -4526,6 +4530,12 @@ export default function GtdView() {
         onClick: () => setDetail('effort', !details.effort),
         testId: 'gtd-opt-effort',
       },
+      {
+        label: 'Mostrar área',
+        checked: details.area,
+        onClick: () => setDetail('area', !details.area),
+        testId: 'gtd-opt-area',
+      },
     ];
     out.push(
       {
@@ -5344,6 +5354,7 @@ export default function GtdView() {
       badProject={!!item.task.badProject}
       showTags={details.tags}
       showEffort={details.effort}
+      showArea={details.area}
       wrapTitle={details.wrap}
       onOpenLink={(target) => openLinkAny(item.task, target)}
     />

@@ -3,6 +3,14 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.10 (octubre de 2026)
+** Documentos
+- Arreglo: con el estilo de viñetas *Org*, la viñeta (◉ y el ▸ de plegada) ya no pisa el texto de la cabecera: deja su hueco, como en los otros estilos.
+** Ajustes
+- Apariencia → *Tipo de letra*: Normal, Serif, Monoespaciada o Redondeada. Se aplica a toda la app (también en el Modo Notas) y se recuerda en este dispositivo.
+** GTD
+- Opciones de vista (⋯): *Mostrar área*, como etiquetas y esfuerzo. Por defecto sale; apagado, las filas no enseñan el Área.
+
 * 4.09 (octubre de 2026)
 ** Documentos
 - La *viñeta* (plegar y desplegar) se toca mucho más fácil con el dedo: vale tocar cerca, también un poco a su izquierda, encima o debajo. Arrastrarla y tocar el título siguen igual.

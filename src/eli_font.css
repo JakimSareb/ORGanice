@@ -1,0 +1,22 @@
+/* ORG Mode para Eli (4.10): tipo de letra de toda la app (Ajustes › Apariencia › Tipo de letra).
+   «Normal» = sin atributo (Verdana). Las partes que ya eran monoespaciadas (tablas, código,
+   calculadora) se quedan como estaban. */
+html[data-eli-font='serif'] {
+  --eli-font: Georgia, 'Iowan Old Style', 'Times New Roman', Times, serif;
+}
+html[data-eli-font='mono'] {
+  --eli-font: Menlo, 'SF Mono', Consolas, 'Courier New', monospace;
+}
+html[data-eli-font='rounded'] {
+  --eli-font: 'Avenir Next Rounded', 'Avenir Next', 'Nunito', 'Trebuchet MS', Verdana, sans-serif;
+}
+html[data-eli-font] body,
+html[data-eli-font] button,
+html[data-eli-font] input,
+html[data-eli-font] select,
+html[data-eli-font] textarea,
+html[data-eli-font] .header-list-container,
+html[data-eli-font] .gtd,
+html[data-eli-font] .eli-prompt__box {
+  font-family: var(--eli-font);
+}
