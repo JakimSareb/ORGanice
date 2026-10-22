@@ -51,6 +51,7 @@ import {
   newOrgId,
   STATUS_PROPERTY,
   SLEEP_STATUS,
+  inProject,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -118,7 +119,14 @@ import GtdWeeklyReview from './GtdWeeklyReview';
 import GtdDailyProcess from './GtdDailyProcess';
 import { planDay, closeDay, DAILY_PROCESSES } from '../../lib/gtd/gtd_daily';
 import GtdGuidedProcess from './GtdGuidedProcess';
-import { GUIDED_PROCESSES, chaseTitle, chaseMessage } from '../../lib/gtd/gtd_guided';
+import {
+  GUIDED_PROCESSES,
+  chaseTitle,
+  chaseMessage,
+  projectPlan,
+  mergePlanNotes,
+  planAdditions,
+} from '../../lib/gtd/gtd_guided';
 import GtdHorizonsReview from './GtdHorizonsReview';
 import {
   HORIZONS_TEMPLATE,
@@ -3156,7 +3164,7 @@ export default function GtdView() {
     }
     setSideOpen(false);
     setDaily({ kind, step: 0, rev: Date.now(), ...(extra || {}) });
-    if (kind === 'horizons' || (extra && extra.back)) return;
+    if (kind === 'horizons' || (extra && (extra.back || extra.existing))) return;
     if (GUIDED_PROCESSES[kind]) {
       const list = { sweep: 'inbox', stuck: 'projects', waiting: 'waiting', someday: 'someday' }[
         kind
@@ -3223,6 +3231,78 @@ export default function GtdView() {
     toast('→ Inbox');
     return true;
   };
+  // (4.14) tareas de un plan (los subproyectos llevan sus hijas)
+  const addPlanTasks = (path, parentId, list) =>
+    list.forEach((x) => {
+      const id = dispatch(
+        gtdAddTask(
+          { path, parentId },
+          {
+            title: x.title,
+            list: x.list,
+            ...(x.tags && x.tags.length ? { tags: x.tags } : {}),
+            created: true,
+          }
+        )
+      );
+      if (id && x.children) addPlanTasks(path, id, x.children);
+    });
+  // (4.14) Replanificar un proyecto existente: actualiza sus notas (respetando el resto) y
+  // AÑADE solo las tareas nuevas (no borra ni reordena; la siguiente acción elegida que ya
+  // existía pasa a Next)
+  const guidedUpdateProject = (project, plan) => {
+    const fresh = tasks.find((t) => t.key === project.key) || project;
+    const notes = mergePlanNotes(fresh.description, plan);
+    if (notes !== (fresh.description || '')) dispatch(gtdSaveTask(fresh, { notes }));
+    const all = tasks.filter((t) => !t.isTrashed);
+    const members = (p) => all.filter((t) => inProject(t, p) && !!t.keyword);
+    const own = members(fresh);
+    const out = projectPlan(plan);
+    addPlanTasks(
+      fresh.path,
+      fresh.id,
+      planAdditions(
+        out.tasks.filter((t) => !t.children),
+        own.map((t) => t.title)
+      )
+    );
+    out.tasks
+      .filter((t) => t.children)
+      .forEach((c) => {
+        const sub = own.find(
+          (t) => t.isProject && t.title.trim().toLowerCase() === c.title.trim().toLowerCase()
+        );
+        if (sub)
+          addPlanTasks(
+            sub.path,
+            sub.id,
+            planAdditions(
+              c.children,
+              members(sub).map((t) => t.title)
+            )
+          );
+        else addPlanTasks(fresh.path, fresh.id, [c]);
+      });
+    // siguientes acciones elegidas entre las que ya había → Next
+    const chosen = [plan.first, ...Object.values(plan.nexts || {}).map((n) => n.action)]
+      .map((x) =>
+        String(x || '')
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean);
+    const scope = [...own, ...own.filter((t) => t.isProject).flatMap(members)];
+    scope
+      .filter(
+        (t) =>
+          !t.isProject &&
+          !t.isDone &&
+          chosen.includes(t.title.trim().toLowerCase()) &&
+          listOf(t, today) !== 'next'
+      )
+      .forEach((t) => reviewMove(t, 'next'));
+    toast('Proyecto replanificado');
+  };
   const guidedCreateProject = (title, plan) => {
     if (!tasksFile) return;
     // (4.07) desde la Revisión de horizontes: con su objetivo (:OBJETIVO:) y su área
@@ -3237,14 +3317,7 @@ export default function GtdView() {
       gtdAddTask({ path: tasksFile }, { title, list: 'project', notes: plan.notes, area, props })
     );
     if (!id) return;
-    plan.tasks.forEach((x) =>
-      dispatch(
-        gtdAddTask(
-          { path: tasksFile, parentId: id },
-          { title: x.title, list: x.list, created: true }
-        )
-      )
-    );
+    addPlanTasks(tasksFile, id, plan.tasks);
     toast('Proyecto creado');
     selectView({ type: 'project', key: `${tasksFile}::${id}` });
   };
@@ -4669,6 +4742,17 @@ export default function GtdView() {
             title
           ),
       },
+      // (4.14) Replanificar el proyecto (Modelo de Planificación Natural sobre lo que ya hay)
+      ...(projectTask
+        ? [
+            {
+              label: 'Replanificar el proyecto',
+              icon: 'fas fa-drafting-compass',
+              onClick: () => startDaily('project', { existing: projectTask.key }),
+              testId: 'gtd-menu-replan',
+            },
+          ]
+        : []),
       // (4.13) exportar lo que muestra la vista en este momento (sección, proyecto, filtro,
       // búsqueda…)
       {
@@ -5892,6 +5976,10 @@ export default function GtdView() {
             today={today}
             skipTags={[inboxTag()]}
             preset={daily.preset || null}
+            existing={
+              (daily.existing && tasks.find((t) => t.key === daily.existing && t.isProject)) || null
+            }
+            onUpdateProject={guidedUpdateProject}
             onClose={closeGuided}
             onOpenTask={reviewOpenTask}
             onCapture={guidedCapture}

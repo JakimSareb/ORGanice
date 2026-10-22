@@ -4551,3 +4551,36 @@ input.gtd-proc__input:not([type]) {
     padding-left: 34px;
   }
 }
+
+/* (4.14) Planificar un proyecto: componentes, siguientes acciones y disparadores */
+.gtd-guided__who {
+  flex: 1;
+  min-width: 8em;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  padding: 6px 8px;
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+.gtd-plan__unit {
+  margin: 8px 0 12px;
+}
+.gtd-plan__comp {
+  margin: 2px 0 8px 28px;
+}
+.gtd-plan__triggers {
+  margin-top: 12px;
+}
+.gtd-plan__trigger summary {
+  cursor: pointer;
+  padding: 4px 2px;
+}
+.gtd-plan__trigger .gtd-review__hint {
+  margin: 2px 0 6px 16px;
+}
+.gtd-review__act--comp.is-on {
+  color: var(--orange, #cb4b16);
+}

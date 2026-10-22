@@ -152,6 +152,7 @@ test('4.07: planificar un proyecto para un objetivo y volver a la revisión', as
   await page.locator('[data-testid=gtd-plan-name]').fill('Curso de alemán');
   for (let i = 0; i < 4; i++) await page.locator('[data-testid=gtd-guided-next]').click();
   await page.locator('[data-testid=gtd-plan-first]').fill('Buscar academias');
+  await page.locator('[data-testid=gtd-guided-next]').click();
   await page.locator('[data-testid=gtd-plan-create]').click();
   // de vuelta en la revisión, en Objetivos
   await expect(page.locator('[data-testid=gtd-guided-title]')).toContainText('Objetivos');

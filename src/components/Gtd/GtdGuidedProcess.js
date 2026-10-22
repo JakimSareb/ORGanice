@@ -11,6 +11,13 @@ import {
   personOf,
   projectPlan,
   moveItem,
+  nextGroupStep,
+  BRAINSTORM_TRIGGERS,
+  ideaOf,
+  planUnits,
+  unitNext,
+  planReady,
+  planFromProject,
 } from '../../lib/gtd/gtd_guided';
 
 // Campo de una línea con botón (Intro = el botón)
@@ -65,13 +72,30 @@ export default function GtdGuidedProcess({
   onMove,
   onCopy,
   preset = null, // (4.07) proyecto para un objetivo ({ objective }) o un área ({ area })
+  existing = null, // (4.14) relanzar la planificación sobre este proyecto
+  onUpdateProject,
 }) {
   const proc = GUIDED_PROCESSES[kind];
   const [step, setStep] = useState(0);
   // Volcado mental: lo apuntado (en esta sesión)
   const [captured, setCaptured] = useState([]);
   // Planificar un proyecto
-  const [plan, setPlan] = useState({ name: '', purpose: '', outcome: '', ideas: [], first: '' });
+  const [plan, setPlan] = useState(() =>
+    existing
+      ? planFromProject(tasks, existing)
+      : {
+          name: '',
+          purpose: '',
+          principles: '',
+          outcome: '',
+          stakeholders: '',
+          ideas: [],
+          first: '',
+          firstWho: '',
+          firstMore: false,
+          nexts: {},
+        }
+  );
   // Aclarar un proyecto atascado: los que había al empezar (se recorren uno a uno)
   const [queue] = useState(() =>
     kind === 'stuck' ? stuckProjects(tasks, today).map((x) => x.project.key) : []
@@ -120,6 +144,16 @@ export default function GtdGuidedProcess({
             ))}
           </ul>
         )}
+        <div className="gtd-review__tools">
+          <button
+            type="button"
+            className="gtd-review__open"
+            onClick={() => go(nextGroupStep(steps, step))}
+            data-testid="gtd-sweep-skip-group"
+          >
+            <i className="fas fa-forward" /> Saltar este bloque ({s.group})
+          </button>
+        </div>
         <p className="gtd-guided__total" data-testid="gtd-sweep-total">
           <i className="fas fa-inbox" /> Apuntadas en total: {captured.length}
         </p>
@@ -127,19 +161,94 @@ export default function GtdGuidedProcess({
     );
   };
 
-  // ---- Planificar un proyecto nuevo
+  // ---- Planificar un proyecto (4.14: Modelo de Planificación Natural completo)
   const setP = (k, v) => setPlan((p) => ({ ...p, [k]: v }));
-  const textArea = (k, placeholder) => (
+  const ideas = (plan.ideas || []).map(ideaOf);
+  const setIdeas = (list) => setP('ideas', list);
+  const textArea = (k, placeholder, rows = 3) => (
     <textarea
       className="gtd-guided__text"
-      rows={3}
-      value={plan[k]}
+      rows={rows}
+      value={plan[k] || ''}
       placeholder={placeholder}
       onChange={(e) => setP(k, e.target.value)}
       data-testid={`gtd-plan-${k}`}
       aria-label={placeholder}
     />
   );
+  const ideaIcon = (x) =>
+    x.component ? 'fas fa-sitemap' : x.existing ? 'far fa-check-square' : 'far fa-lightbulb';
+  // siguiente acción de una unidad (key '' = el proyecto)
+  const setNext = (key, changes) =>
+    setPlan((p) => {
+      if (!key) {
+        const m = { action: 'first', who: 'firstWho', more: 'firstMore' };
+        const out = { ...p };
+        Object.keys(changes).forEach((k) => (out[m[k]] = changes[k]));
+        return out;
+      }
+      const nexts = { ...(p.nexts || {}) };
+      nexts[key] = { ...unitNext(p, key), ...changes };
+      return { ...p, nexts };
+    });
+  const renderUnit = (u, ui) => {
+    const n = unitNext(plan, u.key);
+    const id = u.key ? `-${ui}` : '';
+    const firstId = u.key ? `gtd-plan-next${id}` : 'gtd-plan-first';
+    const fromChoices = u.choices.includes(n.action);
+    return (
+      <div key={u.key || '-'} className="gtd-plan__unit" data-testid="gtd-plan-unit">
+        <div className="gtd-review__sub">
+          <i className={u.key ? 'fas fa-sitemap' : 'fas fa-folder'} /> {u.title}
+        </div>
+        {u.choices.length > 0 && (
+          <div className="gtd-daily__chips">
+            {u.choices.map((x, i) => (
+              <button
+                key={i}
+                type="button"
+                className={'gtd-daily__chip' + (n.action === x ? ' is-on' : '')}
+                aria-pressed={n.action === x}
+                onClick={() => setNext(u.key, { action: n.action === x ? '' : x })}
+                data-testid={`${firstId}-${i}`}
+              >
+                {x}
+              </button>
+            ))}
+          </div>
+        )}
+        <input
+          type="text"
+          className="gtd-guided__name"
+          value={fromChoices ? '' : n.action}
+          placeholder={u.choices.length ? 'U otra acción…' : 'Siguiente acción…'}
+          onChange={(e) => setNext(u.key, { action: e.target.value })}
+          data-testid={firstId}
+          aria-label={`Siguiente acción: ${u.title}`}
+        />
+        <div className="gtd-review__tools">
+          <input
+            type="text"
+            className="gtd-guided__who"
+            value={n.who}
+            placeholder="¿Quién? (opcional)"
+            onChange={(e) => setNext(u.key, { who: e.target.value })}
+            data-testid={`gtd-plan-who${id}`}
+            aria-label={`Quién: ${u.title}`}
+          />
+          <button
+            type="button"
+            className={'gtd-review__open' + (n.more ? ' is-on' : '')}
+            aria-pressed={n.more}
+            onClick={() => setNext(u.key, { more: !n.more })}
+            data-testid={`gtd-plan-more${id}`}
+          >
+            <i className="fas fa-drafting-compass" /> Hace falta planificar más
+          </button>
+        </div>
+      </div>
+    );
+  };
   const renderPlan = () => {
     if (s.id === 'purpose')
       return (
@@ -150,11 +259,13 @@ export default function GtdGuidedProcess({
             className="gtd-guided__name"
             value={plan.name}
             placeholder="Nombre del proyecto"
+            disabled={!!existing}
             onChange={(e) => setP('name', e.target.value)}
             data-testid="gtd-plan-name"
             aria-label="Nombre del proyecto"
           />
           {textArea('purpose', 'Propósito: ¿por qué?')}
+          {textArea('principles', 'Principios: ¿con qué normas y estándares decidirás?', 2)}
         </React.Fragment>
       );
     if (s.id === 'outcome')
@@ -162,6 +273,7 @@ export default function GtdGuidedProcess({
         <React.Fragment>
           <p className="gtd-review__hint">{s.hint}</p>
           {textArea('outcome', 'Resultado: ¿cómo será cuando esté hecho?')}
+          {textArea('stakeholders', '¿Cómo se vería para cada parte interesada? (opcional)', 2)}
         </React.Fragment>
       );
     if (s.id === 'ideas')
@@ -173,107 +285,159 @@ export default function GtdGuidedProcess({
             button="Añadir"
             icon="fas fa-plus"
             testId="gtd-plan-idea"
-            onSubmit={(t) => setP('ideas', [...plan.ideas, t])}
+            onSubmit={(t) => setIdeas([...ideas, ideaOf(t)])}
           />
-          {plan.ideas.length > 0 && (
+          {ideas.length > 0 && (
             <ul className="gtd-review__list">
-              {plan.ideas.map((x, i) => (
+              {ideas.map((x, i) => (
                 <li key={i} className="gtd-guided__captured" data-testid="gtd-plan-idea">
-                  <i className="far fa-lightbulb" /> {x}
+                  <i className={ideaIcon(x)} /> {x.title}
                 </li>
               ))}
             </ul>
           )}
+          <div className="gtd-plan__triggers" data-testid="gtd-plan-triggers">
+            <div className="gtd-review__sub">
+              <i className="fas fa-list-ul" /> Lista de disparadores del proyecto
+            </div>
+            {BRAINSTORM_TRIGGERS.map((t) => (
+              <details key={t.id} className="gtd-plan__trigger" data-testid="gtd-plan-trigger">
+                <summary>{t.label}</summary>
+                <p className="gtd-review__hint">{t.hint}</p>
+              </details>
+            ))}
+          </div>
         </React.Fragment>
       );
     if (s.id === 'order')
       return (
         <React.Fragment>
           <p className="gtd-review__hint">{s.hint}</p>
-          {plan.ideas.length === 0 ? (
+          {ideas.length === 0 ? (
             <p className="gtd-review__empty" data-testid="gtd-guided-empty">
               <i className="far fa-lightbulb" /> No hay ideas (puedes seguir).
             </p>
           ) : (
             <ul className="gtd-review__list">
-              {plan.ideas.map((x, i) => (
+              {ideas.map((x, i) => (
                 <li key={i} className="gtd-review__row-wrap">
                   <div className="gtd-review__row" data-testid="gtd-plan-row">
                     <span className="gtd-review__item">
                       <span className="gtd-guided__n">{i + 1}</span>
-                      <span className="gtd-review__item-title">{x}</span>
+                      <span className="gtd-review__item-title">{x.title}</span>
                     </span>
                     {[
-                      ['up', 'fas fa-arrow-up', 'Subir', () => moveItem(plan.ideas, i, -1)],
-                      ['down', 'fas fa-arrow-down', 'Bajar', () => moveItem(plan.ideas, i, 1)],
                       [
-                        'remove',
-                        'fas fa-times',
-                        'Quitar',
-                        () => plan.ideas.filter((_y, j) => j !== i),
+                        'comp',
+                        'fas fa-sitemap',
+                        x.component ? 'Quitar de componentes' : 'Componente (con varias acciones)',
+                        () =>
+                          ideas.map((y, j) => (j === i ? { ...y, component: !y.component } : y)),
+                        x.component,
                       ],
-                    ].map(([k, icon, label, f]) => (
+                      ['up', 'fas fa-arrow-up', 'Subir', () => moveItem(ideas, i, -1)],
+                      ['down', 'fas fa-arrow-down', 'Bajar', () => moveItem(ideas, i, 1)],
+                      ...(x.existing
+                        ? []
+                        : [
+                            [
+                              'remove',
+                              'fas fa-times',
+                              'Quitar',
+                              () => ideas.filter((_y, j) => j !== i),
+                            ],
+                          ]),
+                    ].map(([k, icon, label, f, on]) => (
                       <button
                         key={k}
                         type="button"
-                        className={'gtd-review__act gtd-review__act--' + k}
-                        onClick={() => setP('ideas', f())}
+                        className={'gtd-review__act gtd-review__act--' + k + (on ? ' is-on' : '')}
+                        onClick={() => setIdeas(f())}
                         title={label}
-                        aria-label={`${label}: ${x}`}
+                        aria-label={`${label}: ${x.title}`}
+                        aria-pressed={k === 'comp' ? !!on : undefined}
                         data-testid={`gtd-plan-${k}`}
                       >
                         <i className={icon} />
                       </button>
                     ))}
                   </div>
+                  {x.component && (
+                    <div className="gtd-plan__comp" data-testid="gtd-plan-comp-box">
+                      {x.actions.length > 0 && (
+                        <ul className="gtd-review__list">
+                          {x.actions.map((a, j) => (
+                            <li key={j} className="gtd-guided__captured">
+                              <i className="far fa-circle" /> {a}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <LineInput
+                        placeholder="Acción de este componente…"
+                        button="Añadir"
+                        icon="fas fa-plus"
+                        testId="gtd-plan-comp-action"
+                        onSubmit={(t) =>
+                          setIdeas(
+                            ideas.map((y, j) =>
+                              j === i ? { ...y, actions: [...y.actions, t] } : y
+                            )
+                          )
+                        }
+                      />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </React.Fragment>
       );
-    // Primera acción
-    const fromIdeas = plan.ideas.includes(plan.first);
+    if (s.id === 'first')
+      return (
+        <React.Fragment>
+          <p className="gtd-review__hint">{s.hint}</p>
+          {planUnits(plan).map((u, i) => renderUnit(u, i))}
+        </React.Fragment>
+      );
+    // ¿Sigue en tu mente?
     return (
       <React.Fragment>
         <p className="gtd-review__hint">{s.hint}</p>
-        {plan.ideas.length > 0 && (
-          <div className="gtd-daily__chips">
-            {plan.ideas.map((x, i) => (
-              <button
-                key={i}
-                type="button"
-                className={'gtd-daily__chip' + (plan.first === x ? ' is-on' : '')}
-                aria-pressed={plan.first === x}
-                onClick={() => setP('first', x)}
-                data-testid={`gtd-plan-first-${i}`}
-              >
-                {x}
-              </button>
-            ))}
-          </div>
-        )}
-        <input
-          type="text"
-          className="gtd-guided__name"
-          value={fromIdeas ? '' : plan.first}
-          placeholder={plan.ideas.length ? 'U otra acción…' : 'Primera acción…'}
-          onChange={(e) => setP('first', e.target.value)}
-          data-testid="gtd-plan-first"
-          aria-label="Primera acción"
-        />
+        <div className="gtd-review__tools">
+          <button
+            type="button"
+            className="gtd-review__open"
+            onClick={() => go(steps.findIndex((x) => x.id === 'ideas'))}
+            data-testid="gtd-plan-mind-yes"
+          >
+            <i className="fas fa-redo" /> Sí, sigue en mi mente: seguir planificando
+          </button>
+        </div>
+        <p className="gtd-guided__total">
+          <i className="fas fa-check" /> Si no:{' '}
+          {existing ? 'guarda los cambios.' : 'crea el proyecto.'}
+        </p>
         {!plan.name.trim() && (
           <p className="gtd-guided__warn" data-testid="gtd-plan-noname">
             <i className="fas fa-exclamation-triangle" /> Falta el nombre del proyecto (paso 1).
           </p>
         )}
+        {!planReady(plan) && (
+          <p className="gtd-guided__warn" data-testid="gtd-plan-nonext">
+            <i className="fas fa-exclamation-triangle" /> Falta al menos una siguiente acción (paso
+            5).
+          </p>
+        )}
       </React.Fragment>
     );
   };
-  const canCreate = !!plan.name.trim() && !!plan.first.trim();
+  const canCreate = !!plan.name.trim() && planReady(plan);
   const createProject = () => {
     if (!canCreate) return;
-    onCreateProject(plan.name.trim(), { ...projectPlan(plan), preset });
+    if (existing) onUpdateProject(existing, plan);
+    else onCreateProject(plan.name.trim(), { ...projectPlan(plan), preset });
     onClose();
   };
 
@@ -538,7 +702,7 @@ export default function GtdGuidedProcess({
   if (kind === 'waiting') title = 'Por persona';
   if (kind === 'someday') title = '¿Activar, dejar o borrar?';
   const kicker =
-    proc.label +
+    (existing ? 'Replanificar el proyecto' : proc.label) +
     (multi && !done && kind !== 'stuck' && total ? ` · Paso ${step + 1} de ${total}` : '');
   const lastStep = step === total - 1;
   const atEnd = !multi || done || (kind === 'stuck' && !queue.length);
@@ -547,7 +711,7 @@ export default function GtdGuidedProcess({
     <section
       className="gtd-review gtd-daily gtd-guided"
       data-testid="gtd-guided"
-      aria-label={proc.label}
+      aria-label={existing ? 'Replanificar el proyecto' : proc.label}
     >
       <div className="gtd-review__head">
         <i className={proc.icon + ' gtd-review__icon'} />
@@ -596,6 +760,11 @@ export default function GtdGuidedProcess({
           <div style={{ width: `${Math.round(((step + 1) / total) * 100)}%` }} />
         </div>
       )}
+      {kind === 'project' && existing && (
+        <p className="gtd-guided__for" data-testid="gtd-plan-existing">
+          <i className="fas fa-folder" /> Proyecto: {existing.title}
+        </p>
+      )}
       {kind === 'project' && preset && (preset.objective || preset.area) && (
         <p className="gtd-guided__for" data-testid="gtd-plan-for">
           {preset.objective ? (
@@ -639,7 +808,8 @@ export default function GtdGuidedProcess({
             onClick={createProject}
             data-testid="gtd-plan-create"
           >
-            <i className="fas fa-check" /> Crear proyecto
+            <i className="fas fa-check" />{' '}
+            {existing ? 'No: guardar cambios' : 'No: crear el proyecto'}
           </button>
         ) : (
           <button
