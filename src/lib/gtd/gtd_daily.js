@@ -59,6 +59,40 @@ export const DAILY_PROCESSES = {
       },
     ],
   },
+  // (4.16) Revisión diaria oficial de Allen: calendario y tickler de hoy, Waiting vencidos y
+  // repaso de Next (acaba en «¿Qué hago ahora?»). Sin ★ ni cierre.
+  daily: {
+    label: 'Revisión diaria',
+    icon: 'fas fa-calendar-check',
+    steps: [
+      {
+        id: 'due',
+        label: 'Calendario de hoy',
+        icon: 'far fa-calendar-alt',
+        hint:
+          'Lo programado y lo que vence hoy (y lo atrasado). Es el «paisaje fijo» del día: lo que tiene que pasar hoy.',
+      },
+      {
+        id: 'tickler',
+        label: 'Tickler de hoy',
+        icon: 'fas fa-bell',
+        hint: 'Recordatorios que tocan hoy (o antes). Pásalos al Inbox para procesarlos.',
+      },
+      {
+        id: 'waiting',
+        label: 'Waiting vencidos',
+        icon: 'fas fa-hourglass-half',
+        hint: 'Esperas cuya fecha ya ha llegado: marca lo recibido o reclámalo.',
+      },
+      {
+        id: 'next',
+        label: 'Repaso de Next',
+        icon: 'fas fa-list-ul',
+        hint:
+          'Echa un vistazo a todas tus acciones siguientes. Luego elige qué hacer con «¿Qué hago ahora?» (dónde estás, tiempo, energía y prioridad).',
+      },
+    ],
+  },
   now: {
     label: '¿Qué hago ahora?',
     icon: 'fas fa-bolt',
@@ -110,6 +144,16 @@ export const planDay = (tasks, today = new Date(), tickler = []) => {
   ];
   const stars = open.filter((t) => t.priority === 'A' && usable(t)).length;
   return { due, waiting, tickler: ticklerToday, pick, stars };
+};
+
+// (4.16) Revisión diaria: lo del calendario, el tickler y los Waiting de «Planificar el día» y
+// todas las acciones de Next (con ★ primero)
+export const dailyReview = (tasks, today = new Date(), tickler = []) => {
+  const p = planDay(tasks, today, tickler);
+  const next = tasks
+    .filter((t) => isOpenAction(t) && listOf(t, today) === 'next')
+    .sort((a, b) => (a.priority === 'A' ? 0 : 1) - (b.priority === 'A' ? 0 : 1) || byTitle(a, b));
+  return { due: p.due, tickler: p.tickler, waiting: p.waiting, next };
 };
 
 // Cerrar el día

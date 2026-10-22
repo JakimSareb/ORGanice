@@ -4,7 +4,12 @@
 // Tarjeta por pasos como los demás procesos (estilos gtd-review__* / gtd-guided__*). Modelo en
 // lib/gtd/gtd_horizons.
 import React, { useState } from 'react';
-import { HORIZON_STEPS } from '../../lib/gtd/gtd_horizons';
+import {
+  HORIZON_STEPS,
+  HORIZON_TERMS,
+  HORIZON_FREQ,
+  objectivesByTerm,
+} from '../../lib/gtd/gtd_horizons';
 import { projectState } from '../../lib/gtd/gtd_model';
 import { LineInput } from './GtdGuidedProcess';
 
@@ -54,9 +59,13 @@ export default function GtdHorizonsReview({
   onAddObjective,
   onSaveText,
   onPlan,
+  onPickTerm,
+  reminders = [],
+  onReviewed,
 }) {
   const [step, setStep] = useState(Math.max(0, Math.min(HORIZON_STEPS.length, startStep)));
   const [goalArea, setGoalArea] = useState('');
+  const [goalTerm, setGoalTerm] = useState('');
   const total = HORIZON_STEPS.length;
   const done = step >= total;
   const s = HORIZON_STEPS[Math.min(step, total - 1)];
@@ -169,25 +178,60 @@ export default function GtdHorizonsReview({
           <i className="fas fa-bullseye" /> No hay objetivos. Apunta el primero.
         </p>
       ) : (
-        <ul className="gtd-review__list">
-          {view.objectives.map((o) =>
-            block(
-              o,
-              'fas fa-bullseye',
-              'goal',
-              o.title,
-              o.area && <span className="gtd-meta gtd-meta--area">{o.area}</span>
-            )
-          )}
-        </ul>
+        objectivesByTerm(view.objectives).map((g) => (
+          <React.Fragment key={g.id}>
+            <div className="gtd-review__sub" data-testid="gtd-hz-term">
+              <i className="far fa-clock" /> {g.label} ({g.items.length})
+            </div>
+            <ul className="gtd-review__list">
+              {g.items.map((o) =>
+                block(
+                  o,
+                  'fas fa-bullseye',
+                  'goal',
+                  o.title,
+                  <React.Fragment>
+                    {o.area && <span className="gtd-meta gtd-meta--area">{o.area}</span>}
+                    {onPickTerm && (
+                      <button
+                        type="button"
+                        className="gtd-meta gtd-horizons__termbtn"
+                        onClick={() => onPickTerm(o)}
+                        title="Cambiar el plazo"
+                        data-testid="gtd-hz-term-btn"
+                      >
+                        <i className="far fa-clock" /> {o.term ? g.label : 'Plazo'}
+                      </button>
+                    )}
+                  </React.Fragment>
+                )
+              )}
+            </ul>
+          </React.Fragment>
+        ))
       )}
       <LineInput
         placeholder="Objetivo nuevo…"
         button="Añadir"
         icon="fas fa-plus"
         testId="gtd-hz-goal"
-        onSubmit={(t) => onAddObjective(t, goalArea)}
+        onSubmit={(t) => onAddObjective(t, goalArea, goalTerm)}
       />
+      <label className="gtd-horizons__area">
+        <span>Plazo del objetivo nuevo</span>
+        <select
+          value={goalTerm}
+          onChange={(e) => setGoalTerm(e.target.value)}
+          data-testid="gtd-hz-goal-term"
+        >
+          <option value="">(sin plazo)</option>
+          {HORIZON_TERMS.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.label}
+            </option>
+          ))}
+        </select>
+      </label>
       {horizons.areaList.length > 0 && (
         <label className="gtd-horizons__area">
           <span>Área del objetivo nuevo</span>
@@ -215,8 +259,37 @@ export default function GtdHorizonsReview({
           ¡Hecho! Lo que hagas cada día ya apunta a algún sitio.
         </p>
       );
-    if (s.id === 'areas') return renderAreas();
-    if (s.id === 'goals') return renderGoals();
+    let main;
+    if (s.id === 'areas') main = renderAreas();
+    else if (s.id === 'goals') main = renderGoals();
+    else main = renderText();
+    return (
+      <React.Fragment>
+        {step === 0 && reminders.length > 0 && (
+          <div className="gtd-horizons__reminders" data-testid="gtd-hz-reminders">
+            {reminders.map((r) => (
+              <div key={r.id} className="gtd-horizons__reminder" data-testid={`gtd-hz-due-${r.id}`}>
+                <i className="far fa-bell" />{' '}
+                {r.kind === 'recal'
+                  ? `${r.label}: toca recalibrar (trimestral)`
+                  : `${r.label}: revisión ${r.every}`}
+                {' · '}
+                {r.since === null ? 'sin revisar aún' : `hace ${r.since} días`}
+              </div>
+            ))}
+          </div>
+        )}
+        {freq && (
+          <p className="gtd-horizons__freq" data-testid="gtd-hz-freq">
+            <i className="far fa-calendar-alt" /> Frecuencia: {freq.every}
+          </p>
+        )}
+        {main}
+      </React.Fragment>
+    );
+  };
+
+  const renderText = () => {
     const sec = horizons[s.id];
     return (
       <React.Fragment>
@@ -231,6 +304,12 @@ export default function GtdHorizonsReview({
     );
   };
 
+  const freq = !done ? HORIZON_FREQ.find((f) => f.id === s.id) : null;
+  // al pasar de un paso, ese nivel cuenta como revisado (para los avisos de frecuencia)
+  const goNext = () => {
+    if (onReviewed && !done) onReviewed(s.id);
+    setStep(step + 1);
+  };
   const lastStep = step === total - 1;
   return (
     <section
@@ -303,7 +382,7 @@ export default function GtdHorizonsReview({
           <button
             type="button"
             className="gtd-review__btn is-primary"
-            onClick={() => setStep(step + 1)}
+            onClick={goNext}
             data-testid="gtd-guided-next"
           >
             {lastStep ? 'Terminar' : 'Siguiente'} <i className="fas fa-chevron-right" />

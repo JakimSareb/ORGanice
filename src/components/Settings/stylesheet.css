@@ -406,3 +406,8 @@
   width: 5em;
   text-align: right;
 }
+
+/* (4.16) interruptores hijos de «Allen estricto» */
+.setting-container.eli-setting-child {
+  padding-left: 24px;
+}

@@ -18,6 +18,34 @@ import {
 } from './gtd_model';
 
 export const OBJECTIVE_PROPERTY = 'OBJETIVO';
+// (4.16) plazo de cada objetivo (:PLAZO:, texto) y grupos por plazo
+export const TERM_PROPERTY = 'PLAZO';
+export const HORIZON_TERMS = [
+  { id: 'quarter', label: 'Este trimestre' },
+  { id: 'year', label: 'Este año' },
+  { id: '2y', label: '1–2 años' },
+];
+export const NO_TERM = { id: 'none', label: 'Sin plazo' };
+// del texto de :PLAZO: al id (admite variantes: «trimestre», «año», «1-2 años», «2 años»…)
+export const termOf = (value) => {
+  const t = String(value || '')
+    .trim()
+    .toLowerCase();
+  if (!t) return null;
+  if (/trimestre|quarter|^q\d?$/.test(t)) return 'quarter';
+  if (/2|dos|year.?s|años/.test(t)) return '2y';
+  if (/año|year/.test(t)) return 'year';
+  return null;
+};
+export const termLabel = (id) => (HORIZON_TERMS.find((x) => x.id === id) || NO_TERM).label;
+// Objetivos agrupados por plazo (en el orden de HORIZON_TERMS; «Sin plazo» al final; sin vacíos)
+export const objectivesByTerm = (objectives) =>
+  [...HORIZON_TERMS, NO_TERM]
+    .map((g) => ({
+      ...g,
+      items: objectives.filter((o) => (o.term || 'none') === g.id),
+    }))
+    .filter((g) => g.items.length > 0);
 export const HORIZONS_NAME = 'horizons.org';
 
 // Plantilla del fichero nuevo
@@ -88,6 +116,7 @@ export const parseHorizons = (file, path) => {
         orgId: t.orgId || null,
         title: t.title,
         area: t.ownArea || null,
+        term: termOf(propertyValue(t.header, TERM_PROPERTY)),
         done: !!t.isDone,
       });
     } else if (section === 'areas') {
@@ -174,3 +203,63 @@ export const HORIZON_STEPS = [
     hint: '¿Por qué haces lo que haces? Léelo con calma.',
   },
 ];
+
+// (4.16) Frecuencias oficiales de revisión (aviso suave). `days` = cada cuántos días; `recal` = el
+// recalibrado trimestral de los objetivos. Visión y propósito: «cuando haga falta» (sin aviso).
+export const HORIZON_FREQ = [
+  { id: 'projects', label: 'Proyectos', every: 'semanal', days: 7 },
+  { id: 'areas', label: 'Áreas', every: 'mensual', days: 30 },
+  {
+    id: 'goals',
+    label: 'Objetivos',
+    every: 'anual (recalibrar cada trimestre)',
+    days: 365,
+    recal: 91,
+  },
+  { id: 'vision', label: 'Visión', every: 'cuando haga falta', days: null },
+  { id: 'purpose', label: 'Propósito y principios', every: 'cuando haga falta', days: null },
+];
+export const LS_HZ_LAST = 'eliHzLastReview';
+
+const isoDay = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
+    2,
+    '0'
+  )}`;
+const parseDay = (s) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+};
+
+export const getHzLastReview = () => {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(LS_HZ_LAST) || '{}');
+    return v && typeof v === 'object' ? v : {};
+  } catch (e) {
+    return {};
+  }
+};
+export const markHzReviewed = (level, today = new Date()) => {
+  const v = { ...getHzLastReview(), [level]: isoDay(today) };
+  try {
+    window.localStorage.setItem(LS_HZ_LAST, JSON.stringify(v));
+  } catch (e) {
+    // sin almacenamiento
+  }
+  return v;
+};
+
+// Avisos: [{ id, label, every, days (desde la última o null = nunca), kind: 'due' | 'recal' }]
+// `last` = { projects, areas, goals… } con fechas AAAA-MM-DD (projects = la revisión semanal)
+export const horizonReminders = (last = {}, today = new Date()) => {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const out = [];
+  HORIZON_FREQ.forEach((f) => {
+    if (!f.days) return;
+    const d = parseDay(last[f.id]);
+    const since = d ? Math.round((+t0 - +d) / 86400000) : null;
+    if (since === null || since >= f.days) out.push({ ...f, since, kind: 'due' });
+    else if (f.recal && since >= f.recal) out.push({ ...f, since, kind: 'recal' });
+  });
+  return out;
+};
