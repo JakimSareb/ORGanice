@@ -87,6 +87,8 @@ import {
   gtdUnassignProject,
   assignProjectEntries,
   gtdToTickler,
+  gtdTicklerAdd,
+  gtdTicklerReschedule,
   pathOfHeader,
   gtdEnsureOrgId,
 } from '../../lib/gtd/gtd_actions';
@@ -107,6 +109,13 @@ import {
   ticklerPathNear,
 } from '../../lib/gtd/gtd_process';
 import { pickProject } from '../../lib/gtd/gtd_assign';
+import {
+  groupTickler,
+  ticklerEntries,
+  shiftTicklerDate,
+  toDateInput,
+  fromDateInput,
+} from '../../lib/gtd/gtd_tickler';
 import {
   parseRapidEntry,
   findProjectByName,
@@ -1230,14 +1239,28 @@ export default function GtdView() {
   const dailyKind = daily ? daily.kind : null;
   const ticklerTasks = useMemo(
     () =>
-      dailyKind === 'plan' || dailyKind === 'daily'
+      dailyKind === 'plan' || dailyKind === 'daily' || view.id === 'tickler'
         ? buildTasks(
             files.filter((_f, p) => isTicklerPath(p)),
             []
           )
         : [],
-    [dailyKind, files]
+    // eslint-disable-next-line
+    [dailyKind, files, view.id === 'tickler']
   );
+  // (4.17) vista Tickler: tickler.org (el cargado o, si no, se carga el de junto al de entrada,
+  // sin crearlo) y el formulario de entrada nueva
+  const ticklerLoadedPath = Array.from(files.keys()).find(
+    (p) => isTicklerPath(p) && files.getIn([p, 'headers'])
+  );
+  useEffect(() => {
+    if (view.id !== 'tickler' || ticklerLoadedPath) return;
+    const near = inboxPaths[0] || inboxFile;
+    if (near) Promise.resolve(dispatch(loadFileQuietly(ticklerPathNear(near)))).catch(() => null);
+    // eslint-disable-next-line
+  }, [view.id]);
+  const [tkTitle, setTkTitle] = useState('');
+  const [tkDate, setTkDate] = useState('');
   const dailyData = useMemo(
     () =>
       dailyKind === 'plan'
@@ -2034,7 +2057,8 @@ export default function GtdView() {
     let list = kind;
     if (kind === 'current') {
       if (isProjectView) list = 'next';
-      else if (view.id === 'projects' || view.id === 'horizons') return null;
+      else if (view.id === 'projects' || view.id === 'horizons' || view.id === 'tickler')
+        return null;
       else list = view.id;
     }
     const d = {
@@ -3063,6 +3087,9 @@ export default function GtdView() {
     if (cmd.view) selectView(cmd.view);
     if (cmd.agenda) setShowAgenda(true);
     if (cmd.shortcuts) setShowShortcuts(true);
+    // (4.17) Menú ☰: Buscar (B) y Capturar con plantilla
+    if (cmd.search) focusSearch();
+    if (cmd.capture) captureWithTemplate();
     // (4.04) procesos lanzados desde el Menú ☰ (aunque su sección esté apagada). Si GTD aún
     // está cargando las tareas, se reintenta un par de veces.
     if (cmd.process || cmd.review || cmd.daily || cmd.guided) {
@@ -3772,6 +3799,7 @@ export default function GtdView() {
     gtdAreaNext: () => stepArea(1),
     gtdAreaPrev: () => stepArea(-1),
     gtdSearch: () => focusSearch(),
+    gtdSearch2: () => focusSearch(),
     gtdSync: () => syncAll(),
     gtdAgenda: () => setShowAgenda(true),
     gtdCleanup: () => cleanupNow(),
@@ -4682,7 +4710,7 @@ export default function GtdView() {
       vTitle = `Búsqueda: ${searchText.trim()}`;
     } else if (view.id === 'projects') {
       list = ['active', 'scheduled', 'sleep'].flatMap((id) => overview[id].map((r) => r.project));
-    } else if (view.id === 'horizons') {
+    } else if (view.id === 'horizons' || view.id === 'tickler') {
       list = [];
     } else {
       list = items.filter((i) => i.kind === 'task' && !i.isRef).map((i) => i.task);
@@ -5150,6 +5178,23 @@ export default function GtdView() {
       )}
     </button>
   );
+  // (4.17) Tickler: página con las entradas de tickler.org por fecha
+  const renderTicklerButton = () => (
+    <button
+      key="tickler"
+      className={
+        'gtd-side__item' + (view.id === 'tickler' && view.type !== 'project' ? ' is-on' : '')
+      }
+      onClick={(e) => {
+        selectView({ id: 'tickler' });
+        afterSideClick(e);
+      }}
+      data-testid="gtd-list-tickler"
+    >
+      <i className="far fa-bell gtd-side__icon" />
+      <span className="gtd-side__label">{sectionLabel('tickler', gtdCfg)}</span>
+    </button>
+  );
   const renderProcessButton = () => (
     <button
       key="process"
@@ -5295,6 +5340,9 @@ export default function GtdView() {
       } else if (id === 'horizons') {
         // (4.07) página de Horizontes (apagada por defecto)
         group.push(renderHorizonsButton());
+      } else if (id === 'tickler') {
+        // (4.17) página del Tickler
+        group.push(renderTicklerButton());
       } else if (id === 'projects') {
         flush();
         out.push(<React.Fragment key="projects">{renderProjectsBlock()}</React.Fragment>);
@@ -5383,6 +5431,183 @@ export default function GtdView() {
         ))}
       </div>
     );
+  // (4.17) Tickler: las entradas de tickler.org por fecha; cambiar la fecha, liberarlas ya (al
+  // Inbox o a Next), editarlas, borrarlas y añadir otras. Al llegar su fecha siguen saliendo en
+  // «Tickler de hoy» de la Revisión diaria, como siempre.
+  const ticklerSetDate = (t, d) => {
+    if (!d || !ticklerLoadedPath) return;
+    dispatch(gtdTicklerReschedule(t, ticklerLoadedPath, d));
+    toast(`Para el ${d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`);
+  };
+  const ticklerToNext = (t) => {
+    if (!tasksFile || !files.getIn([tasksFile, 'headers'])) return;
+    let moved = t;
+    if (t.path !== tasksFile) {
+      dispatch(gtdRefileTo([t], tasksFile, null));
+      moved = { ...t, path: tasksFile, key: `${tasksFile}::${t.id}` };
+    }
+    dispatch(gtdSaveTask(moved, { list: 'next', tags: tagsForList(t, 'next'), scheduled: null }));
+    toast('→ Next');
+  };
+  const ticklerAdd = async () => {
+    const title = tkTitle.trim();
+    if (!title) return;
+    const d = fromDateInput(tkDate) || shiftTicklerDate(today, 'day', 1, today);
+    const path = ticklerLoadedPath || (await ticklerFile({ path: inboxFile || tasksFile }));
+    if (!path) return;
+    if (dispatch(gtdTicklerAdd(path, title, d))) {
+      setTkTitle('');
+      toast(`Tickler: ${d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`);
+    }
+  };
+  const renderTicklerRow = (t) => {
+    const quick = [
+      ['day', '+1 d', 'Un día después'],
+      ['week', '+1 s', 'Una semana después'],
+      ['month', '+1 m', 'Un mes después'],
+    ];
+    return (
+      <div key={t.key} className="gtd-tickler__row" data-testid="gtd-tickler-row">
+        <div className="gtd-tickler__main">
+          <span className="gtd-tickler__date">
+            {t.scheduled
+              ? t.scheduled.toLocaleDateString('es-ES', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })
+              : 'Sin fecha'}
+          </span>
+          <button
+            type="button"
+            className="gtd-tickler__title"
+            onClick={() => setOpenKey(t.key)}
+            title="Editar"
+            data-testid="gtd-tickler-edit"
+          >
+            {t.title || '(sin título)'}
+          </button>
+        </div>
+        <div className="gtd-tickler__acts">
+          <input
+            type="date"
+            className="gtd-tickler__input"
+            value={toDateInput(t.scheduled)}
+            onChange={(e) => ticklerSetDate(t, fromDateInput(e.target.value))}
+            aria-label="Fecha"
+            data-testid="gtd-tickler-date"
+          />
+          {quick.map(([unit, label, hint]) => (
+            <button
+              key={unit}
+              type="button"
+              className="gtd-tickler__btn"
+              onClick={() => ticklerSetDate(t, shiftTicklerDate(t.scheduled, unit, 1, today))}
+              title={hint}
+              data-testid={`gtd-tickler-plus-${unit}`}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="gtd-tickler__btn"
+            onClick={() => dailyMove(t, 'inbox')}
+            title="Liberarla ya: al Inbox"
+            data-testid="gtd-tickler-inbox"
+          >
+            <i className="fas fa-inbox" /> Inbox
+          </button>
+          <button
+            type="button"
+            className="gtd-tickler__btn"
+            onClick={() => ticklerToNext(t)}
+            title="Liberarla ya: a Next"
+            data-testid="gtd-tickler-next"
+          >
+            <i className="fas fa-play" /> Next
+          </button>
+          <button
+            type="button"
+            className="gtd-tickler__btn is-danger"
+            onClick={() => deleteTask(t)}
+            title="Borrar"
+            aria-label="Borrar"
+            data-testid="gtd-tickler-delete"
+          >
+            <i className="fas fa-trash" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+  const renderTicklerPage = () => {
+    const groups = ticklerLoadedPath ? groupTickler(ticklerTasks, today) : [];
+    return (
+      <div className="gtd-tickler" data-testid="gtd-tickler">
+        <form
+          className="gtd-tickler__add"
+          onSubmit={(e) => {
+            e.preventDefault();
+            ticklerAdd();
+          }}
+        >
+          <input
+            type="text"
+            className="gtd-tickler__input gtd-tickler__new"
+            value={tkTitle}
+            onChange={(e) => setTkTitle(e.target.value)}
+            placeholder="Recordármelo…"
+            data-testid="gtd-tickler-new-title"
+          />
+          <input
+            type="date"
+            className="gtd-tickler__input"
+            value={tkDate || toDateInput(shiftTicklerDate(today, 'day', 1, today))}
+            onChange={(e) => setTkDate(e.target.value)}
+            aria-label="Fecha"
+            data-testid="gtd-tickler-new-date"
+          />
+          <button
+            type="submit"
+            className="gtd-review__btn is-primary"
+            disabled={!tkTitle.trim()}
+            data-testid="gtd-tickler-add"
+          >
+            <i className="fas fa-plus" /> Añadir
+          </button>
+        </form>
+        {!ticklerLoadedPath && (
+          <div className="gtd-empty" data-testid="gtd-tickler-nofile">
+            <p>No se encuentra tickler.org (al añadir la primera entrada se puede crear).</p>
+          </div>
+        )}
+        {ticklerLoadedPath && !groups.length && (
+          <div className="gtd-empty" data-testid="gtd-tickler-empty">
+            El Tickler está vacío.
+          </div>
+        )}
+        {groups.map((g) => (
+          <section
+            key={g.id}
+            className="gtd-tickler__group"
+            data-testid={`gtd-tickler-group-${g.id}`}
+          >
+            <div className="gtd-section gtd-section--group">
+              {g.label} <span className="gtd-overview__n">{g.list.length}</span>
+            </div>
+            {g.list.map((t) =>
+              openKey === t.key ? (
+                <React.Fragment key={t.key}>{renderEditor(t)}</React.Fragment>
+              ) : (
+                renderTicklerRow(t)
+              )
+            )}
+          </section>
+        ))}
+      </div>
+    );
+  };
   const renderHorizonsPage = () => {
     if (!horizonsFile || !horizonsFile.get('headers'))
       return (
@@ -5452,9 +5677,9 @@ export default function GtdView() {
   const loading = pendingLoads;
   const isTrash = view.id === 'trash';
   // (3.0) «Nuevo elemento» y Entrada rápida: en las listas donde se crean cosas
-  const canCreate = !['logbook', 'trash', 'projects', 'horizons'].includes(view.id);
+  const canCreate = !['logbook', 'trash', 'projects', 'horizons', 'tickler'].includes(view.id);
   // 3.36: lupa de la cabecera (filtro de la sección); el Logbook tiene su propio buscador
-  const canFilterSection = !['logbook', 'projects', 'horizons'].includes(view.id);
+  const canFilterSection = !['logbook', 'projects', 'horizons', 'tickler'].includes(view.id);
   // 3.36 (a): resultados del buscador del menú lateral, agrupados por sección (plegables)
   const openSearchResult = (group, task) => {
     setSearchText('');
@@ -5896,6 +6121,8 @@ export default function GtdView() {
                 ? hView
                   ? hView.objectives.length + hView.areas.length
                   : 0
+                : view.id === 'tickler'
+                ? ticklerEntries(ticklerTasks).length
                 : visible.length}
             </span>
           </h1>
@@ -6350,9 +6577,10 @@ export default function GtdView() {
         )}
 
         {view.id === 'horizons' && renderHorizonsPage()}
+        {view.id === 'tickler' && renderTicklerPage()}
 
         {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
-        {hasFacets && view.id !== 'projects' && view.id !== 'horizons' && (
+        {hasFacets && view.id !== 'projects' && view.id !== 'horizons' && view.id !== 'tickler' && (
           <div className="gtd-filterbar" data-testid="gtd-filters">
             {Array.from(new Set([...facets.tags, ...filters.tags, ...filters.notTags]))
               .filter((t) => t !== NO_TAGS)
@@ -6589,7 +6817,11 @@ export default function GtdView() {
 
         <div
           className={'gtd-list' + (reorderingKey ? ' is-reordering' : '')}
-          style={view.id === 'projects' || view.id === 'horizons' ? { display: 'none' } : undefined}
+          style={
+            view.id === 'projects' || view.id === 'horizons' || view.id === 'tickler'
+              ? { display: 'none' }
+              : undefined
+          }
           data-reorder-container=""
           onClick={(e) => {
             // clic en el hueco de la lista: quita la selección

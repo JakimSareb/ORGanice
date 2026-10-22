@@ -19,15 +19,16 @@ import {
 describe('4.12 Menú ☰', () => {
   test('normalizeLayout completa y limpia', () => {
     const l = normalizeLayout({ order: ['help', 'x', 'help'], hidden: ['agenda', 'zz'] });
-    expect(l.order[0]).toBe('help');
-    expect(l.order).toHaveLength(9);
+    // (4.17) «Buscar (B)», nueva, va la primera (no tiene ninguna delante)
+    expect(l.order.slice(0, 2)).toEqual(['find', 'help']);
+    expect(l.order).toHaveLength(11);
     expect(l.hidden).toEqual(['agenda']);
   });
 
   test('mover y ocultar', () => {
     let l = normalizeLayout(null);
     l = moveEntry(l, 'agenda', -1);
-    expect(l.order.slice(0, 2)).toEqual(['agenda', 'search']);
+    expect(l.order.slice(0, 2)).toEqual(['agenda', 'find']);
     expect(moveEntry(l, 'agenda', -1).order[0]).toBe('agenda');
     l = toggleHidden(l, 'search');
     expect(l.hidden).toEqual(['search']);

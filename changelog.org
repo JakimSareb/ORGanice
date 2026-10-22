@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.17 (octubre de 2026)
+** Menú ☰
+- Nuevo *Buscar (B)*, el primero del Menú (icono de libro con lupa): lo mismo que la tecla *b*. En un documento abre la búsqueda de cabeceras; en GTD, su buscador (en GTD la tecla *b* también vale, además de */*). La entrada de antes (paleta de comandos, Ctrl+Espacio) sigue en el Menú con el nombre *Paleta de comandos*.
+- *Capturar con plantilla* pasa de la barra de abajo de Documentos al Menú ☰ (justo debajo de Agenda), en Documentos y en GTD. Las teclas no cambian (*c* en Documentos, *t* en GTD). En el Modo Notas no sale.
+- Las dos entradas se ordenan y se ocultan como las demás (Ajustes → Apariencia → Menú ☰).
+** GTD: Tickler
+- Nueva sección *Tickler* en el menú lateral de GTD (se oculta o cambia de sitio en Ajustes, como las demás): las entradas de =tickler.org= agrupadas por cuándo aparecen (hoy o antes, mañana, cada día de este mes y los meses siguientes), con la fecha bien a la vista.
+- En cada entrada, sin salir: elegir otra *fecha* o sumar *+1 día*, *+1 semana* o *+1 mes* (si cambia de mes, se mueve bajo ese mes del fichero), *liberarla ya* al *Inbox* o a *Next*, *editarla* (tocando su título: el editor de siempre) y *borrarla*. Arriba, un cuadro para *añadir* una entrada nueva con su fecha (el año y el mes se crean si faltan).
+- El día que toca, la entrada sigue saliendo como siempre en *Tickler de hoy* de la Revisión diaria (y de Planificar el día), que la pasa al Inbox.
+
 * 4.16 (octubre de 2026)
 ** GTD: procesos fieles a David Allen
 - Nueva *Revisión diaria* (Menú ☰ › Procesos › Diarios), la oficial de Allen: calendario de hoy (lo programado, lo que vence y lo atrasado), Tickler de hoy (*Al Inbox*), Waiting vencidos (✓ recibida, → mañana) y repaso de todas las acciones de Next, que acaba con un botón a *¿Qué hago ahora?*.

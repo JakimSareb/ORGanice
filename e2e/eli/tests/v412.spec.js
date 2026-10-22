@@ -14,7 +14,8 @@ test('4.12: el Menú ☰ sigue el orden guardado y no muestra las entradas apaga
   const { page } = app;
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org', {
     localStorage: {
-      eliMenuLayout: JSON.stringify({ order: ['help', 'search'], hidden: ['search'] }),
+      // (4.17) «Buscar (B)» (nueva) iría la primera: también apagada
+      eliMenuLayout: JSON.stringify({ order: ['help', 'search'], hidden: ['search', 'find'] }),
     },
   });
   await expect(page.locator('text=Segunda').first()).toBeVisible({ timeout: 20000 });
@@ -37,7 +38,7 @@ test('4.12: Ajustes › Apariencia: Menú ☰ y margen izquierdo se guardan', as
   await expect(page.locator('[data-testid=eli-setting-menu-layout]')).toBeVisible({
     timeout: 20000,
   });
-  await page.locator('[data-testid=eli-menu-layout-down-search]').click();
+  await page.locator('[data-testid=eli-menu-layout-down-find]').click();
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('eliMenuLayout')).order[0])
   ).toBe('agenda');

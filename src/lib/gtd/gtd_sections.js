@@ -10,6 +10,7 @@
 //   (fechas, ★, terminadas) y, si se quiere, reglas extra que añaden tareas.
 // - 'agenda' y 'projects': solo se pueden mostrar/ocultar y ordenar.
 // - 'horizons' (4.07): página con los objetivos y las áreas del fichero de horizontes.
+// - 'tickler' (4.17): página con las entradas de tickler.org por fecha.
 // - 'action' (3.44): botones que abren algo (Procesar Inbox, Revisión semanal): igual que Agenda.
 //
 // Ticks de cada sección: habits (incluir hábitos), future (incluir tareas programadas a futuro),
@@ -26,6 +27,8 @@ export const SECTION_DEFS = [
   { id: 'scheduled', kind: 'view', label: 'Scheduled', icon: 'far fa-calendar-alt' },
   { id: 'deadline', kind: 'view', label: 'Deadline', icon: 'fas fa-flag' },
   { id: 'someday', kind: 'list', label: 'Someday', icon: 'fas fa-cloud' },
+  // (4.17) Tickler: las entradas de tickler.org por fecha (cambiar fecha, liberar, añadir…)
+  { id: 'tickler', kind: 'tickler', label: 'Tickler', icon: 'far fa-bell' },
   { id: 'projects', kind: 'projects', label: 'Proyectos', icon: 'fas fa-project-diagram' },
   // (4.07) Horizontes (objetivos y áreas con sus proyectos): apagada por defecto
   { id: 'horizons', kind: 'horizons', label: 'Horizontes', icon: 'fas fa-binoculars' },
@@ -40,7 +43,7 @@ export const SECTION_DEFS = [
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);
 // (3.44) Las que no son listas de tareas (botones que abren algo): Agenda, Procesar Inbox, Revisión
 export const ACTION_SECTION_IDS = SECTION_DEFS.filter(
-  (s) => s.kind === 'agenda' || s.kind === 'action' || s.kind === 'horizons'
+  (s) => s.kind === 'agenda' || s.kind === 'action' || s.kind === 'horizons' || s.kind === 'tickler'
 ).map((s) => s.id);
 export const isActionSection = (id) => ACTION_SECTION_IDS.includes(id);
 
@@ -100,6 +103,7 @@ export const DEFAULT_SECTIONS = {
   scheduled: { ...base, habits: true, future: true, futurePriority: true, parked: false },
   deadline: { ...base, ...listTicks },
   someday: { ...base, ...listTicks, states: ['MAYBE'] },
+  tickler: { ...base },
   projects: {
     ...base,
     allProjects: true,

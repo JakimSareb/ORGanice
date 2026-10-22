@@ -1010,19 +1010,9 @@ export const openSubtasksOf = (tasks, task) => {
   return out;
 };
 
-// (3.40) «Procesar Inbox» → Tickler: la tarea pasa (sin estado y con SCHEDULED = el día del
-// recordatorio) bajo el mes de su año en tickler.org; año y mes se crean si faltan (lib/gtd/
-// gtd_process `ticklerPlan`). Todo en un solo paso de Deshacer.
-export const gtdToTickler = (task, ticklerPath, date, time, tags) => (dispatch, getState) => {
-  const files = getState().org.present.get('files');
-  const headers = files.getIn([ticklerPath, 'headers']);
-  if (!headers || !date) return false;
-  const changes = { scheduled: date, scheduledTime: time || '' };
-  if (task.keyword) changes.keyword = null;
-  if (tags) changes.tags = tags;
-  const own = buildSaveTask(getState, task, changes);
-  const plan = ticklerPlan(headers, date);
-  const create = plan.create.map((s) =>
+// (4.17) Pasos para crear el año y el mes de tickler.org que falten (de `ticklerPlan`)
+const ticklerCreateActions = (plan) =>
+  plan.create.map((s) =>
     s.kind === 'add'
       ? {
           type: 'ELI_ADD_HEADER_AT',
@@ -1040,6 +1030,20 @@ export const gtdToTickler = (task, ticklerPath, date, time, tags) => (dispatch, 
           dirtying: true,
         }
   );
+
+// (3.40) «Procesar Inbox» → Tickler: la tarea pasa (sin estado y con SCHEDULED = el día del
+// recordatorio) bajo el mes de su año en tickler.org; año y mes se crean si faltan (lib/gtd/
+// gtd_process `ticklerPlan`). Todo en un solo paso de Deshacer.
+export const gtdToTickler = (task, ticklerPath, date, time, tags) => (dispatch, getState) => {
+  const files = getState().org.present.get('files');
+  const headers = files.getIn([ticklerPath, 'headers']);
+  if (!headers || !date) return false;
+  const changes = { scheduled: date, scheduledTime: time || '' };
+  if (task.keyword) changes.keyword = null;
+  if (tags) changes.tags = tags;
+  const own = buildSaveTask(getState, task, changes);
+  const plan = ticklerPlan(headers, date);
+  const create = ticklerCreateActions(plan);
   const actions = [];
   if (own) actions.push(inFile(own.path, own.inner));
   if (create.length) actions.push(inFile(ticklerPath, create));
@@ -1055,6 +1059,36 @@ export const gtdToTickler = (task, ticklerPath, date, time, tags) => (dispatch, 
   syncFile(dispatch, task.path);
   if (ticklerPath !== task.path) syncFile(dispatch, ticklerPath);
   return true;
+};
+
+// (4.17) Vista Tickler: entrada nueva (título + fecha) bajo su mes de tickler.org
+export const gtdTicklerAdd = (ticklerPath, title, date) => (dispatch, getState) => {
+  const headers = getState().org.present.getIn(['files', ticklerPath, 'headers']);
+  if (!headers || !date || !(title || '').trim()) return null;
+  const plan = ticklerPlan(headers, date);
+  const create = ticklerCreateActions(plan);
+  if (create.length) dispatch(inFile(ticklerPath, create));
+  return dispatch(
+    gtdAddTask(
+      { path: ticklerPath, parentId: plan.monthId },
+      { title: title.trim(), keyword: null, scheduled: date, created: true }
+    )
+  );
+};
+
+// (4.17) Vista Tickler: otra fecha. En el mismo mes solo cambia SCHEDULED; si cambia de mes, la
+// entrada se mueve bajo su mes nuevo (como al mandarla al Tickler desde Procesar Inbox)
+export const gtdTicklerReschedule = (task, ticklerPath, date) => (dispatch) => {
+  if (!task || !date) return false;
+  const sameMonth =
+    task.scheduled &&
+    task.scheduled.getFullYear() === date.getFullYear() &&
+    task.scheduled.getMonth() === date.getMonth();
+  if (sameMonth || task.path !== ticklerPath) {
+    dispatch(gtdSaveTask(task, { scheduled: date }));
+    return true;
+  }
+  return dispatch(gtdToTickler(task, ticklerPath, date, '', null));
 };
 
 // (3.40) Dónde está ahora una cabecera (tras pasar del Inbox al fichero de tareas): su ruta

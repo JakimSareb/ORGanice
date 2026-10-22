@@ -347,7 +347,6 @@ export default function EliDocBar({
     window.__eliGtdPending = { openTask: { path, id } };
     window.dispatchEvent(new CustomEvent('eli:open-gtd'));
   };
-  const openCapture = () => window.dispatchEvent(new CustomEvent('eli:capture-menu'));
   // (3.03) Editar las notas (descripción) en el sitio
   const editNotes = () => {
     org('openHeader', id);
@@ -928,12 +927,7 @@ export default function EliDocBar({
                   label: 'Abrir en GTD',
                   onClick: openInGtd,
                 },
-                {
-                  id: 'capture',
-                  icon: 'fas fa-inbox',
-                  label: 'Capturar (plantillas)',
-                  onClick: openCapture,
-                },
+                // (4.17) Capturar (plantillas): ahora en el Menú ☰ de arriba
               ]),
           { id: 'sep-more', sep: true },
           { id: 'delete', icon: 'fas fa-trash', label: 'Borrar', onClick: remove, danger: true },
@@ -1253,17 +1247,8 @@ export default function EliDocBar({
           onClick: toggleDocLock,
         },
       ]
-    : notes
-    ? []
-    : [
-        {
-          id: 'capture',
-          icon: 'fas fa-inbox',
-          badge: '+',
-          title: 'Capturar (plantillas de captura)',
-          onClick: openCapture,
-        },
-      ];
+    : // (4.17) Capturar (plantillas) pasó al Menú ☰ de arriba (tecla c, igual)
+      [];
   const rowItems = external
     ? external.items
     : table

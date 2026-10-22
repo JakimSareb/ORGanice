@@ -1252,33 +1252,6 @@ exports[`Render all views Org Functionality Renders everything starting from an 
         />
       </div>
     </div>
-    <div
-      class="eli-docbar is-desk is-idle"
-      data-testid="eli-docbar"
-    >
-      <div
-        class="eli-docbar__row"
-        data-testid="eli-docbar-row-idle"
-      >
-        <button
-          aria-label="Capturar (plantillas de captura)"
-          class="eli-docbar__btn"
-          data-bid="capture"
-          data-testid="eli-docbar-capture"
-          title="Capturar (plantillas de captura)"
-          type="button"
-        >
-          <i
-            class="fas fa-inbox"
-          />
-          <span
-            class="eli-docbar__badge"
-          >
-            +
-          </span>
-        </button>
-      </div>
-    </div>
   </div>
 </div>
 `;

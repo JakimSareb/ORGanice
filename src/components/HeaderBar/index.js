@@ -846,16 +846,43 @@ class HeaderBar extends PureComponent {
           },
       ].filter(Boolean);
       const split = !notes && this.canOpenSplitView();
-      // (4.01) «Buscar», la primera opción; «Ajustes», la última
+      // (4.01) «Buscar», la primera opción; «Ajustes», la última. (4.17) «Buscar (B)»: lo mismo
+      // que la tecla B (en un documento, la búsqueda de cabeceras; en GTD, su buscador); la de
+      // antes (paleta de comandos, Ctrl+K) sigue aparte como «Paleta de comandos»
       const moreItems = isAuthenticated
         ? [
+            (inFile || inGtd) && {
+              icon: 'fas fa-book eli-icon-book-search',
+              label: 'Buscar (B)',
+              onClick: () =>
+                inGtd
+                  ? window.dispatchEvent(new CustomEvent('eli:gtd', { detail: { search: true } }))
+                  : this.props.base.activatePopup('search'),
+              testId: 'eli-find-menu',
+              menuId: 'find',
+            },
             {
               icon: 'fas fa-search',
-              label: 'Buscar',
+              label: 'Paleta de comandos',
               onClick: openPalette,
               testId: 'eli-palette-btn',
               menuId: 'search',
             },
+            // (4.17) Capturar con plantilla (antes en la barra de abajo de Documentos; en GTD, la
+            // tecla t). En el Modo Notas no sale (como antes en la barra)
+            (inRealFile || inGtd) &&
+              !notes && {
+                icon: 'fas fa-inbox',
+                label: inGtd ? 'Capturar con plantilla (T)' : 'Capturar con plantilla (C)',
+                onClick: () =>
+                  inGtd
+                    ? window.dispatchEvent(
+                        new CustomEvent('eli:gtd', { detail: { capture: true } })
+                      )
+                    : window.dispatchEvent(new CustomEvent('eli:capture-menu')),
+                testId: 'eli-capture-menu',
+                menuId: 'capture',
+              },
             // (4.01) la agenda (antes solo con la tecla «a»); (4.04) la segunda, también en GTD.
             // En el Modo Notas no sale
             // (4.09) en el Modo Notas también, salvo que se apague en Ajustes › Modo Notas
