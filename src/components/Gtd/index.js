@@ -117,7 +117,7 @@ import {
 import GtdMenu from './GtdMenu';
 import GtdWeeklyReview from './GtdWeeklyReview';
 import GtdDailyProcess from './GtdDailyProcess';
-import { planDay, closeDay, DAILY_PROCESSES } from '../../lib/gtd/gtd_daily';
+import { planDay, closeDay, dailyReview, DAILY_PROCESSES } from '../../lib/gtd/gtd_daily';
 import GtdGuidedProcess from './GtdGuidedProcess';
 import {
   GUIDED_PROCESSES,
@@ -137,9 +137,16 @@ import {
   missingAreas,
   objectivePickItems,
   objectiveRefOf,
+  TERM_PROPERTY,
+  HORIZON_TERMS,
+  NO_TERM,
+  objectivesByTerm,
+  horizonReminders,
+  getHzLastReview,
+  markHzReviewed,
 } from '../../lib/gtd/gtd_horizons';
 import { weeklyReview, reviewSteps } from '../../lib/gtd/gtd_review';
-import { strictOn } from '../../lib/gtd/gtd_strict';
+import { strictOn, NOT_ALLEN_DAILY } from '../../lib/gtd/gtd_strict';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
 import EliOrgTable from '../EliOrgTable';
@@ -1223,7 +1230,7 @@ export default function GtdView() {
   const dailyKind = daily ? daily.kind : null;
   const ticklerTasks = useMemo(
     () =>
-      dailyKind === 'plan'
+      dailyKind === 'plan' || dailyKind === 'daily'
         ? buildTasks(
             files.filter((_f, p) => isTicklerPath(p)),
             []
@@ -1235,6 +1242,8 @@ export default function GtdView() {
     () =>
       dailyKind === 'plan'
         ? planDay(tasks, today, ticklerTasks)
+        : dailyKind === 'daily'
+        ? dailyReview(tasks, today, ticklerTasks)
         : dailyKind === 'close'
         ? closeDay(tasks, today)
         : null,
@@ -1282,6 +1291,19 @@ export default function GtdView() {
     tasks,
     today,
   ]);
+  // (4.16) avisos de frecuencias de revisión (proyectos = la revisión semanal)
+  const [hzLast, setHzLast] = useState(() => getHzLastReview());
+  const hzReminders = useMemo(() => {
+    if (!horizonsBusy) return [];
+    const d = lastReview ? new Date(lastReview) : null;
+    const projects =
+      d && !isNaN(+d)
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+            d.getDate()
+          ).padStart(2, '0')}`
+        : null;
+    return horizonReminders({ ...hzLast, projects }, today);
+  }, [horizonsBusy, hzLast, lastReview, today]);
   // ORG Mode para Eli: proyectos activos, programados (SCHEDULED a futuro) y dormidos (:STATUS: sleep)
   const projectGroups = useMemo(() => {
     const g = { active: [], scheduled: [], sleep: [] };
@@ -3189,7 +3211,7 @@ export default function GtdView() {
         kind
       ];
       if (list) goList(list);
-    } else if (kind === 'plan') {
+    } else if (kind === 'plan' || kind === 'daily') {
       // el Tickler: el cargado o, si no, junto al fichero de entrada (sin crearlo)
       const present = store.getState().org.present;
       const loaded = Array.from(present.get('files').keys()).some(
@@ -3482,14 +3504,14 @@ export default function GtdView() {
     toast('Área añadida');
     return true;
   };
-  const horizonsAddObjective = (title, area) => {
+  const horizonsAddObjective = (title, area, term) => {
     const parentId = horizonSection('goals');
     if (!parentId) return false;
+    const props = { ID: newOrgId() };
+    const tl = HORIZON_TERMS.find((x) => x.id === term);
+    if (tl) props[TERM_PROPERTY] = tl.label;
     const id = dispatch(
-      gtdAddTask(
-        { path: horizonsPath, parentId },
-        { title, area: area || undefined, props: { ID: newOrgId() } }
-      )
+      gtdAddTask({ path: horizonsPath, parentId }, { title, area: area || undefined, props })
     );
     if (!id) return false;
     toast('Objetivo añadido');
@@ -3501,6 +3523,24 @@ export default function GtdView() {
     else dispatch(gtdAddTask({ path: horizonsPath }, { title: HORIZON_TITLES[kind], notes: text }));
     toast('Guardado');
   };
+  // (4.16) plazo de un objetivo (:PLAZO:)
+  const pickTerm = async (o) => {
+    const id = await askPick({
+      title: 'Plazo del objetivo',
+      message: o.title,
+      placeholder: 'Buscar plazo…',
+      items: [...HORIZON_TERMS, NO_TERM].map((x) => ({
+        id: x.id,
+        label: x.label,
+        hint: x.id === (o.term || 'none') ? 'Ahora' : '',
+      })),
+    });
+    if (!id) return;
+    const tl = HORIZON_TERMS.find((x) => x.id === id);
+    dispatch(gtdSaveTask(o.task, { props: { [TERM_PROPERTY]: tl ? tl.label : null } }));
+    toast(tl ? `Plazo: ${tl.label}` : 'Sin plazo');
+  };
+  const horizonsReviewed = (level) => setHzLast(markHzReviewed(level, today));
   // «Planificar un proyecto nuevo» (4.06) para un objetivo o un área; al terminar se vuelve aquí
   const horizonsPlan = (preset, step) =>
     startDaily('project', { preset, back: { kind: 'horizons', step } });
@@ -5311,6 +5351,38 @@ export default function GtdView() {
       {x.projects.map(renderHorizonProject)}
     </section>
   );
+  // (4.16) botón con el plazo de un objetivo (cambia con un buscador)
+  const renderTermButton = (o) => (
+    <button
+      type="button"
+      className="gtd-meta gtd-horizons__termbtn"
+      onClick={(e) => {
+        e.stopPropagation();
+        pickTerm(o);
+      }}
+      title="Cambiar el plazo"
+      data-testid="gtd-hz-term-btn"
+    >
+      <i className="far fa-clock" />{' '}
+      {o.term ? HORIZON_TERMS.find((x) => x.id === o.term).label : 'Plazo'}
+    </button>
+  );
+  // (4.16) avisos suaves de las frecuencias oficiales
+  const renderHzReminders = () =>
+    hzReminders.length > 0 && (
+      <div className="gtd-horizons__reminders" data-testid="gtd-hz-reminders">
+        {hzReminders.map((r) => (
+          <div key={r.id} className="gtd-horizons__reminder" data-testid={`gtd-hz-due-${r.id}`}>
+            <i className="far fa-bell" />{' '}
+            {r.kind === 'recal'
+              ? `${r.label}: toca recalibrar (trimestral)`
+              : `${r.label}: revisión ${r.every}`}
+            {' · '}
+            {r.since === null ? 'sin revisar aún' : `hace ${r.since} días`}
+          </div>
+        ))}
+      </div>
+    );
   const renderHorizonsPage = () => {
     if (!horizonsFile || !horizonsFile.get('headers'))
       return (
@@ -5329,19 +5401,30 @@ export default function GtdView() {
     const v = hView || { objectives: [], areas: [], loose: [] };
     return (
       <div className="gtd-projects-overview gtd-horizons" data-testid="gtd-horizons">
+        {renderHzReminders()}
         <div className="gtd-section gtd-section--group">
           <i className="fas fa-bullseye" /> Objetivos
         </div>
         {v.objectives.length ? (
-          v.objectives.map((o) =>
-            renderHorizonGroup(
-              o,
-              'fas fa-bullseye',
-              o.title,
-              'goal',
-              o.area && <span className="gtd-meta gtd-meta--area">{o.area}</span>
-            )
-          )
+          objectivesByTerm(v.objectives).map((g) => (
+            <React.Fragment key={g.id}>
+              <div className="gtd-horizons__term" data-testid="gtd-hz-term">
+                <i className="far fa-clock" /> {g.label}
+              </div>
+              {g.items.map((o) =>
+                renderHorizonGroup(
+                  o,
+                  'fas fa-bullseye',
+                  o.title,
+                  'goal',
+                  <React.Fragment>
+                    {o.area && <span className="gtd-meta gtd-meta--area">{o.area}</span>}
+                    {renderTermButton(o)}
+                  </React.Fragment>
+                )
+              )}
+            </React.Fragment>
+          ))
         ) : (
           <div className="gtd-empty">No hay objetivos (cabeceras «**» bajo «* Objetivos»).</div>
         )}
@@ -6021,6 +6104,9 @@ export default function GtdView() {
             onAddObjective={horizonsAddObjective}
             onSaveText={horizonsSaveText}
             onPlan={horizonsPlan}
+            onPickTerm={pickTerm}
+            reminders={hzReminders}
+            onReviewed={horizonsReviewed}
           />
         )}
         {daily && GUIDED_PROCESSES[daily.kind] && daily.kind !== 'horizons' && (
@@ -6059,6 +6145,8 @@ export default function GtdView() {
             onMove={dailyMove}
             onCapture={() => openDraft('inbox')}
             onProcess={startProcess}
+            onNow={() => startDaily('now')}
+            notAllen={!!NOT_ALLEN_DAILY[daily.kind] && strictOn()}
           />
         )}
         {proc && (

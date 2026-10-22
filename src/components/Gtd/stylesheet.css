@@ -4599,3 +4599,43 @@ input.gtd-proc__input:not([type]) {
 .gtd-review__act--comp.is-on {
   color: var(--orange, #cb4b16);
 }
+
+/* (4.16) Horizontes: plazos y avisos de frecuencia; Revisión diaria */
+.gtd-horizons__term {
+  margin: 10px 0 2px;
+  padding: 0 8px;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+.gtd-horizons__termbtn {
+  margin-left: 6px;
+  border: 1px solid currentColor;
+  background: none;
+  color: inherit;
+  border-radius: 8px;
+  padding: 0 6px;
+  font-size: 0.75em;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.gtd-horizons__reminders {
+  margin: 6px 0 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--orange, #cb4b16);
+  font-size: 0.85em;
+}
+.gtd-horizons__reminder + .gtd-horizons__reminder {
+  margin-top: 2px;
+}
+.gtd-horizons__freq {
+  margin: 0 0 6px;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+.gtd-daily__notallen {
+  font-size: 0.8em;
+  opacity: 0.75;
+}

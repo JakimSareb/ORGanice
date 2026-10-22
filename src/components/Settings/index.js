@@ -1,6 +1,6 @@
 import React from 'react';
 import { getProcessMode, setProcessMode } from '../../lib/gtd/gtd_process';
-import { strictOn, setStrictOn } from '../../lib/gtd/gtd_strict';
+import { strictOn, setStrictOn, dailyOptIn, setDailyOptIn } from '../../lib/gtd/gtd_strict';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -360,23 +360,52 @@ const EliProcessModeSettings = () => {
 const EliStrictSetting = () => {
   const [on, setOn] = React.useState(strictOn());
   return (
-    <div className="setting-container" data-testid="eli-setting-allen-strict">
-      <div className="setting-label">
-        Allen estricto
-        <div className="setting-label__description">
-          Revisión semanal, Procesar Inbox y Volcado mental siguen solo lo oficial de David Allen
-          (sin pasos propios ni la lista Todo). No cambia tus listas ni tus ficheros.
+    <>
+      <div className="setting-container" data-testid="eli-setting-allen-strict">
+        <div className="setting-label">
+          Allen estricto
+          <div className="setting-label__description">
+            Revisión semanal, Procesar Inbox y Volcado mental siguen solo lo oficial de David Allen
+            (sin pasos propios ni la lista Todo); «Planificar el día» y «Cerrar el día» se ocultan
+            salvo que los actives aquí. No cambia tus listas ni tus ficheros.
+          </div>
         </div>
+        <Switch
+          isEnabled={on}
+          onToggle={() => {
+            setStrictOn(!on);
+            setOn(strictOn());
+          }}
+        />
+      </div>
+      <EliStrictDailySettings strict={on} />
+    </>
+  );
+};
+
+// (4.16) dentro de «Allen estricto»: mostrar «Planificar el día» / «Cerrar el día» (no son de Allen;
+// apagados por defecto). Con el estricto apagado se ven siempre y no salen estos interruptores.
+const EliStrictDailySettings = ({ strict }) => {
+  const [, setRev] = React.useState(0);
+  if (!strict) return null;
+  return [
+    ['plan', 'eli-setting-allen-plan-day', 'Mostrar «Planificar el día»'],
+    ['close', 'eli-setting-allen-close-day', 'Mostrar «Cerrar el día»'],
+  ].map(([kind, testId, label]) => (
+    <div key={kind} className="setting-container eli-setting-child" data-testid={testId}>
+      <div className="setting-label">
+        {label}
+        <div className="setting-label__description">No es de Allen (Menú ☰ › Procesos).</div>
       </div>
       <Switch
-        isEnabled={on}
+        isEnabled={dailyOptIn(kind)}
         onToggle={() => {
-          setStrictOn(!on);
-          setOn(strictOn());
+          setDailyOptIn(kind, !dailyOptIn(kind));
+          setRev((r) => r + 1);
         }}
       />
     </div>
-  );
+  ));
 };
 
 // (3.25) avisos de fechas (vence/programada) con notificaciones, en este dispositivo

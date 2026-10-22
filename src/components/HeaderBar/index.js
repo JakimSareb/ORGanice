@@ -1,3 +1,4 @@
+import { dailyShown } from '../../lib/gtd/gtd_strict';
 import { isDocLocked, toggleDocLock, subscribeDocLock } from '../../lib/eli_doc_lock';
 import { openRawEditor, openMoonPhases, openFavorites } from '../EliTools';
 import { openAcomodadores } from '../EliAcomodadores';
@@ -635,12 +636,21 @@ class HeaderBar extends PureComponent {
             label: 'Planificar el día',
             onClick: () => run({ daily: 'plan' }),
             testId: 'eli-proc-plan',
+            daily: 'plan',
           },
           {
             icon: 'fas fa-moon',
             label: 'Cerrar el día',
             onClick: () => run({ daily: 'close' }),
             testId: 'eli-proc-close',
+            daily: 'close',
+          },
+          // (4.16) Revisión diaria oficial de Allen (siempre a la vista)
+          {
+            icon: 'fas fa-calendar-check',
+            label: 'Revisión diaria',
+            onClick: () => run({ daily: 'daily' }),
+            testId: 'eli-proc-daily',
           },
           {
             icon: 'fas fa-bolt',
@@ -648,7 +658,8 @@ class HeaderBar extends PureComponent {
             onClick: () => run({ daily: 'now' }),
             testId: 'eli-proc-now',
           },
-        ],
+          // (4.16) con «Allen estricto», Planificar/Cerrar el día solo si se activan en Ajustes
+        ].filter((it) => !it.daily || dailyShown(it.daily)),
       },
       // (4.06) puntuales y periódicos (tarjeta por pasos en GTD: components/Gtd/GtdGuidedProcess)
       {

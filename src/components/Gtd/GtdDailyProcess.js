@@ -32,6 +32,7 @@ const ACTIONS = {
   ],
   tickler: [['inbox', 'fas fa-inbox', 'Al Inbox']],
   done: [['done', 'fas fa-check', 'Hecha']],
+  next: [['done', 'fas fa-check', 'Hecha']],
   now: [['done', 'fas fa-check', 'Hecha']],
 };
 
@@ -48,6 +49,8 @@ export default function GtdDailyProcess({
   onMove,
   onCapture,
   onProcess,
+  onNow,
+  notAllen = false,
 }) {
   const [expanded, setExpanded] = useState({});
   const [kept, setKept] = useState({});
@@ -271,7 +274,11 @@ export default function GtdDailyProcess({
     if (done) {
       return (
         <p className="gtd-review__hint" data-testid="gtd-daily-done">
-          {kind === 'plan' ? '¡Día planificado! A por ello.' : '¡Día cerrado! Hasta mañana.'}
+          {kind === 'plan'
+            ? '¡Día planificado! A por ello.'
+            : kind === 'daily'
+            ? '¡Revisión diaria hecha!'
+            : '¡Día cerrado! Hasta mañana.'}
         </p>
       );
     }
@@ -322,6 +329,20 @@ export default function GtdDailyProcess({
     } else {
       content = n ? renderList(data[s.id], s.id) : null;
     }
+    // (4.16) la Revisión diaria acaba en «¿Qué hago ahora?»
+    if (kind === 'daily' && s.id === 'next' && onNow) {
+      tools.push(
+        <button
+          key="now"
+          type="button"
+          className="gtd-review__open"
+          onClick={onNow}
+          data-testid="gtd-daily-now"
+        >
+          <i className="fas fa-bolt" /> ¿Qué hago ahora?
+        </button>
+      );
+    }
     if (s.id === 'capture') {
       tools.push(
         <button
@@ -352,6 +373,12 @@ export default function GtdDailyProcess({
       (s.id === 'leftover' ? !data.leftover.some((t) => !kept[t.key]) : n === 0);
     return (
       <React.Fragment>
+        {notAllen && (
+          <p className="gtd-review__hint gtd-daily__notallen" data-testid="gtd-daily-notallen">
+            <i className="fas fa-info-circle" /> No es de Allen: lo tienes activado en Ajustes ›
+            Allen estricto.
+          </p>
+        )}
         <p className="gtd-review__hint">{s.hint}</p>
         {empty ? (
           <p className="gtd-review__empty" data-testid="gtd-review-empty">
