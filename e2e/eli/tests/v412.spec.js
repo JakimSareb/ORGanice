@@ -14,8 +14,12 @@ test('4.12: el Menú ☰ sigue el orden guardado y no muestra las entradas apaga
   const { page } = app;
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org', {
     localStorage: {
-      // (4.17) «Buscar (B)» (nueva) iría la primera: también apagada
-      eliMenuLayout: JSON.stringify({ order: ['help', 'search'], hidden: ['search', 'find'] }),
+      // (4.17) las entradas que faltan en el orden guardado van en su sitio por defecto (Buscar
+      // (B), Agenda y Capturar, delante de Ayuda): también apagadas
+      eliMenuLayout: JSON.stringify({
+        order: ['help', 'search'],
+        hidden: ['search', 'find', 'agenda', 'capture'],
+      }),
     },
   });
   await expect(page.locator('text=Segunda').first()).toBeVisible({ timeout: 20000 });
