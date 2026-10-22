@@ -3572,6 +3572,21 @@ html[data-eli-theme] .gtd-task__below > .gtd-task__notes {
   margin: 6px 0;
   color: var(--green);
 }
+/* (4.15) Allen estricto: proyectos uno a uno y cuadro para apuntar */
+.gtd-review__empty.is-warn {
+  color: var(--orange);
+}
+.gtd-review__capture .gtd-proc__input {
+  flex: 1;
+}
+.gtd-review__project .gtd-proc__input {
+  flex: 1;
+}
+.gtd-review__notes {
+  white-space: pre-wrap;
+  max-height: 8em;
+  overflow: auto;
+}
 .gtd-review__sub {
   margin-top: 8px;
   font-size: 0.8em;

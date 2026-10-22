@@ -95,8 +95,123 @@ export const REVIEW_STEPS = [
   },
 ];
 
+// (4.15) «Allen estricto»: la checklist oficial de la Weekly Review, paso a paso y sin extras
+// (Terminadas, Elegir para la semana y Dormidos solo salen con el ajuste apagado).
+export const STRICT_REVIEW_STEPS = [
+  {
+    id: 'loose',
+    phase: 'clear',
+    label: 'Papeles y materiales sueltos',
+    icon: 'fas fa-folder-open',
+    hint:
+      'Recoge papeles, notas, tarjetas, recibos y demás cosas sueltas (también en el bolso, la ' +
+      'mesa o el móvil) y mételas en el Inbox.',
+    capture: 'Apuntar al Inbox',
+  },
+  {
+    id: 'inbox',
+    phase: 'clear',
+    label: 'Inbox a cero',
+    icon: 'fas fa-inbox',
+    hint: 'Procesa cada cosa del Inbox hasta dejarlo vacío.',
+    view: 'inbox',
+  },
+  {
+    id: 'mind',
+    phase: 'clear',
+    label: 'Vaciar la cabeza',
+    icon: 'fas fa-box-open',
+    hint:
+      'Apunta todo lo que tengas en la cabeza: proyectos, acciones, esperas, ideas. El Volcado ' +
+      'mental te lo pregunta por categorías.',
+    capture: 'Apuntar al Inbox',
+  },
+  {
+    id: 'next',
+    phase: 'current',
+    label: 'Revisar Next',
+    icon: 'fas fa-play',
+    hint: 'Tacha lo que ya está hecho. ¿Hay más pasos que apuntar?',
+    view: 'next',
+    capture: 'Apuntar un paso al Inbox',
+  },
+  {
+    id: 'past',
+    phase: 'current',
+    label: 'Calendario pasado',
+    icon: 'fas fa-history',
+    hint:
+      'Repasa con detalle lo que tenía fecha desde la última revisión (y lo atrasado): ¿quedó ' +
+      'alguna acción pendiente, algo que apuntar o que guardar como referencia?',
+    capture: 'Apuntar al Inbox',
+  },
+  {
+    id: 'upcoming',
+    phase: 'current',
+    label: 'Calendario próximo',
+    icon: 'far fa-calendar-alt',
+    hint:
+      'Mira lo que viene, a corto y a largo plazo: ¿hay que preparar algo o dispara alguna acción?',
+    capture: 'Apuntar al Inbox',
+  },
+  {
+    id: 'waiting',
+    phase: 'current',
+    label: 'Waiting',
+    icon: 'fas fa-hourglass-half',
+    hint: 'Marca lo que ya ha llegado y apunta un seguimiento para lo que se retrasa.',
+    view: 'waiting',
+  },
+  {
+    id: 'projects',
+    phase: 'current',
+    label: 'Proyectos, uno a uno',
+    icon: 'fas fa-project-diagram',
+    hint:
+      'Cada proyecto activo: ¿cómo va? ¿sigue teniendo sentido su resultado? Mira sus notas y ' +
+      'material: cada uno necesita al menos una acción siguiente.',
+  },
+  {
+    id: 'goals',
+    phase: 'current',
+    label: 'Objetivos y resultados mayores',
+    icon: 'fas fa-bullseye',
+    hint: 'Repasa tus objetivos y resultados mayores: ¿piden algún proyecto o acción nueva?',
+    capture: 'Apuntar al Inbox',
+  },
+  {
+    id: 'checklists',
+    phase: 'current',
+    label: 'Checklists relevantes',
+    icon: 'fas fa-tasks',
+    hint:
+      'Repasa las listas de control que uses (responsabilidades, rutinas, viajes, eventos…): ' +
+      '¿falta hacer algo?',
+    capture: 'Apuntar al Inbox',
+  },
+  {
+    id: 'someday',
+    phase: 'creative',
+    label: 'Someday / Maybe',
+    icon: 'fas fa-cloud',
+    hint: 'Activa lo que ya toque (pásalo a su lista) y borra lo que ya no te interese.',
+    view: 'someday',
+  },
+  {
+    id: 'creative',
+    phase: 'creative',
+    label: 'Sé creativo y valiente',
+    icon: 'fas fa-lightbulb',
+    hint: '¿Alguna idea nueva, atrevida o creativa que añadir? Apúntala, por loca que parezca.',
+    capture: 'Apuntar una idea',
+  },
+];
+
+// Pasos según el ajuste «Allen estricto»
+export const reviewSteps = (strict) => (strict ? STRICT_REVIEW_STEPS : REVIEW_STEPS);
+
 // Índice de un paso por su id (−1 si no existe)
-export const reviewStepIndex = (id) => REVIEW_STEPS.findIndex((s) => s.id === id);
+export const reviewStepIndex = (id, steps = REVIEW_STEPS) => steps.findIndex((s) => s.id === id);
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const DAY = 86400000;
@@ -150,13 +265,63 @@ export const weeklyReview = (tasks, today = new Date(), lastReview = null) => {
   const upcoming = open
     .filter((t) => !overdue.includes(t) && (soon(t.deadline) || soon(t.scheduled)))
     .sort(byDate);
-  return { closed, inbox, next, later, waiting, stalled, sleep, overdue, upcoming, someday };
+  // (4.15) calendario pasado: lo que tenía fecha desde la última revisión (también lo hecho);
+  // las atrasadas aparte. Próximo: 7 días y «más adelante» (largo plazo)
+  const dated = live.filter((t) => !!t.keyword && !t.isProject && !t.isHabit);
+  const pastDone = dated
+    .filter((t) => !overdue.includes(t))
+    .filter((t) =>
+      [t.deadline, t.scheduled].some(
+        (d) => !!d && startOfDay(d) < t0 && +startOfDay(d) >= +startOfDay(since)
+      )
+    )
+    .sort(byDate);
+  const farther = open
+    .filter((t) => {
+      const d = firstDate(t);
+      return !!d && startOfDay(d) > in7;
+    })
+    .sort(byDate);
+  // proyectos activos, uno a uno, con sus acciones Next
+  const projectCards = projects
+    .filter((p) => projectState(p, today) === 'active')
+    .sort(byTitle)
+    .map((p) => ({
+      project: p,
+      next: live.filter(
+        (t) =>
+          inProject(t, p) &&
+          !t.isDone &&
+          !t.isProject &&
+          !!t.keyword &&
+          projectSectionOf(t, today) === 'next'
+      ),
+    }));
+  return {
+    closed,
+    inbox,
+    next,
+    later,
+    waiting,
+    stalled,
+    sleep,
+    overdue,
+    upcoming,
+    someday,
+    pastDone,
+    farther,
+    projects: projectCards,
+  };
 };
 
 // Cuántos elementos hay en un paso
 // (3.41) «Elegir para la semana» = Todo + Someday
 export const reviewCount = (r, id) =>
-  id === 'dates'
+  id === 'past'
+    ? r.overdue.length + r.pastDone.length
+    : id === 'upcoming'
+    ? r.upcoming.length + r.farther.length
+    : id === 'dates'
     ? r.overdue.length + r.upcoming.length
     : id === 'week'
     ? r.later.length + r.someday.length

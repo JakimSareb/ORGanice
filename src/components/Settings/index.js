@@ -1,5 +1,6 @@
 import React from 'react';
 import { getProcessMode, setProcessMode } from '../../lib/gtd/gtd_process';
+import { strictOn, setStrictOn } from '../../lib/gtd/gtd_strict';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -355,6 +356,29 @@ const EliProcessModeSettings = () => {
   );
 };
 
+// (4.15) «Allen estricto»: los procesos siguen solo lo oficial de David Allen
+const EliStrictSetting = () => {
+  const [on, setOn] = React.useState(strictOn());
+  return (
+    <div className="setting-container" data-testid="eli-setting-allen-strict">
+      <div className="setting-label">
+        Allen estricto
+        <div className="setting-label__description">
+          Revisión semanal, Procesar Inbox y Volcado mental siguen solo lo oficial de David Allen
+          (sin pasos propios ni la lista Todo). No cambia tus listas ni tus ficheros.
+        </div>
+      </div>
+      <Switch
+        isEnabled={on}
+        onToggle={() => {
+          setStrictOn(!on);
+          setOn(strictOn());
+        }}
+      />
+    </div>
+  );
+};
+
 // (3.25) avisos de fechas (vence/programada) con notificaciones, en este dispositivo
 const EliRemindersSettings = () => {
   const [s, setS] = React.useState(getReminderSettings());
@@ -584,6 +608,7 @@ const Settings = ({
             <EliReadabilitySetting />
             <EliTapModeSettings />
             <EliProcessModeSettings />
+            <EliStrictSetting />
             <EliRemindersSettings />
           </>
         )}

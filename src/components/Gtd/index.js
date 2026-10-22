@@ -138,7 +138,8 @@ import {
   objectivePickItems,
   objectiveRefOf,
 } from '../../lib/gtd/gtd_horizons';
-import { weeklyReview, REVIEW_STEPS } from '../../lib/gtd/gtd_review';
+import { weeklyReview, reviewSteps } from '../../lib/gtd/gtd_review';
+import { strictOn } from '../../lib/gtd/gtd_strict';
 import GtdTagManager from './GtdTagManager';
 import useRowDrag, { useLasso } from './useRowDrag';
 import EliOrgTable from '../EliOrgTable';
@@ -1240,10 +1241,18 @@ export default function GtdView() {
     [dailyKind, tasks, today, ticklerTasks]
   );
   // (3.24) lo que mira la revisión semanal (solo con ella abierta)
-  const reviewData = useMemo(
-    () => (reviewStep !== null ? weeklyReview(tasks, today, lastReview) : null),
-    [reviewStep, tasks, today, lastReview]
-  );
+  const reviewData = useMemo(() => {
+    if (reviewStep === null) return null;
+    const r = weeklyReview(tasks, today, lastReview);
+    // (4.15) objetivos de Horizontes (si la sección está encendida)
+    r.goals =
+      horizonsOn && horizons
+        ? horizons.objectives
+            .filter((o) => !o.done)
+            .map((o) => ({ key: o.key, title: o.title, area: o.area }))
+        : [];
+    return r;
+  }, [reviewStep, tasks, today, lastReview, horizonsOn, horizons]);
   const counts = useMemo(() => {
     const c = countsFor(tasks, { area }, today);
     // (3.01) secuenciales: en Next cuenta solo la primera acción de cada proyecto
@@ -3123,11 +3132,14 @@ export default function GtdView() {
     setReviewStep(step);
     writeLS('eliGtdReview', step);
   };
+  // (4.15) pasos según el ajuste «Allen estricto»
+  const REVIEW_STEPS = reviewSteps(strictOn());
   const startReview = () => {
     setSideOpen(false);
     setReview(0);
-    // (4.04) el primer paso es lo terminado (Logbook)
-    goList(REVIEW_STEPS[0].view || 'inbox');
+    // (4.04) el primer paso es lo terminado (Logbook); (4.15) con Allen estricto, papeles sueltos
+    const v = reviewSteps(strictOn())[0].view;
+    if (v) goList(v);
   };
   const finishReview = () => {
     const now = new Date().toISOString();
@@ -3139,10 +3151,17 @@ export default function GtdView() {
   const reviewMove = (t, kind) => {
     if (kind === 'done') {
       dispatch(gtdSaveMany([[t, doneChangesFor(t)]]));
+    } else if (kind === 'trash') {
+      dispatch(gtdTrash([t]));
     } else {
       dispatch(gtdSaveTask(t, { list: kind, tags: tagsForList(t, kind) }));
     }
-    const label = { done: 'Hecha', next: '→ Next', later: 'Quitada de Next (→ Todo)' }[kind];
+    const label = {
+      done: 'Hecha',
+      next: '→ Next',
+      later: 'Quitada de Next (→ Todo)',
+      trash: 'Papelera',
+    }[kind];
     dispatch(setDisappearingLoadingMessage(label, 1500));
   };
   const reviewOpenTask = (t) => {
@@ -3574,6 +3593,8 @@ export default function GtdView() {
     if (d.deadline) dates.deadline = d.deadline;
     const extra = { ...dates };
     if (d.area) extra.area = d.area;
+    // (4.15) Allen estricto: la siguiente acción reescrita
+    if (d.title) extra.rawTitle = d.title;
     let label = '';
     if (d.kind === 'trash') {
       dispatch(gtdTrash([task]));
@@ -3598,7 +3619,11 @@ export default function GtdView() {
         year: 'numeric',
       })})`;
     } else if (d.kind === 'done') {
-      dispatch(gtdSaveMany([[task, doneChangesFor(task)]]));
+      dispatch(
+        gtdSaveMany([
+          [task, { ...doneChangesFor(task), ...(d.title ? { rawTitle: d.title } : {}) }],
+        ])
+      );
       label = 'Hecha';
     } else if (['waiting', 'next', 'later'].includes(d.kind)) {
       const tags = mergeTags(base(d.kind), [...(d.tags || []), ...(d.person ? [d.person] : [])]);
@@ -3615,6 +3640,28 @@ export default function GtdView() {
           );
       }
       label = 'Proyecto';
+    }
+    // (4.15) Allen estricto: «¿hay un proyecto?» en todas las ramas → la acción va dentro
+    if (d.project && ['done', 'waiting', 'next'].includes(d.kind)) {
+      let target = null;
+      if (d.project.key) {
+        const p = allProjects.find((x) => x.key === d.project.key);
+        if (p) target = { path: p.path, id: p.id };
+      } else if (d.project.name && tasksFile) {
+        const id = dispatch(
+          gtdAddTask({ path: tasksFile }, { title: d.project.name, list: 'project', created: true })
+        );
+        if (id) target = { path: tasksFile, id };
+      }
+      // la tarea puede haber cambiado de fichero al guardarla (del de entrada al de tareas)
+      const fs = store.getState().org.present.get('files');
+      const path = [task.path, ...fs.keySeq().toArray()].find((fp) =>
+        (fs.getIn([fp, 'headers']) || List()).some((h) => h.get('id') === task.id)
+      );
+      if (target && path) {
+        dispatch(gtdMoveToProject({ path, id: task.id }, target));
+        label += ' · en el proyecto';
+      }
     }
     dispatch(setDisappearingLoadingMessage(`→ ${label}`, 1500));
     procMove(1, `Procesada: ${label}`);
@@ -5932,6 +5979,9 @@ export default function GtdView() {
 
         {reviewStep !== null && (
           <GtdWeeklyReview
+            steps={REVIEW_STEPS}
+            strict={strictOn()}
+            horizonsOn={horizonsOn}
             review={reviewData}
             step={reviewStep}
             lastReview={lastReview}
@@ -5949,6 +5999,11 @@ export default function GtdView() {
             onProcess={startProcess}
             onCapture={() => openDraft('inbox')}
             onAgenda={() => setShowAgenda(true)}
+            onCaptureText={guidedCapture}
+            onSweep={() => startDaily('sweep')}
+            onProjectAction={guidedProjectAction}
+            onReplan={(p) => startDaily('project', { existing: p.key })}
+            onHorizons={() => startDaily('horizons')}
           />
         )}
         {daily && daily.kind === 'horizons' && (
@@ -6017,6 +6072,10 @@ export default function GtdView() {
             areas={areas}
             today={today}
             paused={!!(openKey || draft || newProject || menu || showAgenda)}
+            strict={strictOn()}
+            projects={allProjects
+              .filter((p) => !p.isTrashed)
+              .sort((a, b) => (a.title || '').localeCompare(b.title || ''))}
             onDecide={processDecide}
             onSkip={() => procMove(1)}
             onBack={() => procMove(-1)}
