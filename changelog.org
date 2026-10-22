@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.14 (octubre de 2026)
+** GTD: procesos fieles a David Allen
+- *Planificar un proyecto nuevo* sigue ahora el *Modelo de Planificación Natural* completo: 1) *propósito y principios* (las normas con que decidirás); 2) *resultado deseado* (y, si quieres, cómo se vería para cada parte interesada); 3) *lluvia de ideas*, con la *lista de disparadores del proyecto* oficial (Recursos, Finanzas, Riesgos, Pensamiento creativo… plegables, con sus preguntas); 4) *organizar*: ordenar y marcar *componentes* (partes con varias acciones); 5) *siguientes acciones*: una por cada parte que pueda avanzar, con *quién* (etiqueta) opcional o *Hace falta planificar más* (crea «Planificar: …» en Next); 6) *¿Sigue en tu mente?*: si sí, vuelves a las ideas; si no, se crea. Un componente con varias acciones se crea como subproyecto. Las notas guardan Propósito, Principios, Resultado y Partes interesadas.
+- *Replanificar el proyecto* (⋯ de la vista de un proyecto): el mismo proceso sobre un proyecto que ya existe, con el propósito, los principios y el resultado leídos de sus notas y sus tareas abiertas como ideas. Al terminar actualiza esas líneas de las notas (el resto se respeta) y *solo añade* lo nuevo: no borra ni reordena nada. Si eliges como siguiente acción una tarea que ya existía, pasa a Next.
+- *Volcado mental*: ahora es la *lista oficial de Allen* (19 disparadores profesionales y 20 personales, con sus ejemplos), más un bloque *Extra* (no oficial: decisiones pendientes, ideas, algún día). Botón *Saltar este bloque* para pasar al siguiente grupo.
+
 * 4.13 (octubre de 2026)
 ** GTD
 - *Reloj en marcha*: la fila de una tarea o proyecto con el reloj corriendo enseña un relojito naranja en la esquina superior derecha.
