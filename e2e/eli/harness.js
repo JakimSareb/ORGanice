@@ -115,6 +115,8 @@ const test = base.test.extend({
           localStorage.setItem('webdavPassword', 'e2e');
           // (3.46) las subtareas vienen apagadas; las pruebas anteriores las usan encendidas
           localStorage.setItem('eliGtdSubtasks', 'true');
+          // (4.15) «Allen estricto» viene encendido; las pruebas anteriores usan los procesos de antes
+          localStorage.setItem('eliGtdStrict', 'false');
           Object.keys(extra).forEach((k) => localStorage.setItem(k, extra[k]));
         }, localStorage);
         await page.goto(path);

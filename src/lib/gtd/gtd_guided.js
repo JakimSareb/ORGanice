@@ -160,6 +160,10 @@ export const MIND_SWEEP = [
 
 export const SWEEP_GROUPS = ['Profesional', 'Personal', 'Extra'];
 
+// (4.15) pasos del Volcado: con «Allen estricto», sin el bloque «Extra» (no es de la lista oficial)
+export const sweepSteps = (strict) =>
+  strict ? MIND_SWEEP.filter((s) => s.group !== 'Extra') : MIND_SWEEP;
+
 // «Saltar este bloque»: primer paso del grupo siguiente (o el final)
 export const nextGroupStep = (steps, i) => {
   const g = steps[i] && steps[i].group;
