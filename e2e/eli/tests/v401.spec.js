@@ -71,7 +71,7 @@ test('4.01/4.04: Menú ☰ de GTD: Buscar la primera, Agenda la segunda, Ajustes
   await app.open({ '/tasks.org': '* NEXT Algo\n', '/inbox.org': '' });
   await gtd.ready(app);
   const items = await topItems(app);
-  expect(items[0]).toBe('eli-palette-btn');
+  expect(items[0]).toBe('eli-find-menu');
   expect(items[1]).toBe('eli-agenda-menu');
   expect(items[items.length - 1]).toBe('eli-settings');
   expect(app.errors).toEqual([]);
@@ -85,7 +85,7 @@ test('4.01: Menú ☰ de Documentos: Buscar, …, Agenda, …, Ajustes', async (
   );
   await expect(page.locator('text=Dos').first()).toBeVisible({ timeout: 20000 });
   const items = await topItems(app);
-  expect(items[0]).toBe('eli-palette-btn');
+  expect(items[0]).toBe('eli-find-menu');
   expect(items[items.length - 1]).toBe('eli-settings');
   expect(items[1]).toBe('eli-agenda-menu');
   await page.locator('[data-testid=eli-agenda-menu]').click();
@@ -103,7 +103,7 @@ test('4.01/4.09: Modo Notas con la Agenda apagada: sin Agenda en el Menú', asyn
   );
   await expect(page.locator('text=Dos').first()).toBeVisible({ timeout: 20000 });
   const items = await topItems(app);
-  expect(items[0]).toBe('eli-palette-btn');
+  expect(items[0]).toBe('eli-find-menu');
   expect(items[items.length - 1]).toBe('eli-settings');
   expect(items).not.toContain('eli-agenda-menu');
   expect(app.errors).toEqual([]);

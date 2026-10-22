@@ -62,6 +62,8 @@ export const GTD_BINDINGS = [
   ['GTD: área siguiente', 'gtdAreaNext', 'shift+]', 'Áreas'],
   ['GTD: área anterior', 'gtdAreaPrev', 'shift+[', 'Áreas'],
   ['GTD: buscar', 'gtdSearch', '/', 'Más'],
+  // (4.17) B, como en Documentos (y el Menú ☰ › Buscar)
+  ['GTD: buscar (otra tecla)', 'gtdSearch2', 'b', 'Más'],
   ['GTD: Limpieza (las hechas, al Logbook)', 'gtdCleanup', 'c', 'Más'],
   ['GTD: ordenar por fecha límite', 'gtdSortDue', 'd', 'Más'],
   ['GTD: gestionar etiquetas', 'gtdTags', 'g', 'Más'],

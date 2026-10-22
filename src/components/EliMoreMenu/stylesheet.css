@@ -122,3 +122,21 @@
   font-size: 0.8em;
   font-variant-numeric: tabular-nums;
 }
+
+/* (4.17) Icono de Buscar: libro con una lupa pequeña encima (fa-book + fa-search) */
+.eli-icon-book-search {
+  position: relative;
+}
+.eli-icon-book-search::after {
+  content: '\f002';
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  position: absolute;
+  right: -0.45em;
+  bottom: -0.3em;
+  font-size: 0.65em;
+  background: var(--base3);
+  border-radius: 50%;
+  padding: 0.05em;
+  line-height: 1;
+}

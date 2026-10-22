@@ -225,6 +225,19 @@ export default function GtdSectionsSettings() {
         </div>
       );
     }
+    // (4.17) Tickler: página con las entradas de tickler.org por fecha
+    if (def.kind === 'tickler') {
+      return (
+        <div className="eli-gtdsec__options">
+          {nameField}
+          <div className="eli-gtdsec__note">
+            Las entradas de tickler.org agrupadas por fecha: cambiar la fecha, pasarlas ya al Inbox
+            o a Next, editarlas, borrarlas y añadir otras. El día que tocan salen en la Revisión
+            diaria («Tickler de hoy»).
+          </div>
+        </div>
+      );
+    }
     // (3.44) Procesar Inbox y Revisión semanal: botones del menú lateral (también en el ⋯)
     if (def.kind === 'action') {
       return (
