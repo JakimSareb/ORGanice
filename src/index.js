@@ -97,7 +97,8 @@ window.addEventListener('pagehide', () => flushLocalSaves());
 // Remove Parcel error overlay for e2e testing
 // See: https://github.com/parcel-bundler/parcel/issues/9738
 // The overlay intercepts pointer events when running e2e tests after jest
-if (typeof window !== 'undefined') {
+// (4.25) solo en desarrollo: en producción el observador miraba TODO cambio del DOM sin motivo
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
   const removeParcelErrorOverlay = () => {
     const overlay = document.querySelector('parcel-error-overlay');
     if (overlay) {

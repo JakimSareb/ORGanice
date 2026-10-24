@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.25 (octubre de 2026)
+** Rendimiento de la vista GTD
+- La vista GTD trabaja mucho menos: las tareas de cada fichero solo se vuelven a leer si cambia su contenido (antes también al sincronizar), y si nada cambió no se recalculan las listas, contadores ni el menú lateral.
+- Las filas de tareas solo se vuelven a pintar si cambia algo de ellas (antes se repintaba la lista entera con cualquier cambio: seleccionar, abrir un menú, el arrastre…).
+- Los avisos de fechas ya no recalculan todas las tareas en cada cambio: lo hacen solo cuando comprueban (cada 30 s).
+- Con la app en segundo plano, el Pomodoro no repinta su chip cada segundo, y se quitó un vigilante del navegador (de las pruebas) que miraba cada cambio de la pantalla.
+
 * 4.24 (octubre de 2026)
 ** Enlaces desde Documentos
 - *Copiar enlace* (Documentos, Más › Compartir o PDF) genera siempre un enlace *por ID* ([[id:…][Título]]); si la cabecera no tiene =:ID:=, se le pone. Sigue funcionando aunque la cabecera cambie de nombre o de fichero. Ya no se generan enlaces por ruta (los que ya estén escritos se siguen abriendo).
