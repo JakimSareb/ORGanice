@@ -9,7 +9,7 @@
 ;;   Scheduled  programadas para más adelante + todos los hábitos
 ;;              (secciones: normales / «Se repiten» / «Hábitos»)
 ;;   Deadline   con fecha límite (ya empezadas)
-;;   Proyectos  PROJECT: activos / programados (SCHEDULED futuro) / dormidos (:sleep:)
+;;   Proyectos  PROJECT: activos / programados (SCHEDULED futuro) / dormidos (:STATUS: sleep)
 ;;   Reference  encabezados sin estado ni tareas debajo
 ;;   Logbook    terminadas: esta semana / la pasada / el mes pasado / este año / anteriores
 ;;
@@ -112,6 +112,15 @@ grupo por proyecto (necesita org-super-agenda)."
         (setq res (funcall fn)))
       res)))
 
+(defmacro organice--with-entry (&rest body)
+  "BODY en el encabezado del punto: en un fichero .org o en la fila de la agenda."
+  `(if (derived-mode-p 'org-agenda-mode)
+       (let ((m (or (org-get-at-bol 'org-hd-marker) (org-get-at-bol 'org-marker))))
+         (unless m (user-error "Ponte en una tarea"))
+         (with-current-buffer (marker-buffer m)
+           (org-with-wide-buffer (goto-char m) (org-back-to-heading t) ,@body)))
+     (save-excursion (org-back-to-heading t) ,@body)))
+
 (defun organice--parent-has-keyword-p () (organice--ancestors (lambda () (organice--kw))))
 
 (defun organice--has-task-children-p ()
@@ -123,14 +132,13 @@ grupo por proyecto (necesita org-super-agenda)."
       found)))
 
 (defun organice--parked-p ()
-  "Tarea de un proyecto dormido (:sleep:) o que aún no empieza (SCHEDULED futuro)."
+  "Tarea dormida (:STATUS: sleep, propio o heredado; 3.17) o de un proyecto que aún no empieza
+(SCHEDULED futuro)."
   (and (not (organice--project-p))
        (not (organice--done-p))
-       (or (member "sleep" (mapcar #'downcase (org-get-tags)))
+       (or (organice-sleeping-p)
            (organice--ancestors
-            (lambda ()
-              (or (member "sleep" (organice--own-tags))
-                  (and (organice--project-p) (organice--future-scheduled-p))))))))
+            (lambda () (and (organice--project-p) (organice--future-scheduled-p)))))))
 
 (defun organice--property (name) (org-entry-get (point) name))
 
@@ -210,7 +218,7 @@ grupo por proyecto (necesita org-super-agenda)."
 
 (defun organice-project-state ()
   "Estado de un PROJECT: active, scheduled o sleep."
-  (cond ((member "sleep" (organice--own-tags)) 'sleep)
+  (cond ((organice-sleeping-p) 'sleep)
         ((organice--future-scheduled-p) 'scheduled)
         (t 'active)))
 
@@ -508,7 +516,7 @@ Nunca se hace solo: puede faltar porque el fichero no está en la agenda o está
       org-agenda-todo-ignore-scheduled nil
       org-agenda-tags-column -100
       org-agenda-block-separator ?─
-      org-stuck-projects '("TODO=\"PROJECT\"-sleep" ("NEXT") nil ""))
+      org-stuck-projects '("TODO=\"PROJECT\"-STATUS=\"sleep\"" ("NEXT") nil ""))
 
 (when (organice--super-agenda-p) (org-super-agenda-mode 1))
 
@@ -709,9 +717,14 @@ DONE_IN) pasan al Logbook (se les quita DONE_IN) en los ficheros de la agenda."
       (message "%d borrados" n))))
 
 (defun organice-set-sleep (&optional wake)
-  "Duerme (:sleep:) o despierta (con prefijo) el proyecto del punto."
+  "Duerme (:STATUS: sleep, 3.17) o despierta (con prefijo) el proyecto o la tarea del punto."
   (interactive "P")
-  (org-toggle-tag "sleep" (if wake 'off 'on)))
+  (organice--with-entry
+   (if wake
+       (org-entry-delete (point) "STATUS")
+     (org-entry-put (point) "STATUS" "sleep"))
+   (message (if wake "Despierto" "Dormido"))))
+
 
 (defun organice-close-project (state)
   "Cierra el PROJECT del punto como DONE o CANCELLED (y, si se quiere, sus tareas abiertas)."
@@ -719,13 +732,15 @@ DONE_IN) pasan al Logbook (se les quita DONE_IN) en los ficheros de la agenda."
   (save-excursion
     (org-back-to-heading t)
     (unless (organice--project-p) (user-error "Esto no es un PROJECT"))
-    (when (y-or-n-p "¿Cancelar también sus tareas sin hacer? ")
-      (org-map-entries (lambda () (when (and (organice--kw) (not (organice--done-p))
-                                            (not (organice--project-p)))
-                                   (org-todo "CANCELLED")))
-                       nil 'tree))
-    (org-toggle-tag "sleep" 'off)
-    (org-todo state)))
+    (let ((organice-no-subtask-question t))
+      (when (y-or-n-p "¿Cancelar también sus tareas sin hacer? ")
+        (org-map-entries (lambda () (when (and (organice--kw) (not (organice--done-p))
+                                              (not (organice--project-p)))
+                                     (org-todo "CANCELLED")))
+                         nil 'tree))
+      ;; un proyecto cerrado ya no está dormido (3.17)
+      (org-entry-delete (point) "STATUS")
+      (org-todo state))))
 
 (defun organice--open-subtasks-p ()
   (save-excursion
@@ -735,20 +750,28 @@ DONE_IN) pasan al Logbook (se les quita DONE_IN) en los ficheros de la agenda."
         (when (and (organice--kw) (not (organice--done-p))) (setq open t)))
       open)))
 
+(defun organice--in-open-project-p ()
+  "(3.43) ¿Está dentro de un PROJECT que sigue abierto?"
+  (organice--ancestors (lambda () (and (equal (organice--kw) "PROJECT") t))))
+
 (defun organice-archive-done ()
   "Archiva las tareas terminadas del fichero (como «Archivar todas» del Logbook).
-Las que tienen alguna subtarea abierta no se archivan (como en la app)."
+Como la app: las que tienen alguna subtarea abierta no se archivan, y (3.43) las hechas de un
+proyecto que sigue abierto se quedan con él; al terminar el proyecto se archiva todo junto."
   (interactive)
-  (let ((n 0) (blocked 0))
+  (let ((n 0) (blocked 0) (kept 0))
     (org-map-entries
      (lambda ()
-       (if (organice--open-subtasks-p)
-           (setq blocked (1+ blocked))
-         (org-archive-subtree)
-         (setq n (1+ n))
-         (setq org-map-continue-from (org-element-property :begin (org-element-at-point)))))
+       (cond ((organice--open-subtasks-p) (setq blocked (1+ blocked)))
+             ((organice--in-open-project-p) (setq kept (1+ kept)))
+             ((organice--ancestors (lambda () (organice--done-p)))) ; ya se va con su madre
+             (t (org-archive-subtree)
+                (setq n (1+ n))
+                (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))))
      "/DONE|CANCELLED" 'file)
-    (message "Archivadas: %d%s" n (if (> blocked 0) (format " · %d con subtareas abiertas" blocked) ""))))
+    (message "Archivadas: %d%s%s" n
+             (if (> blocked 0) (format " · %d con subtareas abiertas" blocked) "")
+             (if (> kept 0) (format " · %d se quedan con su proyecto abierto" kept) ""))))
 
 (defcustom organice-archive-files nil
   "Ficheros (relativos a la carpeta) de los que `organice-archive-done-all' archiva las
