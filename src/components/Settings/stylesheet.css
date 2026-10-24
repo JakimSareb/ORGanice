@@ -422,3 +422,17 @@
 .setting-container.eli-setting-child {
   padding-left: 24px;
 }
+
+/* (4.26) Diario */
+.eli-diary-dir,
+.eli-diary-template {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--base3);
+  color: var(--base01);
+  font-family: inherit;
+  font-size: 16px;
+}

@@ -38,6 +38,7 @@ import {
   DOC_MARGIN_MAX,
 } from '../../lib/eli_menu_layout';
 import { getPomodoroCfg, setPomodoroCfg } from '../../lib/eli_pomodoro';
+import { getDiaryCfg, setDiaryCfg, templateFromText } from '../../lib/eli_diary';
 import {
   TOOLS,
   useNotesMode,
@@ -173,6 +174,69 @@ const EliToolsSettings = () => (
     {toolOn('pomo') && <EliPomodoroSettings />}
   </details>
 );
+
+// (4.26) Diario: carpeta, plantilla del día y «Diario en mi sistema» (también en el Modo Notas)
+const EliDiarySettings = () => {
+  const [cfg, setCfg] = React.useState(getDiaryCfg());
+  const [tpl, setTpl] = React.useState(getDiaryCfg().template.join('\n'));
+  const save = (patch) => setCfg(setDiaryCfg(patch));
+  return (
+    <details className="eli-settings-section" data-testid="eli-settings-diary">
+      <summary>
+        <span className="eli-settings-section__title">Diario</span>
+        <span className="eli-settings-section__hint">Carpeta, preguntas del día y tareas</span>
+      </summary>
+      <div className="setting-container setting-container--vertical">
+        <div className="setting-label">
+          Carpeta
+          <div className="setting-label__description">
+            Un fichero por año (diari-AAAA.org). Vacío = «pages/» junto al fichero de entrada; una
+            ruta sin «/» delante es relativa a esa carpeta.
+          </div>
+        </div>
+        <input
+          type="text"
+          className="eli-diary-dir"
+          value={cfg.dir}
+          placeholder="pages/"
+          onChange={(e) => save({ dir: e.target.value })}
+          data-testid="eli-diary-dir"
+        />
+      </div>
+      <div className="setting-container" data-testid="eli-setting-diary-template">
+        <div className="setting-label">
+          Preguntas al crear el día
+          <div className="setting-label__description">
+            Plantilla del día (una pregunta por línea).
+          </div>
+        </div>
+        <Switch isEnabled={cfg.templateOn} onToggle={() => save({ templateOn: !cfg.templateOn })} />
+      </div>
+      {cfg.templateOn && (
+        <div className="setting-container setting-container--vertical eli-setting-child">
+          <textarea
+            rows={5}
+            className="eli-diary-template"
+            value={tpl}
+            onChange={(e) => setTpl(e.target.value)}
+            onBlur={() => save({ template: templateFromText(tpl) })}
+            data-testid="eli-diary-template"
+          />
+        </div>
+      )}
+      <div className="setting-container" data-testid="eli-setting-diary-system">
+        <div className="setting-label">
+          Diario en mi sistema
+          <div className="setting-label__description">
+            Cada apunte se puede mandar al Inbox (con enlace al día) y el día muestra las tareas
+            hechas ese día.
+          </div>
+        </div>
+        <Switch isEnabled={cfg.inSystem} onToggle={() => save({ inSystem: !cfg.inSystem })} />
+      </div>
+    </details>
+  );
+};
 
 // (4.12) Menú ☰: orden y qué entradas salen (en este dispositivo). «Ajustes», siempre la última
 const EliMenuLayoutSetting = () => {
@@ -671,6 +735,8 @@ const Settings = ({
       </details>
 
       <EliToolsSettings />
+
+      <EliDiarySettings />
 
       {!notes && (
         <details className="eli-settings-section" data-testid="eli-settings-tasks">

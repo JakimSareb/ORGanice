@@ -245,6 +245,7 @@ import {
 } from '../../actions/base';
 import { getTapMode } from '../../lib/eli_tap_mode';
 import { usePullToRefresh, pullReady } from '../../lib/eli_pull_refresh';
+import { isDiaryPath, dayOfOrgId, openDiary } from '../../lib/eli_diary';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -1219,7 +1220,8 @@ export default function GtdView() {
         (p) =>
           (wanted.includes(p) || !wanted.length) &&
           p !== horizonsSet &&
-          !/(^|\/)horizons\.org$/i.test(p)
+          !/(^|\/)horizons\.org$/i.test(p) &&
+          !isDiaryPath(p)
       ),
     [loadedPaths, wanted, horizonsSet]
   );
@@ -1939,6 +1941,11 @@ export default function GtdView() {
     }
     // (4.22) Enlace por :ID: a una tarea que GTD conoce: se abre en GTD; si no, como documento
     const idLink = parseOrgLink(target);
+    // (4.26) un día del diario: la hoja del Diario
+    if (idLink && idLink.id && dayOfOrgId(idLink.id) && !taskByOrgId(tasks, idLink.id)) {
+      openDiary({ date: dayOfOrgId(idLink.id) });
+      return;
+    }
     if (idLink && idLink.id && !idLink.path) {
       const known = taskByOrgId(tasks, idLink.id);
       // (solo lo que GTD enseña en alguna lista o proyecto; un encabezado suelto se abre como documento)

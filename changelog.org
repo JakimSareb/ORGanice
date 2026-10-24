@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.26 (octubre de 2026)
+** Diario
+- *Diario de hoy* (Menú ☰, también en el Modo Notas): una hoja para apuntar lo que pasa, con la hora. Un fichero por año en la carpeta =pages/= junto al de entrada (=pages/diari-2026.org=; se crea solo, con la carpeta, con el primer apunte del año). Dentro: =* 2026-10 octubre= › =** 2026-10-24 sábado= › =*** 13:23 - texto=.
+- *Marcas* de bullet journal al escribir: – nota (por defecto), ○ evento, × hecho, ! importante.
+- *Preguntas del día* al crear el día (¿Cómo me siento hoy?, Lo más importante de hoy, Agradecido por…, ¿Qué he aprendido?, Mañana quiero…): se editan en Ajustes › Diario (una por línea) y se pueden apagar.
+- *Calendario* con los días que tienen algo marcados (tocar = ir a ese día) y *Tal día como hoy*: lo apuntado el mismo día de años anteriores.
+- *PDF del mes y del año* con aspecto de diario (fecha de cada día, apuntes con su marca, respuestas y fotos; espera a que carguen las fotos).
+- *Diario en mi sistema* (Ajustes › Diario, encendido): cada apunte se puede mandar al Inbox (la tarea lleva un enlace al día, que abre el diario) y el día muestra las tareas *hechas* ese día. Los ficheros del diario no entran en GTD.
+- *Abrir como documento* abre el fichero del año como un documento normal.
+
 * 4.25 (octubre de 2026)
 ** Rendimiento de la vista GTD
 - La vista GTD trabaja mucho menos: las tareas de cada fichero solo se vuelven a leer si cambia su contenido (antes también al sincronizar), y si nada cambió no se recalculan las listas, contadores ni el menú lateral.
