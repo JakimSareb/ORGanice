@@ -7,7 +7,7 @@ Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay noved
 ** Arreglos
 - *PDF de una vista de GTD* (⋯ › Exportar la vista a PDF) y PDF de una tarea: ahora salen las *fotos* de las notas, como en la vista; el botón espera a que carguen antes de abrir el diálogo de imprimir («Cargando fotos…»).
 - *Capturar* desde el explorador de ficheros ya no dice «no hay plantillas»: usa las mismas plantillas que *Capturar con plantilla* del Menú ☰ (las que no tienen fichero de destino se capturan en GTD, en el fichero de tareas).
-- *Planificar un proyecto*, paso 5: lo que escribes en «U otra acción…» se queda como acción elegida al pulsar Intro o salir del campo (aparece como botón marcado).
+- *Planificar un proyecto*, paso 5: lo que escribes en «U otra acción…» cuenta como siguiente acción, y con Intro se queda en la lista como botón marcado.
 - Los *avisos de fechas* ya no hablan de tareas del manual («Regar las plantas», «Revisar el presupuesto»…) que se quedaban cargadas al abrirlo: solo avisan de tus ficheros.
 - Intro en una línea de lista con «-»: la línea nueva lleva un solo espacio tras el guion (antes copiaba los que hubiera, también el espacio especial del teclado del iPhone).
 - Nuevo interruptor *Guiones Fountain* (Ajustes → Herramientas): apagado, no se ofrece *Nuevo guion Fountain*.

@@ -227,22 +227,14 @@ export default function GtdGuidedProcess({
           value={fromChoices ? '' : n.action}
           placeholder={u.choices.length ? 'U otra acción…' : 'Siguiente acción…'}
           onChange={(e) => setNext(u.key, { action: e.target.value })}
-          // (4.18) Intro o salir del campo: la acción escrita pasa a la lista y queda elegida
+          // (4.18) lo escrito ya cuenta como siguiente acción; Intro lo pasa a la lista y queda
+          // elegido (al salir del campo no: movería el botón Siguiente al ir a pulsarlo)
           onKeyDown={(e) => {
             if (e.key !== 'Enter') return;
             e.preventDefault();
             e.stopPropagation();
             setPlan((p) => commitUnitAction(p, u.key, unitNext(p, u.key).action));
           }}
-          onBlur={() =>
-            setPlan((p) =>
-              planUnits(p).some(
-                (x) => x.key === u.key && x.choices.includes(unitNext(p, u.key).action)
-              )
-                ? p
-                : commitUnitAction(p, u.key, unitNext(p, u.key).action)
-            )
-          }
           data-testid={firstId}
           aria-label={`Siguiente acción: ${u.title}`}
         />
