@@ -22,6 +22,7 @@ import { getPersistPlainFiles } from '../../lib/eli_security';
 import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
 import EliPomodoro from '../EliPomodoro';
 import { openScratch } from '../../lib/eli_scratch';
+import { openDiary } from '../../lib/eli_diary';
 import {
   getPomodoroState,
   subscribePomodoro,
@@ -905,6 +906,14 @@ class HeaderBar extends PureComponent {
               onClick: openScratch,
               testId: 'eli-scratch-menu',
               menuId: 'scratch',
+            },
+            // (4.26) diario (pages/diari-AAAA.org junto al de entrada); también en el Modo Notas
+            {
+              icon: 'fas fa-book-open',
+              label: 'Diario de hoy',
+              onClick: () => openDiary(),
+              testId: 'eli-diary-menu',
+              menuId: 'diary',
             },
             // (4.09) con algún reloj en marcha: la lista de esas tareas (al tocar una, va a ella)
             this.props.activeClocks > 0 && {

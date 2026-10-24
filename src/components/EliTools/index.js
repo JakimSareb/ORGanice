@@ -499,7 +499,7 @@ const printWhenReady = async (root, setBusy) => {
   window.print();
 };
 
-function PrintButton({ docRef, testId }) {
+export function PrintButton({ docRef, testId }) {
   const [busy, setBusy] = useState(false);
   return (
     <button

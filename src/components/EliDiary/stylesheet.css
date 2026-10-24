@@ -1,0 +1,189 @@
+@import '../../colors.css';
+
+/* ORG Mode para Eli (4.26): diario (la hoja reutiliza .eli-scratch) */
+.eli-diary {
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+.eli-diary__overlay {
+  padding-top: 24px;
+}
+.eli-diary__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eli-diary__navtitle {
+  flex: 1;
+  text-align: center;
+  text-transform: capitalize;
+}
+.eli-diary__btn,
+.eli-diary__markbtn {
+  border: 1px solid var(--base2);
+  background: transparent;
+  color: var(--base00);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.eli-diary__btn--primary,
+.eli-diary__markbtn.is-on {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--base3);
+}
+.eli-diary__row,
+.eli-diary__marks {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.eli-diary__add {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  margin-top: 6px;
+}
+.eli-diary__input {
+  flex: 1;
+  box-sizing: border-box;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--base3);
+  color: var(--base01);
+  font-family: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+.eli-diary__entries {
+  margin-top: 8px;
+}
+.eli-diary__entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--base2);
+}
+.eli-diary__entry--imp .eli-diary__etext {
+  font-weight: 700;
+}
+.eli-diary__time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+  min-width: 3em;
+}
+.eli-diary__mark {
+  min-width: 1em;
+  text-align: center;
+  color: var(--blue);
+  font-weight: 700;
+}
+.eli-diary__etext {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.eli-diary__ebody {
+  display: block;
+  opacity: 0.85;
+}
+.eli-diary__mini {
+  border: none;
+  background: transparent;
+  color: var(--base1);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.eli-diary__empty {
+  opacity: 0.6;
+  font-style: italic;
+  padding: 4px 0;
+}
+.eli-diary__note {
+  padding: 2px 0;
+}
+.eli-diary__link {
+  color: var(--blue);
+}
+.eli-diary__block {
+  margin-top: 10px;
+}
+.eli-diary__block > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 0;
+}
+.eli-diary__q {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0;
+  font-size: 0.9em;
+}
+.eli-diary__q input {
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--base3);
+  color: var(--base01);
+  font-size: 16px;
+}
+.eli-diary__past {
+  margin: 6px 0 10px;
+}
+.eli-diary__link-btn {
+  border: none;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.eli-diary__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+.eli-diary__wd {
+  text-align: center;
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+.eli-diary__cell {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--base00);
+  border-radius: 8px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 15px;
+}
+.eli-diary__cell.is-out {
+  opacity: 0.35;
+}
+.eli-diary__cell.is-marked {
+  background: var(--base2);
+  font-weight: 700;
+}
+.eli-diary__cell.is-today {
+  border-color: var(--blue);
+}
+.eli-diary-print__day {
+  break-inside: avoid;
+  margin-bottom: 14px;
+}
+.eli-diary-print__day h2 {
+  font-size: 1.1em;
+  text-transform: capitalize;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 4px;
+}
+.eli-diary-print__answer {
+  margin: 2px 0;
+}

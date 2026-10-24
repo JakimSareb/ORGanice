@@ -4,6 +4,7 @@
 // (4.17) «Buscar (B)» (la búsqueda de la tecla B) y «Capturar con plantilla», nuevas; la de
 // antes (paleta de comandos) pasa a llamarse «Paleta de comandos» (su id sigue siendo 'search')
 // (4.23) «Bloc de notas rápido» (scratch.org junto al de entrada), ocultable como el resto
+// (4.26) «Diario de hoy» (pages/diari-AAAA.org junto al de entrada)
 export const MENU_ENTRIES = [
   { id: 'find', label: 'Buscar (B)' },
   { id: 'agenda', label: 'Agenda' },
@@ -11,6 +12,7 @@ export const MENU_ENTRIES = [
   { id: 'search', label: 'Paleta de comandos' },
   { id: 'clocks', label: 'Tareas con reloj activo' },
   { id: 'scratch', label: 'Bloc de notas rápido' },
+  { id: 'diary', label: 'Diario de hoy' },
   { id: 'files', label: 'Mis ficheros' },
   { id: 'view', label: 'Vista' },
   { id: 'split', label: 'Dos columnas' },
