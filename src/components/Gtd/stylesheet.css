@@ -4697,11 +4697,19 @@ input.gtd-proc__input:not([type]) {
   cursor: pointer;
   overflow-wrap: anywhere;
 }
+/* (4.21) los botones de la entrada, SIEMPRE en una línea; si no caben, se desplaza esa fila */
 .gtd-tickler__acts {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
+  flex: 0 1 auto;
+  -webkit-overflow-scrolling: touch;
+}
+.gtd-tickler__acts > * {
+  flex: 0 0 auto;
 }
 .gtd-tickler__acts .gtd-tickler__input {
   font-size: 14px;
