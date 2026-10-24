@@ -26,7 +26,7 @@ test('4.26: Diario de hoy crea el fichero del año con el día y el apunte', asy
     .poll(async () => (await app.fileAfterSync(`/pages/diari-${y}.org`, 500)) || '', {
       timeout: 15000,
     })
-    .toMatch(new RegExp(`\\*\\* ${day} [\\s\\S]*\\*\\*\\* \\d\\d:\\d\\d - Paseo por el puerto`));
+    .toMatch(new RegExp(`\\*\\* ${day} [\\s\\S]*\\n- \\d\\d:\\d\\d - Paseo por el puerto`));
   await app.press(page.locator('[data-testid=eli-diary-close]'));
   await expect(page.locator('[data-testid=eli-diary]')).toHaveCount(0);
   expect(app.errors).toEqual([]);

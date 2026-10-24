@@ -40,6 +40,37 @@ export const DEFAULT_TEMPLATE = [
 
 // ---- Ajuste (localStorage `eliDiary`) ----
 const KEY = 'eliDiary';
+// (4.27) Contadores del registro mensual: se guardan como propiedades del día (`:B: X`, `:KM: 4,5`)
+export const COUNTER_TYPES = [
+  { id: 'bool', label: 'Sí/No' },
+  { id: 'num', label: 'Número' },
+  { id: 'note', label: 'Nota' },
+];
+export const DEFAULT_COUNTERS = [
+  { key: 'B', name: 'Biblia', type: 'bool' },
+  { key: 'KM', name: 'Kilómetros', type: 'num' },
+];
+const RESERVED_KEYS = ['ID', 'CREATED', 'PROPERTIES', 'END'];
+export const counterKey = (k) =>
+  String(k || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9_]/g, '');
+export const cleanCounters = (list) => {
+  const seen = new Set();
+  return (Array.isArray(list) ? list : [])
+    .map((c) => ({
+      key: counterKey(c && c.key),
+      name: String((c && c.name) || '').trim(),
+      type: COUNTER_TYPES.some((t) => t.id === (c && c.type)) ? c.type : 'bool',
+    }))
+    .filter((c) => {
+      if (!c.key || RESERVED_KEYS.includes(c.key) || seen.has(c.key)) return false;
+      seen.add(c.key);
+      return true;
+    })
+    .map((c) => ({ ...c, name: c.name || c.key }));
+};
+
 const DEFAULT_CFG = { dir: '', templateOn: true, template: DEFAULT_TEMPLATE, inSystem: true };
 export const getDiaryCfg = () => {
   let raw = null;
@@ -56,6 +87,8 @@ export const getDiaryCfg = () => {
       ? r.template.map((q) => String(q).trim()).filter(Boolean)
       : DEFAULT_CFG.template,
     inSystem: r.inSystem !== false,
+    monthlyOn: r.monthlyOn !== false,
+    counters: Array.isArray(r.counters) ? cleanCounters(r.counters) : DEFAULT_COUNTERS,
   };
 };
 export const setDiaryCfg = (patch) => {
@@ -95,7 +128,8 @@ export const diaryDir = (chosenDir, inboxPath) => {
   return d.replace(/\/{2,}/g, '/');
 };
 export const diaryPath = (year, dir) => `${dir}diari-${year}.org`;
-export const isDiaryPath = (p) => /(^|\/)diari-\d{4}\.org$/i.test(String(p || ''));
+// (4.27) también el registro mensual (`mensual-AAAA.org`): fuera de GTD, agenda y avisos
+export const isDiaryPath = (p) => /(^|\/)(diari|mensual)-\d{4}\.org$/i.test(String(p || ''));
 // Inbox junto al que va el diario: el elegido en Ajustes o el inbox.org cargado de ruta más corta
 export const inboxNear = (chosenInbox, loadedPaths) =>
   chosenInbox ||
@@ -109,6 +143,15 @@ export const dayOrgId = (key) => `diari-${key}`;
 export const dayOfOrgId = (id) => {
   const m = /^diari-(\d{4}-\d{2}-\d{2})$/.exec(id || '');
   return m ? m[1] : null;
+};
+// (4.27) :ID: de un mes del diario (`diari-2026-10`): el enlace «Ver en el diari» del registro
+export const monthOrgId = (mk) => `diari-${mk}`;
+// Qué abrir con un [[id:…]] del diario: { date } (día) o { month } (mes, en el calendario)
+export const diaryLinkDetail = (id) => {
+  const day = dayOfOrgId(id);
+  if (day) return { date: day };
+  const m = /^diari-(\d{4}-\d{2})$/.exec(id || '');
+  return m ? { month: m[1] } : null;
 };
 export const openDiary = (detail = {}) =>
   window.dispatchEvent(new CustomEvent('eli:diary', { detail }));
@@ -210,6 +253,22 @@ export const entryTime = (line) => {
   const m = ENTRY.exec(line || '');
   return m ? m[1].padStart(5, '0') : null;
 };
+// (4.27, usuario) Los apuntes nuevos van como NOTAS del día (líneas de lista en el cuerpo:
+// `- 13:23 o texto`, el resto de líneas con dos espacios), no como cabeceras. Los `*** 13:23 …`
+// de la 4.26 se siguen leyendo.
+const ENTRY_LINE = /^- (\d{1,2}:\d{2})(?:\s+([-ox!])(?=\s|$))?\s*(.*)$/;
+const isEntryLine = (l) => ENTRY_LINE.test(l || '') && !/ ::(\s|$)/.test(l || '');
+// Bloques de apuntes del cuerpo: [{ start, end (excl.), time }]
+const entryBlocks = (body) => {
+  const out = [];
+  body.forEach((l, i) => {
+    if (isEntryLine(l))
+      out.push({ start: i, end: i + 1, time: ENTRY_LINE.exec(l)[1].padStart(5, '0') });
+    else if (out.length && out[out.length - 1].end === i && /^ {2,}\S/.test(l))
+      out[out.length - 1].end = i + 1;
+  });
+  return out;
+};
 export const addEntry = (text, date, entry, template = []) => {
   const mark = MARK_IDS.includes(entry.mark) ? entry.mark : '-';
   const time = entry.time || timeOf(date);
@@ -217,14 +276,23 @@ export const addEntry = (text, date, entry, template = []) => {
     .replace(/\r\n/g, '\n')
     .split('\n');
   const first = lines.shift().trim();
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
   const tree = parseTree(text || newFileText(date.getFullYear()));
   const { day } = ensureDayIn(tree, date, template);
-  const item = { line: `*** ${time} ${mark}${first ? ' ' + first : ''}`, body: lines };
-  // cuerpo: sin espacios finales; líneas en blanco del final fuera
-  while (item.body.length && !item.body[item.body.length - 1].trim()) item.body.pop();
-  const i = day.entries.findIndex((x) => (entryTime(x.line) || '') > time);
-  if (i < 0) day.entries.push(item);
-  else day.entries.splice(i, 0, item);
+  const item = [
+    `- ${time} ${mark}${first ? ' ' + first : ''}`,
+    ...lines.map((l) => '  ' + l.trim()),
+  ];
+  const blocks = entryBlocks(day.body);
+  const after = blocks.find((b) => b.time > time);
+  let at;
+  if (after) at = after.start;
+  else if (blocks.length) at = blocks[blocks.length - 1].end;
+  else {
+    at = day.body.length;
+    while (at > 0 && !day.body[at - 1].trim()) at--;
+  }
+  day.body.splice(at, 0, ...item);
   return serializeTree(tree);
 };
 
@@ -238,7 +306,8 @@ export const setAnswer = (text, date, question, answer) => {
   const i = day.body.findIndex((l) => l.startsWith(`- ${question} ::`));
   if (i >= 0) day.body[i] = answerLine(question, clean);
   else {
-    let at = day.body.length;
+    const blocks = entryBlocks(day.body);
+    let at = blocks.length ? blocks[0].start : day.body.length;
     while (at > 0 && !day.body[at - 1].trim()) at--;
     day.body.splice(at, 0, answerLine(question, clean));
   }
@@ -268,23 +337,47 @@ export const parseDays = (text) => {
       if (!d.key) return;
       const answers = [];
       const notes = [];
+      const props = {};
+      const bodyEntries = [];
       let inDrawer = false;
+      let lastWasEntry = false;
       d.body.forEach((l) => {
+        const wasEntry = lastWasEntry;
+        lastWasEntry = false;
+        if (!inDrawer && (isEntryLine(l) || (wasEntry && /^ {2,}\S/.test(l)))) lastWasEntry = true;
         if (/^\s*:PROPERTIES:\s*$/i.test(l)) inDrawer = true;
-        else if (inDrawer) inDrawer = !/^\s*:END:\s*$/i.test(l);
-        else {
+        else if (inDrawer) {
+          inDrawer = !/^\s*:END:\s*$/i.test(l);
+          const p = /^\s*:([^:\s]+):\s*(.*)$/.exec(l);
+          if (inDrawer && p) props[p[1].toUpperCase()] = p[2].trim();
+        } else if (isEntryLine(l)) {
+          const x = ENTRY_LINE.exec(l);
+          bodyEntries.push({
+            time: x[1].padStart(5, '0'),
+            mark: x[2] || '-',
+            text: x[3],
+            body: [],
+          });
+        } else if (bodyEntries.length && /^ {2,}\S/.test(l) && lastWasEntry) {
+          bodyEntries[bodyEntries.length - 1].body.push(l.trim());
+          return;
+        } else {
           const a = ANSWER.exec(l);
           if (a) answers.push({ question: a[1], answer: a[2].trim() });
           else if (l.trim()) notes.push(l);
         }
       });
-      const entries = d.entries.map((e) => {
+      const fromHeads = d.entries.map((e) => {
         const x = ENTRY.exec(e.line);
         const body = e.body.join('\n').replace(/\s+$/, '');
         if (!x) return { time: '', mark: '-', text: e.line.replace(/^\*+\s*/, ''), body };
         return { time: x[1].padStart(5, '0'), mark: x[2] || '-', text: x[3], body };
       });
-      days.push({ key: d.key, answers, notes, entries });
+      const entries = bodyEntries
+        .map((e) => ({ ...e, body: e.body.join('\n') }))
+        .concat(fromHeads)
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+      days.push({ key: d.key, answers, notes, entries, props });
     })
   );
   return days;
@@ -345,3 +438,71 @@ export const templateFromText = (s) =>
     .split('\n')
     .map((q) => q.trim())
     .filter(Boolean);
+
+// ---- (4.27) Contadores y :ID: ----
+// ¿El día tiene algo? (apuntes, notas, respuestas o contadores; el :ID: no cuenta)
+export const dayHasData = (d) =>
+  !!d &&
+  (d.entries.length > 0 ||
+    d.notes.length > 0 ||
+    d.answers.some((a) => a.answer.trim()) ||
+    Object.keys(d.props || {}).some((k) => k !== 'ID' && String(d.props[k]).trim()));
+
+// Cajón PROPERTIES al principio del cuerpo (lo crea si falta). Devuelve el índice de :END:.
+const drawerEnd = (body) => {
+  if (!/^\s*:PROPERTIES:\s*$/i.test(body[0] || '')) body.unshift(':PROPERTIES:', ':END:');
+  const end = body.findIndex((l, i) => i > 0 && /^\s*:END:\s*$/i.test(l));
+  if (end < 0) {
+    body.splice(1, 0, ':END:');
+    return 1;
+  }
+  return end;
+};
+const ensureIdIn = (body, id) => {
+  if (body.some((l) => /^\s*:ID:\s*\S/i.test(l))) return false;
+  const end = drawerEnd(body);
+  body.splice(end, 0, `:ID: ${id}`);
+  return true;
+};
+
+// Contador del día: `:KEY: valor` en el cajón del día (vacío = se quita)
+export const setDayProp = (text, date, key, value, template = []) => {
+  const k = counterKey(key);
+  const tree = parseTree(text || newFileText(date.getFullYear()));
+  const { day } = ensureDayIn(tree, date, template);
+  const v = String(value == null ? '' : value)
+    .replace(/\s+/g, ' ')
+    .trim();
+  const hadDrawer = /^\s*:PROPERTIES:\s*$/i.test(day.body[0] || '');
+  if (!hadDrawer && !v) return serializeTree(tree);
+  const end = drawerEnd(day.body);
+  const re = new RegExp(`^\\s*:${k}:(\\s|$)`, 'i');
+  const i = day.body.findIndex((l, j) => j > 0 && j < end && re.test(l));
+  if (i >= 0) {
+    if (v) day.body[i] = `:${k}: ${v}`;
+    else day.body.splice(i, 1);
+  } else if (v) day.body.splice(end, 0, `:${k}: ${v}`);
+  // cajón vacío: fuera
+  if (/^\s*:END:\s*$/i.test(day.body[1] || '')) day.body.splice(0, 2);
+  return serializeTree(tree);
+};
+
+// Pone :ID: a los días con algo y a sus meses (para que los enlaces del registro mensual también
+// valgan en Emacs). Si no cambia nada devuelve el mismo texto.
+export const withDiaryIds = (text) => {
+  if (!text) return text;
+  const tree = parseTree(text);
+  const data = new Map(parseDays(text).map((d) => [d.key, d]));
+  let changed = false;
+  tree.months.forEach((m) => {
+    let any = false;
+    m.days.forEach((d) => {
+      if (d.key && dayHasData(data.get(d.key))) {
+        any = true;
+        if (ensureIdIn(d.body, dayOrgId(d.key))) changed = true;
+      }
+    });
+    if (any && m.key && ensureIdIn(m.body, monthOrgId(m.key))) changed = true;
+  });
+  return changed ? serializeTree(tree) : text;
+};

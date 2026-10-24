@@ -77,7 +77,7 @@ import { lastSyncAtFor } from '../lib/eli_offline_client';
 import { localStorageAvailable, readOpennessState } from '../util/settings_persister';
 import { parseExcludedFolders, withoutExcluded } from '../lib/eli_excluded_folders';
 import { idLinksToText, isOnlyIdLink } from '../lib/eli_id_links';
-import { dayOfOrgId, openDiary } from '../lib/eli_diary';
+import { diaryLinkDetail, openDiary } from '../lib/eli_diary';
 
 export const parseFile = (path, contents) => (dispatch) => {
   if (localStorageAvailable && !path.startsWith(STATIC_FILE_PREFIX)) {
@@ -2227,8 +2227,8 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
   if (link.id) {
     const found = findHeaderById(files, link.id);
     // (4.26) un día del diario ([[id:diari-AAAA-MM-DD]]) se abre en la hoja del Diario
-    if (!found && dayOfOrgId(link.id)) {
-      openDiary({ date: dayOfOrgId(link.id) });
+    if (!found && diaryLinkDetail(link.id)) {
+      openDiary(diaryLinkDetail(link.id));
       return true;
     }
     if (!found) {

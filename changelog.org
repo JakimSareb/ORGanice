@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.27 (octubre de 2026)
+** Registro mensual
+- *Registro de hoy* en el día del diario: un botón por cada contador Sí/No (de serie *B*, Biblia) y un cuadro por cada Número (de serie *KM*; vale «4,5» y «4.5») o Nota. Se guardan como propiedades del día (=:B: X=, =:KM: 4,5=). Los contadores se cambian en Ajustes › Diario.
+- *Registro mensual*: fichero =pages/mensual-2026.org= junto al diari (aparte de él), que se crea solo y se *actualiza solo* al apuntar. Al principio, *Totales del año*; luego un apartado por mes con su tabla: cada día del mes, *lo más importante* (tu respuesta a «Lo más importante de hoy»), los contadores, subtotal de cada semana y total del mes. Cada día con algo enlaza a su día del diario y la cabecera del mes lleva *Ver en el diari*.
+- Las tablas van entre =# BEGIN mensual …= y =# END mensual …=: lo que escribas *fuera* se respeta; lo que cambies *dentro* se pierde en la siguiente actualización.
+- En el calendario del diario: *Registro mensual* (lo actualiza y lo abre), *PDF del registro del mes* y *del año*.
+** Diario
+- Los apuntes nuevos se guardan como *notas del día* (=- 13:23 o texto=), no como cabeceras. Los =*** 13:23 …= de antes se siguen leyendo.
+- Los días con algo y sus meses llevan =:ID:= (=diari-2026-10-24=, =diari-2026-10=) para que los enlaces del registro también valgan fuera de la app.
+
 * 4.26 (octubre de 2026)
 ** Diario
 - *Diario de hoy* (Menú ☰, también en el Modo Notas): una hoja para apuntar lo que pasa, con la hora. Un fichero por año en la carpeta =pages/= junto al de entrada (=pages/diari-2026.org=; se crea solo, con la carpeta, con el primer apunte del año). Dentro: =* 2026-10 octubre= › =** 2026-10-24 sábado= › =*** 13:23 - texto=.

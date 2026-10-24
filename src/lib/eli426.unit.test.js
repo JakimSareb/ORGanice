@@ -58,7 +58,9 @@ describe('4.26 fichero', () => {
     let t = addEntry('', d(2026, 10, 24), { text: 'café', time: '13:23' }, []);
     t = addEntry(t, d(2026, 10, 24), { text: 'cita\nen el centro', mark: 'o', time: '09:05' }, []);
     t = addEntry(t, d(2026, 10, 24), { text: 'ojo', mark: '!', time: '20:00' }, []);
-    expect(t).toContain('*** 09:05 o cita\nen el centro\n*** 13:23 - café\n*** 20:00 ! ojo');
+    // (4.27) como notas del día, no como cabeceras
+    expect(t).toContain('- 09:05 o cita\n  en el centro\n- 13:23 - café\n- 20:00 ! ojo');
+    expect(t).not.toContain('***');
     const day = parseDays(t)[0];
     expect(day.entries.map((e) => e.mark)).toEqual(['o', '-', '!']);
     expect(day.entries[0].body).toBe('en el centro');

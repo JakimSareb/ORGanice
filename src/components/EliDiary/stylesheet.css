@@ -187,3 +187,75 @@
 .eli-diary-print__answer {
   margin: 2px 0;
 }
+
+/* (4.27) Registro del día y tablas del registro mensual en el PDF */
+.eli-diary__counters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+}
+.eli-diary__counters-title {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+.eli-diary__counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9em;
+}
+.eli-diary__counter-input {
+  width: 4.5em;
+  padding: 3px 6px;
+  font-size: 16px;
+  border: 1px solid var(--base1);
+  border-radius: 6px;
+  background: var(--base3);
+  color: var(--base01);
+}
+.eli-diary__counter-input--note {
+  width: 9em;
+}
+.eli-diary-monthly__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+.eli-diary-monthly__table th,
+.eli-diary-monthly__table td {
+  border: 1px solid #bbb;
+  padding: 2px 6px;
+  vertical-align: top;
+  text-align: left;
+}
+.eli-diary-monthly__d {
+  white-space: nowrap;
+}
+.eli-diary-monthly__n {
+  text-align: right !important;
+  white-space: nowrap;
+}
+.eli-diary-monthly__week td {
+  background: #f1f1f1;
+  font-style: italic;
+}
+.eli-diary-monthly__total td {
+  font-weight: 700;
+  background: #e6e6e6;
+}
+.eli-diary-counter-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 0;
+}
+.eli-diary-counter-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+}
+.eli-diary-counter-row .eli-diary-counter-row__key {
+  flex: 0 0 4.5em;
+}
