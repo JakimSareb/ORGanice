@@ -30,9 +30,8 @@ import {
   projectsOverview,
   projectSections,
   projectSectionOfSeq,
-  isSeqBlocker,
+  seqMarkOf,
   NO_TAGS,
-  isFutureScheduled,
   groupByProject,
   isGroupableList,
   keywordForList,
@@ -93,6 +92,7 @@ import {
   gtdEnsureOrgId,
 } from '../../lib/gtd/gtd_actions';
 import { clockSummary, taskLinkText, isClockRunning } from '../../lib/gtd/gtd_tools';
+import { clockTotalsOf, clockTotalLabel } from '../../lib/gtd/gtd_clock';
 import {
   copyTaskLink,
   shareTaskOrg,
@@ -587,6 +587,7 @@ function TaskRow({
   onToggleFold = null,
   onTitleClick = null,
   seqMark = null,
+  clockMs = 0,
   onOpenLink = null,
 }) {
   const due = dueInfo(task.deadline, today);
@@ -924,7 +925,7 @@ function TaskRow({
           </button>
         )}
         {/* (4.13) reloj en marcha: icono naranja en la esquina superior derecha */}
-        {!task.isDone && task.header && isClockRunning(task.header) && (
+        {!task.isDone && task.header && isClockRunning(task.header) ? (
           <span
             className="gtd-task__running"
             title="Reloj en marcha"
@@ -932,7 +933,20 @@ function TaskRow({
           >
             <i className="fas fa-clock" />
           </span>
-        )}
+        ) : clockTotalLabel(clockMs) ? (
+          /* (4.20) tiempo registrado (con el de subtareas / acciones del proyecto), en gris */
+          <span
+            className="gtd-task__running gtd-task__clock-total"
+            title={
+              task.isProject || task.hasTaskChildren
+                ? 'Tiempo registrado (con subtareas)'
+                : 'Tiempo registrado'
+            }
+            data-testid="gtd-task-clock-total"
+          >
+            {clockTotalLabel(clockMs)}
+          </span>
+        ) : null}
       </div>
       {/* (3.11) notas DEBAJO de la fila (la fila no se mueve), sangradas y con una línea gris
           a la izquierda, como en Nirvana */}
@@ -1339,6 +1353,8 @@ export default function GtdView() {
     return g;
   }, [projects, today]);
   const areas = useMemo(() => areasOf(tasks), [tasks]);
+  // (4.20) tiempo registrado por tarea (con subtareas y acciones de proyecto)
+  const clockTotals = useMemo(() => clockTotalsOf(tasks), [tasks]);
 
   const baseList = useMemo(() => tasksForView(tasks, view, { area, text }, today), [
     tasks,
@@ -5943,16 +5959,8 @@ export default function GtdView() {
       task={item.task}
       onRowClick={rowClick(item)}
       onTitleClick={titleClick(item)}
-      seqMark={
-        isProjectView &&
-        groupMode === 'sequential' &&
-        item.section === 'next' &&
-        isSeqBlocker(item.task, today)
-          ? isFutureScheduled(item.task, today)
-            ? 'S'
-            : 'W'
-          : null
-      }
+      seqMark={seqMarkOf(item.task, today)}
+      clockMs={clockTotals.get(item.task.key) || 0}
       onRowDoubleClick={() => {
         if (clickSuppressed()) return;
         // (3.02) con el dedo ya lo hace el doble toque propio
@@ -6200,6 +6208,15 @@ export default function GtdView() {
               >
                 <i className={projNotesOpen ? 'fas fa-sticky-note' : 'far fa-sticky-note'} />
               </button>
+            )}
+            {projectTask && clockTotalLabel(clockTotals.get(projectTask.key)) && (
+              <span
+                className="gtd-main__clock"
+                title="Tiempo registrado en el proyecto"
+                data-testid="gtd-project-clock"
+              >
+                {clockTotalLabel(clockTotals.get(projectTask.key))}
+              </span>
             )}
             <span className="gtd-main__count">
               {view.id === 'projects'
@@ -6607,6 +6624,15 @@ export default function GtdView() {
                             )}
                         </span>
                         <span className="gtd-overview__meta">
+                          {clockTotalLabel(clockTotals.get(r.project.key)) && (
+                            <span
+                              className="gtd-meta gtd-meta--clock"
+                              title="Tiempo registrado en el proyecto"
+                              data-testid="gtd-overview-clock"
+                            >
+                              {clockTotalLabel(clockTotals.get(r.project.key))}
+                            </span>
+                          )}
                           {r.project.area && (
                             <span className="gtd-meta gtd-meta--area">{r.project.area}</span>
                           )}

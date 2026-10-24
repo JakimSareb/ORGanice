@@ -4719,3 +4719,40 @@ input.gtd-proc__input:not([type]) {
 .gtd-tickler__btn.is-danger {
   color: var(--red, #dc322f);
 }
+
+/* (4.20) título largo: varias líneas y la info de la derecha arriba a la derecha; el icono de
+   notas no desaparece nunca (con «una línea» solo se recorta el texto, no el icono) */
+.gtd-task__row > .gtd-task__right {
+  align-self: flex-start;
+}
+.gtd-task__title.is-nowrap {
+  display: flex;
+  align-items: baseline;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+.gtd-task__title.is-nowrap > .gtd-task__title-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gtd-task__title.is-nowrap > :not(.gtd-task__title-text) {
+  flex: none;
+}
+/* (4.20) tiempo registrado: gris discreto en el sitio del relojito en marcha */
+.gtd-task__running.gtd-task__clock-total {
+  top: 1px;
+  font-size: 10px;
+  color: var(--base1);
+  opacity: 0.8;
+}
+.gtd-main__clock,
+.gtd-meta--clock {
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--base1);
+}
