@@ -1,5 +1,6 @@
 // ORG Mode para Eli: enlaces a encabezados como los de Emacs (org-store-link, C-c l, e
-// org-insert-link, C-c C-l): [[file:tareas.org::*Título][Título]], [[*Título]], [[#id]], [[id:…]]
+// org-insert-link, C-c C-l). Se generan solo [[id:…]] (4.24); se leen también [[file:x.org::*Título]],
+// [[*Título]] y [[#id]]
 import { List } from 'immutable';
 import { PRIORITY_RE } from './eli_priority';
 import { resolveDropboxPath } from './eli_media';
@@ -24,10 +25,6 @@ export const relativePath = (fromPath, toPath) => {
   return [...Array(up).fill('..'), ...to.slice(i)].join('/') || to.join('/');
 };
 
-/**
- * Enlace a un encabezado para escribir en el fichero `fromPath` (null = portapapeles, con la
- * ruta relativa a la carpeta del propio fichero).
- */
 // (3.09) Como org-link-escape: en la parte del enlace los corchetes (y la barra que los precede)
 // van escapados con «\\»; en la descripción, sin corchetes
 export const escapeLinkPart = (text) =>
@@ -38,20 +35,17 @@ export const unescapeLinkPart = (text) =>
     (m, bs, br) => `${'\\'.repeat(Math.floor(bs.length / 2))}${br}`
   );
 
-export const headingLink = ({ path, title }, fromPath = null) => {
-  const text = cleanHeadingText(title);
-  const target = escapeLinkPart(text);
-  const desc = text.replace(/[[\]]/g, '').replace(/\s+/g, ' ').trim();
-  if (fromPath && fromPath === path) return `[[*${target}][${desc}]]`;
-  const rel = fromPath ? relativePath(fromPath, path) : path.split('/').pop();
-  return `[[file:${rel}::*${target}][${desc}]]`;
-};
-
-// Último enlace guardado (como org-stored-links), para insertarlo con la ruta correcta
+// (4.24) Los enlaces a encabezados que genera la app son SOLO por ID ([[id:X][Título]]), nunca
+// por ruta (los [[file:…::*…]] ya escritos se siguen abriendo). Último enlace guardado (como
+// org-stored-links), para insertarlo luego con el botón de enlace del editor.
 let stored = null;
-export const storeHeadingLink = (path, rawTitle) => {
-  stored = { path, title: cleanHeadingText(rawTitle) };
-  stored.clipboardText = headingLink(stored);
+export const storeHeadingLink = (orgId, rawTitle) => {
+  const desc = cleanHeadingText(rawTitle).replace(/[[\]]/g, '').replace(/\s+/g, ' ').trim();
+  stored = {
+    id: orgId,
+    title: desc,
+    clipboardText: desc ? `[[id:${orgId}][${desc}]]` : `[[id:${orgId}]]`,
+  };
   return stored.clipboardText;
 };
 export const storedHeadingLink = () => stored;

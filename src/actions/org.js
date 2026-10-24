@@ -76,6 +76,7 @@ import {
 import { lastSyncAtFor } from '../lib/eli_offline_client';
 import { localStorageAvailable, readOpennessState } from '../util/settings_persister';
 import { parseExcludedFolders, withoutExcluded } from '../lib/eli_excluded_folders';
+import { idLinksToText, isOnlyIdLink } from '../lib/eli_id_links';
 
 export const parseFile = (path, contents) => (dispatch) => {
   if (localStorageAvailable && !path.startsWith(STATIC_FILE_PREFIX)) {
@@ -1930,6 +1931,70 @@ const removeAttachmentLinkInState = (dispatch, getState, path, headerId, target)
   });
   dispatch(setDirty(true, path));
   return true;
+};
+
+// ORG Mode para Eli (4.24): al borrar un encabezado con enlaces [[id:…]] que apuntan a él, dejar
+// esos enlaces como texto (título y notas). Una propiedad que es SOLO ese enlace (p. ej.
+// :PROYECTO: [[id:…][Nombre]]) se quita: como texto ya no significaría nada.
+export const eliIdLinksToText = (refs, ids) => (dispatch, getState) => {
+  const touched = new Set();
+  (refs || []).forEach(({ path, headerId }) => {
+    const h = (getState().org.present.getIn(['files', path, 'headers']) || List()).find(
+      (x) => x.get('id') === headerId
+    );
+    if (!h) return;
+    const oldTitle = generateTitleLine(h.toJS(), false);
+    const newTitle = idLinksToText(oldTitle, ids);
+    if (newTitle !== oldTitle) {
+      dispatch({
+        type: 'ELI_IN_FILE',
+        path,
+        dirtying: true,
+        inner: { type: 'UPDATE_HEADER_TITLE', headerId, newRawTitle: newTitle, dirtying: true },
+      });
+      touched.add(path);
+    }
+    const oldRaw = h.get('rawDescription') || '';
+    const newRaw = idLinksToText(oldRaw, ids);
+    if (newRaw !== oldRaw) {
+      dispatch({
+        type: 'ELI_IN_FILE',
+        path,
+        dirtying: true,
+        inner: {
+          type: 'UPDATE_HEADER_DESCRIPTION',
+          headerId,
+          newRawDescription: createRawDescriptionText(
+            h.set('rawDescription', newRaw),
+            false,
+            getState().base.get('eliIndentOnExport') !== true
+          ),
+          dirtying: true,
+        },
+      });
+      touched.add(path);
+    }
+    const items = h.get('propertyListItems') || List();
+    const kept = items.filter((p) => !isOnlyIdLink(p, ids));
+    if (kept.size !== items.size) {
+      dispatch({
+        type: 'ELI_IN_FILE',
+        path,
+        dirtying: true,
+        inner: {
+          type: 'UPDATE_PROPERTY_LIST_ITEMS',
+          headerId,
+          newPropertyListItems: kept,
+          dirtying: true,
+        },
+      });
+      touched.add(path);
+    }
+  });
+  touched.forEach((path) => {
+    dispatch(setDirty(true, path));
+    dispatch(sync({ path, shouldSuppressMessages: true }));
+  });
 };
 
 // ORG Mode para Eli (2.13): quitar ya del fichero el enlace a un adjunto borrado (p. ej. desde

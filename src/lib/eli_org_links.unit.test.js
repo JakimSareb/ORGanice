@@ -2,7 +2,6 @@ import { parseOrg } from './parse_org';
 import {
   cleanHeadingText,
   relativePath,
-  headingLink,
   storeHeadingLink,
   parseOrgLink,
   findLinkedHeader,
@@ -19,13 +18,8 @@ test('rutas relativas y enlaces', () => {
   expect(relativePath('/org/a.org', '/org/sub/b.org')).toBe('sub/b.org');
   expect(relativePath('/org/sub/a.org', '/org/b.org')).toBe('../b.org');
   expect(relativePath('/a.org', '/b.org')).toBe('b.org');
-  expect(headingLink({ path: '/org/b.org', title: 'Hola' }, '/org/sub/a.org')).toBe(
-    '[[file:../b.org::*Hola][Hola]]'
-  );
-  expect(headingLink({ path: '/org/b.org', title: 'Hola' }, '/org/b.org')).toBe('[[*Hola][Hola]]');
-  expect(storeHeadingLink('/org/tareas.org', '[#A] Llamar [0/2]')).toBe(
-    '[[file:tareas.org::*Llamar][Llamar]]'
-  );
+  // (4.24) solo por ID
+  expect(storeHeadingLink('ABC-1', '[#A] Llamar [0/2]')).toBe('[[id:ABC-1][Llamar]]');
 });
 
 test('reconocer enlaces Org', () => {
@@ -79,14 +73,9 @@ test('rutas de Emacs fuera de la app', () => {
 
 // (3.09) títulos con corchetes (fechas inactivas)
 describe('enlaces a títulos con fecha', () => {
-  const { headingLink, parseOrgLink, findLinkedHeader } = require('./eli_org_links');
+  const { parseOrgLink, findLinkedHeader } = require('./eli_org_links');
   const { parseOrg, parseMarkupAndCookies } = require('./parse_org');
   const headers = parseOrg('* [2026-10-14 Wed] JW\n* Otra\n').get('headers');
-  test('el enlace escapa los corchetes como Org', () => {
-    expect(headingLink({ path: '/Meetings.org', title: '[2026-10-14 Wed] JW' }, '/a.org')).toBe(
-      '[[file:Meetings.org::*\\[2026-10-14 Wed\\] JW][2026-10-14 Wed JW]]'
-    );
-  });
   test('se lee como un solo enlace y encuentra la cabecera', () => {
     const link = '[[file:Meetings.org::*\\[2026-10-14 Wed\\] JW][2026-10-14 Wed JW]]';
     const parts = parseMarkupAndCookies(link);

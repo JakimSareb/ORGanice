@@ -5,14 +5,19 @@ import toggleColorScheme from './middleware/toggle_color_scheme';
 import doneAttachments from './middleware/done_attachments';
 import subtasksDone from './middleware/subtasks_done';
 import rootReducer from './reducers';
+import { setRemoveStore } from './lib/eli_confirm_remove';
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
-export default (initialState) =>
-  createStore(
+export default (initialState) => {
+  const store = createStore(
     rootReducer,
     initialState,
     composeEnhancers(
       applyMiddleware(thunk, subtasksDone, liveSync, toggleColorScheme, doneAttachments)
     )
   );
+  // (4.24) para avisar de los enlaces [[id:…]] al borrar un encabezado
+  setRemoveStore(store);
+  return store;
+};

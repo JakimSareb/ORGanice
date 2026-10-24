@@ -3,6 +3,11 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.24 (octubre de 2026)
+** Enlaces desde Documentos
+- *Copiar enlace* (Documentos, Más › Compartir o PDF) genera siempre un enlace *por ID* ([[id:…][Título]]); si la cabecera no tiene =:ID:=, se le pone. Sigue funcionando aunque la cabecera cambie de nombre o de fichero. Ya no se generan enlaces por ruta (los que ya estén escritos se siguen abriendo).
+- *Borrar algo enlazado*: al borrar una cabecera o tarea (o una con subcabeceras) a la que apuntan enlaces [[id:…]], sale un aviso con la lista y tres opciones: Cancelar, *Borrar y dejar los enlaces como texto* o *Borrar igualmente*. Solo se miran los ficheros cargados en ese momento.
+
 * 4.23 (octubre de 2026)
 ** Menús, Ajustes y pequeñas herramientas
 - *Submenús al pasar el ratón*: en el ordenador (con ratón), los submenús del Menú ☰ (y del menú de GTD) se abren al pasar por encima, como un panel al lado, y se recogen al pasar a otra opción del menú principal. Con el dedo sigue igual (el submenú sustituye al menú, con «‹» para volver).
