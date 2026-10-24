@@ -151,19 +151,20 @@ let timer = null;
 
 const notify = () => listeners.forEach((l) => l(state));
 
-const commit = (next) => {
+// (4.23) `natural` = el tramo ha terminado solo (no al saltarlo a mano)
+const commit = (next, natural = false) => {
   const finished = next.finished;
   state = { ...next };
   delete state.finished;
   write(STATE_KEY, JSON.stringify(state));
   syncTimer();
   notify();
-  if (finished) finishedListeners.forEach((l) => l(finished, state));
+  if (finished) finishedListeners.forEach((l) => l(finished, state, natural));
 };
 
 const tick = () => {
   if (state.status === 'running' && Date.now() >= state.endsAt) {
-    commit(finishPhase(state, cfg, state.endsAt));
+    commit(finishPhase(state, cfg, state.endsAt), true);
   } else notify();
 };
 

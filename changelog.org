@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.23 (octubre de 2026)
+** Menús, Ajustes y pequeñas herramientas
+- *Submenús al pasar el ratón*: en el ordenador (con ratón), los submenús del Menú ☰ (y del menú de GTD) se abren al pasar por encima, como un panel al lado, y se recogen al pasar a otra opción del menú principal. Con el dedo sigue igual (el submenú sustituye al menú, con «‹» para volver).
+- *Flechita de «hay más»*: si un menú no cabe y hace scroll, una flechita ▴ / ▾ con una sombra avisa de que hay más por arriba o por abajo; desaparece al llegar al final.
+- *Ajustes*: las cabeceras de sección (Apariencia, Herramientas…) se distinguen mejor de las opciones: fondo propio, franja de color y letra mayor.
+- *Excluir ficheros sueltos* (Ajustes › Ficheros, con «Todos los ficheros .org, automáticamente»): además de carpetas, el botón *Excluir un fichero* elige uno de los encontrados y deja de cargarse solo (la ✕ lo vuelve a incluir).
+- *Bloc de notas rápido* (Menú ☰ › Bloc de notas rápido, ocultable en Ajustes › Apariencia › Menú ☰): una hoja con un cuadro de texto grande sobre =scratch.org= (junto al inbox.org; se crea al guardar). Guarda al salir del campo, a los 2 s de dejar de escribir y al cerrar. *Abrir como documento* lo abre como un fichero normal. No entra en GTD, la agenda ni los avisos.
+- *Pomodoro*: al acabar un tramo sale una alerta a pantalla que hay que aceptar («Empezar: descanso / trabajo»); el tramo siguiente no empieza hasta entonces (con «Ahora no» queda esperando en el chip). Además del aviso de siempre (mensaje, sonido y notificación). Saltar un tramo a mano no la saca.
+
 * 4.22 (octubre de 2026)
 ** GTD: proyectos, referencias y enlaces
 - *Tarea de un proyecto → Referencia*: ahora cambia. Pierde su estado, *sigue dentro del proyecto* (como material de apoyo, en «Referencias») y además sale en la lista Referencia. Los encabezados sin estado de un proyecto cuentan como referencia.
