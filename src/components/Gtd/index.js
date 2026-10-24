@@ -3833,6 +3833,7 @@ export default function GtdView() {
     gtdAreaPrev: () => stepArea(-1),
     gtdSearch: () => focusSearch(),
     gtdSearch2: () => focusSearch(),
+    gtdFilterSection: () => openSectionFilter(),
     gtdSync: () => syncAll(),
     gtdAgenda: () => setShowAgenda(true),
     gtdCleanup: () => cleanupNow(),
@@ -3843,6 +3844,20 @@ export default function GtdView() {
     gtdManual: () => history.push('/sample'),
     gtdShortcuts: () => setShowShortcuts(true),
     gtdShortcuts2: () => setShowShortcuts(true),
+  };
+  // (4.19) Mayús+B = lo mismo que la lupa de la cabecera (filtrar esta sección)
+  const openSectionFilter = () => {
+    if (!canFilterSection) return;
+    const now = document.querySelector('[data-testid="gtd-sec-filter"]');
+    if (now) {
+      focusField(now);
+      return;
+    }
+    primeKeyboard();
+    setSecFilterOpen(true);
+    setTimeout(() => {
+      focusField(document.querySelector('[data-testid="gtd-sec-filter"]'));
+    }, 30);
   };
   const focusSearch = () => {
     if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) setSideOpen(true);
@@ -3939,6 +3954,24 @@ export default function GtdView() {
     } catch (e) {}
     ta.remove();
   };
+  // (4.19) Alt+↑/↓: mover la tarea una posición dentro de su sección, por el mismo camino que el
+  // arrastre de reordenar (solo si esa fila se puede reordenar y la vecina es de su sección)
+  const moveSelected = (task, dir) => {
+    const all = items.filter((i) => i.kind === 'task' && !i.isRef);
+    const at = all.findIndex((i) => i.task.key === task.key);
+    const me = all[at];
+    const nb = all[at + dir];
+    if (!me || !nb || !me.reorderable || !nb.reorderable || nb.section !== me.section) return;
+    if (groupedByStatus) return;
+    const pos = { section: nb.section };
+    if (dir < 0) pos.beforeKey = nb.task.key;
+    else pos.afterKey = nb.task.key;
+    if (onReorderDropRef.current) onReorderDropRef.current(task, pos);
+    setTimeout(() => {
+      const el = document.querySelector(`[data-reorder-key="${CSS.escape(task.key)}"]`);
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+    }, 50);
+  };
   const listKey = (e) => {
     const t = e.target;
     if (t && t.closest && t.closest('.gtd-side')) return false;
@@ -3962,6 +3995,25 @@ export default function GtdView() {
         e.preventDefault();
         setSel(rows.map((r) => r.key));
         setCursor(rows[0].key);
+        return true;
+      }
+      return false;
+    }
+    // (4.19) Alt+↑/↓ mueven la tarea seleccionada (como arrastrarla); Alt+→/← la sangran
+    // (hacerla subtarea de la de encima / sacarla) si «Subtareas» está encendido
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      const ai = selKey ? rows.findIndex((x) => x.key === selKey) : -1;
+      if (ai < 0) return false;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveSelected(rows[ai], e.key === 'ArrowDown' ? 1 : -1);
+        return true;
+      }
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && subtasksOn) {
+        if (['focus', 'scheduled', 'deadline', 'logbook', 'trash', 'tag'].includes(view.id))
+          return false;
+        e.preventDefault();
+        indentSelected(rows[ai], rows, ai, e.key === 'ArrowLeft');
         return true;
       }
       return false;
@@ -4031,12 +4083,14 @@ export default function GtdView() {
     if (idx < 0) return false;
     const task = rows[idx];
     if (e.key === 'Tab') {
-      if (['focus', 'scheduled', 'deadline', 'logbook', 'trash', 'tag'].includes(view.id)) {
-        e.preventDefault();
-        return true;
-      }
+      // (4.19) Tab: plegar/desplegar las notas de la tarea seleccionada (antes: hacerla subtarea,
+      // que ahora es Alt+→ / Alt+←)
+      if (e.shiftKey) return false;
       e.preventDefault();
-      indentSelected(task, rows, idx, e.shiftKey);
+      setNotesOverride((o) => {
+        const cur = o[task.key] || notesMode;
+        return { ...o, [task.key]: cur === 'full' ? 'none' : 'full' };
+      });
       return true;
     }
     if (e.key === 'Enter') {

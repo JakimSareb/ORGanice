@@ -696,7 +696,7 @@ export default function TaskEditor({
     if (onCancelNew) onCancelNew();
     else onClose();
   };
-  // (3.07) en el ordenador, Tab recorre primero Título › Etiquetas › Notas › Estado › Proyecto
+  // (3.07) en el ordenador, Tab recorre Título › Etiquetas › Notas › Estado › Proyecto
   // (Mayús+Tab al revés); desde ahí y en el resto de campos, el orden normal de la ventana.
   const TAB_ORDER = [
     ['gtd-editor-title'],
@@ -704,6 +704,13 @@ export default function TaskEditor({
     ['gtd-editor-notes'],
     ['gtd-editor-list', 'gtd-editor-project-state'],
     ['gtd-editor-project'],
+    // (4.19) …y sigue: tiempo › energía › vence › empieza › Guardar. «vence» (campo de fecha)
+    // solo se entra desde el anterior: dentro conserva el Tab por sus partes (día/mes/año)
+    ['gtd-editor-effort'],
+    ['gtd-editor-energy'],
+    ['gtd-editor-deadline'],
+    ['gtd-editor-schedule-btn'],
+    ['gtd-editor-save'],
   ];
   const tabTarget = (ids) => {
     const root = editorRef.current;
@@ -717,6 +724,7 @@ export default function TaskEditor({
   const onTabKey = (e) => {
     if (sheet || e.ctrlKey || e.metaKey || e.altKey) return false;
     const id = e.target && e.target.getAttribute && e.target.getAttribute('data-testid');
+    if (id === 'gtd-editor-deadline') return false;
     const idx = TAB_ORDER.findIndex((ids) => ids.includes(id));
     if (idx < 0) return false;
     const step = e.shiftKey ? -1 : 1;
