@@ -73,14 +73,16 @@ export const findCaptureTemplate = (templates, name) => {
 // (4.18) Lo compartido dentro de la tarea de la plantilla: si el título de la plantilla está
 // vacío o acaba en espacio (su %? al final, «Llamar a %?»), el texto va en el título; si no, al
 // principio de las notas. Las notas compartidas, al final de las de la plantilla.
-export const fillCaptureDraft = (title, notes, shared) => {
+// `cursorInTitle` (si se sabe): el %? de la plantilla estaba en el título (parseCaptureTemplate)
+export const fillCaptureDraft = (title, notes, shared, cursorInTitle) => {
   const t = String(title || '');
   const n = String(notes || '');
   const st = clean(shared && shared.title);
   const sn = clean(shared && shared.notes);
   if (!st && !sn) return { title: t, notes: n };
-  const inTitle = !!st && (!t.trim() || /\s$/.test(t));
-  const outTitle = inTitle ? t + st : t;
+  const inTitle =
+    !!st && (!t.trim() || (cursorInTitle !== undefined ? !!cursorInTitle : /\s$/.test(t)));
+  const outTitle = inTitle ? (t.trim() && !/\s$/.test(t) ? `${t} ${st}` : t + st) : t;
   const outNotes = [inTitle ? '' : st, n.trim() ? n.replace(/\s+$/, '') : '', sn]
     .filter(Boolean)
     .join('\n');

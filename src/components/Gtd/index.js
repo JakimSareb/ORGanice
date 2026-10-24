@@ -2204,7 +2204,8 @@ export default function GtdView() {
     const filled = fillCaptureDraft(
       (fake.rawTitle || '').replace(PRIORITY_RE, '').replace(/^\s+/, '').replace(/\s+$/, ' '),
       fake.description,
-      opts.shared
+      opts.shared,
+      parsed.initialSubEditor === 'title-editor'
     );
     setOpenKey(null);
     setNewProject(null);

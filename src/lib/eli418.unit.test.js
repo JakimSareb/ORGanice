@@ -124,6 +124,15 @@ describe('4.18 captura desde fuera con plantilla', () => {
       notes: 'Artículo\nFuente\nurl',
     });
     expect(fillCaptureDraft('Leer', 'n', null)).toEqual({ title: 'Leer', notes: 'n' });
+    // el %? estaba en el título (el analizador quita el espacio final)
+    expect(fillCaptureDraft('Leer', '', { title: 'Artículo' }, true)).toEqual({
+      title: 'Leer Artículo',
+      notes: '',
+    });
+    expect(fillCaptureDraft('Leer ', '', { title: 'Artículo' }, false)).toEqual({
+      title: 'Leer ',
+      notes: 'Artículo',
+    });
   });
 });
 
