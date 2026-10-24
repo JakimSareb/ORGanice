@@ -22,6 +22,9 @@ import * as orgActions from '../../../../actions/org';
 import * as baseActions from '../../../../actions/base';
 import { getCurrentTimestampAsText, getCurrentTimestamp } from '../../../../lib/timestamps';
 import { storeHeadingLink } from '../../../../lib/eli_org_links';
+import { headerOrgId, withOrgIdProperty } from '../../../../lib/eli_id_links';
+import { newOrgId } from '../../../../lib/gtd/gtd_model';
+import generateId from '../../../../lib/id_generator';
 import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task_state';
 import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
@@ -353,7 +356,17 @@ export default function EliDocBar({
     base('activatePopup', 'description-editor');
   };
   const copyLink = async () => {
-    const text = storeHeadingLink(path, header.getIn(['titleLine', 'rawTitle']));
+    // (4.24) Siempre por ID: si la cabecera no tiene :ID:, se le pone
+    let orgId = headerOrgId(header);
+    if (!orgId) {
+      orgId = newOrgId();
+      org(
+        'updatePropertyListItems',
+        id,
+        withOrgIdProperty(header.get('propertyListItems'), orgId, generateId())
+      );
+    }
+    const text = storeHeadingLink(orgId, header.getIn(['titleLine', 'rawTitle']));
     let copied = false;
     try {
       await navigator.clipboard.writeText(text);
@@ -362,7 +375,7 @@ export default function EliDocBar({
     showMessage(
       copied ? 'Enlace copiado' : 'Enlace',
       (copied ? 'Pégalo donde quieras. ' : 'No se ha podido copiar; cópialo a mano:\n\n') +
-        `${text}\n\nCon el botón de enlace del editor se inserta con la ruta correcta desde cualquier fichero.`
+        `${text}\n\nEs un enlace por ID: vale desde cualquier fichero aunque la cabecera cambie de sitio o de nombre.`
     );
   };
   const attach = () => {

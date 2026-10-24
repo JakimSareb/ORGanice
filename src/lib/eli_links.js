@@ -1,5 +1,5 @@
 // ORG Mode para Eli: insertar enlaces Org [[enlace][descripción]] en el texto que se edita.
-import { storedHeadingLink, headingLink } from './eli_org_links';
+import { storedHeadingLink } from './eli_org_links';
 
 export const formatOrgLink = (link, description) => {
   const l = (link || '').trim().replace(/\]\]/g, '%5D%5D');
@@ -89,18 +89,13 @@ export const insertLinkInto = async (el, insert) => {
   // Si lo copiado ya es un enlace Org completo [[enlace][descripción]], se separa
   let clipDescription = '';
   const whole = /^\[\[([^\]]+)\](?:\[([^\]]*)\])?\]$/.exec(clip || '');
-  // ORG Mode para Eli: el último enlace copiado a un encabezado (como org-store-link) se
-  // inserta con la ruta relativa al fichero que se está editando
+  // ORG Mode para Eli: el último enlace copiado a un encabezado (como org-store-link); desde la
+  // 4.24 es siempre por ID ([[id:…]]), así vale igual desde cualquier fichero
   const storedLink = storedHeadingLink();
   let storedDescription = '';
   if (storedLink && (!clip || clip === storedLink.clipboardText)) {
-    const m = /\/file(\/.+)$/.exec(decodeURIComponent(window.location.pathname));
-    const full = headingLink(storedLink, m ? m[1] : null);
-    const parts = /^\[\[(.+?)\]\[(.*)\]\]$/.exec(full);
-    if (parts) {
-      clip = parts[1];
-      storedDescription = parts[2];
-    }
+    clip = `id:${storedLink.id}`;
+    storedDescription = storedLink.title || '';
   } else if (whole) {
     clip = whole[1];
     clipDescription = whole[2] || '';
