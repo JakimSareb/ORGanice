@@ -866,6 +866,16 @@ export const canBeParentOf = (parent, task, allTasks = [], byKey = null) => {
   return true;
 };
 
+// (4.22) Llevar una tarea a un proyecto: si está en el fichero del proyecto, en el de tareas o en
+// el de entrada (Inbox) se MUEVE (como siempre); si está en cualquier otro fichero no se toca de
+// sitio: se enlaza con «:PROYECTO: [[id:…]]» (+ :ID: al proyecto). Devuelve true si se enlaza.
+export const linksInsteadOfMoves = (task, project, { tasksPath = null, inboxPaths = [] } = {}) =>
+  !!project &&
+  !!task &&
+  task.path !== project.path &&
+  task.path !== tasksPath &&
+  !inboxPaths.includes(task.path);
+
 // Mover (refile) a un proyecto, o fuera de él (al nivel superior del mismo fichero)
 export const gtdMoveToProject = (task, project) => (dispatch, getState) => {
   const targetPath = project ? project.path : task.path;

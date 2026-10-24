@@ -337,6 +337,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         projRefOwn: !!ownRef && !isProject,
         isInboxFile,
         parentHasKeyword: parent ? parent.hasKeyword : false,
+        // (4.22) su madre directa es un proyecto (sus encabezados sin estado = Referencia)
+        parentIsProject: parent ? !!parent.isProject : false,
         hasTaskChildren: false,
         description: header.get('rawDescription') || '',
         // ORG Mode para Eli (2.11): nº de archivos adjuntos (enlaces a ficheros que no son .org)
@@ -356,6 +358,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         project: isProject ? { id: header.get('id'), path, title: task.title } : task.project,
         projectStart: isProject ? laterDate(task.scheduled, task.projectStart) : task.projectStart,
         hasKeyword: !!keyword || (parent ? parent.hasKeyword : false),
+        isProject,
         projRef: isProject ? null : projRef,
       });
     });
@@ -427,7 +430,14 @@ const hiddenBy = (t, s, today) => {
 const matchesList = (task, s) => {
   if (matchesSectionRules(task, s, propertyOfTask)) return true;
   if (s.inboxFile && !task.keyword && task.isInboxFile && !task.parentHasKeyword) return true;
-  if (s.noStateLeaf && !task.keyword && !task.hasTaskChildren && !task.parentHasKeyword) {
+  // (4.22) …también los encabezados sin estado de un proyecto (material de apoyo, como Allen):
+  // una tarea llevada a Referencia desde un proyecto sigue en él y sale en la lista Referencia
+  if (
+    s.noStateLeaf &&
+    !task.keyword &&
+    !task.hasTaskChildren &&
+    (!task.parentHasKeyword || task.parentIsProject)
+  ) {
     return true;
   }
   return false;
@@ -708,7 +718,8 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
   const byId = {};
   out.forEach((sec) => (byId[sec.id] = sec));
   tasks
-    .filter((t) => inProject(t, projectTask) && t.keyword && !t.isProject && !t.isTrashed)
+    // (4.22) un proyecto dentro de este sale como una fila más (sección Todo, como en Focus)
+    .filter((t) => inProject(t, projectTask) && t.keyword && !t.isTrashed)
     .sort(byProjectOrder)
     .filter((t) => {
       if (t.isDone) return true;
@@ -736,6 +747,88 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
     .sort(byProjectOrder);
   out.push({ id: 'refs', label: 'Referencias', icon: 'far fa-file-alt', tasks: refs });
   return out;
+};
+
+// (4.22) Tarea (o cabecera) por su :ID: (org-id), sin distinguir mayúsculas; las de la Papelera no
+export const taskByOrgId = (tasks, id) => {
+  const want = String(id || '')
+    .trim()
+    .toLowerCase();
+  if (!want) return null;
+  return tasks.find((t) => !t.isTrashed && t.orgId && t.orgId.toLowerCase() === want) || null;
+};
+
+// (4.22) Proyectos con sus subproyectos debajo: [{ p, depth }]. Un subproyecto cuelga de su madre si
+// esta también está en la lista; si no, va al nivel superior. Respeta el orden recibido.
+export const nestProjects = (list) => {
+  const keys = new Set(list.map((p) => p.key));
+  const parentKey = (p) => (p.project ? `${p.project.path}::${p.project.id}` : null);
+  const kids = new Map();
+  const roots = [];
+  list.forEach((p) => {
+    const pk = parentKey(p);
+    if (pk && pk !== p.key && keys.has(pk)) {
+      if (!kids.has(pk)) kids.set(pk, []);
+      kids.get(pk).push(p);
+    } else roots.push(p);
+  });
+  const out = [];
+  const seen = new Set();
+  const walk = (p, depth) => {
+    if (seen.has(p.key)) return;
+    seen.add(p.key);
+    out.push({ p, depth });
+    (kids.get(p.key) || []).forEach((c) => walk(c, depth + 1));
+  };
+  roots.forEach((p) => walk(p, 0));
+  // por si hubiera un ciclo raro: lo que falte va al final
+  list.forEach((p) => walk(p, 0));
+  return out;
+};
+
+// (4.22) Contenido de una referencia: sus notas y, debajo, los encabezados sin estado que cuelgan
+// de ella (con sus notas), para verlo todo con el botón de notas de la fila
+export const refContentOf = (tasks, ref) => {
+  if (!ref) return '';
+  const parts = [(ref.description || '').replace(/\s+$/, '')];
+  const same = tasks.filter((t) => t.path === ref.path && t.index > ref.index);
+  same.sort((a, b) => a.index - b.index);
+  let skipLevel = null; // lo que cuelga de una tarea con estado no es contenido de la referencia
+  for (const t of same) {
+    if (t.level <= ref.level) break;
+    if (skipLevel !== null) {
+      if (t.level > skipLevel) continue;
+      skipLevel = null;
+    }
+    if (t.keyword) {
+      skipLevel = t.level;
+      continue;
+    }
+    parts.push(`*${t.title || '(sin título)'}*`);
+    const d = (t.description || '').replace(/\s+$/, '');
+    if (d) parts.push(d);
+  }
+  return parts.filter((x) => x && x.trim()).join('\n');
+};
+
+// (4.22) Referencias de un proyecto para la vista: las que cuelgan de otra referencia de la lista
+// no salen aparte; su contenido va en el de la madre (botón de notas de la fila)
+export const collapseRefs = (allTasks, refs) => {
+  const inList = new Set(refs.map((r) => r.key));
+  const byId = new Map(allTasks.map((t) => [`${t.path}::${t.id}`, t]));
+  const nested = (t) => {
+    const p = t.parentId != null ? byId.get(`${t.path}::${t.parentId}`) : null;
+    return !!p && inList.has(p.key);
+  };
+  return refs
+    .filter((t) => !nested(t))
+    .map((t) => {
+      const content = refContentOf(allTasks, t);
+      // refAggregated: la descripción lleva también lo de las hijas (no es su texto real)
+      return content.trim() !== (t.description || '').trim()
+        ? { ...t, description: content, refAggregated: true }
+        : t;
+    });
 };
 
 // Agrupar una lista por proyecto: primero las sueltas (sin proyecto), después cada proyecto en el
