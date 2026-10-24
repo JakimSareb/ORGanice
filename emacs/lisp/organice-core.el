@@ -97,7 +97,7 @@ nil: solo los de `organice-agenda-files'."
 (setq org-tag-alist
       '(("@ordenador" . ?o) ("@casa" . ?h) ("@llamadas" . ?l) ("@inbox" . ?i)
         ("@videos" . ?v) ("@leer" . ?r) ("@recados" . ?e) ("@anywhere" . ?a)
-        ("sleep" . ?z) ("crypt" . ?c))
+        ("crypt" . ?c))
       org-fast-tag-selection-single-key nil
       org-tags-column -80)
 
@@ -108,7 +108,7 @@ nil: solo los de `organice-agenda-files'."
       org-columns-default-format "%40ITEM %10Effort %10Energy %CLOCKSUM")
 
 ;; El ÁREA se hereda de los encabezados de arriba (como en la vista GTD)
-(setq org-use-property-inheritance '("AREA"))
+(setq org-use-property-inheritance '("AREA" "STATUS"))
 
 ;;;; Escritura, como la app (y como Emacs con org-adapt-indentation nil) ----------------------
 
@@ -190,7 +190,7 @@ Una línea #+ARCHIVE: del fichero, o la propiedad ARCHIVE, siguen mandando."
 (setq epa-file-select-keys nil          ; simétrico (frase de paso) salvo que el fichero diga otra cosa
       epg-pinentry-mode 'loopback)
 (org-crypt-use-before-save-magic)
-(setq org-tags-exclude-from-inheritance '("crypt" "sleep")
+(setq org-tags-exclude-from-inheritance '("crypt")
       org-crypt-key nil                  ; nil = frase de paso (como la app por defecto)
       org-crypt-disable-auto-save 'encrypt)
 
@@ -367,6 +367,93 @@ Devuelve la lista de bloques (cada uno, lista de líneas) en su orden."
                "El historial ya está ordenado"))
     n))
 (defalias 'organice-tidy-state-log #'eli/estados-a-logbook)
+
+;;;; (4.17) Ficheros del Tickler y de los Horizontes, como en la app ---------------------------
+
+(defcustom organice-tickler-file "tickler.org"
+  "Fichero del Tickler (junto al de entrada): «* *[ TICKLER 2026 ]*» › «** OCTUBRE» › entradas
+sin estado con SCHEDULED = el día del recordatorio."
+  :type 'string)
+
+(defcustom organice-horizons-file "horizons.org"
+  "Fichero de los horizontes de GTD (propósito, visión, objetivos y áreas), como en la app."
+  :type 'string)
+
+(defun organice-tickler-path () (expand-file-name organice-tickler-file organice-directory))
+(defun organice-horizons-path () (expand-file-name organice-horizons-file organice-directory))
+
+;;;; (3.10) Fecha de creación: propiedad :CREATED: dentro del cajón :PROPERTIES: ------------------
+
+(defun organice-created-stamp (&optional time)
+  "«[2026-10-24 Sat 13:10]», con el día de la semana en inglés como la app."
+  (let ((system-time-locale "C"))
+    (format-time-string "[%Y-%m-%d %a %H:%M]" time)))
+
+(defun organice-set-created (&optional pom)
+  "Pone :CREATED: (si falta) al encabezado de POM (o del punto)."
+  (unless (org-entry-get (or pom (point)) "CREATED")
+    (org-entry-put (or pom (point)) "CREATED" (organice-created-stamp))))
+
+;;;; (3.17) Proyectos dormidos: propiedad «:STATUS: sleep» (se hereda), no la etiqueta :sleep: ---
+
+(defun organice-sleeping-p (&optional own)
+  "¿Está dormido el encabezado del punto? OWN: solo su propio :STATUS: (no el heredado)."
+  (let ((v (org-entry-get (point) "STATUS" (not own))))
+    (and v (string= (downcase (string-trim v)) "sleep"))))
+
+(defun organice-migrate-sleep-tags ()
+  "Pasa las etiquetas :sleep: antiguas (de antes de la 3.17) a «:STATUS: sleep», con confirmación.
+La app ya no hace caso de esa etiqueta: sin pasarlos, esos proyectos están despiertos."
+  (interactive)
+  (let (found)
+    (org-map-entries (lambda () (when (member "sleep" (org-get-tags nil t))
+                                  (push (point-marker) found)))
+                     nil 'agenda)
+    (if (not found)
+        (message "No hay etiquetas :sleep:")
+      (when (yes-or-no-p (format "%d encabezado(s) con :sleep:. ¿Pasarlos a :STATUS: sleep? "
+                                 (length found)))
+        (dolist (m found)
+          (with-current-buffer (marker-buffer m)
+            (org-with-wide-buffer
+             (goto-char m)
+             (org-toggle-tag "sleep" 'off)
+             (org-entry-put (point) "STATUS" "sleep")))
+          (set-marker m nil))
+        (org-save-all-org-buffers)
+        (message "Pasados: %d" (length found))))))
+
+;;;; (3.06) Al terminar una tarea con subtareas abiertas, preguntar (como la app) -----------------
+
+(defvar org-state)
+(defvar organice--asking-subtasks nil)
+(defvar organice-no-subtask-question nil
+  "t mientras un comando ya ha decidido qué hacer con las subtareas (p. ej. cerrar un proyecto).")
+
+(defun organice--open-subtask-markers ()
+  (let (out)
+    (save-excursion
+      (org-back-to-heading t)
+      (let ((end (save-excursion (org-end-of-subtree t t))))
+        (while (and (outline-next-heading) (< (point) end))
+          (let ((kw (org-get-todo-state)))
+            (when (and kw (not (member kw org-done-keywords)))
+              (push (point-marker) out))))))
+    (nreverse out)))
+
+(defun organice--ask-done-subtasks ()
+  "En `org-after-todo-state-change-hook': «¿Marcar también las subtareas como hechas?»."
+  (when (and (not organice--asking-subtasks) (not organice-no-subtask-question)
+             (member org-state org-done-keywords)
+             (not (member (bound-and-true-p org-last-state) org-done-keywords)))
+    (let ((subs (organice--open-subtask-markers)))
+      (when (and subs (y-or-n-p (format "¿Marcar también las %d subtarea(s) abiertas como %s? "
+                                        (length subs) org-state)))
+        (let ((organice--asking-subtasks t) (state org-state))
+          (dolist (m subs)
+            (save-excursion (goto-char m) (org-todo state))
+            (set-marker m nil)))))))
+(add-hook 'org-after-todo-state-change-hook #'organice--ask-done-subtasks)
 
 (provide 'organice-core)
 ;;; organice-core.el ends here

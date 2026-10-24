@@ -8,6 +8,11 @@ con los temas Unicornio y Cuki, la paleta de comandos y los mismos atajos de for
 Lo que hagas en Emacs lo ve la app y al revés: los dos escriben Org estándar en los mismos
 ficheros.
 
+*Al día con la app 4.17* (octubre de 2026): proyectos dormidos con =:STATUS: sleep=, =:CREATED:= en
+el cajón de propiedades, Tickler, Horizontes, Pomodoro y los procesos de David Allen (Procesar
+Inbox, Revisión diaria, semanal y de horizontes, Volcado mental, Planificar un proyecto…). Ver
+[[*Novedades: al día con la 4.17]].
+
 * Qué hay en esta carpeta
 | Fichero                     | Qué hace                                                                 |
 |-----------------------------+--------------------------------------------------------------------------|
@@ -21,6 +26,12 @@ ficheros.
 | =lisp/organice-themes.el=   | Temas =unicornio=, =unicornio-oscuro=, =cuki=, =cuki-oscuro=.              |
 | =lisp/organice-ui.el=       | Paleta de comandos, atajos, formato, sincronizar, Documentos ⇄ GTD.       |
 | =lisp/organice-sidebar.el=  | Menú lateral de la vista GTD (secciones con contador y proyectos).        |
+| =lisp/organice-proc.el=     | (4.17) Tarjetas paso a paso de los procesos, con botones por tarea.       |
+| =lisp/organice-tickler.el=  | (4.17) Tickler (=tickler.org= por años y meses) y su vista.                |
+| =lisp/organice-horizons.el= | (4.17) Horizontes (=horizons.org=), objetivo y plazo, vista y revisión.    |
+| =lisp/organice-allen.el=    | (4.17) Procesos de David Allen (Procesar Inbox, revisiones, volcado…).    |
+| =lisp/organice-allen-data.el= | (4.17) Textos oficiales de los procesos (generados de la app).          |
+| =lisp/organice-pomodoro.el= | (4.17) Pomodoro con CLOCK en la tarea «Pomodoro».                          |
 
 * Instalación (sin tocar tu configuración actual)
 Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask emacs=, o
@@ -61,7 +72,7 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Capturar (tecla c + letra)              | =C-c c= + letra                                     |
 | Sincronizar (↻)                         | =C-c s= o =F5= (además se guarda y relee solo)      |
 | ★ [#A]                                  | =C-c g *=                                           |
-| Dormir / despertar proyecto (:sleep:)   | =C-c g z= / =C-u C-c g z=                           |
+| Dormir / despertar (:STATUS: sleep)     | =C-c g z= / =C-u C-c g z=                           |
 | Cerrar proyecto (terminado/cancelado)   | =C-c g x=                                           |
 | Archivar todas las terminadas           | =C-c g A= (en el fichero)                           |
 | Archivar una                            | =C-c C-x C-s= (el de siempre de Org)                |
@@ -90,10 +101,13 @@ Hace falta *Emacs 29 o posterior* (en el Mac, por ejemplo =brew install --cask e
 | Secciones propias, ocultar/renombrar (Ajustes) | =organice-gtd-menu= (ver =lisp/organice-sidebar.el=) |
 | Dos columnas                            | =C-x 3= (una: =C-x 1=)                              |
 | (2.17) Esc / Tab en el buscador de GTD  | Sin equivalente: en Emacs se usa =/= en la agenda (filtro)  |
-| (2.17) Fecha de creación en tareas nuevas | Las plantillas de captura escriben =:Created: [fecha]= (=organice-capture.el=) |
+| (3.10) Fecha de creación en tareas nuevas | Las plantillas de captura escriben =:CREATED: [fecha]= en =:PROPERTIES:= (=organice-capture.el=) |
 | (2.17) De inbox.org a tasks.org al dar estado | Automático al cambiar el estado (=organice-refile-from-inbox=, =nil= para desactivarlo) |
 | (2.17) Botón «Refile» de GTD            | =C-c C-w= (org-refile) en el encabezado, o dar estado desde la agenda |
-| (2.17) «Archivar todas» solo de ciertos ficheros | =C-c g B= con =(setq organice-archive-files '("tasks.org" "casa.org"))= (nil: todos) |
+| (2.17) Como la app (3.43), las tareas hechas de un *proyecto que sigue abierto* no se archivan: se quedan
+con él y, cuando el proyecto se termina, se archiva todo junto.
+
+«Archivar todas» solo de ciertos ficheros | =C-c g B= con =(setq organice-archive-files '("tasks.org" "casa.org"))= (nil: todos) |
 | (2.17) Sin ^M al final de las líneas    | Automático: se guarda siempre con finales de línea Unix |
 | (2.17) Calendario: semanas y festivos con interruptor | =W= (semanas) y =X= (festivos) dentro del calendario |
 | (2.17) Encabezados DONE / CANCELLED atenuados | La cara =org-headline-done= de los temas de ORGanice (ya lo hacía) |
@@ -135,7 +149,7 @@ Mismas reglas por defecto que la app:
 | Next / Todo / Waiting / Someday | =NEXT= / =TODO= / =WAITING= / =MAYBE=                   |
 | Scheduled   | Programadas para más adelante y todos los hábitos: normales, «Se repiten», «Hábitos» |
 | Deadline    | Con fecha límite                                                            |
-| Proyectos   | =PROJECT=: activos, programados (SCHEDULED futuro) y dormidos (=:sleep:=)      |
+| Proyectos   | =PROJECT=: activos, programados (SCHEDULED futuro) y dormidos (=:STATUS: sleep=) |
 | Reference   | Encabezados sin estado ni tareas debajo                                     |
 | Logbook     | Terminadas sin archivar: esta semana, la pasada, el mes pasado, este año, anteriores |
 - Una tarea va a una sola lista: la primera que encaja en el orden Inbox, Next, Todo, Waiting,
@@ -164,8 +178,8 @@ Si en la app cambiaste las secciones, pon aquí lo mismo para que ambas vean lo 
 =C-c c= y la letra: =i= Inbox, =t= TODO, =n= NEXT, =p= proyecto, =h= hábito, =l= nota con enlace.
 Para que coincidan con tus plantillas de la app (Ajustes → Plantillas de captura), edita
 =lisp/organice-capture.el=: misma letra, mismo fichero y mismo texto.
-Desde la 2.17 las plantillas escriben =:Created: [fecha]= bajo el título, como las tareas nuevas de
-la vista GTD de la app. Al dar estado a un encabezado de primer nivel de =inbox.org=, pasa solo
+Las plantillas escriben la propiedad =:CREATED: [fecha]= en el cajón =:PROPERTIES:=, como las tareas
+nuevas de la vista GTD de la app (desde la 3.10; las antiguas con la línea =:Created:= se leen igual). Al dar estado a un encabezado de primer nivel de =inbox.org=, pasa solo
 al final de =tasks.org= (como en la app; =(setq organice-refile-from-inbox nil)= lo desactiva).
 
 ** Archivar
@@ -175,6 +189,9 @@ Por defecto, junto al fichero (=tareas.org_archive=). Para guardar lo archivado 
 (customize-set-variable 'organice-archive-in-subfolder t)
 #+end_src
 (la carpeta se crea sola). Una línea =#+ARCHIVE:= del fichero sigue mandando.
+
+Como la app (3.43), las tareas hechas de un *proyecto que sigue abierto* no se archivan: se quedan
+con él y, cuando el proyecto se termina, se archiva todo junto.
 
 «Archivar todas» solo de ciertos ficheros (Ajustes → Vista GTD → Ficheros de la app): =C-c g B=
 archiva las terminadas de todos los ficheros, o solo de estos si los indicas:
@@ -237,6 +254,71 @@ Emacs guarda solo a los 5 segundos (=auto-save-visited-mode=) y relee los ficher
 Dropbox (=global-auto-revert-mode=), así que no hace falta pulsar nada. Evita editar la misma
 tarea a la vez en la app y en Emacs: gana el último en guardar (la app avisa si hay conflicto;
 Emacs pregunta si el fichero cambió en disco).
+
+* Novedades: al día con la 4.17
+Todo escribe en los ficheros exactamente lo mismo que la app, así que puedes empezar un proceso en
+el móvil y terminarlo en Emacs.
+
+** Cambios en los ficheros (compatibilidad)
+- *Proyectos dormidos*: la propiedad =:STATUS: sleep= (se hereda: lo que cuelga de algo dormido
+  también duerme), como la app desde la 3.17. La etiqueta =:sleep:= ya no significa nada; si tenías
+  proyectos dormidos con ella de antes, =M-x organice-migrate-sleep-tags= los pasa (pregunta antes).
+- *Fecha de creación*: =:CREATED:= dentro de =:PROPERTIES:= (3.10).
+- *Archivar*: lo hecho de un proyecto abierto se queda con él (3.43).
+- *Terminar una tarea con subtareas abiertas* pregunta si marcarlas también (3.06).
+
+** Procesos de David Allen (=C-c g e= para elegir uno)
+Se abren en una *tarjeta* (un buffer propio), paso a paso como en la app: =n= / =SPC= paso
+siguiente, =p= anterior, =TAB= salta entre botones, =RET= pulsa el botón (en el título de una
+tarea, la abre al lado), =a= apunta algo al Inbox, =g= recalcula, =q= sale. Cada tarea lleva sus
+botones (✓ Hecha, → Mañana, Fecha…, Al Inbox, Reclamar…).
+
+| Proceso                                     | Atajo     | Qué hace                                                                                         |
+|---------------------------------------------+-----------+--------------------------------------------------------------------------------------------------|
+| Procesar Inbox                              | =C-c g I= | Una a una, las preguntas oficiales: ¿requiere acción? (papelera, referencia, someday, tickler) → ¿siguiente acción? → 2 minutos / delegar / aplazar → ¿forma parte de un proyecto? (=e= edita la tarea; =C-M-c= vuelve) |
+| Revisión diaria                             | =C-c g v= | Calendario de hoy, Tickler de hoy (Al Inbox), Waiting vencidos y repaso de Next; acaba en ¿Qué hago ahora? |
+| ¿Qué hago ahora?                            | =C-c g h= | Dónde estás (@), tiempo y energía, o «rápido»: hasta 3 acciones de Next (Otras = 3 más)           |
+| Revisión semanal                            | =C-c g W= | La oficial en tres fases: Despejar · Al día (proyectos uno a uno, objetivos…) · Crear            |
+| Revisión de horizontes                      | =C-c g V= | Áreas, objetivos, visión y propósito (de abajo arriba)                                           |
+| Volcado mental                              | =C-c g M= | La lista oficial de disparadores (19 profesionales + 20 personales); lo apuntado va al Inbox      |
+| Planificar un proyecto nuevo                | =C-c g N= | Modelo de Planificación Natural: propósito y principios, resultado, ideas (con los disparadores), componentes, siguientes acciones, ¿sigue en tu mente? |
+| Replanificar el proyecto del punto          | =C-c g G= | Lo mismo sobre un proyecto existente: actualiza sus notas y solo *añade* lo nuevo                  |
+| Aclarar proyectos atascados                 | =C-c g S= | Los activos sin acción en Next y los dormidos: siguiente paso, dormir o cerrar                   |
+| Repaso de Waiting                           | =C-c g Q= | Las esperas por persona: recibida, reclamar (tarea en Next) o copiar un mensaje                  |
+| Repaso de Someday/Maybe                     | =C-c g U= | Activar (→ Next) o a la Papelera; despertar proyectos dormidos                                    |
+
+Con =organice-allen-strict= en =nil=, el Volcado mental incluye el bloque «Extra» (no oficial).
+«Planificar el día» y «Cerrar el día» de la app no son de Allen y no están en Emacs. La fecha de
+la última revisión semanal y de cada horizonte se guarda en =organice-reviews.eld= (carpeta de
+configuración), no en el fichero.
+
+** Tickler (=C-c g T=)
+=tickler.org= (junto al de entrada; =organice-tickler-file=) con la estructura de la app:
+=* *[ TICKLER 2026 ]*= › =** DICIEMBRE= … =** ENERO= › entradas *sin estado* con =SCHEDULED= = el día
+del recordatorio (año y mes se crean solos). La vista agrupa por cuándo aparecen (hoy o antes,
+mañana, cada día de este mes, meses siguientes, sin fecha) con *Fecha…*, *+1 d*, *+1 s*, *+1 m* (si
+cambia de mes, se mueve bajo el nuevo), *→ Inbox*, *→ Next* y *Borrar*; *＋ Añadir* crea una.
+=C-c g F= manda al Tickler la tarea del punto (en un fichero o en la agenda).
+
+** Horizontes (=C-c g H=)
+=horizons.org= (=organice-horizons-file=; si no existe, pregunta si crearlo con la plantilla de la
+app): Propósito y principios, Visión, Objetivos (cada =**= con =:ID:=, =:AREA:= y =:PLAZO:=) y
+Áreas. La vista enseña los objetivos por plazo y las áreas con sus proyectos (⚠ = ningún proyecto
+activo), los proyectos sin objetivo ni área y, arriba, los avisos de las frecuencias oficiales
+(proyectos cada semana, áreas cada mes, objetivos cada año con recalibrado trimestral).
+=C-c g O= pone el objetivo del proyecto del punto (=:OBJETIVO: [[id:…][Título]]=; si no tiene área,
+toma la del objetivo; =C-u= lo quita) y =C-c g L= el plazo de un objetivo.
+
+** Menú lateral
+Tiene ahora *Tickler* (con el número de lo que toca hoy), *Procesar Inbox* y *Revisión semanal*.
+*Horizontes* está apagado de inicio, como en la app; para verlo, quita =:show nil= de su línea en
+=organice-gtd-menu=.
+
+** Pomodoro (=C-c g %=)
+Un contador en la línea de estado (🍅 trabajo, ☕ descanso); con él en marcha, =C-c g %= pausa,
+sigue, salta o para. Cada pomodoro de trabajo (de 1 minuto o más) queda como un =CLOCK= en la tarea
+sin estado «Pomodoro» del fichero de tareas, igual que en la app. Tiempos:
+=organice-pomodoro-work= (25), =-short= (5), =-long= (15) y =-every= (4).
 
 * Mezclar con tu configuración
 Todo está en módulos independientes. Lo más sencillo:

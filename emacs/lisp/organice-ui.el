@@ -12,6 +12,11 @@
 ;;   las de proyecto no encontrado (vista «gY» de C-c a).
 ;; - (3.01) Turnos de acomodadores: C-c g u n mes nuevo, d disponibles, s sumar, o abrir.
 ;; - Menú lateral de GTD (como la app): sale solo al entrar en GTD; C-c g b lo muestra u oculta.
+;; - (4.17) Al día con la app 4.17: C-c g e Procesos (elegir uno), I Procesar Inbox, v Revisión
+;;   diaria, W Revisión semanal, V Revisión de horizontes, M Volcado mental, N Planificar un
+;;   proyecto, G Replanificar, S Proyectos atascados, Q Repaso de Waiting, U Repaso de Someday,
+;;   h ¿Qué hago ahora?; T Tickler, F mandar al Tickler; H Horizontes, O objetivo del proyecto,
+;;   L plazo del objetivo; % Pomodoro.
 ;; - Formato como en la app: ⌘B negrita, ⌘I cursiva, ⌘U subrayado, ⌘⇧X tachado, ⌘E código,
 ;;   ⌘⇧E literal (en Linux/Windows, la tecla Super; y siempre también C-c e b/i/u/s/c/v).
 
@@ -22,6 +27,10 @@
 (require 'organice-calendar)
 (require 'organice-sidebar)
 (require 'organice-acomodadores)
+(require 'organice-tickler)
+(require 'organice-horizons)
+(require 'organice-allen)
+(require 'organice-pomodoro)
 
 ;;;; Completado: vertico + orderless (búsqueda tolerante) + marginalia + consult ---------------
 
@@ -103,6 +112,26 @@
     ("GTD: Reference" . organice-gtd-reference)
     ("GTD: Logbook" . organice-gtd-logbook)
     ("Todos los proyectos" . organice-gtd-projects)
+    ("Procesos…" . organice-processes)
+    ("Procesar Inbox" . organice-process-inbox)
+    ("Revisión diaria" . organice-daily-review)
+    ("Revisión semanal" . organice-weekly-review)
+    ("Revisión de horizontes" . organice-horizons-review)
+    ("Volcado mental" . organice-mind-sweep)
+    ("Planificar un proyecto nuevo" . organice-plan-project)
+    ("Replanificar el proyecto" . organice-replan-project)
+    ("Aclarar proyectos atascados" . organice-stuck-projects)
+    ("Repaso de Waiting" . organice-waiting-review)
+    ("Repaso de Someday/Maybe" . organice-someday-review)
+    ("¿Qué hago ahora?" . organice-what-now)
+    ("GTD: Tickler" . organice-tickler)
+    ("Mandar al Tickler…" . organice-to-tickler)
+    ("GTD: Horizontes" . organice-horizons)
+    ("Objetivo del proyecto…" . organice-set-objective)
+    ("Plazo del objetivo…" . organice-set-term)
+    ("Iniciar / pausar pomodoro" . organice-pomodoro)
+    ("Dormir / despertar (:STATUS: sleep)" . organice-set-sleep)
+    ("Pasar etiquetas :sleep: antiguas a :STATUS: sleep" . organice-migrate-sleep-tags)
     ("Sincronizar" . organice-sync)
     ("Archivar las terminadas de este fichero" . organice-archive-done)
     ("Archivar las terminadas (ficheros elegidos)" . organice-archive-done-all)
@@ -208,6 +237,25 @@
     (define-key m "Y" #'organice-unlink-orphans)
     ;; (3.01) turnos de acomodadores: C-c g u n (mes nuevo), d (disponibles), s (sumar), o (abrir)
     (define-key m "u" organice-acom-map)
+    ;; (4.17) procesos de Allen, Tickler, Horizontes y Pomodoro
+    (define-key m "e" #'organice-processes)
+    (define-key m "I" #'organice-process-inbox)
+    (define-key m "v" #'organice-daily-review)
+    (define-key m "W" #'organice-weekly-review)
+    (define-key m "V" #'organice-horizons-review)
+    (define-key m "M" #'organice-mind-sweep)
+    (define-key m "N" #'organice-plan-project)
+    (define-key m "G" #'organice-replan-project)
+    (define-key m "S" #'organice-stuck-projects)
+    (define-key m "Q" #'organice-waiting-review)
+    (define-key m "U" #'organice-someday-review)
+    (define-key m "h" #'organice-what-now)
+    (define-key m "T" #'organice-tickler)
+    (define-key m "F" #'organice-to-tickler)
+    (define-key m "H" #'organice-horizons)
+    (define-key m "O" #'organice-set-objective)
+    (define-key m "L" #'organice-set-term)
+    (define-key m "%" #'organice-pomodoro)
     m)
   "Atajos de la vista GTD (C-c g …).")
 

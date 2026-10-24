@@ -3,7 +3,8 @@
 ;; C-c c (o la tecla c de la app) → letra de la plantilla.
 ;; Cambia o añade plantillas aquí para que coincidan con las tuyas de la app
 ;; (Ajustes → Plantillas de captura): misma letra, mismo fichero y mismo texto.
-;; (2.17) Las tareas nuevas llevan «:Created: [fecha]», como las de la vista GTD de la app.
+;; (3.10) Las tareas nuevas llevan la propiedad :CREATED: [fecha] en su cajón :PROPERTIES:, como las
+;; de la vista GTD de la app (las antiguas con la línea «:Created:» se siguen leyendo igual).
 
 (require 'org-capture)
 (require 'organice-core)
@@ -11,23 +12,23 @@
 (setq org-capture-templates
       `(("i" "Inbox (entrada)" entry
          (file ,(organice-inbox-path))
-         "* %?\n:Created: %U\n" :empty-lines 0 :prepend nil)
+         "* %?\n:PROPERTIES:\n:CREATED: %(organice-created-stamp)\n:END:\n" :empty-lines 0 :prepend nil)
         ("t" "Tarea (TODO)" entry
          (file ,(organice-tasks-path))
-         "* TODO %?\n:Created: %U\n" :empty-lines 0)
+         "* TODO %?\n:PROPERTIES:\n:CREATED: %(organice-created-stamp)\n:END:\n" :empty-lines 0)
         ("n" "Siguiente acción (NEXT)" entry
          (file ,(organice-tasks-path))
-         "* NEXT %?\n:Created: %U\n" :empty-lines 0)
+         "* NEXT %?\n:PROPERTIES:\n:CREATED: %(organice-created-stamp)\n:END:\n" :empty-lines 0)
         ("p" "Proyecto" entry
          (file ,(organice-tasks-path))
-         "* PROJECT %?\n:Created: %U\n** NEXT \n" :empty-lines 0)
+         "* PROJECT %?\n:PROPERTIES:\n:CREATED: %(organice-created-stamp)\n:END:\n** NEXT \n" :empty-lines 0)
         ("h" "Hábito" entry
          (file ,(organice-tasks-path))
-         "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (current-time) nil nil nil nil \" .+1d\")\n:PROPERTIES:\n:STYLE: habit\n:END:\n:Created: %U\n"
+         "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (current-time) nil nil nil nil \" .+1d\")\n:PROPERTIES:\n:STYLE: habit\n:CREATED: %(organice-created-stamp)\n:END:\n"
          :empty-lines 0)
         ("l" "Nota con enlace a lo que estaba viendo" entry
          (file ,(organice-inbox-path))
-         "* %?\n:Created: %U\n%a\n" :empty-lines 0)))
+         "* %?\n:PROPERTIES:\n:CREATED: %(organice-created-stamp)\n:END:\n%a\n" :empty-lines 0)))
 
 ;; Tras capturar, guardar (Dropbox lo sube) como hace la app
 (add-hook 'org-capture-after-finalize-hook #'org-save-all-org-buffers)

@@ -1,6 +1,6 @@
 ;;; init.el --- ORGanice para Emacs: configuración limpia  -*- lexical-binding: t; -*-
 
-;; Réplica en Emacs del sistema de ORGanice (la app de Org Mode sobre Dropbox):
+;; Réplica en Emacs del sistema de ORGanice (la app de Org Mode sobre Dropbox), al día con la 4.17:
 ;; mismos ficheros, estados, etiquetas, propiedades, capturas, archivo y vistas GTD.
 ;;
 ;; Requiere Emacs 29 o posterior. Para probarla SIN tocar tu configuración actual:
@@ -60,6 +60,10 @@
 (require 'organice-attach)    ; adjuntos: adjuntar, abrir, borrar, clip 📎 y revisar terminadas
 (require 'organice-calendar)  ; calendario: español, lunes primero, semanas, festivos, Luna
 (require 'organice-themes)    ; temas Unicornio y Cuki (claro y oscuro)
+(require 'organice-tickler)   ; (4.17) Tickler: tickler.org por años y meses, con su vista
+(require 'organice-horizons)  ; (4.17) horizontes: horizons.org, :OBJETIVO:, :PLAZO:
+(require 'organice-allen)     ; (4.17) procesos de David Allen (Procesar Inbox, revisiones…)
+(require 'organice-pomodoro)  ; (4.17) Pomodoro con CLOCK en la tarea «Pomodoro»
 (require 'organice-ui)        ; paleta de comandos, atajos, formato, modos Documentos/GTD
 
 ;;; init.el ends here

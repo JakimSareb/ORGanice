@@ -17,6 +17,10 @@
 (require 'organice-core)
 (require 'organice-gtd)
 
+(declare-function organice-tickler-today "organice-tickler")
+(declare-function organice-horizons-view-data "organice-horizons")
+(declare-function organice--project-alive-p "organice-horizons")
+
 (defcustom organice-sidebar-width 30
   "Ancho del menú lateral (en caracteres)."
   :type 'integer :group 'organice)
@@ -27,6 +31,7 @@
 
 ;; Secciones de la vista GTD: las de siempre y las propias. Cada una:
 ;;   (TECLA ICONO NOMBRE . OPCIONES)
+;; (4.17) TECLA también puede ser un comando (Tickler, Horizontes, Procesar Inbox, Revisión semanal).
 ;; OPCIONES: :show nil (ocultarla), :count LISTA (qué contar; las de siempre) y, en las
 ;; secciones PROPIAS (TECLA nil), sus reglas: :tags, :states o :props, como en Ajustes de la
 ;; app. Una tarea abierta sale en una sección propia si cumple alguna regla (también por las
@@ -41,9 +46,13 @@
     ("gs" "🗓" "Scheduled" :count scheduled)
     ("gd" "⚑"  "Deadline"  :count deadline)
     ("gm" "☁"  "Someday"   :count someday)
+    (organice-tickler "🔔" "Tickler" :count tickler)
     ("gp" "◆"  "Proyectos" :count projects)
+    (organice-horizons "🎯" "Horizontes" :count horizons :show nil)
     ("gr" "📄" "Reference" :count reference)
-    ("gl" "✔"  "Logbook"))
+    ("gl" "✔"  "Logbook")
+    (organice-process-inbox "⇥" "Procesar Inbox")
+    (organice-weekly-review "↻" "Revisión semanal"))
   "Secciones de la vista GTD (menú lateral y menú de la agenda), en su orden."
   :type '(repeat sexp) :group 'organice)
 
@@ -134,6 +143,22 @@
                         (when (organice-gtd--custom-match-p (nth 2 cs)) (bump (intern (car cs)))))))
                   (error nil)))
               nil 'file))))))
+    ;; (4.17) Tickler: lo que toca hoy o antes · Horizontes: objetivos y áreas sin proyecto activo
+    (when (fboundp 'organice-tickler-today)
+      (ignore-errors (setf (alist-get 'tickler counts) (length (organice-tickler-today)))))
+    (when (and (fboundp 'organice-horizons-view-data)
+               (seq-some (lambda (e) (and (eq (car e) 'organice-horizons)
+                                          (not (and (plist-member (nthcdr 3 e) :show)
+                                                    (not (plist-get (nthcdr 3 e) :show))))))
+                         organice-gtd-menu)
+               (file-exists-p (organice-horizons-path)))
+      (ignore-errors
+        (let ((d (organice-horizons-view-data)))
+          (setf (alist-get 'horizons counts)
+                (+ (seq-count (lambda (op) (not (seq-some #'organice--project-alive-p (cdr op))))
+                              (plist-get d :objectives))
+                   (seq-count (lambda (ap) (not (seq-some #'organice--project-alive-p (cdr ap))))
+                              (plist-get d :areas)))))))
     (setq organice-sidebar--counts counts
           organice-sidebar--projects
           (sort projects (lambda (a b) (string-collate-lessp (car a) (car b) nil t))))))
@@ -211,8 +236,12 @@
 
 (defun organice-sidebar--open-view (key)
   (select-window (organice-sidebar--main-window))
-  (let ((org-agenda-window-setup 'current-window))
-    (organice-gtd key)))
+  (if (symbolp key)
+      (progn (setq organice-sidebar--current key)
+             (call-interactively key)
+             (organice-sidebar--render))
+    (let ((org-agenda-window-setup 'current-window))
+      (organice-gtd key))))
 
 (defun organice-sidebar--open-project (marker)
   (unless (marker-buffer marker) (user-error "Ese proyecto ya no está; pulsa g"))
