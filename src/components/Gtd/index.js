@@ -2221,7 +2221,11 @@ export default function GtdView() {
       tags: fake.ownTags,
       area: fake.ownArea || areaPreset,
       notes: filled.notes,
-      templateHeader: parsed.header,
+      // (4.18) con lo compartido en las notas, el cuerpo de la plantilla las lleva
+      templateHeader:
+        filled.notes !== fake.description
+          ? parsed.header.set('rawDescription', filled.notes)
+          : parsed.header,
       target: { path, parentId: parent ? parent.get('id') : null },
       projectKey: '',
     });
