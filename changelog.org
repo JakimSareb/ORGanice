@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.20 (octubre de 2026)
+** GTD: aspecto de las filas
+- *W y S dentro de la casilla* en todas las tareas en Waiting y Programadas (antes solo en proyectos secuenciales); no en las hechas.
+- *Títulos largos*: se parten en varias líneas y la info de la derecha se queda arriba a la derecha (en el móvil baja debajo del título). El icono de notas no desaparece nunca, ni con «Ajustar títulos largos» apagado.
+- *Tiempo registrado en la fila*: las tareas con CLOCK cerrados enseñan el total en gris, arriba a la derecha; si el reloj está en marcha, el relojito naranja manda.
+- *Madres y proyectos suman el tiempo de sus subtareas y acciones* (también las enlazadas con :PROYECTO: desde otros ficheros): en las filas, en «Todos los proyectos» y junto al nombre del proyecto abierto. En Documentos no cambia nada.
+
 * 4.19 (octubre de 2026)
 ** GTD: teclado y editor
 - *Alt+↑ / Alt+↓* mueven la tarea seleccionada una posición (como arrastrarla; solo donde la lista se puede ordenar).
