@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import EliMoreMenu from '../EliMoreMenu';
 import { setDisappearingLoadingMessage } from '../../actions/base';
 import { pomodoroLog } from '../../lib/gtd/gtd_actions';
+import { askConfirm } from '../../lib/eli_prompt';
 import {
   usePomodoro,
   leftMs,
@@ -14,11 +15,31 @@ import {
   ackLogs,
   onPomodoroFinished,
   pomodoroToggle,
+  getPomodoroState,
   pomodoroSkip,
   pomodoroStop,
   PHASE_LABELS,
   phaseMillis,
 } from '../../lib/eli_pomodoro';
+
+// (4.23) alerta a pantalla al acabar un tramo: hay que aceptarla; el tramo siguiente no empieza
+// hasta entonces (si se cierra con «Ahora no», queda esperando en el chip). Solo una a la vez.
+let alertOpen = false;
+const alertFinished = async (text, nextLabel) => {
+  if (alertOpen) return;
+  alertOpen = true;
+  try {
+    const ok = await askConfirm({
+      title: 'Pomodoro',
+      message: text,
+      okLabel: `Empezar: ${nextLabel}`,
+      cancelLabel: 'Ahora no',
+    });
+    if (ok && getPomodoroState().status === 'waiting') pomodoroToggle();
+  } finally {
+    alertOpen = false;
+  }
+};
 
 const beep = () => {
   try {
@@ -45,7 +66,7 @@ export default function EliPomodoro() {
   // al acabar un tramo: aviso (mensaje, sonido y, si hay permiso, notificación)
   useEffect(
     () =>
-      onPomodoroFinished((phase, st) => {
+      onPomodoroFinished((phase, st, natural) => {
         const next = PHASE_LABELS[st.phase].toLowerCase();
         const min = Math.round(phaseMillis(st.phase, cfg) / 60000);
         const text =
@@ -57,6 +78,7 @@ export default function EliPomodoro() {
           if (window.Notification && window.Notification.permission === 'granted')
             new window.Notification(text);
         } catch (e) {}
+        if (natural) alertFinished(text, next);
       }),
     [dispatch, cfg]
   );

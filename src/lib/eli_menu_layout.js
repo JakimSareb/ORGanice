@@ -3,12 +3,14 @@
 // JSON { order: [ids], hidden: [ids] }). «Ajustes» no está aquí: sale siempre, la última.
 // (4.17) «Buscar (B)» (la búsqueda de la tecla B) y «Capturar con plantilla», nuevas; la de
 // antes (paleta de comandos) pasa a llamarse «Paleta de comandos» (su id sigue siendo 'search')
+// (4.23) «Bloc de notas rápido» (scratch.org junto al de entrada), ocultable como el resto
 export const MENU_ENTRIES = [
   { id: 'find', label: 'Buscar (B)' },
   { id: 'agenda', label: 'Agenda' },
   { id: 'capture', label: 'Capturar con plantilla' },
   { id: 'search', label: 'Paleta de comandos' },
   { id: 'clocks', label: 'Tareas con reloj activo' },
+  { id: 'scratch', label: 'Bloc de notas rápido' },
   { id: 'files', label: 'Mis ficheros' },
   { id: 'view', label: 'Vista' },
   { id: 'split', label: 'Dos columnas' },

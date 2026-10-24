@@ -20,6 +20,7 @@ import {
   serializeExcludedFolders,
   withoutExcluded,
   foldersOfPaths,
+  isFileEntry,
 } from '../../lib/eli_excluded_folders';
 
 const FileSettingsEditor = ({
@@ -121,6 +122,31 @@ const FileSettingsEditor = ({
     });
     if (chosen) saveExcluded([...excludedFolders, chosen]);
   };
+  // (4.23) excluir un fichero concreto de los encontrados automáticamente
+  const handleExcludeFileClick = async () => {
+    if (!client || !client.listOrgFiles) return;
+    setIsListing(true);
+    let paths = [];
+    try {
+      paths = await client.listOrgFiles();
+    } catch (e) {
+      paths = null;
+    }
+    setIsListing(false);
+    if (!paths) {
+      showMessage('Ficheros', 'No se ha podido leer la carpeta. Comprueba la conexión.');
+      return;
+    }
+    const files = withoutExcluded(paths, excludedFolders).sort();
+    const chosen = await askPick({
+      title: 'Excluir un fichero',
+      message: 'Dejará de cargarse solo (no se borra).',
+      placeholder: 'Buscar fichero…',
+      items: files.map((f) => ({ id: f, label: '📄 ' + f })),
+      emptyText: 'No hay ficheros .org que excluir.',
+    });
+    if (chosen) saveExcluded([...excludedFolders, chosen]);
+  };
 
   const startupSetting = fileSettings.find((setting) => setting.get('defaultOnStartup'));
   const handleStartupChange = (event) => {
@@ -180,9 +206,10 @@ const FileSettingsEditor = ({
             data-testid="eli-excluded-folders"
           >
             <div>
-              <div>Carpetas excluidas</div>
+              <div>Carpetas y ficheros excluidos</div>
               <div className="file-setting__help-text">
-                Sus ficheros (y los de sus subcarpetas) no se cargan solos.
+                Los ficheros de una carpeta excluida (y los de sus subcarpetas), y los ficheros que
+                excluyas uno a uno, no se cargan solos.
               </div>
               {excludedFolders.map((f) => (
                 <div
@@ -190,7 +217,9 @@ const FileSettingsEditor = ({
                   className="eli-file-settings__excluded-row"
                   data-testid="eli-excluded-row"
                 >
-                  <span>📁 {f}</span>
+                  <span>
+                    {isFileEntry(f) ? '📄' : '📁'} {f}
+                  </span>
                   <button
                     type="button"
                     className="eli-file-settings__refresh"
@@ -211,6 +240,15 @@ const FileSettingsEditor = ({
                 data-testid="eli-excluded-add"
               >
                 <i className="fas fa-ban" /> Excluir una carpeta
+              </button>{' '}
+              <button
+                type="button"
+                className="eli-file-settings__refresh"
+                onClick={handleExcludeFileClick}
+                disabled={isListing}
+                data-testid="eli-excluded-add-file"
+              >
+                <i className="fas fa-ban" /> Excluir un fichero
               </button>
             </div>
           </div>

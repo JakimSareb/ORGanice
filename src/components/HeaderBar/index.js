@@ -21,6 +21,7 @@ import { backToSettings } from '../EncryptionSettings';
 import { getPersistPlainFiles } from '../../lib/eli_security';
 import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
 import EliPomodoro from '../EliPomodoro';
+import { openScratch } from '../../lib/eli_scratch';
 import {
   getPomodoroState,
   subscribePomodoro,
@@ -897,6 +898,14 @@ class HeaderBar extends PureComponent {
                     : this.props.base.activatePopup('agenda'),
                 testId: 'eli-agenda-menu',
               },
+            // (4.23) bloc de notas rápido (scratch.org junto al de entrada)
+            {
+              icon: 'fas fa-sticky-note',
+              label: 'Bloc de notas rápido',
+              onClick: openScratch,
+              testId: 'eli-scratch-menu',
+              menuId: 'scratch',
+            },
             // (4.09) con algún reloj en marcha: la lista de esas tareas (al tocar una, va a ella)
             this.props.activeClocks > 0 && {
               icon: 'far fa-clock',

@@ -139,6 +139,10 @@
   background: var(--base3);
 }
 .eli-settings-section > summary {
+  /* (4.23) cabecera de sección bien distinta de las opciones: fondo, franja de color y letra mayor */
+  background: var(--base2);
+  border-left: 4px solid var(--blue);
+  border-radius: 9px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -155,16 +159,23 @@
   font-family: 'Font Awesome 5 Free';
   font-weight: 900;
   position: absolute;
-  left: 14px;
-  top: 13px;
-  color: var(--base00);
+  left: 12px;
+  top: 14px;
+  color: var(--blue);
   transition: transform 0.15s ease;
 }
 .eli-settings-section[open] > summary::before {
   transform: rotate(90deg);
 }
+
+.eli-settings-section[open] > summary {
+  border-radius: 9px 9px 0 0;
+  border-bottom: 1px solid var(--base1-soft);
+}
 .eli-settings-section__title {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.12em;
+  letter-spacing: 0.01em;
   color: var(--base01);
 }
 .eli-settings-section__hint {

@@ -140,3 +140,59 @@
   padding: 0.05em;
   line-height: 1;
 }
+
+/* (4.23) el menú hace scroll si no cabe; flechitas que avisan de que hay más arriba/abajo */
+.eli-more__scroll {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.eli-more__more {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 0.75em;
+  color: var(--base00);
+}
+.eli-more__more--down {
+  bottom: 6px;
+  align-items: flex-end;
+  background: linear-gradient(to bottom, transparent, var(--base3) 85%);
+  border-radius: 0 0 6px 6px;
+}
+.eli-more__more--up {
+  top: 6px;
+  align-items: flex-start;
+  background: linear-gradient(to top, transparent, var(--base3) 85%);
+  border-radius: 6px 6px 0 0;
+}
+.eli-more__more i {
+  padding: 0 0 2px;
+}
+
+/* (4.23) submenú que se abre al pasar el ratón (pointer: fine): panel fijo junto al elemento */
+.eli-more__subwrap {
+  position: relative;
+  display: block;
+}
+.eli-more__flyout {
+  position: fixed;
+  z-index: 3200;
+  min-width: 210px;
+  max-width: 80vw;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--base2);
+  border-radius: 10px;
+  background: var(--base3);
+  box-shadow: 0 10px 28px var(--base0-soft);
+  display: flex;
+  flex-direction: column;
+}

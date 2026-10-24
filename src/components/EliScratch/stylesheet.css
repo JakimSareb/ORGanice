@@ -1,0 +1,62 @@
+@import '../../colors.css';
+
+/* ORG Mode para Eli (4.23): bloc de notas rápido */
+.eli-scratch__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2900;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 12px;
+}
+.eli-scratch {
+  background: var(--base3);
+  color: var(--base00);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 720px;
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eli-scratch__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.eli-scratch__spacer {
+  flex: 1;
+}
+.eli-scratch__status {
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+.eli-scratch__btn {
+  border: 1px solid var(--base2);
+  background: transparent;
+  color: var(--base00);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.eli-scratch__text {
+  width: 100%;
+  height: 60vh;
+  min-height: 220px;
+  box-sizing: border-box;
+  resize: vertical;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--base3);
+  color: var(--base01);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+}
