@@ -51,6 +51,9 @@ import {
   STATUS_PROPERTY,
   SLEEP_STATUS,
   inProject,
+  nestProjects,
+  collapseRefs,
+  taskByOrgId,
 } from '../../lib/gtd/gtd_model';
 import {
   gtdSaveTask,
@@ -60,6 +63,7 @@ import {
   capturedTitle,
   gtdDeleteTask,
   gtdMoveToProject,
+  linksInsteadOfMoves,
   gtdArchiveTask,
   gtdCloseProject,
   gtdUndo,
@@ -1705,8 +1709,11 @@ export default function GtdView() {
       ordered.forEach((sec) => {
         const isDone = sec.id === 'done';
         const isRefs = sec.id === 'refs';
+        // (4.22) cada referencia lleva su contenido (y el de las que cuelgan de ella) tras el botón
+        // de notas; las anidadas no salen aparte
+        const secTasks = isRefs ? collapseRefs(tasks, sec.tasks) : sec.tasks;
         // Mientras se arrastra se ven también las secciones vacías (para poder soltar en ellas)
-        if (!sec.tasks.length && (!reorderingKey || isRefs)) return;
+        if (!secTasks.length && (!reorderingKey || isRefs)) return;
         const open = isRefs ? refsOpen : doneOpen;
         out.push({
           kind: 'header',
@@ -1714,7 +1721,7 @@ export default function GtdView() {
           section: sec.id,
           label: sec.label,
           icon: sec.icon,
-          count: sec.tasks.length,
+          count: secTasks.length,
           reorder: !isRefs,
           collapsible: isDone || isRefs,
           collapsed: (isDone || isRefs) && !open,
@@ -1723,7 +1730,7 @@ export default function GtdView() {
           testId: `gtd-psec-${sec.id}`,
         });
         if ((isDone || isRefs) && !open) return;
-        sec.tasks.forEach((t) =>
+        secTasks.forEach((t) =>
           out.push({
             kind: 'task',
             task: t,
@@ -1923,6 +1930,17 @@ export default function GtdView() {
         showMessage('No se pudo abrir', `${path}\n\n${(e && e.message) || ''}`.trim())
       );
       return;
+    }
+    // (4.22) Enlace por :ID: a una tarea que GTD conoce: se abre en GTD; si no, como documento
+    const idLink = parseOrgLink(target);
+    if (idLink && idLink.id && !idLink.path) {
+      const known = taskByOrgId(tasks, idLink.id);
+      // (solo lo que GTD enseña en alguna lista o proyecto; un encabezado suelto se abre como documento)
+      if (known && (known.keyword || known.isProject || listOf(known, today))) {
+        if (known.isProject) goToProject({ path: known.path, id: known.id });
+        else goToTask(known);
+        return;
+      }
     }
     // Enlace a un fichero .org o a un encabezado: se abre en la app, en ese encabezado
     if (parseOrgLink(target)) {
@@ -2574,6 +2592,20 @@ export default function GtdView() {
     if (!what) return null;
     return what === 'all' ? subs.map((s) => [s, doneChangesFor(s, opts)]) : [];
   };
+  // (4.22) Llevar una tarea a un proyecto (o sacarla): en su fichero, el de tareas o el Inbox se
+  // mueve; en cualquier otro fichero se enlaza con :PROYECTO: sin moverla
+  const placeInProject = (task, project) => {
+    if (!project) {
+      if (task.projRefOwn) dispatch(gtdUnassignProject([task]));
+      else if (!task.projectExternal) dispatch(gtdMoveToProject(task, null));
+      return;
+    }
+    if (linksInsteadOfMoves(task, project, { tasksPath: tasksFile, inboxPaths })) {
+      dispatch(gtdAssignProject([task], project));
+      return;
+    }
+    dispatch(gtdMoveToProject(task, { path: project.path, id: project.id }));
+  };
   const saveTask = async (task, changes, projectKey) => {
     // (3.06) completada desde el editor: lo mismo con sus subtareas (cancelar = solo esta)
     if (!task.isDone && !task.isProject && ['done', 'cancelled'].includes(changes.list)) {
@@ -2588,7 +2620,7 @@ export default function GtdView() {
     }
     if (projectKey !== undefined) {
       const project = projectKey ? allProjects.find((p) => p.key === projectKey) : null;
-      dispatch(gtdMoveToProject(task, project ? { path: project.path, id: project.id } : null));
+      placeInProject(task, project);
     }
   };
 
@@ -2755,9 +2787,19 @@ export default function GtdView() {
         const ext = list.filter((t) => t.projRefOwn);
         if (ext.length) dispatch(gtdUnassignProject(ext));
       }
+      // (4.22) las de otros ficheros (ni el de tareas ni el Inbox) no se mueven: se enlazan
+      const toLink = project
+        ? list.filter(
+            (t) =>
+              project.key !== t.key &&
+              linksInsteadOfMoves(t, project, { tasksPath: tasksFile, inboxPaths })
+          )
+        : [];
+      if (toLink.length) dispatch(gtdAssignProject(toLink, project));
       list.forEach((task) => {
         if (project && project.key === task.key) return;
         if (!project && task.projectExternal) return;
+        if (toLink.includes(task)) return;
         const fresh = buildTasks(
           IMap({ [task.path]: store.getState().org.present.getIn(['files', task.path]) }),
           inboxPaths
@@ -5177,7 +5219,8 @@ export default function GtdView() {
     </div>
   );
 
-  const renderProjectButton = (p) => {
+  // (4.22) un subproyecto cuelga de su madre: con sangría y una flechita ↳
+  const renderProjectButton = (p, depth = 0) => {
     const n = tasksForView(tasks, { type: 'project', key: p.key }, { area: '*' }, today).length;
     return (
       <button
@@ -5185,15 +5228,22 @@ export default function GtdView() {
         data-drop={`project:${p.key}`}
         className={
           'gtd-side__item gtd-side__item--project' +
+          (depth ? ' is-sub' : '') +
           (view.key === p.key ? ' is-on' : '') +
           dropProps(`project:${p.key}`).className
         }
+        style={depth ? { paddingLeft: 12 + depth * 14 } : undefined}
         onClick={(e) => {
           selectView({ type: 'project', key: p.key });
           afterSideClick(e);
         }}
         data-testid="gtd-project"
       >
+        {depth ? (
+          <span className="gtd-side__sub-arrow" aria-hidden="true">
+            ↳
+          </span>
+        ) : null}
         <i className="fas fa-project-diagram gtd-side__icon" />
         <span className="gtd-side__label">{p.title}</span>
         {n > 0 && <span className="gtd-side__count">{n}</span>}
@@ -5359,7 +5409,7 @@ export default function GtdView() {
         {projectGroups.active.length === 0 && (
           <div className="gtd-side__empty">Sin proyectos activos (estado PROJECT)</div>
         )}
-        {projectGroups.active.map(renderProjectButton)}
+        {nestProjects(projectGroups.active).map(({ p, depth }) => renderProjectButton(p, depth))}
         {[
           ['scheduled', 'Programados', 'far fa-calendar-alt'],
           ['sleep', 'Dormidos', 'fas fa-bed'],
@@ -5376,7 +5426,10 @@ export default function GtdView() {
                 <i className={icon} /> {label}
                 <span className="gtd-side__count">{projectGroups[id].length}</span>
               </button>
-              {projGroupsOpen[id] && projectGroups[id].map(renderProjectButton)}
+              {projGroupsOpen[id] &&
+                nestProjects(projectGroups[id]).map(({ p, depth }) =>
+                  renderProjectButton(p, depth)
+                )}
             </div>
           ) : null
         )}
@@ -6004,11 +6057,13 @@ export default function GtdView() {
       onDotsDown={item.isRef ? null : dotsDown(item.task)}
       onToggleDone={(e) => toggleDone(item.task, e)}
       onToggleStar={() => dispatch(gtdToggleStar(item.task))}
-      onToggleCheck={(index) =>
+      onToggleCheck={(index) => {
+        // (4.22) el contenido reunido de una referencia no es su texto real: sin casillas
+        if (item.task.refAggregated) return;
         dispatch(
           gtdSaveTask(item.task, { notes: toggleCheckboxLine(item.task.description, index) })
-        )
-      }
+        );
+      }}
       isDragging={!!dragging && dragging.includes(item.task.key)}
       today={today}
       showProject={!isProjectView && !(grouped && item.task.project)}

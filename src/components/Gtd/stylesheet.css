@@ -4773,3 +4773,10 @@ input.gtd-proc__input:not([type]) {
   font-weight: 400;
   color: var(--base1);
 }
+
+/* (4.22) subproyecto en el menú lateral: flechita ↳ delante del icono */
+.gtd-side__sub-arrow {
+  color: var(--base1);
+  margin-right: -4px;
+  flex: none;
+}

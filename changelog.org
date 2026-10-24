@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.22 (octubre de 2026)
+** GTD: proyectos, referencias y enlaces
+- *Tarea de un proyecto → Referencia*: ahora cambia. Pierde su estado, *sigue dentro del proyecto* (como material de apoyo, en «Referencias») y además sale en la lista Referencia. Los encabezados sin estado de un proyecto cuentan como referencia.
+- *Referencias dentro de un proyecto con su contenido*: cada una lleva el botón de notas como una tarea; las que cuelgan de otra referencia no salen aparte, su contenido (título y notas) va dentro de la de arriba.
+- *Llevar una tarea a un proyecto sin moverla de fichero*: si está en un fichero que no es el de tareas ni el Inbox, no se mueve; se enlaza con =:PROYECTO:= (y se pone =:ID:= al proyecto). Vale al arrastrarla al proyecto y desde el selector de proyecto del editor. Quitarla del proyecto borra el enlace y la deja donde está.
+- *Un proyecto dentro de otro*: sale en el proyecto padre como una fila más y, en el menú lateral, cuelga del padre con una flechita ↳ y sangría.
+- *Enlaces =[[id:…]]= desde las notas de GTD*: si el id es de una tarea o proyecto que GTD conoce, se abre en GTD; si no, como documento, como siempre.
+- (Copiar el enlace por ID de una tarea ya existía desde la 4.11: en el editor y en el menú de la fila; pone el =:ID:= si falta.)
+
 * 4.21 (octubre de 2026)
 ** Tickler
 - *Buscar y filtrar por etiquetas* como en el resto de secciones: la lupa de la cabecera filtra por texto (título y notas) y la barra de filtros ofrece las etiquetas de las entradas (también tachadas, «Sin etiquetas» y «Heredadas»).
