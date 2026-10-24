@@ -15,6 +15,9 @@ export const TOOLS = [
   { id: 'cal', label: 'Calendario' },
   // (4.13) apagado de inicio en los dos modos: se enciende en Ajustes → Herramientas
   { id: 'pomo', label: 'Pomodoro', defaultOff: true },
+  // (4.18) apagado: no se ofrece «Nuevo guion Fountain» (los guiones que haya se siguen abriendo).
+  // Encendido de inicio en los dos modos
+  { id: 'fountain', label: 'Guiones Fountain', defaultOn: true },
 ];
 
 const read = (k) => {
@@ -65,7 +68,9 @@ export const setNotesMode = (v) => {
 export const toolOn = (id) => {
   if (typeof tools[id] === 'boolean') return tools[id];
   const t = TOOLS.find((x) => x.id === id);
-  return t && t.defaultOff ? false : !notes;
+  if (t && t.defaultOff) return false;
+  if (t && t.defaultOn) return true;
+  return !notes;
 };
 
 export const setToolOn = (id, v) => {

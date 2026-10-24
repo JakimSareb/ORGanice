@@ -28,7 +28,8 @@ import {
 import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
 import { newFileHeaderLines } from '../../../../lib/eli_todo_defaults';
 import { newFountainTemplate } from '../../../../lib/eli_fountain';
-import { useNotesMode } from '../../../../lib/eli_notes_mode';
+import { useNotesMode, toolOn } from '../../../../lib/eli_notes_mode';
+import { openGtdMode } from '../../../../lib/eli_mode';
 
 const ensureCompleteFilename = (fileName) => {
   return /\.org(\.gpg|\.asc)?$/.test(fileName) ? fileName : `${fileName}.org`;
@@ -61,17 +62,24 @@ const ActionDrawer = ({
 
   // ORG Mode para Eli: capturar desde el explorador: se elige la plantilla (por su letra) y se
   // abre su fichero de destino con la ventana de captura
+  // (4.18) las mismas plantillas que «Capturar con plantilla» del Menú ☰ en GTD: las que no
+  // tienen fichero de destino van al fichero de tareas (se capturan en la vista GTD)
   const startCapture = async () => {
-    const templates = (captureTemplates || []).filter((t) => !!t.get('file'));
+    const templates = (captureTemplates || List()).toArray();
     if (!templates.length) {
       showMessage(
         'Sin plantillas',
-        'No hay plantillas de captura con fichero de destino. Añade alguna en Ajustes → Plantillas de captura.'
+        'No tienes plantillas de captura. Añade alguna en Ajustes → Plantillas de captura.'
       );
       return;
     }
     const template = await chooseCaptureTemplate(templates);
     if (!template) return;
+    if (!template.get('file')) {
+      window.__eliGtdPending = { capture: { templateId: template.get('id') } };
+      openGtdMode();
+      return;
+    }
     const file = template.get('file').startsWith('/')
       ? template.get('file')
       : `/${template.get('file')}`;
@@ -90,7 +98,8 @@ const ActionDrawer = ({
   const newFountainRef = useRef();
   useEffect(() => {
     const onNewFile = () => newFileRef.current && newFileRef.current();
-    const onNewFountain = () => newFountainRef.current && newFountainRef.current();
+    const onNewFountain = () =>
+      toolOn('fountain') && newFountainRef.current && newFountainRef.current();
     window.addEventListener('eli:new-file', onNewFile);
     window.addEventListener('eli:new-fountain', onNewFountain);
     return () => {
@@ -202,12 +211,17 @@ const ActionDrawer = ({
           label: 'Fichero Org',
           onClick: handleAddNewOrgFileClick,
         },
-        {
-          id: 'new-fountain',
-          icon: 'fas fa-film',
-          label: 'Guion Fountain',
-          onClick: handleAddNewFountainClick,
-        },
+        // (4.18) solo con la herramienta Fountain encendida (Ajustes › Herramientas)
+        ...(toolOn('fountain')
+          ? [
+              {
+                id: 'new-fountain',
+                icon: 'fas fa-film',
+                label: 'Guion Fountain',
+                onClick: handleAddNewFountainClick,
+              },
+            ]
+          : []),
       ],
     },
   };

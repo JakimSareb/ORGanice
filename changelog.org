@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.18 (octubre de 2026)
+** Arreglos
+- *PDF de una vista de GTD* (⋯ › Exportar la vista a PDF) y PDF de una tarea: ahora salen las *fotos* de las notas, como en la vista; el botón espera a que carguen antes de abrir el diálogo de imprimir («Cargando fotos…»).
+- *Capturar* desde el explorador de ficheros ya no dice «no hay plantillas»: usa las mismas plantillas que *Capturar con plantilla* del Menú ☰ (las que no tienen fichero de destino se capturan en GTD, en el fichero de tareas).
+- *Planificar un proyecto*, paso 5: lo que escribes en «U otra acción…» se queda como acción elegida al pulsar Intro o salir del campo (aparece como botón marcado).
+- Los *avisos de fechas* ya no hablan de tareas del manual («Regar las plantas», «Revisar el presupuesto»…) que se quedaban cargadas al abrirlo: solo avisan de tus ficheros.
+- Intro en una línea de lista con «-»: la línea nueva lleva un solo espacio tras el guion (antes copiaba los que hubiera, también el espacio especial del teclado del iPhone).
+- Nuevo interruptor *Guiones Fountain* (Ajustes → Herramientas): apagado, no se ofrece *Nuevo guion Fountain*.
+** Captura desde fuera de la app
+- La dirección =/capture= admite =&plantilla== (letra o nombre): abre el editor de esa plantilla con lo compartido dentro (texto en el título si la plantilla acaba en =%?=; el enlace en las notas). Vacía o desconocida: la app pregunta qué plantilla. El manual explica el Atajo de iOS con plantilla y otro «Al Inbox rápido» que escribe en =inbox.org= sin abrir la app.
+
 * 4.17 (octubre de 2026)
 ** Menú ☰
 - Nuevo *Buscar (B)*, el primero del Menú (icono de libro con lupa): lo mismo que la tecla *b*. En un documento abre la búsqueda de cabeceras; en GTD, su buscador (en GTD la tecla *b* también vale, además de */*). La entrada de antes (paleta de comandos, Ctrl+Espacio) sigue en el Menú con el nombre *Paleta de comandos*.

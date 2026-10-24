@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import './stylesheet.css';
@@ -17,11 +17,16 @@ import { STATIC_FILE_PREFIX } from '../../../../lib/org_utils';
 const selectClient = (state) => state.syncBackend.get('client');
 const selectPath = (state) => state.org.present.get('path');
 
+// (4.18) Fichero de los enlaces de todo lo que va dentro (p. ej. el PDF de una vista de GTD,
+// donde cada tarea es de un fichero y no hay ninguno abierto)
+export const MediaPathContext = createContext(null);
+
 // `orgPath`: fichero del enlace si no es el abierto (p. ej. desde la vista GTD)
 export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) {
   const client = useSelector(selectClient);
   const openPath = useSelector(selectPath);
-  const orgPath = ownOrgPath || openPath;
+  const ctxPath = useContext(MediaPathContext);
+  const orgPath = ownOrgPath || ctxPath || openPath;
   const path =
     orgPath && !orgPath.startsWith(STATIC_FILE_PREFIX) ? resolveDropboxPath(orgPath, target) : null;
   const kind = mediaKind(target);

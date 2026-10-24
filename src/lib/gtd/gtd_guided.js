@@ -431,6 +431,25 @@ export const unitNext = (plan, key) =>
   key
     ? { action: '', who: '', more: false, ...((plan.nexts || {})[key] || {}) }
     : { action: plan.first || '', who: plan.firstWho || '', more: !!plan.firstMore };
+// (4.18) Paso 5: lo escrito en «U otra acción…» (al pulsar Intro o salir del campo) pasa a ser
+// una acción más de la unidad (componente o idea suelta del proyecto) y queda elegida
+export const commitUnitAction = (plan, key, text) => {
+  const t = String(text || '').trim();
+  if (!t) return plan;
+  const ideas = (plan.ideas || []).slice();
+  if (key) {
+    const i = ideas.findIndex((x) => ideaOf(x).component && ideaOf(x).title === key);
+    if (i >= 0) {
+      const c = ideaOf(ideas[i]);
+      if (!c.actions.includes(t)) ideas[i] = { ...c, actions: [...c.actions, t] };
+    }
+    const nexts = { ...(plan.nexts || {}) };
+    nexts[key] = { ...unitNext(plan, key), action: t };
+    return { ...plan, ideas, nexts };
+  }
+  if (!ideas.some((x) => !ideaOf(x).component && ideaOf(x).title === t)) ideas.push(t);
+  return { ...plan, ideas, first: t };
+};
 const unitReady = (n) => !!(n.more || (n.action || '').trim());
 // Se puede crear: con al menos una siguiente acción (o «planificar más»)
 export const planReady = (plan) => planUnits(plan).some((u) => unitReady(unitNext(plan, u.key)));

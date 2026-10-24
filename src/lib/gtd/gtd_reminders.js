@@ -4,6 +4,19 @@
 // Igual que la revisión semanal: sin hábitos, sin proyectos, sin aparcadas ni papelera.
 import { isParked } from './gtd_model';
 
+// (4.18) Solo tareas de los ficheros del usuario: no las del manual (sample.org, que se queda
+// cargado tras abrirlo: de ahí salían «Regar las plantas», «Revisar el presupuesto»…) ni las
+// de ficheros internos o de prueba (STATIC_FILE_PREFIX de org_utils)
+const STATIC_FILE_PREFIX = 'organice_internal_';
+export const isUserTask = (t) => {
+  const p = String((t && t.path) || '');
+  return (
+    !p.startsWith(STATIC_FILE_PREFIX) &&
+    !p.startsWith('/' + STATIC_FILE_PREFIX) &&
+    !p.startsWith('/__')
+  );
+};
+
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const ymd = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
@@ -19,7 +32,13 @@ export const LATE_LIMIT_MS = 15 * 60 * 1000;
 const openTasks = (tasks, now) =>
   tasks.filter(
     (t) =>
-      !!t.keyword && !t.isDone && !t.isTrashed && !t.isProject && !t.isHabit && !isParked(t, now)
+      isUserTask(t) &&
+      !!t.keyword &&
+      !t.isDone &&
+      !t.isTrashed &&
+      !t.isProject &&
+      !t.isHabit &&
+      !isParked(t, now)
   );
 
 const taskKey = (t) => t.orgId || `${t.path || ''}::${t.title || ''}`;

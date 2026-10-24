@@ -220,6 +220,8 @@ class UnifiedHeaderEditor extends PureComponent {
 
   handleDescriptionKeyDown(event) {
     if (event.key !== 'Enter') return;
+    // (4.18) el teclado del iPhone escribiendo una palabra: Intro normal
+    if (event.keyCode === 229 || (event.nativeEvent && event.nativeEvent.isComposing)) return;
 
     const textarea = this.descriptionTextarea;
     const { selectionStart, selectionEnd } = textarea;
