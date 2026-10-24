@@ -111,7 +111,7 @@ import {
 import { pickProject } from '../../lib/gtd/gtd_assign';
 import {
   groupTickler,
-  ticklerEntries,
+  filterTickler,
   shiftTicklerDate,
   toDateInput,
   fromDateInput,
@@ -1356,13 +1356,14 @@ export default function GtdView() {
   // (4.20) tiempo registrado por tarea (con subtareas y acciones de proyecto)
   const clockTotals = useMemo(() => clockTotalsOf(tasks), [tasks]);
 
-  const baseList = useMemo(() => tasksForView(tasks, view, { area, text }, today), [
-    tasks,
-    view,
-    area,
-    text,
-    today,
-  ]);
+  // (4.21) Tickler: sus entradas con el Área y el texto de la sección (las etiquetas salen de ahí)
+  const baseList = useMemo(
+    () =>
+      view.id === 'tickler'
+        ? filterTickler(ticklerTasks, { area, text })
+        : tasksForView(tasks, view, { area, text }, today),
+    [tasks, view, area, text, today, ticklerTasks]
+  );
   const facets = useMemo(() => facetsFor(baseList, { ownOnly: tagInherit !== 'all' }), [
     baseList,
     tagInherit,
@@ -5617,18 +5618,20 @@ export default function GtdView() {
             className="gtd-tickler__btn"
             onClick={() => dailyMove(t, 'inbox')}
             title="Liberarla ya: al Inbox"
+            aria-label="Al Inbox"
             data-testid="gtd-tickler-inbox"
           >
-            <i className="fas fa-inbox" /> Inbox
+            <i className="fas fa-inbox" />
           </button>
           <button
             type="button"
             className="gtd-tickler__btn"
             onClick={() => ticklerToNext(t)}
             title="Liberarla ya: a Next"
+            aria-label="A Next"
             data-testid="gtd-tickler-next"
           >
-            <i className="fas fa-play" /> Next
+            <i className="fas fa-play" />
           </button>
           <button
             type="button"
@@ -5645,7 +5648,7 @@ export default function GtdView() {
     );
   };
   const renderTicklerPage = () => {
-    const groups = ticklerLoadedPath ? groupTickler(ticklerTasks, today) : [];
+    const groups = ticklerLoadedPath ? groupTickler(ticklerShown, today) : [];
     return (
       <div className="gtd-tickler" data-testid="gtd-tickler">
         <form
@@ -5687,7 +5690,9 @@ export default function GtdView() {
         )}
         {ticklerLoadedPath && !groups.length && (
           <div className="gtd-empty" data-testid="gtd-tickler-empty">
-            El Tickler está vacío.
+            {text || activeFilterCount > 0 || (area && area !== '*')
+              ? 'Ninguna entrada del Tickler con ese filtro.'
+              : 'El Tickler está vacío.'}
           </div>
         )}
         {groups.map((g) => (
@@ -5782,7 +5787,7 @@ export default function GtdView() {
   // (3.0) «Nuevo elemento» y Entrada rápida: en las listas donde se crean cosas
   const canCreate = !['logbook', 'trash', 'projects', 'horizons', 'tickler'].includes(view.id);
   // 3.36: lupa de la cabecera (filtro de la sección); el Logbook tiene su propio buscador
-  const canFilterSection = !['logbook', 'projects', 'horizons', 'tickler'].includes(view.id);
+  const canFilterSection = !['logbook', 'projects', 'horizons'].includes(view.id);
   // 3.36 (a): resultados del buscador del menú lateral, agrupados por sección (plegables)
   const openSearchResult = (group, task) => {
     setSearchText('');
@@ -5945,6 +5950,11 @@ export default function GtdView() {
       return { ...f, dated: !f.dated };
     });
   };
+  // (4.21) lo que enseña el Tickler: sus entradas con Área, texto y filtros de la barra
+  const ticklerShown = useMemo(
+    () => (view.id === 'tickler' ? filterTickler(ticklerTasks, { area, text, ...filters }) : []),
+    [view.id, ticklerTasks, area, text, filters]
+  );
   const hasFacets =
     facets.tags.length > 0 ||
     facets.energy.length > 0 ||
@@ -6226,7 +6236,7 @@ export default function GtdView() {
                   ? hView.objectives.length + hView.areas.length
                   : 0
                 : view.id === 'tickler'
-                ? ticklerEntries(ticklerTasks).length
+                ? ticklerShown.length
                 : visible.length}
             </span>
           </h1>
@@ -6690,10 +6700,9 @@ export default function GtdView() {
         )}
 
         {view.id === 'horizons' && renderHorizonsPage()}
-        {view.id === 'tickler' && renderTicklerPage()}
 
         {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
-        {hasFacets && view.id !== 'projects' && view.id !== 'horizons' && view.id !== 'tickler' && (
+        {hasFacets && view.id !== 'projects' && view.id !== 'horizons' && (
           <div className="gtd-filterbar" data-testid="gtd-filters">
             {Array.from(new Set([...facets.tags, ...filters.tags, ...filters.notTags]))
               .filter((t) => t !== NO_TAGS)
@@ -6819,6 +6828,9 @@ export default function GtdView() {
             )}
           </div>
         )}
+
+        {/* (4.21) el Tickler, bajo la barra de filtros como el resto de secciones */}
+        {view.id === 'tickler' && renderTicklerPage()}
 
         {/* (3.0) Entrada rápida — (3.05) después de los filtros (Mayús+E la muestra u oculta; e pone el cursor en ella) */}
         {canCreate && rapidOn && (

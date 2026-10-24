@@ -3,6 +3,7 @@
 // fechas rápidas (±1 día / semana / mes). Al llegar su fecha siguen el flujo de siempre: salen en
 // «Tickler de hoy» de la Revisión diaria (y de Planificar el día), que las pasa al Inbox.
 import { TICKLER_MONTHS } from './gtd_process';
+import { matchesFilters } from './gtd_model';
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const DAY = 24 * 3600 * 1000;
@@ -34,6 +35,11 @@ export const ticklerEntries = (tasks) =>
       !isTicklerContainer(t) &&
       (!!t.scheduled || (t.level || 1) <= 3)
   );
+
+// (4.21) Las entradas con los mismos filtros que el resto de secciones: texto (título y notas),
+// etiquetas (con tachadas, heredadas…), Área, energía, tiempo y «con fecha»
+export const filterTickler = (tasks, filters = {}) =>
+  ticklerEntries(tasks).filter((t) => matchesFilters(t, filters));
 
 // Grupos en orden: «Hoy (o antes)», «Mañana», los demás días de este mes (uno por día), los
 // meses siguientes (uno por mes) y «Sin fecha». Dentro, por fecha y título.
