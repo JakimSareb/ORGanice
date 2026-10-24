@@ -8,6 +8,7 @@ Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay noved
 - *Buscar y filtrar por etiquetas* como en el resto de secciones: la lupa de la cabecera filtra por texto (título y notas) y la barra de filtros ofrece las etiquetas de las entradas (también tachadas, «Sin etiquetas» y «Heredadas»).
 - *El filtro por Área también filtra el Tickler.*
 - *Los botones de cada entrada, en una sola línea*: fecha, +1 d, +1 s, +1 m, Inbox, Next y borrar (iconos con su explicación al mantener). Si no caben en el móvil, esa fila se desliza hacia los lados.
+- *Botones ocultos por defecto*: cada entrada del Tickler solo muestra la fecha y el título, con un lápiz a la derecha; al pulsarlo salen los botones (fecha, +1 d/s/m, Inbox, Next, borrar), y al volver a pulsarlo se ocultan.
 
 * 4.20 (octubre de 2026)
 ** GTD: aspecto de las filas
