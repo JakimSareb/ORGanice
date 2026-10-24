@@ -115,9 +115,6 @@ export default function EliScratch() {
       <div className="eli-scratch" role="dialog" aria-label="Bloc de notas rápido">
         <div className="eli-scratch__bar">
           <strong>Bloc de notas</strong>
-          <span className="eli-scratch__status" data-testid="eli-scratch-status">
-            {status}
-          </span>
           <span className="eli-scratch__spacer" />
           <button
             type="button"
@@ -149,6 +146,9 @@ export default function EliScratch() {
           placeholder="Apunta lo que sea…"
           data-testid="eli-scratch-text"
         />
+        <div className="eli-scratch__status" data-testid="eli-scratch-status">
+          {status}
+        </div>
       </div>
     </div>
   );
