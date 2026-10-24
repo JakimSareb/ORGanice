@@ -4711,6 +4711,15 @@ input.gtd-proc__input:not([type]) {
 .gtd-tickler__acts > * {
   flex: 0 0 auto;
 }
+/* (4.21b) lápiz de la cabecera de la entrada: muestra/oculta los botones */
+.gtd-tickler__editbtn {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+.gtd-tickler__editbtn.is-on {
+  background: var(--blue);
+  color: var(--base3);
+}
 .gtd-tickler__acts .gtd-tickler__input {
   font-size: 14px;
   padding: 3px 5px;

@@ -1279,6 +1279,8 @@ export default function GtdView() {
     // eslint-disable-next-line
   }, [view.id]);
   const [tkTitle, setTkTitle] = useState('');
+  // (4.21b) entradas del Tickler con los botones de acción visibles (ocultos por defecto)
+  const [tkActsOpen, setTkActsOpen] = useState({});
   const [tkDate, setTkDate] = useState('');
   const dailyData = useMemo(
     () =>
@@ -5570,6 +5572,7 @@ export default function GtdView() {
       ['week', '+1 s', 'Una semana después'],
       ['month', '+1 m', 'Un mes después'],
     ];
+    const actsOpen = !!tkActsOpen[t.key];
     return (
       <div key={t.key} className="gtd-tickler__row" data-testid="gtd-tickler-row">
         <div className="gtd-tickler__main">
@@ -5591,59 +5594,74 @@ export default function GtdView() {
           >
             {t.title || '(sin título)'}
           </button>
+          <button
+            type="button"
+            className={`gtd-tickler__btn gtd-tickler__editbtn${actsOpen ? ' is-on' : ''}`}
+            onClick={() => setTkActsOpen((o) => ({ ...o, [t.key]: !o[t.key] }))}
+            title={
+              actsOpen ? 'Ocultar los botones' : 'Mostrar los botones (fecha, Inbox, Next, borrar)'
+            }
+            aria-label="Editar entrada"
+            aria-pressed={actsOpen}
+            data-testid="gtd-tickler-acts-toggle"
+          >
+            <i className="fas fa-pen" />
+          </button>
         </div>
-        <div className="gtd-tickler__acts">
-          <input
-            type="date"
-            className="gtd-tickler__input"
-            value={toDateInput(t.scheduled)}
-            onChange={(e) => ticklerSetDate(t, fromDateInput(e.target.value))}
-            aria-label="Fecha"
-            data-testid="gtd-tickler-date"
-          />
-          {quick.map(([unit, label, hint]) => (
+        {actsOpen && (
+          <div className="gtd-tickler__acts" data-testid="gtd-tickler-acts">
+            <input
+              type="date"
+              className="gtd-tickler__input"
+              value={toDateInput(t.scheduled)}
+              onChange={(e) => ticklerSetDate(t, fromDateInput(e.target.value))}
+              aria-label="Fecha"
+              data-testid="gtd-tickler-date"
+            />
+            {quick.map(([unit, label, hint]) => (
+              <button
+                key={unit}
+                type="button"
+                className="gtd-tickler__btn"
+                onClick={() => ticklerSetDate(t, shiftTicklerDate(t.scheduled, unit, 1, today))}
+                title={hint}
+                data-testid={`gtd-tickler-plus-${unit}`}
+              >
+                {label}
+              </button>
+            ))}
             <button
-              key={unit}
               type="button"
               className="gtd-tickler__btn"
-              onClick={() => ticklerSetDate(t, shiftTicklerDate(t.scheduled, unit, 1, today))}
-              title={hint}
-              data-testid={`gtd-tickler-plus-${unit}`}
+              onClick={() => dailyMove(t, 'inbox')}
+              title="Liberarla ya: al Inbox"
+              aria-label="Al Inbox"
+              data-testid="gtd-tickler-inbox"
             >
-              {label}
+              <i className="fas fa-inbox" />
             </button>
-          ))}
-          <button
-            type="button"
-            className="gtd-tickler__btn"
-            onClick={() => dailyMove(t, 'inbox')}
-            title="Liberarla ya: al Inbox"
-            aria-label="Al Inbox"
-            data-testid="gtd-tickler-inbox"
-          >
-            <i className="fas fa-inbox" />
-          </button>
-          <button
-            type="button"
-            className="gtd-tickler__btn"
-            onClick={() => ticklerToNext(t)}
-            title="Liberarla ya: a Next"
-            aria-label="A Next"
-            data-testid="gtd-tickler-next"
-          >
-            <i className="fas fa-play" />
-          </button>
-          <button
-            type="button"
-            className="gtd-tickler__btn is-danger"
-            onClick={() => deleteTask(t)}
-            title="Borrar"
-            aria-label="Borrar"
-            data-testid="gtd-tickler-delete"
-          >
-            <i className="fas fa-trash" />
-          </button>
-        </div>
+            <button
+              type="button"
+              className="gtd-tickler__btn"
+              onClick={() => ticklerToNext(t)}
+              title="Liberarla ya: a Next"
+              aria-label="A Next"
+              data-testid="gtd-tickler-next"
+            >
+              <i className="fas fa-play" />
+            </button>
+            <button
+              type="button"
+              className="gtd-tickler__btn is-danger"
+              onClick={() => deleteTask(t)}
+              title="Borrar"
+              aria-label="Borrar"
+              data-testid="gtd-tickler-delete"
+            >
+              <i className="fas fa-trash" />
+            </button>
+          </div>
+        )}
       </div>
     );
   };
