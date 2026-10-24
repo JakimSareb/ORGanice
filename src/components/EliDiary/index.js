@@ -30,7 +30,10 @@ import {
   onThisDay,
   doneOn,
   monthGrid,
+  setDayProp,
+  withDiaryIds,
 } from '../../lib/eli_diary';
+import { monthlyPath, monthlyData, regenerateMonthly, isYes } from '../../lib/eli_monthly';
 import { getGtdFiles } from '../../lib/gtd/gtd_sections';
 import { buildTasks } from '../../lib/gtd/gtd_model';
 import { gtdAddTask, createdStamp } from '../../lib/gtd/gtd_actions';
@@ -97,7 +100,7 @@ const Entry = ({ e, path, onInbox }) => (
 );
 
 // Vista previa del PDF (mes o año) con aspecto de diario
-const DiaryPrint = ({ title, days, path, onClose }) => {
+const DiaryPrint = ({ title, days, path, onClose, monthly }) => {
   const docRef = useRef(null);
   useEffect(() => {
     const prev = document.title;
@@ -130,7 +133,8 @@ const DiaryPrint = ({ title, days, path, onClose }) => {
           data-testid="eli-diary-print"
         >
           <h1 className="eli-print__doctitle">{title}</h1>
-          {days.map((d) => (
+          {monthly && <MonthlyTables data={monthly} />}
+          {(days || []).map((d) => (
             <section key={d.key} className="eli-diary-print__day">
               <h2>{longDate(parseDayKey(d.key))}</h2>
               {d.answers
@@ -150,13 +154,122 @@ const DiaryPrint = ({ title, days, path, onClose }) => {
               ))}
             </section>
           ))}
-          {!days.length && <p>(sin apuntes)</p>}
+          {!monthly && !days.length && <p>(sin apuntes)</p>}
         </article>
       </MediaPathContext.Provider>
     </div>,
     portal
   );
 };
+
+// (4.27) Registro mensual en el PDF: una tabla por mes (y los totales del año si hay varios)
+const MonthlyTables = ({ data }) => (
+  <div className="eli-diary-monthly" data-testid="eli-diary-monthly-print">
+    {data.months.map((m) => (
+      <section key={m.key} className="eli-diary-print__day">
+        <h2>
+          {m.label} {data.year}
+        </h2>
+        <table className="eli-diary-monthly__table">
+          <thead>
+            <tr>
+              <th>Día</th>
+              <th>Lo más importante</th>
+              {data.counters.map((c) => (
+                <th key={c.key} title={c.name}>
+                  {c.key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {m.rows.map((r, i) =>
+              r.type === 'day' ? (
+                <tr key={i}>
+                  <td className="eli-diary-monthly__d">{r.label}</td>
+                  <td>
+                    {r.lines.map((l, j) => (
+                      <div key={j}>{l}</div>
+                    ))}
+                  </td>
+                  {r.values.map((v, j) => (
+                    <td key={j} className="eli-diary-monthly__n">
+                      {v}
+                    </td>
+                  ))}
+                </tr>
+              ) : r.type === 'week' ? (
+                data.counters.some((c) => c.type !== 'note') && (
+                  <tr key={i} className="eli-diary-monthly__week">
+                    <td>Semana</td>
+                    <td />
+                    {r.values.map((v, j) => (
+                      <td key={j} className="eli-diary-monthly__n">
+                        {v}
+                      </td>
+                    ))}
+                  </tr>
+                )
+              ) : (
+                <tr key={i} className="eli-diary-monthly__total">
+                  <td>Total</td>
+                  <td>{r.days} días con algo</td>
+                  {r.values.map((v, j) => (
+                    <td key={j} className="eli-diary-monthly__n">
+                      {v}
+                    </td>
+                  ))}
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+      </section>
+    ))}
+    {!data.months.length && <p>(sin datos)</p>}
+  </div>
+);
+
+// (4.27) Fila «Registro de hoy»: un botón por contador Sí/No, un cuadro por Número o Nota
+const Counters = ({ counters, props, dayK, onSet }) => (
+  <div className="eli-diary__counters" data-testid="eli-diary-counters">
+    <span className="eli-diary__counters-title">Registro</span>
+    {counters.map((c) => {
+      const v = (props || {})[c.key] || '';
+      if (c.type === 'bool')
+        return (
+          <button
+            type="button"
+            key={c.key}
+            className={`eli-diary__markbtn${isYes(v) ? ' is-on' : ''}`}
+            onClick={() => onSet(c, isYes(v) ? '' : 'X')}
+            title={c.name}
+            aria-pressed={isYes(v)}
+            data-testid={`eli-diary-counter-${c.key}`}
+          >
+            {isYes(v) ? '✓' : '○'} {c.key}
+          </button>
+        );
+      return (
+        <label key={c.key + dayK + v} className="eli-diary__counter" title={c.name}>
+          {c.key}
+          <input
+            type="text"
+            inputMode={c.type === 'num' ? 'decimal' : undefined}
+            className={`eli-diary__counter-input eli-diary__counter-input--${c.type}`}
+            defaultValue={v}
+            onBlur={(e) => e.target.value.trim() !== v && onSet(c, e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Enter') e.target.blur();
+            }}
+            data-testid={`eli-diary-counter-${c.key}`}
+          />
+        </label>
+      );
+    })}
+  </div>
+);
 
 export default function EliDiary() {
   const store = useStore();
@@ -208,7 +321,33 @@ export default function EliDiary() {
   };
 
   // Escribe (en cola, para que no se crucen dos guardados)
-  const write = (year, text) => {
+  // (4.27) Rehace las tablas de `mensual-AAAA.org` (lee el fichero cada vez: lo de fuera de las
+  // marcas lo puede haber cambiado el usuario)
+  const regenMonthly = async (year, diaryText) => {
+    const c = client();
+    const mp = monthlyPath(year, dirRef.current);
+    let exists = false;
+    let old = '';
+    try {
+      exists = c.pathExists ? await c.pathExists(mp) : false;
+      if (exists) old = (await c.getFileContents(mp)) || '';
+    } catch (e) {
+      exists = false;
+    }
+    const next = regenerateMonthly(old, year, diaryText, getDiaryCfg().counters);
+    if (next == null || next === old) return;
+    if (exists) await c.updateFile(mp, next);
+    else {
+      await c.createFile(mp, next);
+      setStatus(
+        'Registro mensual creado: sus tablas se rehacen solas (lo editado dentro se pierde)'
+      );
+    }
+  };
+
+  const write = (year, text0) => {
+    const monthly = getDiaryCfg().monthlyOn;
+    const text = monthly ? withDiaryIds(text0) : text0;
     setText(year, text);
     setStatus('Guardando…');
     queue.current = queue.current.then(async () => {
@@ -218,6 +357,7 @@ export default function EliDiary() {
         else await c.createFile(pathFor(year), text);
         existsRef.current[year] = true;
         setStatus('Guardado');
+        if (monthly) await regenMonthly(year, text);
       } catch (e) {
         setStatus('');
         showMessage('Diario', 'No se ha podido guardar: ' + ((e && e.message) || e));
@@ -249,16 +389,20 @@ export default function EliDiary() {
       textsRef.current = {};
       existsRef.current = {};
       setTexts({});
-      const d = (e && e.detail && parseDayKey(e.detail.date)) || new Date();
+      const mo = e && e.detail && /^(\d{4})-(\d{2})$/.exec(e.detail.month || '');
+      const d =
+        (e && e.detail && parseDayKey(e.detail.date)) ||
+        (mo ? new Date(+mo[1], +mo[2] - 1, 1) : new Date());
       setDate(d);
       setCal({ y: d.getFullYear(), m: d.getMonth() });
-      setView('day');
+      // (4.27) [[id:diari-AAAA-MM]] («Ver en el diari» del registro): el calendario de ese mes
+      setView(mo ? 'cal' : 'day');
       setInput('');
       setMark('-');
       setStatus('Cargando…');
       setOpen(true);
       // «Diario de hoy»: crea el fichero del año, el mes y el día si faltan
-      if (!(e && e.detail && e.detail.date)) await ensure(d, c);
+      if (!(e && e.detail && (e.detail.date || e.detail.month))) await ensure(d, c);
       else await load(d.getFullYear());
       setStatus('');
       setTimeout(() => inputRef.current && inputRef.current.focus(), 50);
@@ -303,6 +447,12 @@ export default function EliDiary() {
     const cur = ((day && day.answers.find((a) => a.question === q)) || {}).answer || '';
     if (cur === value.trim()) return;
     await write(year, setAnswer(base, date, q, value));
+  };
+
+  // (4.27) contador del día (propiedad del día en el diari)
+  const setCounter = async (c, value) => {
+    const base = await load(year);
+    await write(year, setDayProp(base, date, c.key, value, template()));
   };
 
   // (integración) apunte → tarea en el Inbox con enlace al día
@@ -367,6 +517,32 @@ export default function EliDiary() {
       days,
       path: pathFor(y),
     });
+  };
+
+  const openMonthlyPrint = async (kind) => {
+    const y = cal.y;
+    const t = await load(y);
+    const data = monthlyData(t, y, cfg.counters);
+    const mk = `${y}-${String(cal.m + 1).padStart(2, '0')}`;
+    if (kind === 'month') data.months = data.months.filter((m) => m.key === mk);
+    setPrint({
+      title: kind === 'year' ? `Mensual ${y}` : `Mensual ${MONTHS[cal.m]} ${y}`,
+      days: [],
+      monthly: data,
+      path: pathFor(y),
+    });
+  };
+  const openMonthly = async () => {
+    const y = cal.y;
+    const t = await load(y);
+    await queue.current;
+    try {
+      await regenMonthly(y, t);
+    } catch (e) {
+      // sin fichero o sin conexión: se abre lo que haya
+    }
+    setOpen(false);
+    history.push(`/file${monthlyPath(y, dirRef.current)}`);
   };
 
   const renderCalendar = () => {
@@ -442,6 +618,34 @@ export default function EliDiary() {
             <i className="fas fa-file-pdf" /> PDF del año
           </button>
         </div>
+        {cfg.monthlyOn && (
+          <div className="eli-diary__row">
+            <button
+              type="button"
+              className="eli-diary__btn"
+              onClick={openMonthly}
+              data-testid="eli-diary-monthly-open"
+            >
+              <i className="fas fa-table" /> Registro mensual
+            </button>
+            <button
+              type="button"
+              className="eli-diary__btn"
+              onClick={() => openMonthlyPrint('month')}
+              data-testid="eli-diary-monthly-pdf-month"
+            >
+              <i className="fas fa-file-pdf" /> Registro del mes
+            </button>
+            <button
+              type="button"
+              className="eli-diary__btn"
+              onClick={() => openMonthlyPrint('year')}
+              data-testid="eli-diary-monthly-pdf-year"
+            >
+              <i className="fas fa-file-pdf" /> Registro del año
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -474,6 +678,15 @@ export default function EliDiary() {
           </button>
         )}
       </div>
+
+      {cfg.counters.length > 0 && (
+        <Counters
+          counters={cfg.counters}
+          props={day ? day.props : {}}
+          dayK={key}
+          onSet={setCounter}
+        />
+      )}
 
       <div className="eli-diary__entries">
         {day &&

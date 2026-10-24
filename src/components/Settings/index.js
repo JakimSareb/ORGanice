@@ -38,7 +38,13 @@ import {
   DOC_MARGIN_MAX,
 } from '../../lib/eli_menu_layout';
 import { getPomodoroCfg, setPomodoroCfg } from '../../lib/eli_pomodoro';
-import { getDiaryCfg, setDiaryCfg, templateFromText } from '../../lib/eli_diary';
+import {
+  getDiaryCfg,
+  setDiaryCfg,
+  templateFromText,
+  COUNTER_TYPES,
+  cleanCounters,
+} from '../../lib/eli_diary';
 import {
   TOOLS,
   useNotesMode,
@@ -180,6 +186,14 @@ const EliDiarySettings = () => {
   const [cfg, setCfg] = React.useState(getDiaryCfg());
   const [tpl, setTpl] = React.useState(getDiaryCfg().template.join('\n'));
   const save = (patch) => setCfg(setDiaryCfg(patch));
+  // (4.27) contadores: se editan aquí y se guardan limpios al salir del campo
+  const [counters, setCounters] = React.useState(getDiaryCfg().counters);
+  const saveCounters = (list = counters) => save({ counters: cleanCounters(list) });
+  const editCounter = (i, patch, now) => {
+    const next = counters.map((c, j) => (j === i ? { ...c, ...patch } : c));
+    setCounters(next);
+    if (now) saveCounters(next);
+  };
   return (
     <details className="eli-settings-section" data-testid="eli-settings-diary">
       <summary>
@@ -233,6 +247,74 @@ const EliDiarySettings = () => {
           </div>
         </div>
         <Switch isEnabled={cfg.inSystem} onToggle={() => save({ inSystem: !cfg.inSystem })} />
+      </div>
+      <div className="setting-container" data-testid="eli-setting-diary-monthly">
+        <div className="setting-label">
+          Registro mensual
+          <div className="setting-label__description">
+            Tabla por mes en mensual-AAAA.org (junto al diari) con lo más importante de cada día y
+            los contadores; se rehace sola al apuntar (lo editado dentro de las tablas se pierde).
+          </div>
+        </div>
+        <Switch isEnabled={cfg.monthlyOn} onToggle={() => save({ monthlyOn: !cfg.monthlyOn })} />
+      </div>
+      <div
+        className="setting-container setting-container--vertical"
+        data-testid="eli-diary-counters-setting"
+      >
+        <div className="setting-label">
+          Contadores del día
+          <div className="setting-label__description">
+            Nombre, columna corta y tipo: Sí/No (cuenta los días), Número (suma; vale «4,5») o Nota.
+          </div>
+        </div>
+        {counters.map((c, i) => (
+          <div key={i} className="eli-diary-counter-row" data-testid="eli-diary-counter-row">
+            <input
+              type="text"
+              value={c.name}
+              placeholder="Nombre"
+              onChange={(e) => editCounter(i, { name: e.target.value })}
+              onBlur={() => saveCounters()}
+            />
+            <input
+              type="text"
+              className="eli-diary-counter-row__key"
+              value={c.key}
+              placeholder="KM"
+              onChange={(e) => editCounter(i, { key: e.target.value.toUpperCase() })}
+              onBlur={() => saveCounters()}
+            />
+            <select value={c.type} onChange={(e) => editCounter(i, { type: e.target.value }, true)}>
+              {COUNTER_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="btn-passive"
+              title="Quitar"
+              aria-label="Quitar"
+              onClick={() => {
+                const next = counters.filter((_x, j) => j !== i);
+                setCounters(next);
+                save({ counters: cleanCounters(next) });
+              }}
+            >
+              <i className="fas fa-times" />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn-passive"
+          onClick={() => setCounters([...counters, { name: '', key: '', type: 'bool' }])}
+          data-testid="eli-diary-counter-add"
+        >
+          <i className="fas fa-plus" /> Añadir contador
+        </button>
       </div>
     </details>
   );
