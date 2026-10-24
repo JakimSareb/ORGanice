@@ -106,7 +106,9 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
                   <>
                     <div className="gtd-keys__row">
                       <kbd>Tab</kbd>
-                      <span>al buscador (con una tarea seleccionada: hacerla subtarea)</span>
+                      <span>
+                        al buscador (con una tarea seleccionada: plegar/desplegar sus notas)
+                      </span>
                     </div>
                     <div className="gtd-keys__row">
                       <kbd>Ctrl Espacio</kbd>
@@ -169,8 +171,18 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
                       <span>seleccionar todas</span>
                     </div>
                     <div className="gtd-keys__row">
-                      <kbd>Tab / Mayús Tab</kbd>
-                      <span>hacer subtarea de la de encima / sacarla</span>
+                      <kbd>Tab</kbd>
+                      <span>plegar/desplegar las notas de la tarea seleccionada</span>
+                    </div>
+                    <div className="gtd-keys__row">
+                      <kbd>Alt ↑ / Alt ↓</kbd>
+                      <span>mover la tarea seleccionada (donde la lista se puede ordenar)</span>
+                    </div>
+                    <div className="gtd-keys__row">
+                      <kbd>Alt → / Alt ←</kbd>
+                      <span>
+                        hacer subtarea de la de encima / sacarla (con «Subtareas» encendido)
+                      </span>
                     </div>
                     <div className="gtd-keys__row">
                       <kbd>Alt ←</kbd>

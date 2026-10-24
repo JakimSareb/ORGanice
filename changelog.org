@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.19 (octubre de 2026)
+** GTD: teclado y editor
+- *Alt+↑ / Alt+↓* mueven la tarea seleccionada una posición (como arrastrarla; solo donde la lista se puede ordenar).
+- *Tab* con una tarea seleccionada pliega/despliega sus notas. Hacerla subtarea de la de encima / sacarla pasa a *Alt+→ / Alt+←* (con «Subtareas» encendido).
+- *Mayús+B* abre el filtro de la sección (la lupa de la cabecera); sale en la ventana de atajos y se puede cambiar.
+- En el editor de una tarea, *Tab* recorre: cabecera, etiquetas, notas, tipo, proyecto, tiempo, energía, vence, empieza y Guardar.
+
 * 4.18 (octubre de 2026)
 ** Arreglos
 - *PDF de una vista de GTD* (⋯ › Exportar la vista a PDF) y PDF de una tarea: ahora salen las *fotos* de las notas, como en la vista; el botón espera a que carguen antes de abrir el diálogo de imprimir («Cargando fotos…»).

@@ -64,6 +64,8 @@ export const GTD_BINDINGS = [
   ['GTD: buscar', 'gtdSearch', '/', 'Más'],
   // (4.17) B, como en Documentos (y el Menú ☰ › Buscar)
   ['GTD: buscar (otra tecla)', 'gtdSearch2', 'b', 'Más'],
+  // (4.19) Mayús+B = la lupa de la cabecera (filtrar la sección)
+  ['GTD: filtrar esta sección', 'gtdFilterSection', 'shift+b', 'Más'],
   ['GTD: Limpieza (las hechas, al Logbook)', 'gtdCleanup', 'c', 'Más'],
   ['GTD: ordenar por fecha límite', 'gtdSortDue', 'd', 'Más'],
   ['GTD: gestionar etiquetas', 'gtdTags', 'g', 'Más'],
