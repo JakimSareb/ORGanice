@@ -178,7 +178,9 @@ export const continueListOnEnter = (value, pos) => {
   }
   const num = /^(\d+)([.)])$/.exec(m[2]);
   const marker = num ? `${+num[1] + 1}${num[2]}` : m[2];
-  const prefix = `\n${m[1]}${marker}${m[3]}${m[4] ? '[ ] ' : ''}`;
+  // (4.18) tras el marcador, UN espacio normal (antes se copiaban los que hubiera: varios, un
+  // tabulador o el espacio duro del teclado del iPhone, y la lista iba sumando espacios)
+  const prefix = `\n${m[1]}${marker} ${m[4] ? '[ ] ' : ''}`;
   const v = text.slice(0, pos) + prefix + text.slice(pos);
   return { value: v, pos: pos + prefix.length };
 };

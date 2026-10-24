@@ -6,6 +6,8 @@ import { useHistory } from 'react-router-dom';
 import './stylesheet.css';
 
 import AttributedString from '../OrgFile/components/AttributedString';
+import { MediaPathContext } from '../OrgFile/components/EliMedia';
+import { toolOn } from '../../lib/eli_notes_mode';
 import { exportOrg } from '../../lib/export_org';
 import EliAcomodadores from '../EliAcomodadores';
 import {
@@ -471,7 +473,55 @@ const readOnlyHandlers = {
   inListContentsEditMode: false,
 };
 
-function PrintHeader({ header, baseLevel }) {
+// (4.18) Antes de imprimir se espera a que carguen las fotos de las notas (como mucho 15 s)
+const PRINT_WAIT_MS = 15000;
+const printWhenReady = async (root, setBusy) => {
+  if (!root) return window.print();
+  setBusy(true);
+  const t0 = Date.now();
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  while (root.querySelector('.eli-media__placeholder') && Date.now() - t0 < PRINT_WAIT_MS)
+    await wait(200);
+  const pending = Array.from(root.querySelectorAll('img')).filter((img) => !img.complete);
+  await Promise.race([
+    Promise.all(
+      pending.map(
+        (img) =>
+          new Promise((r) => {
+            img.addEventListener('load', r, { once: true });
+            img.addEventListener('error', r, { once: true });
+          })
+      )
+    ),
+    wait(Math.max(0, PRINT_WAIT_MS - (Date.now() - t0))),
+  ]);
+  setBusy(false);
+  window.print();
+};
+
+function PrintButton({ docRef, testId }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      className="btn eli-raw__btn eli-raw__btn--primary"
+      onClick={() => !busy && printWhenReady(docRef.current, setBusy)}
+      disabled={busy}
+      data-testid={testId}
+    >
+      {busy ? (
+        <>
+          <i className="fas fa-spinner fa-spin" /> Cargando fotos…
+        </>
+      ) : (
+        <>
+          <i className="fas fa-file-pdf" /> PDF / Imprimir
+        </>
+      )}
+    </button>
+  );
+}
+
+function PrintHeader({ header, baseLevel, path = null }) {
   const level = Math.min(6, Math.max(1, header.get('nestingLevel') - baseLevel + 1));
   const Tag = `h${level}`;
   const titleLine = header.get('titleLine');
@@ -485,41 +535,47 @@ function PrintHeader({ header, baseLevel }) {
   const encrypted = (header.get('rawDescription') || '').includes(PGP);
 
   return (
-    <section className="eli-print__section">
-      <Tag className="eli-print__heading">
-        {todo && (
-          <span className={`eli-print__todo eli-print__todo--${todo.toLowerCase()}`}>{todo} </span>
-        )}
-        <AttributedString
-          parts={titleLine.get('title')}
-          subPartDataAndHandlers={readOnlyHandlers}
-        />
-        {tags.size > 0 && (
-          <span className="eli-print__tags">{tags.map((t) => `:${t}`).join('')}:</span>
-        )}
-      </Tag>
-      {planning && <div className="eli-print__planning">{planning}</div>}
-      {encrypted ? (
-        <div className="eli-print__encrypted">[contenido cifrado]</div>
-      ) : (
-        <div className="eli-print__body">
+    <MediaPathContext.Provider value={path}>
+      <section className="eli-print__section">
+        <Tag className="eli-print__heading">
+          {todo && (
+            <span className={`eli-print__todo eli-print__todo--${todo.toLowerCase()}`}>
+              {todo}{' '}
+            </span>
+          )}
           <AttributedString
-            parts={header.get('description')}
+            parts={titleLine.get('title')}
             subPartDataAndHandlers={readOnlyHandlers}
           />
-        </div>
-      )}
-    </section>
+          {tags.size > 0 && (
+            <span className="eli-print__tags">{tags.map((t) => `:${t}`).join('')}:</span>
+          )}
+        </Tag>
+        {planning && <div className="eli-print__planning">{planning}</div>}
+        {encrypted ? (
+          <div className="eli-print__encrypted">[contenido cifrado]</div>
+        ) : (
+          <div className="eli-print__body">
+            <AttributedString
+              parts={header.get('description')}
+              subPartDataAndHandlers={readOnlyHandlers}
+            />
+          </div>
+        )}
+      </section>
+    </MediaPathContext.Provider>
   );
 }
 
 // (4.13) Vista previa de impresión de varias tareas (lo que muestra una vista de GTD): título del
 // documento y, debajo, cada tarea con su estado, fechas y notas (sin subtareas que no se vean)
 function PrintTasks({ files, items, title, onClose }) {
+  const docRef = useRef(null);
   const selected = (items || [])
     .map(({ path, headerId }) => {
       const headers = files.getIn([path, 'headers']);
-      return headers ? headers.find((h) => h.get('id') === headerId) : null;
+      const h = headers ? headers.find((x) => x.get('id') === headerId) : null;
+      return h ? { h, path } : null;
     })
     .filter(Boolean);
 
@@ -540,22 +596,21 @@ function PrintTasks({ files, items, title, onClose }) {
           Cerrar
         </button>
         <div className="eli-raw__title">Vista previa</div>
-        <button
-          className="btn eli-raw__btn eli-raw__btn--primary"
-          onClick={() => window.print()}
-          data-testid="eli-print-go"
-        >
-          <i className="fas fa-file-pdf" /> PDF / Imprimir
-        </button>
+        <PrintButton docRef={docRef} testId="eli-print-go" />
       </div>
       <div className="eli-print__hint eli-no-print">
         En el diálogo elige <strong>Guardar como PDF</strong> (Mac/Windows) o, en el iPhone,
         compartir → <strong>Guardar en Archivos</strong>.
       </div>
-      <article className="eli-print__doc" data-testid="eli-print-tasks">
+      <article className="eli-print__doc" data-testid="eli-print-tasks" ref={docRef}>
         <h1 className="eli-print__doctitle">{title || 'GTD'}</h1>
-        {selected.map((h) => (
-          <PrintHeader key={h.get('id')} header={h} baseLevel={h.get('nestingLevel') - 1} />
+        {selected.map(({ h, path }) => (
+          <PrintHeader
+            key={h.get('id')}
+            header={h}
+            path={path}
+            baseLevel={h.get('nestingLevel') - 1}
+          />
         ))}
       </article>
     </div>,
@@ -564,6 +619,7 @@ function PrintTasks({ files, items, title, onClose }) {
 }
 
 function PrintPreview({ path, file, headerId, onClose }) {
+  const docRef = useRef(null);
   const headers = file.get('headers');
   let selected = headers;
   let title = fileTitle(path, file);
@@ -594,18 +650,21 @@ function PrintPreview({ path, file, headerId, onClose }) {
           Cerrar
         </button>
         <div className="eli-raw__title">Vista previa</div>
-        <button className="btn eli-raw__btn eli-raw__btn--primary" onClick={() => window.print()}>
-          <i className="fas fa-file-pdf" /> PDF / Imprimir
-        </button>
+        <PrintButton docRef={docRef} testId="eli-print-file-go" />
       </div>
       <div className="eli-print__hint eli-no-print">
         En el diálogo elige <strong>Guardar como PDF</strong> (Mac/Windows) o, en el iPhone,
         compartir → <strong>Guardar en Archivos</strong>.
       </div>
-      <article className="eli-print__doc">
+      <article className="eli-print__doc" ref={docRef}>
         {!headerId && <h1 className="eli-print__doctitle">{title}</h1>}
         {selected.map((h) => (
-          <PrintHeader key={h.get('id')} header={h} baseLevel={headerId ? baseLevel : 0} />
+          <PrintHeader
+            key={h.get('id')}
+            header={h}
+            path={path}
+            baseLevel={headerId ? baseLevel : 0}
+          />
         ))}
       </article>
     </div>,
@@ -749,7 +808,7 @@ function FavoritesPopup({ currentPath, onClose }) {
             <i className="fas fa-plus" /> Nuevo fichero Org
           </button>
         )}
-        {inFolder && (
+        {inFolder && toolOn('fountain') && (
           <button
             className="btn eli-fav__toggle"
             data-testid="eli-fav-new-fountain"

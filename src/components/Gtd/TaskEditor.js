@@ -1230,6 +1230,7 @@ export default function TaskEditor({
           onKeyDown={(e) => {
             if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
             if (e.nativeEvent && e.nativeEvent.isComposing) return;
+            if (e.keyCode === 229) return; // (4.18) teclado del iPhone escribiendo una palabra
             const el = e.currentTarget;
             if (el.selectionStart !== el.selectionEnd) return;
             const r = continueListOnEnter(el.value, el.selectionStart);

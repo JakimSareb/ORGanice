@@ -393,6 +393,18 @@ Abrir la dirección =https://jakimsareb.github.io/ORGanice/capture?text=Comprar 
 Desde Safari u otra app: Compartir → «Al Inbox». Desde la pantalla de inicio o Siri: «Al Inbox» pregunta qué apuntar.
 Nota: iOS abre las direcciones en Safari (no en la app de la pantalla de inicio), así que hay que tener la sesión iniciada también en Safari. Para revisarla sin escribir, añade =&editar=1= al final de la dirección.
 
+*** Con una plantilla de captura (4.18)
+Añade =&plantilla== a la dirección para capturar con una de tus plantillas de captura: =…/capture?text=Un artículo&plantilla=l=. Se abre el editor de la tarea nueva de esa plantilla (en GTD) con lo compartido dentro: si el título de la plantilla acaba en =%?= (o está vacío), el texto va al título; si no, al principio de las notas; el enlace (=url=) va a las notas.
+- La plantilla se nombra por su *letra* o por su *nombre*. Con =&plantilla== vacío (o un nombre que no existe), la app te pregunta cuál usar: así el Atajo no tiene que saber los nombres.
+- Atajo «Capturar con plantilla»: como «Al Inbox», pero en el paso 4 el texto es =https://jakimsareb.github.io/ORGanice/capture?plantilla=&text== seguido de «Texto codificado» (o pon la letra tras =plantilla== para ir siempre a la misma).
+
+*** Atajo «Al Inbox rápido» (sin abrir la app)
+Escribe directamente al final de =inbox.org= en Dropbox; la app lo verá al sincronizar.
+1. App Atajos → *＋* → nombre «Al Inbox rápido» (en la «i»: *Mostrar en la hoja de compartir*, tipos Texto y URL).
+2. *Si* «Entrada del atajo» *tiene algún valor*: usarla; *De lo contrario*: *Pedir entrada* («¿Qué quieres capturar?»).
+3. *Fecha actual* y *Formatear fecha* con formato personalizado =yyyy-MM-dd EEE HH:mm=.
+4. Dropbox › *Añadir al archivo* (ruta de tu =inbox.org=), con el texto (cada parte en su línea): =* = + la entrada, =:PROPERTIES:=, =:CREATED: [= + la fecha formateada + =]=, =:END:= (empezando con un salto de línea).
+
 * El reloj (tiempo dedicado)
 ** TODO Escribir el informe
 :LOGBOOK:
@@ -536,7 +548,7 @@ Los guiones se escriben en ficheros =.fountain= aparte (formato abierto de texto
 - *Tipo de letra* (4.10, también en el Modo Notas): Normal, Serif, Monoespaciada o Redondeada; vale para toda la app y se guarda en este dispositivo.
 - *Estilo de viñetas* (4.04, también en el Modo Notas): *Clásico* (*), *Decorado* (●) y cuatro que cambian el icono según el nivel: *Org* (◉ ○ ✸ ✿), *Puntos y cuadrados* (● ○ ■ □), *Estrellas* (★ ✦ ✧ ·) y *Rombos* (◆ ◇ ◈ ⬩). Con ellos, una cabecera plegada lleva su icono en naranja y un triangulito ▸. Las secciones de Ajustes, Apariencia incluida, empiezan plegadas.
 - *Modo Notas* (arriba del todo, 4.0): ver «Modo Notas».
-- *Herramientas* (4.0): un interruptor para cada una (Calculadora, Fases de la luna, Acomodadores, Calendario); solo salen en el Menú las encendidas.
+- *Herramientas* (4.0): un interruptor para cada una (Calculadora, Fases de la luna, Acomodadores, Calendario; 4.18: *Guiones Fountain*: apagado, ya no se ofrece crear un guion nuevo, pero los que tengas se siguen abriendo); solo salen en el Menú las encendidas.
 - *Tema* y *Esquema de color*: «Unicornio» (rosa, lavanda y ciruela, como la pantalla de inicio), «Cuki» (aguamarina, espuma y arena rosada), «Nirvana» (como NirvanaHQ: grises claros, tarjetas blancas y acento azul; en oscuro, grafito; la vista GTD se ve aún más limpia) y, tras el botón *⋯ Más temas*, los clásicos Solarized, One, Gruvbox, Smyck y Code. Todos tienen modo claro y oscuro; «Sistema» sigue el del móvil u ordenador.
 - *Sangrar como el Emacs antiguo*: desactivado, como Emacs con org-adapt-indentation nil.
 - *Ficheros*: cuáles se cargan al empezar, cuáles entran en la agenda y en la búsqueda, y cuáles son «principales» (tecla f).

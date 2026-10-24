@@ -222,7 +222,12 @@ import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import { headerWithPath, STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import { chooseCaptureTemplate } from '../../lib/eli_capture_menu';
 import { primeKeyboard, focusField } from '../../lib/eli_keyboard_bridge';
-import { peekQuickCapture, takeQuickCapture } from '../../lib/eli_quick_capture';
+import {
+  peekQuickCapture,
+  takeQuickCapture,
+  findCaptureTemplate,
+  fillCaptureDraft,
+} from '../../lib/eli_quick_capture';
 import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
 import { calculateGtdKeybindings } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
@@ -2153,7 +2158,10 @@ export default function GtdView() {
     });
   };
   // Plantilla de captura (tecla c o botón): el editor de tarea nueva con lo que trae la plantilla
-  const captureWithTemplate = async () => {
+  // (4.18) opts: { templateId } (elegida en el Explorador), { name } (letra o nombre que trae
+  // un enlace /capture?plantilla=…; si no existe, se pregunta) y { shared: { title, notes } }
+  // (lo compartido desde fuera, dentro de la tarea)
+  const captureWithTemplate = async (opts = {}) => {
     const list = templates.toArray();
     if (!list.length) {
       showMessage(
@@ -2162,7 +2170,10 @@ export default function GtdView() {
       );
       return;
     }
-    const t = await chooseCaptureTemplate(list);
+    const t =
+      (opts.templateId && list.find((x) => x.get('id') === opts.templateId)) ||
+      (opts.name && findCaptureTemplate(list, opts.name)) ||
+      (await chooseCaptureTemplate(list));
     if (!t) return;
     primeKeyboard(); // (3.17) el foco irá al título de la tarea nueva
     const path = t.get('file') ? norm(t.get('file')) : tasksFile;
@@ -2189,6 +2200,13 @@ export default function GtdView() {
       []
     )[0];
     if (!fake) return;
+    // Sin recortar el final: «Llamar a %?» deja el cursor tras «a »
+    const filled = fillCaptureDraft(
+      (fake.rawTitle || '').replace(PRIORITY_RE, '').replace(/^\s+/, '').replace(/\s+$/, ' '),
+      fake.description,
+      opts.shared,
+      parsed.initialSubEditor === 'title-editor'
+    );
     setOpenKey(null);
     setNewProject(null);
     setDraft({
@@ -2196,18 +2214,18 @@ export default function GtdView() {
       template: t.get('description') || t.get('letter') || '',
       list: null,
       keyword: fake.keyword,
-      // Sin recortar el final: «Llamar a %?» deja el cursor tras «a »
-      title: (fake.rawTitle || '')
-        .replace(PRIORITY_RE, '')
-        .replace(/^\s+/, '')
-        .replace(/\s+$/, ' '),
+      title: filled.title,
       priority: fake.priority,
       scheduled: fake.scheduled,
       deadline: fake.deadline,
       tags: fake.ownTags,
       area: fake.ownArea || areaPreset,
-      notes: fake.description,
-      templateHeader: parsed.header,
+      notes: filled.notes,
+      // (4.18) con lo compartido en las notas, el cuerpo de la plantilla las lleva
+      templateHeader:
+        filled.notes !== fake.description
+          ? parsed.header.set('rawDescription', filled.notes)
+          : parsed.header,
       target: { path, parentId: parent ? parent.get('id') : null },
       projectKey: '',
     });
@@ -2338,6 +2356,14 @@ export default function GtdView() {
     if (pendingLoads || quickCaptureDone.current || !tasksFile) return;
     const c = peekQuickCapture();
     if (!c) return;
+    // (4.18) con plantilla (/capture?…&plantilla=…): su editor, con lo compartido dentro
+    if (c.withTemplate) {
+      if (!files.getIn([tasksFile, 'headers'])) return;
+      quickCaptureDone.current = true;
+      takeQuickCapture();
+      captureWithTemplate({ name: c.template, shared: { title: c.title, notes: c.notes } });
+      return;
+    }
     const d = draftFor('inbox');
     if (!d || !files.getIn([d.target.path, 'headers'])) return;
     quickCaptureDone.current = true;
@@ -3089,7 +3115,14 @@ export default function GtdView() {
     if (cmd.shortcuts) setShowShortcuts(true);
     // (4.17) Menú ☰: Buscar (B) y Capturar con plantilla
     if (cmd.search) focusSearch();
-    if (cmd.capture) captureWithTemplate();
+    if (cmd.capture) {
+      // (4.18) desde el Explorador se llega con GTD aún cargando: se espera al fichero de tareas
+      if (!files.getIn([tasksFile, 'headers']) && (cmd.tries || 0) < 10) {
+        setTimeout(() => gtdCmdRef.current({ ...cmd, tries: (cmd.tries || 0) + 1 }), 500);
+        return;
+      }
+      captureWithTemplate(cmd.capture === true ? {} : cmd.capture);
+    }
     // (4.04) procesos lanzados desde el Menú ☰ (aunque su sección esté apagada). Si GTD aún
     // está cargando las tareas, se reintenta un par de veces.
     if (cmd.process || cmd.review || cmd.daily || cmd.guided) {

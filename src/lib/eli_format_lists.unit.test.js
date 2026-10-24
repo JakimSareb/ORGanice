@@ -18,4 +18,11 @@ describe('2.16: marcadores de lista', () => {
     expect(continueListOnEnter('- [ ] a\n- [X]', 13)).toEqual({ value: '- [ ] a\n', pos: 8 });
     expect(continueListOnEnter('* Encabezado', 12)).toBe(null);
   });
+  test('4.18: con «-» la línea nueva lleva un solo espacio tras el marcador', () => {
+    expect(continueListOnEnter('-   pan', 7)).toEqual({ value: '-   pan\n- ', pos: 10 });
+    expect(continueListOnEnter('-\u00a0pan', 5)).toEqual({ value: '-\u00a0pan\n- ', pos: 8 });
+    expect(continueListOnEnter('  -\tpan', 7)).toEqual({ value: '  -\tpan\n  - ', pos: 12 });
+    expect(continueListOnEnter('- [ ]  a', 8)).toEqual({ value: '- [ ]  a\n- [ ] ', pos: 15 });
+    expect(continueListOnEnter('  * a', 5)).toEqual({ value: '  * a\n  * ', pos: 10 });
+  });
 });
