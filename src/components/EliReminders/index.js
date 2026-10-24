@@ -1,5 +1,5 @@
 // ORG Mode para Eli (3.25): vigila las fechas de las tareas cargadas y lanza los avisos.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { buildTasks } from '../../lib/gtd/gtd_model';
@@ -18,9 +18,9 @@ const TICK_MS = 30 * 1000;
 
 export default function EliReminders() {
   const files = useSelector(selectFiles);
-  const tasks = useMemo(() => (files ? buildTasks(files, []) : []), [files]);
-  const tasksRef = useRef(tasks);
-  tasksRef.current = tasks;
+  // (4.25) las tareas se calculan solo al comprobar (cada 30 s), no en cada cambio de un fichero
+  const filesRef = useRef(files);
+  filesRef.current = files;
   const [settings, setSettings] = useState(getReminderSettings());
   // (4.0) en el Modo Notas no hay avisos de fechas
   const notes = useNotesMode();
@@ -39,9 +39,10 @@ export default function EliReminders() {
     if (!settings.on || notes) return undefined;
     const tick = () => {
       if (notificationPermission() !== 'granted') return;
+      const tasks = filesRef.current ? buildTasks(filesRef.current, []) : [];
       const now = new Date();
-      const list = dueTimedReminders(tasksRef.current, now);
-      const summary = dailySummary(tasksRef.current, now, settings.hour);
+      const list = dueTimedReminders(tasks, now);
+      const summary = dailySummary(tasks, now, settings.hour);
       if (summary) list.push(summary);
       list
         .filter((r) => !wasFired(r.key))

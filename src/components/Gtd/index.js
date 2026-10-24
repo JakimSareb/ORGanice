@@ -96,6 +96,7 @@ import {
   gtdEnsureOrgId,
 } from '../../lib/gtd/gtd_actions';
 import { clockSummary, taskLinkText, isClockRunning } from '../../lib/gtd/gtd_tools';
+import { ROW_FN_PROPS, rowPropsEqual } from '../../lib/gtd/gtd_rowmemo';
 import { clockTotalsOf, clockTotalLabel } from '../../lib/gtd/gtd_clock';
 import {
   copyTaskLink,
@@ -976,6 +977,11 @@ function TaskRow({
     </div>
   );
 }
+
+// (4.25) Rendimiento: la fila solo se vuelve a pintar si cambian sus DATOS. Las funciones que
+// recibe son «proxies» estables (llaman siempre a la versión más reciente, ver `rowProxies` en
+// GtdView), así que basta con comparar si existen o no.
+const MemoTaskRow = React.memo(TaskRow, rowPropsEqual);
 
 // (2.17) última tarea abierta en su fichero desde GTD: al volver se marca y se centra
 let lastOpenedTaskKey = null;
@@ -6034,67 +6040,93 @@ export default function GtdView() {
     facets.hasBadProject ||
     activeFilterCount > 0;
 
-  const renderRow = (item) => (
-    <TaskRow
-      key={item.task.key}
-      task={item.task}
-      onRowClick={rowClick(item)}
-      onTitleClick={titleClick(item)}
-      seqMark={seqMarkOf(item.task, today)}
-      clockMs={clockTotals.get(item.task.key) || 0}
-      onRowDoubleClick={() => {
-        if (clickSuppressed()) return;
-        // (3.02) con el dedo ya lo hace el doble toque propio
-        if (lastPointer.current !== 'mouse') return;
-        rowOpen(item, null);
-      }}
-      onPointerDown={(e) => {
-        lastPointer.current = e.pointerType || 'mouse';
-        onPointerDown(item.task)(e);
-      }}
-      onContextMenu={(e) => openTaskMenu(item.task, e)}
-      onMenuButton={isTouchGtd() ? null : (e) => openTaskMenu(item.task, e)}
-      onDotsDown={item.isRef ? null : dotsDown(item.task)}
-      onToggleDone={(e) => toggleDone(item.task, e)}
-      onToggleStar={() => dispatch(gtdToggleStar(item.task))}
-      onToggleCheck={(index) => {
-        // (4.22) el contenido reunido de una referencia no es su texto real: sin casillas
-        if (item.task.refAggregated) return;
-        dispatch(
-          gtdSaveTask(item.task, { notes: toggleCheckboxLine(item.task.description, index) })
-        );
-      }}
-      isDragging={!!dragging && dragging.includes(item.task.key)}
-      today={today}
-      showProject={!isProjectView && !(grouped && item.task.project)}
-      hideActions={isLogbook || isTrash || !!item.isRef}
-      reorderSection={item.section}
-      isSelected={sel.includes(item.task.key)}
-      depth={item.depth || 0}
-      hasKids={!!item.hasKids}
-      folded={!!item.folded}
-      onToggleFold={() => toggleFold(item.task)}
-      parentTitle={parentTitleOf(item.task)}
-      noSubtasks={!subtasksOn}
-      onGoParent={() => goToTask(parentTaskOf(item.task))}
-      notesMode={notesOverride[item.task.key] || notesMode}
-      onCycleNotes={() =>
-        setNotesOverride((o) => {
-          const cur = o[item.task.key] || notesMode;
-          // (3.34) el icono alterna entre nada y todo (sin «parciales»)
-          const next = cur === 'full' ? 'none' : 'full';
-          return { ...o, [item.task.key]: next };
-        })
-      }
-      onGoProject={item.task.project ? () => goToProject(item.task.project) : null}
-      badProject={!!item.task.badProject}
-      showTags={details.tags}
-      showEffort={details.effort}
-      showArea={details.area}
-      wrapTitle={details.wrap}
-      onOpenLink={(target) => openLinkAny(item.task, target)}
-    />
-  );
+  // (4.25) funciones de cada fila: se guardan las de este pintado y la fila recibe proxies
+  // estables que llaman a la última versión (MemoTaskRow no repinta filas sin cambios)
+  const rowFns = (item) => ({
+    onRowClick: rowClick(item),
+    onTitleClick: titleClick(item),
+    onRowDoubleClick: () => {
+      if (clickSuppressed()) return;
+      // (3.02) con el dedo ya lo hace el doble toque propio
+      if (lastPointer.current !== 'mouse') return;
+      rowOpen(item, null);
+    },
+    onPointerDown: (e) => {
+      lastPointer.current = e.pointerType || 'mouse';
+      onPointerDown(item.task)(e);
+    },
+    onContextMenu: (e) => openTaskMenu(item.task, e),
+    onMenuButton: isTouchGtd() ? null : (e) => openTaskMenu(item.task, e),
+    onDotsDown: item.isRef ? null : dotsDown(item.task),
+    onToggleDone: (e) => toggleDone(item.task, e),
+    onToggleStar: () => dispatch(gtdToggleStar(item.task)),
+    onToggleCheck: (index) => {
+      // (4.22) el contenido reunido de una referencia no es su texto real: sin casillas
+      if (item.task.refAggregated) return;
+      dispatch(gtdSaveTask(item.task, { notes: toggleCheckboxLine(item.task.description, index) }));
+    },
+    onToggleFold: () => toggleFold(item.task),
+    onGoParent: () => goToTask(parentTaskOf(item.task)),
+    onCycleNotes: () =>
+      setNotesOverride((o) => {
+        const cur = o[item.task.key] || notesMode;
+        // (3.34) el icono alterna entre nada y todo (sin «parciales»)
+        const next = cur === 'full' ? 'none' : 'full';
+        return { ...o, [item.task.key]: next };
+      }),
+    onGoProject: item.task.project ? () => goToProject(item.task.project) : null,
+    onOpenLink: (target) => openLinkAny(item.task, target),
+  });
+  const rowFnsRef = useRef(new Map());
+  const rowProxyRef = useRef(new Map());
+  const rowProxies = (key, fns) => {
+    let px = rowProxyRef.current.get(key);
+    if (!px) {
+      px = {};
+      ROW_FN_PROPS.forEach((n) => {
+        px[n] = (...args) => {
+          const f = (rowFnsRef.current.get(key) || {})[n];
+          return f ? f(...args) : undefined;
+        };
+      });
+      rowProxyRef.current.set(key, px);
+    }
+    const out = {};
+    ROW_FN_PROPS.forEach((n) => {
+      out[n] = fns[n] ? px[n] : null;
+    });
+    return out;
+  };
+  const renderRow = (item) => {
+    const fns = rowFns(item);
+    rowFnsRef.current.set(item.task.key, fns);
+    return (
+      <MemoTaskRow
+        key={item.task.key}
+        {...rowProxies(item.task.key, fns)}
+        task={item.task}
+        seqMark={seqMarkOf(item.task, today)}
+        clockMs={clockTotals.get(item.task.key) || 0}
+        isDragging={!!dragging && dragging.includes(item.task.key)}
+        today={today}
+        showProject={!isProjectView && !(grouped && item.task.project)}
+        hideActions={isLogbook || isTrash || !!item.isRef}
+        reorderSection={item.section}
+        isSelected={sel.includes(item.task.key)}
+        depth={item.depth || 0}
+        hasKids={!!item.hasKids}
+        folded={!!item.folded}
+        parentTitle={parentTitleOf(item.task)}
+        noSubtasks={!subtasksOn}
+        notesMode={notesOverride[item.task.key] || notesMode}
+        badProject={!!item.task.badProject}
+        showTags={details.tags}
+        showEffort={details.effort}
+        showArea={details.area}
+        wrapTitle={details.wrap}
+      />
+    );
+  };
 
   return (
     <div

@@ -251,22 +251,42 @@ const resolveProjectLinks = (tasks) => {
   });
 };
 
+// (4.25) Caché por CONTENIDO del fichero (cabeceras + estados), no por el objeto fichero: al
+// sincronizar cambian isDirty/lastSyncAt y antes se recalculaban todas las tareas. Se guarda una
+// variante por «es Inbox o no» (GTD y los avisos lo piden distinto y se pisaban). Si las partes
+// no cambian, se devuelve EXACTAMENTE la misma lista (así no se recalcula nada de la vista).
+const fileTasksFor = (file, path, isInboxFile) => {
+  const headers = file.get('headers');
+  const todo = file.get('todoKeywordSets');
+  let entry = fileTasksCache.get(headers);
+  if (!entry || entry.path !== path || entry.todo !== todo) {
+    entry = { path, todo, variants: {} };
+    fileTasksCache.set(headers, entry);
+  }
+  const k = isInboxFile ? 'inbox' : 'plain';
+  if (!entry.variants[k]) entry.variants[k] = buildFileTasks(file, path, isInboxFile);
+  return entry.variants[k];
+};
+
+const lastBuilds = []; // [{parts, result}] (los últimos, para varias llamadas distintas)
+const MAX_BUILDS = 6;
+const sameParts = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
+
 export const buildTasks = (files, inboxPaths = []) => {
-  const tasks = [];
-  if (!files) return tasks;
+  if (!files) return [];
+  const parts = [];
   files.forEach((file, path) => {
     if (!path || !file || !file.get('headers')) return;
-    const isInboxFile = inboxPaths.includes(path);
-    const cached = fileTasksCache.get(file);
-    if (cached && cached.path === path && cached.isInboxFile === isInboxFile) {
-      for (const t of cached.tasks) tasks.push(t);
-      return;
-    }
-    const fileTasks = buildFileTasks(file, path, isInboxFile);
-    fileTasksCache.set(file, { path, isInboxFile, tasks: fileTasks });
-    for (const t of fileTasks) tasks.push(t);
+    parts.push(fileTasksFor(file, path, inboxPaths.includes(path)));
   });
-  return resolveProjectLinks(tasks);
+  const hit = lastBuilds.find((b) => sameParts(b.parts, parts));
+  if (hit) return hit.result;
+  const tasks = [];
+  for (const part of parts) for (const t of part) tasks.push(t);
+  const result = resolveProjectLinks(tasks);
+  lastBuilds.unshift({ parts, result });
+  if (lastBuilds.length > MAX_BUILDS) lastBuilds.pop();
+  return result;
 };
 
 const buildFileTasks = (file, path, isInboxFile) => {

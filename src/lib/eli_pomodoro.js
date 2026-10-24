@@ -165,8 +165,11 @@ const commit = (next, natural = false) => {
 const tick = () => {
   if (state.status === 'running' && Date.now() >= state.endsAt) {
     commit(finishPhase(state, cfg, state.endsAt), true);
-  } else notify();
+  } else if (!(typeof document !== 'undefined' && document.hidden)) notify();
+  // (4.25) con la pestaña oculta no se repinta el chip cada segundo
 };
+if (typeof document !== 'undefined' && document.addEventListener)
+  document.addEventListener('visibilitychange', () => !document.hidden && timer && notify());
 
 function syncTimer() {
   if (state.status === 'running' && !timer) timer = setInterval(tick, 1000);
