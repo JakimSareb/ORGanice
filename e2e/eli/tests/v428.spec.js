@@ -47,7 +47,7 @@ test('4.28: seleccionar dos cabeceras e indentarlas de una vez', async ({ app })
   await expect(page.locator('text=Gamma').first()).toBeVisible({ timeout: 20000 });
   if (app.mobile) {
     await holdBullet(app, 'Beta');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(600);
     await app.press(page.locator('text=Gamma').first());
   } else {
     await page.locator('text=Beta').first().click();
@@ -75,10 +75,10 @@ test('4.28: con «Edición estilo Logseq», un toque en las notas las edita', as
     localStorage: { eliLogseqEdit: 'true' },
   });
   await expect(page.locator('text=Otra').first()).toBeVisible({ timeout: 20000 });
-  // desplegar «Otra» con su viñeta
-  await app.press(
-    page.locator('.header', { hasText: 'Otra' }).first().locator('[data-testid=header-bullet]')
-  );
+  // seleccionar «Otra» y desplegarla con Intro
+  await app.press(page.locator('text=Otra').first());
+  await page.waitForTimeout(400);
+  await page.keyboard.press('Enter');
   const notes = page.locator('text=Notas de otra').first();
   await expect(notes).toBeVisible({ timeout: 5000 });
   await app.press(notes);

@@ -265,8 +265,10 @@ export const startBulletDrag = ({
     cleanup();
     if (!was) return;
     lastDropAt = Date.now();
-    // (4.28) con el dedo: levantada y soltada sin moverla = seleccionar (varias)
+    // (4.28) con el dedo: levantada y soltada sin moverla = seleccionar (varias). Solo se ignora
+    // el clic que llega justo al soltar (150 ms), no el siguiente toque en otra cabecera
     if (touch && onHold && Math.hypot(x - x0, y - y0) <= TOUCH_SLOP) {
+      lastDropAt = Date.now() - 300;
       onHold(srcId);
       return;
     }
