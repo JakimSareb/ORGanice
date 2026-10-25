@@ -1,4 +1,5 @@
 import { clearOfflineStore } from '../lib/eli_offline_store';
+import { logSyncEvent } from '../lib/eli_sync_log';
 import { lastSyncAtFor } from '../lib/eli_offline_client';
 import { backupPathFor } from '../lib/eli_media';
 import { forgetRootHandle } from '../sync_backend_clients/local_folder_sync_backend_client';
@@ -93,6 +94,7 @@ export const getDirectoryListing = (path) => (dispatch, getState) => {
     })
     .catch((error) => {
       dispatch(hideLoadingMessage());
+      logSyncEvent({ file: path || '/', op: 'listar carpeta', error });
       const error_summary = _.get(error, 'error.error_summary') || '';
       // ORG Mode para Eli (2.15): cerrar la sesión solo si Dropbox no acepta la sesión (un 400
       // por otra causa, p. ej. una ruta mala, ya no saca de la app)
@@ -131,6 +133,7 @@ export const loadMoreDirectoryListing = () => (dispatch, getState) => {
     .catch((error) => {
       // (2.15) antes el error quedaba sin atender y el «cargando» no terminaba
       dispatch(setIsLoadingMoreDirectoryListing(false));
+      logSyncEvent({ file: '', op: 'listar carpeta', error });
       console.error(error);
     });
 };
@@ -181,6 +184,7 @@ export const downloadFile = (path) => {
       .catch((error) => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
+        logSyncEvent({ file: path, op: 'descargar', error: error || 'No se encuentra el fichero' });
         dispatch(
           setOrgFileErrorMessage(
             error && error.message
@@ -215,9 +219,10 @@ export const createFile = (path, content) => {
           dispatch({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths: [path] });
         }
       })
-      .catch(() => {
+      .catch((error) => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
+        logSyncEvent({ file: path, op: 'crear', error });
         dispatch(setOrgFileErrorMessage(`No se encuentra el fichero ${path}`, path));
       });
   };

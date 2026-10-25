@@ -12,6 +12,13 @@ import {
   isArchiveFile,
 } from '../lib/eli_attachments';
 import { addConflict, sameContents } from '../lib/eli_conflicts';
+import { logSyncEvent } from '../lib/eli_sync_log';
+import {
+  isYearArchivePath,
+  planArchiveFile,
+  appendTrees,
+  yearArchivePath,
+} from '../lib/eli_archive_years';
 import { announceSaved } from '../lib/eli_multi';
 import {
   parseOrgLink,
@@ -315,6 +322,7 @@ const doSync = ({
         // Con conexión pero sin respuesta del servidor: otro intento dentro de un rato (sin
         // conexión se sincroniza solo al volver)
         if (!offline) {
+          logSyncEvent({ file: path, op: 'sincronizar', error: 'El servidor no responde' });
           setTimeout(() => dispatch(sync({ path, shouldSuppressMessages: true })), 30000);
         }
         return;
@@ -369,6 +377,7 @@ const doSync = ({
             .catch((error) => {
               const err = `Error al subir el fichero ${path}: ${error.toString()}`;
               console.error(err);
+              logSyncEvent({ file: path, op: 'subir', error });
               if (quiet) {
                 done({ kind: 'error', path, text: err });
               } else {
@@ -410,6 +419,11 @@ const doSync = ({
             done({ kind: 'nothing', path });
           } else {
             done({ kind: 'conflict', path });
+            logSyncEvent({
+              file: path,
+              op: 'conflicto',
+              error: 'Cambios aquí y en el servidor: hay que elegir',
+            });
             addConflict({
               path,
               mine: localContents,
@@ -434,6 +448,7 @@ const doSync = ({
       }
     })
     .catch((error) => {
+      logSyncEvent({ file: path, op: 'sincronizar', error: error || 'No se encuentra el fichero' });
       if (quiet) {
         done({
           kind: 'error',
@@ -1369,6 +1384,8 @@ export const eliRefreshAllOrgFiles = ({ force = false } = {}) => async (dispatch
   if (!paths || !paths.length || !getState().base.get('eliAllOrgFiles')) return null;
   // (4.12) sin los de las carpetas excluidas (si ya estaban, se quitan con «prune»)
   paths = withoutExcluded(paths, parseExcludedFolders(getState().base.get('eliExcludedFolders')));
+  // (4.33) el archivo por años (archive-AAAA.org) no se carga al abrir: es archivo
+  paths = paths.filter((p) => !isYearArchivePath(p));
   dispatch({ type: 'ELI_ADD_ALL_FILE_SETTINGS', paths, prune: true });
   return paths;
 };
@@ -2363,4 +2380,94 @@ export const createNewFile = (path, content) => async (dispatch, getState) => {
     showMessage('No se pudo crear el fichero', `${path}: ${detail}`);
     return false;
   }
+};
+
+// ORG Mode para Eli (4.33): «Agrupar archivo por años». Primero el plan (sin escribir nada) para
+// poder confirmar con el resumen; luego se aplica: se escribe el fichero de cada año y, solo si
+// han ido bien todos los de un archivo, se quitan de él los árboles movidos.
+const eliReadIfExists = async (client, path) => {
+  if (client.pathExists) {
+    if (!(await client.pathExists(path))) return { exists: false, text: '' };
+    return { exists: true, text: (await client.getFileContents(path)) || '' };
+  }
+  try {
+    return { exists: true, text: (await client.getFileContents(path)) || '' };
+  } catch (e) {
+    if (e) throw e;
+    return { exists: false, text: '' };
+  }
+};
+
+export const eliPlanArchiveByYear = () => async (dispatch, getState) => {
+  const client = getState().syncBackend.get('client');
+  if (!client || !client.listAllFiles) return { plans: [], skipped: [], unsupported: true };
+  let all = [];
+  try {
+    all = (await client.listAllFiles()) || [];
+  } catch (error) {
+    logSyncEvent({ file: '/', op: 'archivo por años (listar)', error });
+    throw error;
+  }
+  const paths = all.filter((p) => /\.org_archive$/i.test(p) && !/\/backups\//i.test(p));
+  const plans = [];
+  const skipped = [];
+  for (const path of paths) {
+    if (getState().org.present.getIn(['files', path, 'isDirty'])) {
+      skipped.push(path);
+      continue;
+    }
+    let text;
+    try {
+      text = await client.getFileContents(path);
+    } catch (error) {
+      logSyncEvent({ file: path, op: 'archivo por años (leer)', error });
+      skipped.push(path);
+      continue;
+    }
+    if (typeof text !== 'string') continue;
+    const plan = planArchiveFile(text, new Date());
+    if (plan.count) plans.push({ path, ...plan });
+  }
+  return { plans, skipped };
+};
+
+export const eliApplyArchiveByYear = (plans) => async (dispatch, getState) => {
+  const client = getState().syncBackend.get('client');
+  if (!client) return { moved: 0, failed: 0 };
+  const dests = {};
+  (plans || []).forEach((pl) =>
+    Object.keys(pl.moves).forEach((y) => {
+      const dp = yearArchivePath(pl.path, y);
+      if (!dests[dp]) dests[dp] = { year: y, trees: [] };
+      dests[dp].trees.push(...pl.moves[y]);
+    })
+  );
+  const failed = new Set();
+  for (const dp of Object.keys(dests)) {
+    try {
+      const { exists, text } = await eliReadIfExists(client, dp);
+      const next = appendTrees(text, dests[dp].trees, dests[dp].year);
+      if (next !== text || !exists) {
+        if (exists) await client.updateFile(dp, next);
+        else await client.createFile(dp, next);
+      }
+      refreshLoadedArchive(dispatch, getState, dp, next);
+    } catch (error) {
+      failed.add(dp);
+      logSyncEvent({ file: dp, op: 'archivo por años (escribir)', error });
+    }
+  }
+  let moved = 0;
+  for (const pl of plans || []) {
+    const ok = Object.keys(pl.moves).every((y) => !failed.has(yearArchivePath(pl.path, y)));
+    if (!ok || getState().org.present.getIn(['files', pl.path, 'isDirty'])) continue;
+    try {
+      await client.updateFile(pl.path, pl.keepText);
+      moved += pl.count;
+      refreshLoadedArchive(dispatch, getState, pl.path, pl.keepText);
+    } catch (error) {
+      logSyncEvent({ file: pl.path, op: 'archivo por años (quitar del origen)', error });
+    }
+  }
+  return { moved, failed: failed.size };
 };

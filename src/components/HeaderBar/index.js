@@ -23,6 +23,7 @@ import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
 import EliPomodoro from '../EliPomodoro';
 import { openScratch } from '../../lib/eli_scratch';
 import { openDiary } from '../../lib/eli_diary';
+import { unseenCount, subscribeSyncLog, openSyncLog } from '../../lib/eli_sync_log';
 import {
   getPomodoroState,
   subscribePomodoro,
@@ -225,6 +226,8 @@ class HeaderBar extends PureComponent {
     // (3.04) el candado está en ⋯ › Fichero; el nombre del fichero lo muestra cuando está puesto
     this.eliUnsubLock = subscribeDocLock(() => this.forceUpdate());
     this.eliUnsubNotes = subscribeNotesMode(() => this.forceUpdate());
+    // (4.33) aviso ⚠ de errores de sincronización sin mirar
+    this.eliUnsubSyncLog = subscribeSyncLog(() => this.forceUpdate());
     // (4.13) el Menú ☰ cambia «Iniciar/Parar pomodoro» solo cuando cambia el estado (no cada segundo)
     this.eliPomoStatus = getPomodoroState().status;
     this.eliUnsubPomo = subscribePomodoro((st) => {
@@ -274,6 +277,7 @@ class HeaderBar extends PureComponent {
     if (this.eliUnsubLock) this.eliUnsubLock();
     if (this.eliUnsubNotes) this.eliUnsubNotes();
     if (this.eliUnsubPomo) this.eliUnsubPomo();
+    if (this.eliUnsubSyncLog) this.eliUnsubSyncLog();
   }
 
   eliNavChanged = () => this.forceUpdate();
@@ -1147,6 +1151,18 @@ class HeaderBar extends PureComponent {
               onClick={() => online && this.eliSyncNow()}
               title="Sincronizar ahora (s)"
               data-testid="eli-sync-btn"
+              role="button"
+            />
+          )}
+
+          {/* (4.33) errores de sincronización sin mirar: abre el registro */}
+          {isAuthenticated && unseenCount() > 0 && (
+            <i
+              className="fas fa-exclamation-triangle header-bar__actions__item eli-sync-warn"
+              onClick={openSyncLog}
+              title="Errores de sincronización: ver el registro"
+              aria-label="Errores de sincronización"
+              data-testid="eli-sync-warn"
               role="button"
             />
           )}

@@ -3,7 +3,16 @@
 // apartado por mes (`* 2026-10 octubre [[id:diari-2026-10][Ver en el diari]]`) con su tabla.
 // Las tablas van entre `# BEGIN mensual <id>` y `# END mensual <id>` y se REHACEN solas desde el
 // diari: lo de fuera de las marcas se respeta; lo editado dentro se pierde. Solo funciones puras.
-import { parseDays, dayOrgId, monthOrgId, dayHasData, MONTHS } from './eli_diary';
+import {
+  parseDays,
+  dayOrgId,
+  monthOrgId,
+  dayHasData,
+  MONTHS,
+  parseMonthProps,
+  dailyCounters,
+  monthlyCounters,
+} from './eli_diary';
 
 export const monthlyPath = (year, dir) => `${dir}mensual-${year}.org`;
 
@@ -92,17 +101,36 @@ export const monthRows = (daysByKey, year, month, counters) => {
 
 const monthHasData = (days, mk) => days.some((d) => d.key.startsWith(mk) && dayHasData(d));
 
-// Datos del año (para el fichero y para el PDF)
-export const monthlyData = (diaryText, year, counters) => {
+// Datos del año (para el fichero y para el PDF). (4.33) `counters` = los diarios (columnas de la
+// tabla del mes); `monthCounters` = los mensuales, con su valor en cada mes (`monthValues`).
+export const monthlyData = (diaryText, year, allCounters) => {
+  const counters = dailyCounters(allCounters);
+  const monthCounters = monthlyCounters(allCounters);
   const days = parseDays(diaryText || '');
+  const mprops = monthCounters.length ? parseMonthProps(diaryText || '') : {};
   const byKey = new Map(days.map((d) => [d.key, d]));
   const months = [];
   for (let m = 0; m < 12; m++) {
     const mk = `${year}-${pad(m + 1)}`;
-    if (!monthHasData(days, mk)) continue;
-    months.push({ key: mk, month: m, label: MONTHS[m], rows: monthRows(byKey, year, m, counters) });
+    const monthValues = monthCounters.map((c) => ((mprops[mk] || {})[c.key] || '').trim());
+    if (!monthHasData(days, mk) && !monthValues.some(Boolean)) continue;
+    months.push({
+      key: mk,
+      month: m,
+      label: MONTHS[m],
+      rows: monthRows(byKey, year, m, counters),
+      monthValues,
+    });
   }
-  return { year, counters, months };
+  return { year, counters, monthCounters, months };
+};
+
+// (4.33) Línea con los contadores mensuales del mes (encima de la tabla): «CINTURA: 82 · PESO: 70»
+export const monthValuesLine = (monthCounters, values) => {
+  const parts = (monthCounters || [])
+    .map((c, i) => (values && values[i] ? `${c.name || c.key}: ${values[i]}` : ''))
+    .filter(Boolean);
+  return parts.length ? parts.join(' · ') : '';
 };
 
 const orgRow = (cells) => `| ${cells.map(cell).join(' | ')} |`;
@@ -136,13 +164,17 @@ export const monthTableLines = (rows, counters) => {
 
 export const totalsTableLines = (data) => {
   const { counters, months } = data;
-  const n = 2 + counters.length;
-  const out = [orgRow(['Mes', 'Días', ...counters.map((c) => c.key)]), hline(n)];
+  const monthCounters = data.monthCounters || [];
+  const n = 2 + counters.length + monthCounters.length;
+  const out = [
+    orgRow(['Mes', 'Días', ...counters.map((c) => c.key), ...monthCounters.map((c) => c.key)]),
+    hline(n),
+  ];
   const acc = newAcc(counters);
   let days = 0;
   months.forEach((m) => {
     const t = m.rows[m.rows.length - 1];
-    out.push(orgRow([m.label, String(t.days), ...t.values]));
+    out.push(orgRow([m.label, String(t.days), ...t.values, ...(m.monthValues || [])]));
     days += t.days;
     counters.forEach((c, i) => {
       const v = c.type === 'bool' ? parseInt(t.values[i] || '0', 10) : parseNum(t.values[i]);
@@ -155,7 +187,11 @@ export const totalsTableLines = (data) => {
       }
     });
   });
-  out.push(hline(n), orgRow(['Total', String(days), ...accValues(acc, counters)]));
+  // (los mensuales no se suman: en «Total» van vacíos)
+  out.push(
+    hline(n),
+    orgRow(['Total', String(days), ...accValues(acc, counters), ...monthCounters.map(() => '')])
+  );
   return out;
 };
 
@@ -200,8 +236,9 @@ export const regenerateMonthly = (old, year, diaryText, counters) => {
   for (let m = 0; m < 12; m++) {
     const mk = `${year}-${pad(m + 1)}`;
     const md = data.months.find((x) => x.key === mk);
-    const rows = md ? md.rows : monthRows(new Map(), year, m, counters);
-    const content = monthTableLines(rows, counters);
+    const rows = md ? md.rows : monthRows(new Map(), year, m, data.counters);
+    const mline = md ? monthValuesLine(data.monthCounters, md.monthValues) : '';
+    const content = [...(mline ? [mline, ''] : []), ...monthTableLines(rows, data.counters)];
     if (replaceBlock(lines, mk, content) || !md) continue;
     const hi = lines.findIndex((l) => (MONTH_HEAD.exec(l) || [])[1] === mk);
     if (hi >= 0) {

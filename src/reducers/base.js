@@ -216,6 +216,8 @@ export default (state = Map(), action) => {
         'eliGtdSections',
         'eliPagesFile',
         'eliNoHashTagTitle',
+        // (4.33) sube al llegar ajustes de la app desde otro dispositivo (para volver a pintar)
+        'eliPrefsRev',
       ].includes(action.name)
         ? state.set(action.name, action.value)
         : state;

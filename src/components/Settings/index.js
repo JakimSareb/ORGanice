@@ -48,6 +48,7 @@ import {
   setDiaryCfg,
   templateFromText,
   COUNTER_TYPES,
+  COUNTER_FREQS,
   cleanCounters,
 } from '../../lib/eli_diary';
 import {
@@ -59,12 +60,38 @@ import {
   notesAgendaOn,
   setNotesAgendaOn,
 } from '../../lib/eli_notes_mode';
+import { LOCAL_KEYS } from '../../lib/eli_synced_prefs';
+import { SyncLogPanel } from '../EliSyncLog';
 import {
   getReminderSettings,
   setReminderSettings,
   notificationPermission,
   requestReminderPermission,
 } from '../../lib/eli_reminders';
+
+// (4.33) Rótulo de una subcategoría dentro de una sección (pequeño, mayúsculas, color de acento)
+const EliSub = ({ children }) => <div className="eli-settings-sub">{children}</div>;
+
+// (4.33) Qué ajustes viajan entre dispositivos y cuáles son solo de este
+const EliPrefsSyncInfo = ({ on }) => {
+  const local = Array.from(new Set(LOCAL_KEYS.map((l) => l.label)));
+  return (
+    <div className="setting-container setting-container--vertical" data-testid="eli-prefs-sync">
+      <div className="setting-label">
+        {on ? 'Se comparten entre tus dispositivos' : 'Solo en este dispositivo'}
+        <div className="setting-label__description">
+          {on
+            ? 'Todos los ajustes viajan en .organice-config.json. Si cambias el mismo ajuste en dos ' +
+              'dispositivos, gana el cambio más reciente de ese ajuste (los demás no se tocan).'
+            : 'Activa «Guardar los ajustes en el servicio de sincronización» para compartirlos.'}
+        </div>
+      </div>
+      <div className="setting-label__description" data-testid="eli-prefs-local">
+        <strong>Propios de cada dispositivo:</strong> {local.join(', ')}.
+      </div>
+    </div>
+  );
+};
 
 // (4.0) Temas: tres a la vista y el resto tras «⋯ Más temas»
 const MAIN_THEMES = ['Unicornio', 'Cuki', 'Nirvana'];
@@ -295,123 +322,171 @@ const EliDiarySettings = () => {
     <details className="eli-settings-section" data-testid="eli-settings-diary">
       <summary>
         <span className="eli-settings-section__title">Diario</span>
-        <span className="eli-settings-section__hint">Carpeta, preguntas del día y tareas</span>
+        <span className="eli-settings-section__hint">
+          Al abrir la app, carpeta, preguntas del día y contadores
+        </span>
       </summary>
-      <div className="setting-container setting-container--vertical">
-        <div className="setting-label">
-          Carpeta
-          <div className="setting-label__description">
-            Un fichero por año (diari-AAAA.org). Vacío = «pages/» junto al fichero de entrada; una
-            ruta sin «/» delante es relativa a esa carpeta.
+      <EliSub>Al abrir la app</EliSub>
+      <div className="eli-settings-group">
+        <div className="setting-container" data-testid="eli-setting-diary-start">
+          <div className="setting-label">
+            Al abrir la app
+            <div className="setting-label__description">
+              Desde el icono de la pantalla de inicio: el Diario de hoy (al cerrarlo, la última
+              vista) o directamente la última vista.
+            </div>
           </div>
-        </div>
-        <input
-          type="text"
-          className="eli-diary-dir"
-          value={cfg.dir}
-          placeholder="pages/"
-          onChange={(e) => save({ dir: e.target.value })}
-          data-testid="eli-diary-dir"
-        />
-      </div>
-      <div className="setting-container" data-testid="eli-setting-diary-template">
-        <div className="setting-label">
-          Preguntas al crear el día
-          <div className="setting-label__description">
-            Plantilla del día (una pregunta por línea).
-          </div>
-        </div>
-        <Switch isEnabled={cfg.templateOn} onToggle={() => save({ templateOn: !cfg.templateOn })} />
-      </div>
-      {cfg.templateOn && (
-        <div className="setting-container setting-container--vertical eli-setting-child">
-          <textarea
-            rows={5}
-            className="eli-diary-template"
-            value={tpl}
-            onChange={(e) => setTpl(e.target.value)}
-            onBlur={() => save({ template: templateFromText(tpl) })}
-            data-testid="eli-diary-template"
+          <TabButtons
+            buttons={['Diario de hoy', 'Última vista']}
+            values={['diary', 'last']}
+            selectedButton={cfg.startView}
+            onSelect={(v) => save({ startView: v })}
           />
         </div>
-      )}
-      <div className="setting-container" data-testid="eli-setting-diary-system">
-        <div className="setting-label">
-          Diario en mi sistema
-          <div className="setting-label__description">
-            Cada apunte se puede mandar al Inbox (con enlace al día) y el día muestra las tareas
-            hechas ese día.
-          </div>
-        </div>
-        <Switch isEnabled={cfg.inSystem} onToggle={() => save({ inSystem: !cfg.inSystem })} />
       </div>
-      <div className="setting-container" data-testid="eli-setting-diary-monthly">
-        <div className="setting-label">
-          Registro mensual
-          <div className="setting-label__description">
-            Tabla por mes en mensual-AAAA.org (junto al diari) con lo más importante de cada día y
-            los contadores; se rehace sola al apuntar (lo editado dentro de las tablas se pierde).
+      <EliSub>Fichero y plantilla</EliSub>
+      <div className="eli-settings-group">
+        <div className="setting-container setting-container--vertical">
+          <div className="setting-label">
+            Carpeta
+            <div className="setting-label__description">
+              Un fichero por año (diari-AAAA.org). Vacío = «pages/» junto al fichero de entrada; una
+              ruta sin «/» delante es relativa a esa carpeta.
+            </div>
           </div>
+          <input
+            type="text"
+            className="eli-diary-dir"
+            value={cfg.dir}
+            placeholder="pages/"
+            onChange={(e) => save({ dir: e.target.value })}
+            data-testid="eli-diary-dir"
+          />
         </div>
-        <Switch isEnabled={cfg.monthlyOn} onToggle={() => save({ monthlyOn: !cfg.monthlyOn })} />
+        <div className="setting-container" data-testid="eli-setting-diary-template">
+          <div className="setting-label">
+            Preguntas al crear el día
+            <div className="setting-label__description">
+              Plantilla del día (una pregunta por línea).
+            </div>
+          </div>
+          <Switch
+            isEnabled={cfg.templateOn}
+            onToggle={() => save({ templateOn: !cfg.templateOn })}
+          />
+        </div>
+        {cfg.templateOn && (
+          <div className="setting-container setting-container--vertical eli-setting-child">
+            <textarea
+              rows={5}
+              className="eli-diary-template"
+              value={tpl}
+              onChange={(e) => setTpl(e.target.value)}
+              onBlur={() => save({ template: templateFromText(tpl) })}
+              data-testid="eli-diary-template"
+            />
+          </div>
+        )}
+        <div className="setting-container" data-testid="eli-setting-diary-system">
+          <div className="setting-label">
+            Diario en mi sistema
+            <div className="setting-label__description">
+              Cada apunte se puede mandar al Inbox (con enlace al día) y el día muestra las tareas
+              hechas ese día.
+            </div>
+          </div>
+          <Switch isEnabled={cfg.inSystem} onToggle={() => save({ inSystem: !cfg.inSystem })} />
+        </div>
       </div>
-      <div
-        className="setting-container setting-container--vertical"
-        data-testid="eli-diary-counters-setting"
-      >
-        <div className="setting-label">
-          Contadores del día
-          <div className="setting-label__description">
-            Nombre, columna corta y tipo: Sí/No (cuenta los días), Número (suma; vale «4,5») o Nota.
+      <EliSub>Registro mensual y contadores</EliSub>
+      <div className="eli-settings-group">
+        <div className="setting-container" data-testid="eli-setting-diary-monthly">
+          <div className="setting-label">
+            Registro mensual
+            <div className="setting-label__description">
+              Tabla por mes en mensual-AAAA.org (junto al diari) con lo más importante de cada día y
+              los contadores; se rehace sola al apuntar (lo editado dentro de las tablas se pierde).
+            </div>
           </div>
+          <Switch isEnabled={cfg.monthlyOn} onToggle={() => save({ monthlyOn: !cfg.monthlyOn })} />
         </div>
-        {counters.map((c, i) => (
-          <div key={i} className="eli-diary-counter-row" data-testid="eli-diary-counter-row">
-            <input
-              type="text"
-              value={c.name}
-              placeholder="Nombre"
-              onChange={(e) => editCounter(i, { name: e.target.value })}
-              onBlur={() => saveCounters()}
-            />
-            <input
-              type="text"
-              className="eli-diary-counter-row__key"
-              value={c.key}
-              placeholder="KM"
-              onChange={(e) => editCounter(i, { key: e.target.value.toUpperCase() })}
-              onBlur={() => saveCounters()}
-            />
-            <select value={c.type} onChange={(e) => editCounter(i, { type: e.target.value }, true)}>
-              {COUNTER_TYPES.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="btn-passive"
-              title="Quitar"
-              aria-label="Quitar"
-              onClick={() => {
-                const next = counters.filter((_x, j) => j !== i);
-                setCounters(next);
-                save({ counters: cleanCounters(next) });
-              }}
-            >
-              <i className="fas fa-times" />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn-passive"
-          onClick={() => setCounters([...counters, { name: '', key: '', type: 'bool' }])}
-          data-testid="eli-diary-counter-add"
+        <div
+          className="setting-container setting-container--vertical"
+          data-testid="eli-diary-counters-setting"
         >
-          <i className="fas fa-plus" /> Añadir contador
-        </button>
+          <div className="setting-label">
+            Contadores
+            <div className="setting-label__description">
+              Nombre, columna corta, tipo (Sí/No cuenta los días, Número suma —vale «4,5»— o Nota) y
+              frecuencia: «Diario» se apunta cada día; «Mensual» (p. ej. Cintura en cm) una vez al
+              mes y sale en la cabecera del mes del registro mensual y en «Totales del año».
+            </div>
+          </div>
+          {counters.map((c, i) => (
+            <div key={i} className="eli-diary-counter-row" data-testid="eli-diary-counter-row">
+              <input
+                type="text"
+                value={c.name}
+                placeholder="Nombre"
+                onChange={(e) => editCounter(i, { name: e.target.value })}
+                onBlur={() => saveCounters()}
+              />
+              <input
+                type="text"
+                className="eli-diary-counter-row__key"
+                value={c.key}
+                placeholder="KM"
+                onChange={(e) => editCounter(i, { key: e.target.value.toUpperCase() })}
+                onBlur={() => saveCounters()}
+              />
+              <select
+                value={c.type}
+                onChange={(e) => editCounter(i, { type: e.target.value }, true)}
+              >
+                {COUNTER_TYPES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={c.freq || 'day'}
+                onChange={(e) => editCounter(i, { freq: e.target.value }, true)}
+                aria-label="Frecuencia"
+                data-testid="eli-diary-counter-freq"
+              >
+                {COUNTER_FREQS.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn-passive"
+                title="Quitar"
+                aria-label="Quitar"
+                onClick={() => {
+                  const next = counters.filter((_x, j) => j !== i);
+                  setCounters(next);
+                  save({ counters: cleanCounters(next) });
+                }}
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn-passive"
+            onClick={() =>
+              setCounters([...counters, { name: '', key: '', type: 'bool', freq: 'day' }])
+            }
+            data-testid="eli-diary-counter-add"
+          >
+            <i className="fas fa-plus" /> Añadir contador
+          </button>
+        </div>
       </div>
     </details>
   );
@@ -892,72 +967,87 @@ const Settings = ({
             {notes ? 'Tema, colores y letra' : 'Tema, colores, letra y viñetas'}
           </span>
         </summary>
-        <div className="setting-container">
-          <div className="setting-label">Tamaño de letra</div>
-          <TabButtons
-            buttons={['Normal', 'Grande']}
-            values={['Regular', 'Large']}
-            selectedButton={fontSize}
-            onSelect={handleFontSizeChange}
-          />
+        <EliSub>Letra y colores</EliSub>
+        <div className="eli-settings-group">
+          <div className="setting-container">
+            <div className="setting-label">Tamaño de letra</div>
+            <TabButtons
+              buttons={['Normal', 'Grande']}
+              values={['Regular', 'Large']}
+              selectedButton={fontSize}
+              onSelect={handleFontSizeChange}
+            />
+          </div>
+
+          <div className="setting-container">
+            <div className="setting-label">Esquema de color</div>
+            <TabButtons
+              buttons={['Sistema', 'Claro', 'Oscuro']}
+              values={['OS', 'Light', 'Dark']}
+              selectedButton={colorScheme}
+              onSelect={handleColorSchemeClick}
+            />
+          </div>
+
+          <EliThemeSetting theme={theme} onSelect={handleThemeClick} />
+
+          <EliFontSetting />
+
+          {!notes && <EliReadabilitySetting />}
         </div>
 
-        <div className="setting-container">
-          <div className="setting-label">Esquema de color</div>
-          <TabButtons
-            buttons={['Sistema', 'Claro', 'Oscuro']}
-            values={['OS', 'Light', 'Dark']}
-            selectedButton={colorScheme}
-            onSelect={handleColorSchemeClick}
-          />
+        <EliSub>Toques y edición</EliSub>
+        <div className="eli-settings-group">
+          {notes ? <EliTapModeSettings onlyHeader /> : <EliTapModeSettings />}
+          <EliLogseqEditSetting />
         </div>
-
-        <EliThemeSetting theme={theme} onSelect={handleThemeClick} />
-
-        <EliFontSetting />
-
-        {notes && <EliTapModeSettings onlyHeader />}
 
         {!notes && (
           <>
-            <EliReadabilitySetting />
-            <EliTapModeSettings />
-            <EliProcessModeSettings />
-            <EliStrictSetting />
-            <EliRemindersSettings />
+            <EliSub>GTD</EliSub>
+            <div className="eli-settings-group">
+              <EliProcessModeSettings />
+              <EliStrictSetting />
+              <EliRemindersSettings />
+            </div>
           </>
         )}
 
-        <EliLogseqEditSetting />
+        <EliSub>Documentos</EliSub>
+        <div className="eli-settings-group">
+          <EliTagsPosSetting />
 
-        <EliTagsPosSetting />
+          {/* (4.04) más estilos (cambian el icono según el nivel); también en el Modo Notas */}
+          <div className="setting-container" data-testid="eli-setting-bullets">
+            <div className="setting-label">Estilo de viñetas</div>
+            <select
+              className="eli-bullet-select"
+              value={bulletStyle || 'Fancy'}
+              onChange={(e) => handleBulletStyleChange(e.target.value)}
+              data-testid="eli-bullet-style"
+            >
+              {[
+                ['Classic', 'Clásico  *'],
+                ['Fancy', 'Decorado  ●'],
+                ['Org', 'Org  ◉ ○ ✸ ✿'],
+                ['Squares', 'Puntos y cuadrados  ● ○ ■ □'],
+                ['Stars', 'Estrellas  ★ ✦ ✧ ·'],
+                ['Diamonds', 'Rombos  ◆ ◇ ◈ ⬩'],
+              ].map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* (4.04) más estilos (cambian el icono según el nivel); también en el Modo Notas */}
-        <div className="setting-container" data-testid="eli-setting-bullets">
-          <div className="setting-label">Estilo de viñetas</div>
-          <select
-            className="eli-bullet-select"
-            value={bulletStyle || 'Fancy'}
-            onChange={(e) => handleBulletStyleChange(e.target.value)}
-            data-testid="eli-bullet-style"
-          >
-            {[
-              ['Classic', 'Clásico  *'],
-              ['Fancy', 'Decorado  ●'],
-              ['Org', 'Org  ◉ ○ ✸ ✿'],
-              ['Squares', 'Puntos y cuadrados  ● ○ ■ □'],
-              ['Stars', 'Estrellas  ★ ✦ ✧ ·'],
-              ['Diamonds', 'Rombos  ◆ ◇ ◈ ⬩'],
-            ].map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
+          <EliDocMarginSetting />
         </div>
 
-        <EliDocMarginSetting />
-        <EliMenuLayoutSetting />
+        <EliSub>Menú ☰</EliSub>
+        <div className="eli-settings-group">
+          <EliMenuLayoutSetting />
+        </div>
       </details>
 
       <EliToolsSettings />
@@ -1033,22 +1123,16 @@ const Settings = ({
         <OfflineSettings />
       </details>
 
-      {!notes && (
-        <details className="eli-settings-section" data-testid="eli-settings-advanced">
-          <summary>
-            <span className="eli-settings-section__title">Opciones avanzadas</span>
-            <span className="eli-settings-section__hint">
-              Sincronización, agenda, hábitos, editor…
-            </span>
-          </summary>
-          <div className="setting-container">
-            <div className="setting-label">Tocar el estado TODO para avanzarlo</div>
-            <Switch
-              isEnabled={shouldTapTodoToAdvance}
-              onToggle={handleShouldTapTodoToAdvanceChange}
-            />
-          </div>
-
+      {/* (4.33) Sincronización: cuándo se sincroniza, ajustes entre dispositivos y registro */}
+      <details className="eli-settings-section" data-testid="eli-settings-sync">
+        <summary>
+          <span className="eli-settings-section__title">Sincronización</span>
+          <span className="eli-settings-section__hint">
+            Cuándo se sincroniza, ajustes entre dispositivos y registro de errores
+          </span>
+        </summary>
+        <EliSub>Al sincronizar</EliSub>
+        <div className="eli-settings-group">
           <div className="setting-container">
             <div className="setting-label">
               Sincronizar en directo
@@ -1077,57 +1161,11 @@ const Settings = ({
 
           <div className="setting-container">
             <div className="setting-label">
-              Mostrar el nombre del fichero Org como título
-              <div className="setting-label__description">
-                Al ver un fichero Org, muestra su nombre en la barra superior.
-              </div>
-            </div>
-            <Switch
-              isEnabled={shouldShowTitleInOrgFile}
-              onToggle={handleShouldShowTitleInOrgFile}
-            />
-          </div>
-
-          {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
-          <div className="setting-container">
-            <div className="setting-label">
-              Al plegar un encabezado, plegar también sus subencabezados
-              <div className="setting-label__description">
-                Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de modo
-                que al volver a abrirlo aparecen todos plegados, sea cual sea su estado anterior. Es
-                el comportamiento por defecto de Org mode en Emacs. Si está desactivado, se conserva
-                el estado de plegado de los subencabezados al desplegar el encabezado.
-              </div>
-            </div>
-            <Switch
-              isEnabled={closeSubheadersRecursively}
-              onToggle={handleCloseSubheadersRecursively}
-            />
-          </div>
-
-          <div className="setting-container">
-            <div className="setting-label">
-              Sangrar como el Emacs antiguo
-              <div className="setting-label__description">
-                Desactivado (recomendado): SCHEDULED, DEADLINE, CLOSED y los cajones (:PROPERTIES:,
-                :LOGBOOK:) se escriben pegados al margen, como Emacs con{' '}
-                <ExternalLink href="https://orgmode.org/manual/Hard-indentation.html">
-                  <code>org-adapt-indentation nil</code>
-                </ExternalLink>{' '}
-                (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
-                <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
-                encabezado. El texto de las notas no se toca.
-              </div>
-            </div>
-            <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
-          </div>
-
-          <div className="setting-container">
-            <div className="setting-label">
               Guardar los ajustes en el servicio de sincronización
               <div className="setting-label__description">
-                Guarda los ajustes y los atajos de teclado en un fichero .organice-config.json en tu
-                servicio de sincronización para compartirlos entre varios dispositivos.
+                Guarda los ajustes (también herramientas, Menú ☰, Diario, GTD…) y los atajos de
+                teclado en un fichero .organice-config.json en tu servicio de sincronización para
+                compartirlos entre varios dispositivos.
               </div>
             </div>
             <Switch
@@ -1135,160 +1173,261 @@ const Settings = ({
               onToggle={handleShouldStoreSettingsInSyncBackendChange}
             />
           </div>
+        </div>
 
-          <div className="setting-container setting-container--vertical">
-            <div className="setting-label">Antelación de aviso por defecto para DEADLINE</div>
+        <EliSub>Ajustes entre dispositivos</EliSub>
+        <div className="eli-settings-group">
+          <EliPrefsSyncInfo on={shouldStoreSettingsInSyncBackend} />
+        </div>
 
-            <div className="default-deadline-warning-container">
-              <input
-                type="number"
-                min="0"
-                className="textfield default-deadline-value-textfield"
-                value={agendaDefaultDeadlineDelayValue}
-                onChange={handleAgendaDefaultDeadlineDelayValueChange}
+        <EliSub>Registro</EliSub>
+        <div className="eli-settings-group eli-settings-group--pad">
+          <SyncLogPanel />
+        </div>
+      </details>
+
+      {!notes && (
+        <details className="eli-settings-section" data-testid="eli-settings-advanced">
+          <summary>
+            <span className="eli-settings-section__title">Opciones avanzadas</span>
+            <span className="eli-settings-section__hint">
+              Sincronización, agenda, hábitos, editor…
+            </span>
+          </summary>
+          <EliSub>Editor</EliSub>
+          <div className="eli-settings-group">
+            <div className="setting-container">
+              <div className="setting-label">Tocar el estado TODO para avanzarlo</div>
+              <Switch
+                isEnabled={shouldTapTodoToAdvance}
+                onToggle={handleShouldTapTodoToAdvanceChange}
               />
+            </div>
 
+            <div className="setting-container">
+              <div className="setting-label">
+                Mostrar el nombre del fichero Org como título
+                <div className="setting-label__description">
+                  Al ver un fichero Org, muestra su nombre en la barra superior.
+                </div>
+              </div>
+              <Switch
+                isEnabled={shouldShowTitleInOrgFile}
+                onToggle={handleShouldShowTitleInOrgFile}
+              />
+            </div>
+
+            {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
+            <div className="setting-container">
+              <div className="setting-label">
+                Al plegar un encabezado, plegar también sus subencabezados
+                <div className="setting-label__description">
+                  Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de
+                  modo que al volver a abrirlo aparecen todos plegados, sea cual sea su estado
+                  anterior. Es el comportamiento por defecto de Org mode en Emacs. Si está
+                  desactivado, se conserva el estado de plegado de los subencabezados al desplegar
+                  el encabezado.
+                </div>
+              </div>
+              <Switch
+                isEnabled={closeSubheadersRecursively}
+                onToggle={handleCloseSubheadersRecursively}
+              />
+            </div>
+
+            {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
+            <div className="setting-container">
+              <div className="setting-label">
+                Al plegar un encabezado, plegar también sus subencabezados
+                <div className="setting-label__description">
+                  Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de
+                  modo que al volver a abrirlo aparecen todos plegados, sea cual sea su estado
+                  anterior. Es el comportamiento por defecto de Org mode en Emacs. Si está
+                  desactivado, se conserva el estado de plegado de los subencabezados al desplegar
+                  el encabezado.
+                </div>
+              </div>
+              <Switch
+                isEnabled={closeSubheadersRecursively}
+                onToggle={handleCloseSubheadersRecursively}
+              />
+            </div>
+
+            <div className="setting-container">
+              <div className="setting-label">
+                Sangrar como el Emacs antiguo
+                <div className="setting-label__description">
+                  Desactivado (recomendado): SCHEDULED, DEADLINE, CLOSED y los cajones
+                  (:PROPERTIES:, :LOGBOOK:) se escriben pegados al margen, como Emacs con{' '}
+                  <ExternalLink href="https://orgmode.org/manual/Hard-indentation.html">
+                    <code>org-adapt-indentation nil</code>
+                  </ExternalLink>{' '}
+                  (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
+                  <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
+                  encabezado. El texto de las notas no se toca.
+                </div>
+              </div>
+              <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
+            </div>
+
+            <div className="setting-container">
+              <div className="setting-label">
+                Preferir el texto sin procesar
+                <div className="setting-label__description">
+                  Al editar el título o la descripción de un encabezado, puedes alternar entre
+                  editar solo el texto o el contenido completo (con la representación en texto de
+                  los estados TODO, etiquetas, fechas, propiedades, etc.) pulsando el icono «editar
+                  título» o «editar descripción» de la ventana. Esta opción muestra primero el
+                  contenido completo en lugar de hacerlo con un segundo clic.
+                </div>
+              </div>
+              <Switch isEnabled={preferEditRawValues} onToggle={handlePreferEditRawValues} />
+            </div>
+
+            <div className="setting-container setting-container--vertical">
+              <div className="setting-label">Altura del editor de descripción</div>
+              <div className="setting-label__description">
+                Controla la altura del editor de descripción solo en ordenadores. La altura se
+                limita para que todos los botones queden siempre visibles. En móviles este ajuste se
+                ignora y el editor tiene siempre 8 líneas de alto.
+              </div>
+
+              <div className="default-deadline-warning-container">
+                <input
+                  type="number"
+                  min="2"
+                  className="textfield default-deadline-value-textfield"
+                  value={editorDescriptionHeightValue}
+                  onChange={handleEditorDescriptionHeightValueChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          <EliSub>Agenda y hábitos</EliSub>
+          <div className="eli-settings-group">
+            <div className="setting-container setting-container--vertical">
+              <div className="setting-label">Antelación de aviso por defecto para DEADLINE</div>
+
+              <div className="default-deadline-warning-container">
+                <input
+                  type="number"
+                  min="0"
+                  className="textfield default-deadline-value-textfield"
+                  value={agendaDefaultDeadlineDelayValue}
+                  onChange={handleAgendaDefaultDeadlineDelayValueChange}
+                />
+
+                <TabButtons
+                  buttons={['h', 'd', 's', 'm', 'a']}
+                  values={'hdwmy'.split('')}
+                  titles={['Horas', 'Días', 'Semanas', 'Meses', 'Años']}
+                  selectedButton={agendaDefaultDeadlineDelayUnit}
+                  onSelect={handleAgendaDefaultDeadlineDelayUnitChange}
+                />
+              </div>
+            </div>
+
+            <div className="setting-container">
+              <div className="setting-label">
+                Primer día de la semana en la agenda semanal
+                <div className="setting-label__description">
+                  Equivale a{' '}
+                  <ExternalLink href="https://orgmode.org/manual/Weekly_002fdaily-agenda.html">
+                    <code>org-agenda-start-on-weekday</code>
+                  </ExternalLink>
+                </div>
+              </div>
               <TabButtons
-                buttons={['h', 'd', 's', 'm', 'a']}
-                values={'hdwmy'.split('')}
-                titles={['Horas', 'Días', 'Semanas', 'Meses', 'Años']}
-                selectedButton={agendaDefaultDeadlineDelayUnit}
-                onSelect={handleAgendaDefaultDeadlineDelayUnitChange}
+                buttons={['D', 'L', 'M', 'X', 'J', 'V', 'S', 'Hoy']}
+                values={[0, 1, 2, 3, 4, 5, 6, -1]}
+                titles={[
+                  'Domingo',
+                  'Lunes',
+                  'Martes',
+                  'Miércoles',
+                  'Jueves',
+                  'Viernes',
+                  'Sábado',
+                  'Hoy',
+                ]}
+                selectedButton={agendaStartOnWeekday}
+                onSelect={handleAgendaStartOnWeekdayChange}
               />
             </div>
-          </div>
 
-          <div className="setting-container setting-container--vertical">
-            <div className="setting-label">Altura del editor de descripción</div>
-            <div className="setting-label__description">
-              Controla la altura del editor de descripción solo en ordenadores. La altura se limita
-              para que todos los botones queden siempre visibles. En móviles este ajuste se ignora y
-              el editor tiene siempre 8 líneas de alto.
+            <div className="setting-container">
+              <div className="setting-label">
+                Mostrar hoy todos los hábitos
+                <div className="setting-label__description">
+                  Si está activado, se muestran todos los hábitos en la agenda de hoy, aunque no
+                  estén programados o ya estén marcados como DONE hoy. Solo se aplica al día de hoy
+                  en la agenda.
+                </div>
+              </div>
+              <Switch isEnabled={orgHabitShowAllToday} onToggle={handleOrgHabitShowAllToday} />
             </div>
 
-            <div className="default-deadline-warning-container">
-              <input
-                type="number"
-                min="2"
-                className="textfield default-deadline-value-textfield"
-                value={editorDescriptionHeightValue}
-                onChange={handleEditorDescriptionHeightValueChange}
-              />
-            </div>
-          </div>
-
-          <div className="setting-container">
-            <div className="setting-label">
-              Primer día de la semana en la agenda semanal
+            <div className="setting-container setting-container--vertical">
+              <div className="setting-label">
+                Días anteriores en el gráfico de constancia de hábitos
+              </div>
               <div className="setting-label__description">
-                Equivale a{' '}
-                <ExternalLink href="https://orgmode.org/manual/Weekly_002fdaily-agenda.html">
-                  <code>org-agenda-start-on-weekday</code>
-                </ExternalLink>
+                Número de días antes de hoy que se muestran en el gráfico de constancia de hábitos.
+              </div>
+
+              <div className="default-deadline-warning-container">
+                <input
+                  type="number"
+                  min="0"
+                  className="textfield default-deadline-value-textfield"
+                  value={orgHabitPrecedingDays}
+                  onChange={handleOrgHabitPrecedingDaysChange}
+                />
               </div>
             </div>
-            <TabButtons
-              buttons={['D', 'L', 'M', 'X', 'J', 'V', 'S', 'Hoy']}
-              values={[0, 1, 2, 3, 4, 5, 6, -1]}
-              titles={[
-                'Domingo',
-                'Lunes',
-                'Martes',
-                'Miércoles',
-                'Jueves',
-                'Viernes',
-                'Sábado',
-                'Hoy',
-              ]}
-              selectedButton={agendaStartOnWeekday}
-              onSelect={handleAgendaStartOnWeekdayChange}
-            />
-          </div>
 
-          <div className="setting-container">
-            <div className="setting-label">
-              Mostrar hoy todos los hábitos
+            <div className="setting-container setting-container--vertical">
+              <div className="setting-label">
+                Días posteriores en el gráfico de constancia de hábitos
+              </div>
               <div className="setting-label__description">
-                Si está activado, se muestran todos los hábitos en la agenda de hoy, aunque no estén
-                programados o ya estén marcados como DONE hoy. Solo se aplica al día de hoy en la
-                agenda.
+                Número de días después de hoy que se muestran en el gráfico de constancia de
+                hábitos.
+              </div>
+
+              <div className="default-deadline-warning-container">
+                <input
+                  type="number"
+                  min="0"
+                  className="textfield default-deadline-value-textfield"
+                  value={orgHabitFollowingDays}
+                  onChange={handleOrgHabitFollowingDaysChange}
+                />
               </div>
             </div>
-            <Switch isEnabled={orgHabitShowAllToday} onToggle={handleOrgHabitShowAllToday} />
-          </div>
 
-          <div className="setting-container setting-container--vertical">
-            <div className="setting-label">
-              Días anteriores en el gráfico de constancia de hábitos
-            </div>
-            <div className="setting-label__description">
-              Número de días antes de hoy que se muestran en el gráfico de constancia de hábitos.
-            </div>
-
-            <div className="default-deadline-warning-container">
-              <input
-                type="number"
-                min="0"
-                className="textfield default-deadline-value-textfield"
-                value={orgHabitPrecedingDays}
-                onChange={handleOrgHabitPrecedingDaysChange}
-              />
-            </div>
-          </div>
-
-          <div className="setting-container setting-container--vertical">
-            <div className="setting-label">
-              Días posteriores en el gráfico de constancia de hábitos
-            </div>
-            <div className="setting-label__description">
-              Número de días después de hoy que se muestran en el gráfico de constancia de hábitos.
-            </div>
-
-            <div className="default-deadline-warning-container">
-              <input
-                type="number"
-                min="0"
-                className="textfield default-deadline-value-textfield"
-                value={orgHabitFollowingDays}
-                onChange={handleOrgHabitFollowingDaysChange}
-              />
-            </div>
-          </div>
-
-          <div className="setting-container">
-            <div className="setting-label">
-              Mostrar resúmenes de tiempo
-              <div className="setting-label__description">
-                Muestra al final de cada encabezado el tiempo total registrado en él, incluido el de
-                sus subencabezados.
+            <div className="setting-container">
+              <div className="setting-label">
+                Mostrar resúmenes de tiempo
+                <div className="setting-label__description">
+                  Muestra al final de cada encabezado el tiempo total registrado en él, incluido el
+                  de sus subencabezados.
+                </div>
               </div>
+              <Switch isEnabled={showClockDisplay} onToggle={handleShowClockDisplayClick} />
             </div>
-            <Switch isEnabled={showClockDisplay} onToggle={handleShowClockDisplayClick} />
-          </div>
 
-          <div className="setting-container">
-            <div className="setting-label">
-              Mostrar la fecha límite
-              <div className="setting-label__description">
-                Si está activado, la fecha límite (DEADLINE) se muestra en la línea de cada
-                encabezado.
+            <div className="setting-container">
+              <div className="setting-label">
+                Mostrar la fecha límite
+                <div className="setting-label__description">
+                  Si está activado, la fecha límite (DEADLINE) se muestra en la línea de cada
+                  encabezado.
+                </div>
               </div>
+              <Switch isEnabled={showDeadlineDisplay} onToggle={handleShowDeadlineDisplayChange} />
             </div>
-            <Switch isEnabled={showDeadlineDisplay} onToggle={handleShowDeadlineDisplayChange} />
-          </div>
-
-          <div className="setting-container">
-            <div className="setting-label">
-              Preferir el texto sin procesar
-              <div className="setting-label__description">
-                Al editar el título o la descripción de un encabezado, puedes alternar entre editar
-                solo el texto o el contenido completo (con la representación en texto de los estados
-                TODO, etiquetas, fechas, propiedades, etc.) pulsando el icono «editar título» o
-                «editar descripción» de la ventana. Esta opción muestra primero el contenido
-                completo en lugar de hacerlo con un segundo clic.
-              </div>
-            </div>
-            <Switch isEnabled={preferEditRawValues} onToggle={handlePreferEditRawValues} />
           </div>
         </details>
       )}

@@ -12,6 +12,7 @@ import {
 } from '../../lib/eli_hotkeys';
 import EliErrorBoundary from '../EliErrorBoundary';
 import React, { PureComponent, Fragment } from 'react';
+import { openSyncLog } from '../../lib/eli_sync_log';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -1142,6 +1143,15 @@ class OrgFile extends PureComponent {
           <div className="eli-file-error__actions">
             <button type="button" className="btn" onClick={retry} data-testid="eli-file-retry">
               <i className="fas fa-redo" /> Reintentar
+            </button>
+            {/* (4.33) registro de errores de sincronización */}
+            <button
+              type="button"
+              className="btn"
+              onClick={openSyncLog}
+              data-testid="eli-file-sync-log"
+            >
+              <i className="fas fa-list" /> Registro
             </button>
           </div>
         )}

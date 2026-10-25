@@ -1,7 +1,7 @@
 // ORG Mode para Eli (4.26): diario. Hoja que se abre desde el Menú ☰ › «Diario de hoy» (evento
 // `eli:diary`, con `{ date: 'AAAA-MM-DD' }` para ir a un día). Lee y escribe directamente
 // `pages/diari-AAAA.org` (lib/eli_diary): no pasa por el analizador ni entra en GTD.
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useSelector, useStore } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -32,8 +32,22 @@ import {
   monthGrid,
   setDayProp,
   withDiaryIds,
+  setMonthProp,
+  parseMonthProps,
+  isMonthlyCounter,
+  monthKey,
+  dayHasData,
+  journalTitle,
+  openDiary,
 } from '../../lib/eli_diary';
-import { monthlyPath, monthlyData, regenerateMonthly, isYes } from '../../lib/eli_monthly';
+import { startedAtRoot, takeStartAtRoot } from '../../lib/eli_mode';
+import {
+  monthlyPath,
+  monthlyData,
+  regenerateMonthly,
+  isYes,
+  monthValuesLine,
+} from '../../lib/eli_monthly';
 import { getGtdFiles } from '../../lib/gtd/gtd_sections';
 import { buildTasks } from '../../lib/gtd/gtd_model';
 import { gtdAddTask, createdStamp } from '../../lib/gtd/gtd_actions';
@@ -170,6 +184,11 @@ const MonthlyTables = ({ data }) => (
         <h2>
           {m.label} {data.year}
         </h2>
+        {monthValuesLine(data.monthCounters, m.monthValues) && (
+          <p className="eli-diary-monthly__mvals">
+            {monthValuesLine(data.monthCounters, m.monthValues)}
+          </p>
+        )}
         <table className="eli-diary-monthly__table">
           <thead>
             <tr>
@@ -230,29 +249,39 @@ const MonthlyTables = ({ data }) => (
   </div>
 );
 
-// (4.27) Fila «Registro de hoy»: un botón por contador Sí/No, un cuadro por Número o Nota
-const Counters = ({ counters, props, dayK, onSet }) => (
+// (4.27) Fila «Registro de hoy»: un botón por contador Sí/No, un cuadro por Número o Nota.
+// (4.33) Los mensuales muestran (y cambian) el valor del MES, con «/mes».
+const Counters = ({ counters, props, monthProps, dayK, onSet }) => (
   <div className="eli-diary__counters" data-testid="eli-diary-counters">
     <span className="eli-diary__counters-title">Registro</span>
     {counters.map((c) => {
-      const v = (props || {})[c.key] || '';
+      const monthly = isMonthlyCounter(c);
+      const v = ((monthly ? monthProps : props) || {})[c.key] || '';
+      const label = monthly ? `${c.key}/mes` : c.key;
+      const title = monthly ? `${c.name} (del mes)` : c.name;
       if (c.type === 'bool')
         return (
           <button
             type="button"
             key={c.key}
-            className={`eli-diary__markbtn${isYes(v) ? ' is-on' : ''}`}
+            className={`eli-diary__markbtn${isYes(v) ? ' is-on' : ''}${
+              monthly ? ' is-monthly' : ''
+            }`}
             onClick={() => onSet(c, isYes(v) ? '' : 'X')}
-            title={c.name}
+            title={title}
             aria-pressed={isYes(v)}
             data-testid={`eli-diary-counter-${c.key}`}
           >
-            {isYes(v) ? '✓' : '○'} {c.key}
+            {isYes(v) ? '✓' : '○'} {label}
           </button>
         );
       return (
-        <label key={c.key + dayK + v} className="eli-diary__counter" title={c.name}>
-          {c.key}
+        <label
+          key={c.key + (monthly ? dayK.slice(0, 7) : dayK) + v}
+          className={`eli-diary__counter${monthly ? ' is-monthly' : ''}`}
+          title={title}
+        >
+          {label}
           <input
             type="text"
             inputMode={c.type === 'num' ? 'decimal' : undefined}
@@ -271,6 +300,51 @@ const Counters = ({ counters, props, dayK, onSet }) => (
   </div>
 );
 
+// (4.33) Día anterior en el diario continuo (tipo Logseq): título, respuestas (editables en línea),
+// notas y apuntes. Tocar el título lo abre arriba.
+const PastDay = ({ d, path, counters, onOpen, onAnswer }) => {
+  const date = parseDayKey(d.key);
+  const vals = counters
+    .filter((c) => !isMonthlyCounter(c) && (d.props || {})[c.key])
+    .map((c) => `${c.key} ${c.type === 'bool' ? '✓' : d.props[c.key]}`);
+  return (
+    <section className="eli-diary__pday" data-testid="eli-diary-pday">
+      <h2 className="eli-diary__ptitle">
+        <button type="button" className="eli-diary__link-btn" onClick={() => onOpen(date)}>
+          {journalTitle(date)}
+        </button>
+      </h2>
+      {vals.length > 0 && <div className="eli-diary__pvals">{vals.join(' · ')}</div>}
+      {d.answers
+        .filter((a) => a.answer)
+        .map((a) => (
+          <label key={a.question + d.key + a.answer} className="eli-diary__q eli-diary__q--inline">
+            <span>{a.question}</span>
+            <input
+              type="text"
+              defaultValue={a.answer}
+              onBlur={(e) => onAnswer(date, a.question, e.target.value, a.answer)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') e.target.blur();
+              }}
+            />
+          </label>
+        ))}
+      {d.notes.map((n, i) => (
+        <div key={'n' + i} className="eli-diary__note">
+          <DiaryText text={n} path={path} />
+        </div>
+      ))}
+      {d.entries.map((e, i) => (
+        <Entry key={i} e={e} path={path} />
+      ))}
+    </section>
+  );
+};
+
+const STREAM_STEP = 7; // días anteriores que se añaden con «Más días»
+
 export default function EliDiary() {
   const store = useStore();
   const history = useHistory();
@@ -286,6 +360,7 @@ export default function EliDiary() {
   const [mark, setMark] = useState('-');
   const [print, setPrint] = useState(null);
   const [cfg, setCfg] = useState(getDiaryCfg());
+  const [streamN, setStreamN] = useState(STREAM_STEP);
   const textsRef = useRef({});
   const existsRef = useRef({});
   const dirRef = useRef('');
@@ -413,6 +488,49 @@ export default function EliDiary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // (4.33) Al abrir la app desde el icono (página inicial): el Diario de hoy (Ajustes › Diario ›
+  // Al abrir la app). Se espera a tener los ficheros (para saber dónde está el de entrada y, con
+  // él, la carpeta del diario); como mucho unos segundos.
+  const startDone = useRef(!startedAtRoot());
+  const startReady = useSelector((st) => {
+    const f = st.org.present.get('files');
+    const loading = st.base.get('isLoading');
+    if (!f || !f.size || (loading && loading.size)) return false;
+    return (
+      !!getGtdFiles().inbox ||
+      f
+        .keySeq()
+        .toArray()
+        .some((p) => /(^|\/)inbox\.org$/i.test(p))
+    );
+  });
+  useEffect(() => {
+    if (!isAuthenticated || startDone.current) return undefined;
+    const go = () => {
+      if (startDone.current) return;
+      startDone.current = true;
+      if (!takeStartAtRoot()) return;
+      if (getDiaryCfg().startView !== 'last') openDiary({});
+    };
+    const t = setTimeout(go, startReady ? 300 : 8000);
+    return () => clearTimeout(t);
+  }, [isAuthenticated, startReady]);
+
+  // (4.33) Días anteriores con algo, del más nuevo al más viejo (diario continuo bajo el de hoy)
+  const curKey = dayKey(date);
+  const pastDays = useMemo(() => {
+    if (!open) return [];
+    const out = [];
+    Object.keys(texts).forEach((y) => {
+      if (!texts[y]) return;
+      parseDays(texts[y]).forEach((d) => {
+        if (d.key < curKey && dayHasData(d)) out.push({ ...d, year: +y });
+      });
+    });
+    return out.sort((a, b) => (a.key < b.key ? 1 : -1));
+  }, [open, texts, curKey]);
+  useEffect(() => setStreamN(STREAM_STEP), [curKey]);
+
   if (!open || !isAuthenticated) return null;
 
   const year = date.getFullYear();
@@ -425,6 +543,8 @@ export default function EliDiary() {
   const goTo = async (d) => {
     setDate(d);
     setView('day');
+    const box = document.querySelector('[data-testid=eli-diary-day]');
+    if (box && box.parentElement) box.parentElement.scrollTop = 0;
     await load(d.getFullYear());
     loadPast(d.getFullYear());
   };
@@ -452,7 +572,17 @@ export default function EliDiary() {
   // (4.27) contador del día (propiedad del día en el diari)
   const setCounter = async (c, value) => {
     const base = await load(year);
-    await write(year, setDayProp(base, date, c.key, value, template()));
+    // (4.33) los mensuales, en el mes
+    if (isMonthlyCounter(c)) await write(year, setMonthProp(base, date, c.key, value));
+    else await write(year, setDayProp(base, date, c.key, value, template()));
+  };
+
+  // (4.33) respuesta de otro día (diario continuo)
+  const answerOn = async (d, q, value, cur) => {
+    if ((cur || '') === String(value || '').trim()) return;
+    const y = d.getFullYear();
+    const base = await load(y);
+    await write(y, setAnswer(base, d, q, value));
   };
 
   // (integración) apunte → tarea en el Inbox con enlace al día
@@ -650,25 +780,29 @@ export default function EliDiary() {
     );
   };
 
+  const monthProps = parseMonthProps(text)[monthKey(date)] || {};
+  const shownPast = pastDays.slice(0, streamN);
+
+  // (4.33) Aspecto tipo Logseq: el día con su título grande, las preguntas ya puestas para
+  // rellenar en línea y, debajo, los días anteriores en scroll continuo
   const renderDay = () => (
-    <div className="eli-diary__day" data-testid="eli-diary-day">
-      <div className="eli-diary__nav">
+    <div className="eli-diary__day eli-diary__journal" data-testid="eli-diary-day">
+      <div className="eli-diary__nav eli-diary__nav--small">
         <button
           type="button"
           className="eli-diary__btn"
           onClick={() => shift(-1)}
           aria-label="Día anterior"
+          title="Día anterior"
         >
           ‹
         </button>
-        <strong className="eli-diary__navtitle" data-testid="eli-diary-date">
-          {longDate(date)}
-        </strong>
         <button
           type="button"
           className="eli-diary__btn"
           onClick={() => shift(1)}
           aria-label="Día siguiente"
+          title="Día siguiente"
         >
           ›
         </button>
@@ -677,15 +811,41 @@ export default function EliDiary() {
             Hoy
           </button>
         )}
+        <span className="eli-diary__navdate">{longDate(date)}</span>
       </div>
+      <h1 className="eli-diary__jtitle" data-testid="eli-diary-date">
+        {journalTitle(date)}
+      </h1>
 
       {cfg.counters.length > 0 && (
         <Counters
           counters={cfg.counters}
           props={day ? day.props : {}}
+          monthProps={monthProps}
           dayK={key}
           onSet={setCounter}
         />
+      )}
+
+      {answers.length > 0 && (
+        <div className="eli-diary__qs" data-testid="eli-diary-questions">
+          {answers.map((a) => (
+            <label key={a.question + key} className="eli-diary__q eli-diary__q--inline">
+              <span>{a.question}</span>
+              <input
+                type="text"
+                defaultValue={a.answer}
+                placeholder="…"
+                onBlur={(e) => answer(a.question, e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') e.target.blur();
+                }}
+                data-testid="eli-diary-answer"
+              />
+            </label>
+          ))}
+        </div>
       )}
 
       <div className="eli-diary__entries">
@@ -748,27 +908,6 @@ export default function EliDiary() {
         </button>
       </div>
 
-      {answers.length > 0 && (
-        <details className="eli-diary__block" open={!day || !day.entries.length}>
-          <summary>Preguntas del día</summary>
-          {answers.map((a) => (
-            <label key={a.question + key} className="eli-diary__q">
-              <span>{a.question}</span>
-              <input
-                type="text"
-                defaultValue={a.answer}
-                onBlur={(e) => answer(a.question, e.target.value)}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === 'Enter') e.target.blur();
-                }}
-                data-testid="eli-diary-answer"
-              />
-            </label>
-          ))}
-        </details>
-      )}
-
       {cfg.inSystem && (
         <details className="eli-diary__block" data-testid="eli-diary-done">
           <summary>
@@ -811,6 +950,31 @@ export default function EliDiary() {
             </div>
           ))}
         </details>
+      )}
+
+      {shownPast.length > 0 && (
+        <div className="eli-diary__stream" data-testid="eli-diary-stream">
+          {shownPast.map((d) => (
+            <PastDay
+              key={d.key}
+              d={d}
+              path={pathFor(d.year)}
+              counters={cfg.counters}
+              onOpen={goTo}
+              onAnswer={answerOn}
+            />
+          ))}
+          {pastDays.length > shownPast.length && (
+            <button
+              type="button"
+              className="eli-diary__btn eli-diary__more"
+              onClick={() => setStreamN((n) => n + STREAM_STEP)}
+              data-testid="eli-diary-more"
+            >
+              Más días
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

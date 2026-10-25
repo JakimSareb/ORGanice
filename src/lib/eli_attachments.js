@@ -317,7 +317,9 @@ export const plainTitle = (raw) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-export const isArchiveFile = (path) => /\.org_archive$/i.test(path || '');
+// (4.33) también los ficheros del archivo por años (`archive-AAAA.org`)
+export const isArchiveFile = (path) =>
+  /\.org_archive$/i.test(path || '') || /(^|\/)archive-\d{4}\.org$/i.test(path || '');
 
 const TITLE_RE = /^(\*+)\s+(.*)$/;
 const splitKeyword = (title, keywords) => {
