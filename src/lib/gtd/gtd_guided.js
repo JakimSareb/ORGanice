@@ -460,7 +460,14 @@ const unitTasks = (titles, n, title) => {
   const who = tagOf(n.who);
   const head = [];
   if (n.more) head.push({ title: PLAN_MORE(title), list: 'next' });
-  if (f) head.push({ title: f, list: n.more ? 'later' : 'next', ...(who ? { tags: [who] } : {}) });
+  // (4.32) con «Quién» la acción se delega: pasa a Waiting con la persona como etiqueta (igual que
+  // «Delegar» al procesar el Inbox)
+  if (f)
+    head.push({
+      title: f,
+      list: who ? 'waiting' : n.more ? 'later' : 'next',
+      ...(who ? { tags: [who] } : {}),
+    });
   const rest = titles
     .map((x) => x.trim())
     .filter((x) => x && x !== f)

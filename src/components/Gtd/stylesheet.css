@@ -4804,3 +4804,54 @@ input.gtd-proc__input:not([type]) {
     margin-right: auto;
   }
 }
+
+/* (4.32) icono de repetición: calendario con flechita en círculo encima */
+.gtd-repeat-icon {
+  position: relative;
+  display: inline-block;
+  width: 1.1em;
+  height: 1em;
+}
+.gtd-repeat-icon .fa-calendar-alt {
+  font-size: 1em;
+}
+.gtd-repeat-icon .fa-redo-alt {
+  position: absolute;
+  right: -0.35em;
+  bottom: -0.3em;
+  font-size: 0.6em;
+  padding: 0.12em;
+  border-radius: 50%;
+  background: var(--gtd-surface, var(--gtd-bg, transparent));
+}
+
+/* (4.32) contextos elegibles al procesar el Inbox */
+.gtd-proc__chips {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gtd-proc__chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  font-size: 0.85em;
+  color: inherit;
+  background: transparent;
+}
+.gtd-proc__chip.is-on {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+/* (4.32) etiquetas de la barra lateral en dos grupos con rótulo */
+.gtd-side__grouplabel {
+  margin: 6px 0 2px;
+  padding: 0 12px;
+  font-size: 0.7em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--base1);
+}
