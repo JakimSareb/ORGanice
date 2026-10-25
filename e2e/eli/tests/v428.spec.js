@@ -2,10 +2,10 @@
 const { test, expect } = require('../harness');
 
 const BASE = { '/tasks.org': '', '/inbox.org': '' };
-const DOC = `* Padre
-** Alfa
-** Beta
-** Gamma
+// (al abrir, las cabeceras salen plegadas: todo a nivel 1)
+const DOC = `* Alfa
+* Beta
+* Gamma
 * Otra
 Notas de otra
 `;
@@ -62,7 +62,7 @@ test('4.28: seleccionar dos cabeceras e indentarlas de una vez', async ({ app })
   await page.locator('[data-testid=eli-docbar-multi-indent]').click();
   await expect
     .poll(async () => (await app.fileAfterSync('/notas.org', 500)) || '', { timeout: 15000 })
-    .toContain('** Alfa\n*** Beta\n*** Gamma\n');
+    .toContain('* Alfa\n** Beta\n** Gamma\n');
   // Esc quita la selección
   await page.keyboard.press('Escape');
   await expect(page.locator('[data-testid=eli-docbar-row-multi]')).toHaveCount(0);
@@ -74,8 +74,13 @@ test('4.28: con «Edición estilo Logseq», un toque en las notas las edita', as
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org', {
     localStorage: { eliLogseqEdit: 'true' },
   });
+  await expect(page.locator('text=Otra').first()).toBeVisible({ timeout: 20000 });
+  // desplegar «Otra» con su viñeta
+  await app.press(
+    page.locator('.header', { hasText: 'Otra' }).first().locator('[data-testid=header-bullet]')
+  );
   const notes = page.locator('text=Notas de otra').first();
-  await expect(notes).toBeVisible({ timeout: 20000 });
+  await expect(notes).toBeVisible({ timeout: 5000 });
   await app.press(notes);
   const area = page.locator('[data-testid=description-textarea]');
   await expect(area).toBeVisible({ timeout: 5000 });
