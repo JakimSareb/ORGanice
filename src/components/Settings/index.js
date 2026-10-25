@@ -31,6 +31,7 @@ import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
 import { CONTENT_WIDTHS, getContentWidth, setContentWidth } from '../../lib/eli_layout';
 import { pagesPathFor } from '../../lib/eli_heading_links';
 import { askPick } from '../../lib/eli_prompt';
+import { useTagsPos, setTagsPos } from '../../lib/eli_tags_pos';
 import {
   MENU_ENTRIES,
   getMenuLayout,
@@ -169,7 +170,7 @@ const EliPomodoroSettings = () => {
 };
 
 // (4.0) Herramientas opcionales (apagadas de inicio en el Modo Notas)
-// (4.29) Documentos: fichero para páginas nuevas, «#» al escribir el título y ancho del contenido
+// (4.31) Documentos: fichero para páginas nuevas, «#» al escribir el título y ancho del contenido
 const selectPagesFile = (s) => s.base.get('eliPagesFile') || '';
 const selectHashOn = (s) => s.base.get('eliNoHashTagTitle') !== true;
 const selectPagesAuto = (s) => pagesPathFor({ ...s, base: s.base.set('eliPagesFile', '') });
@@ -594,6 +595,31 @@ const EliLogseqEditSetting = () => {
   );
 };
 
+// (4.30) «Etiquetas de las cabeceras»: al lado del título o debajo
+const EliTagsPosSetting = () => {
+  const pos = useTagsPos();
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-tags-pos"
+    >
+      <div className="setting-label">
+        Etiquetas de las cabeceras
+        <div className="setting-label__description">
+          Al lado: a la derecha del título, en la misma línea. Debajo: en una línea propia bajo el
+          título.
+        </div>
+      </div>
+      <TabButtons
+        buttons={['Al lado', 'Debajo']}
+        values={['side', 'below']}
+        selectedButton={pos}
+        onSelect={(v) => setTagsPos(v)}
+      />
+    </div>
+  );
+};
+
 // (3.40) «Procesar Inbox»: una a una o todo junto
 const EliProcessModeSettings = () => {
   const [mode, setMode] = React.useState(getProcessMode());
@@ -903,6 +929,8 @@ const Settings = ({
         )}
 
         <EliLogseqEditSetting />
+
+        <EliTagsPosSetting />
 
         {/* (4.04) más estilos (cambian el icono según el nivel); también en el Modo Notas */}
         <div className="setting-container" data-testid="eli-setting-bullets">

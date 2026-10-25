@@ -63,7 +63,7 @@
   color: var(--magenta, #d33682);
 }
 
-/* (4.29) carpetas en rejilla y ficheros en lista */
+/* (4.31) carpetas en rejilla y ficheros en lista */
 .eli-fb__label {
   margin: 14px 6px 6px;
   font-size: 11px;

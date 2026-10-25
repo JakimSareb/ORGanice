@@ -569,7 +569,7 @@ class HeaderList extends PureComponent {
             />
           );
         })}
-        {/* (4.29) vista sola: quién enlaza aquí, plegado al final (como una página de Logseq) */}
+        {/* (4.31) vista sola: quién enlaza aquí, plegado al final (como una página de Logseq) */}
         {!!narrowedHeaderId && <EliNarrowRefs path={this.props.path} headerId={narrowedHeaderId} />}
         <div style={{ height: '90px' }} />
       </div>

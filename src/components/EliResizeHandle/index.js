@@ -1,4 +1,4 @@
-// ORG Mode para Eli (4.29): tirador vertical para cambiar el ancho de un panel (solo ordenador;
+// ORG Mode para Eli (4.31): tirador vertical para cambiar el ancho de un panel (solo ordenador;
 // en el móvil no se pinta, ver CSS). Arrastrar = ancho nuevo; doble clic = el de por defecto.
 import React, { useRef } from 'react';
 import './stylesheet.css';

@@ -305,7 +305,7 @@ export const askPick = ({
   items = [],
   emptyText = 'Nada que elegir.',
   newItem = null,
-  // (4.29) como mucho tantas filas a la vista (listas muy largas: todas las cabeceras)
+  // (4.31) como mucho tantas filas a la vista (listas muy largas: todas las cabeceras)
   limit = 0,
 }) =>
   new Promise((resolve) => {

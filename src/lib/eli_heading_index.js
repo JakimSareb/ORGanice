@@ -1,4 +1,4 @@
-// ORG Mode para Eli (4.29): índice común de cabeceras de los ficheros CARGADOS, para la vista por
+// ORG Mode para Eli (4.31): índice común de cabeceras de los ficheros CARGADOS, para la vista por
 // etiqueta, las referencias entrantes (quién enlaza aquí), el buscador «[[» y el «#» al escribir
 // el título. Cada entrada: { path, headerId, orgId, title, rawTitle, level, parents (títulos de
 // las madres), ownTags, tags (con las heredadas), keyword, notes, linkText, pos }.

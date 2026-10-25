@@ -4781,7 +4781,7 @@ input.gtd-proc__input:not([type]) {
   flex: none;
 }
 
-/* (4.29) «Ancho del contenido» (Ajustes › Documentos, en este dispositivo) */
+/* (4.31) «Ancho del contenido» (Ajustes › Documentos, en este dispositivo) */
 @media (min-width: 721px) {
   html[data-eli-width='narrow'] .gtd-main > * {
     max-width: 680px;

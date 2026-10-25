@@ -59,7 +59,7 @@ const FileBrowser = ({
 
       <ActionDrawer />
 
-      {/* (4.29) carpetas arriba en rejilla (tarjetas), ficheros debajo en lista */}
+      {/* (4.31) carpetas arriba en rejilla (tarjetas), ficheros debajo en lista */}
       {(!isTopLevelDirectory || dirs.length > 0) && (
         <>
           <div className="eli-fb__label">Carpetas</div>

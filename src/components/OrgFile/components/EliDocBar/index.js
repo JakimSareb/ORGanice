@@ -359,7 +359,7 @@ export default function EliDocBar({
     base('activatePopup', 'description-editor');
     setTimeout(() => insertLinkInto(activeField(), insertIntoField), 120);
   };
-  // (4.29) Enlace a una cabecera de cualquier fichero cargado (buscador; por ID)
+  // (4.31) Enlace a una cabecera de cualquier fichero cargado (buscador; por ID)
   const insertHeadingLinkHere = () => {
     const field = activeField();
     if (field) {
@@ -1123,7 +1123,7 @@ export default function EliDocBar({
             label: 'Duplicar',
             onClick: () => org('duplicateHeader', id),
           },
-          // (4.29) referencias entrantes ([[id:…]] a esta cabecera)
+          // (4.31) referencias entrantes ([[id:…]] a esta cabecera)
           ...(path && !path.startsWith('/__')
             ? [
                 {

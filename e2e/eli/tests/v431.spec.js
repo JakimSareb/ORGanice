@@ -1,4 +1,4 @@
-// 4.29: tocar una etiqueta abre la vista por etiqueta; «Añadir › Enlace a cabecera» inserta [[id:
+// 4.31: tocar una etiqueta abre la vista por etiqueta; «Añadir › Enlace a cabecera» inserta [[id:
 const { test, expect } = require('../harness');
 
 const BASE = { '/tasks.org': '', '/inbox.org': '' };
@@ -9,7 +9,7 @@ const DOC = `* Alfa :casa:
 * Delta
 `;
 
-test('4.29: tocar una etiqueta abre la vista con sus cabeceras', async ({ app }) => {
+test('4.31: tocar una etiqueta abre la vista con sus cabeceras', async ({ app }) => {
   const { page } = app;
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org');
   await expect(page.locator('text=Gamma').first()).toBeVisible({ timeout: 20000 });
@@ -23,7 +23,7 @@ test('4.29: tocar una etiqueta abre la vista con sus cabeceras', async ({ app })
   expect(app.errors).toEqual([]);
 });
 
-test('4.29: Añadir › Enlace a cabecera inserta un enlace por ID', async ({ app }) => {
+test('4.31: Añadir › Enlace a cabecera inserta un enlace por ID', async ({ app }) => {
   const { page } = app;
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org');
   await expect(page.locator('text=Beta').first()).toBeVisible({ timeout: 20000 });

@@ -1,4 +1,4 @@
-/* ORG Mode para Eli (4.29): vista por etiqueta y referencias entrantes */
+/* ORG Mode para Eli (4.31): vista por etiqueta y referencias entrantes */
 .eli-hv__overlay {
   position: fixed;
   inset: 0;
@@ -177,7 +177,7 @@
   font-size: 0.9em;
   font-weight: 600;
 }
-/* (4.29) etiqueta tocable */
+/* (4.31) etiqueta tocable */
 .header-tag[role='link'] {
   cursor: pointer;
 }

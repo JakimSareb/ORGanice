@@ -1,4 +1,4 @@
-// ORG Mode para Eli (4.29): anchos de este dispositivo (localStorage; comodidad del dispositivo,
+// ORG Mode para Eli (4.31): anchos de este dispositivo (localStorage; comodidad del dispositivo,
 // no ajuste compartido):
 //   - ancho de la barra lateral de GTD (tirador arrastrable, solo ordenador; doble clic = por
 //     defecto), como variable CSS en <html>;
@@ -77,7 +77,7 @@ export const setContentWidth = (id) => {
   applyContentWidth(id);
 };
 
-// (4.29) Fecha de modificación corta: hoy → hora; este año → «3 oct»; si no → «3 oct 2024»
+// (4.31) Fecha de modificación corta: hoy → hora; este año → «3 oct»; si no → «3 oct 2024»
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 export const shortDate = (value, now = new Date()) => {
   if (!value) return '';

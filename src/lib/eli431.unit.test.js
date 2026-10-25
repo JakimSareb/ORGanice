@@ -1,4 +1,4 @@
-// 4.29: índice común de cabeceras (etiquetas con heredadas, referencias entrantes, buscador),
+// 4.31: índice común de cabeceras (etiquetas con heredadas, referencias entrantes, buscador),
 // «#» al escribir el título y crear en el fichero de páginas
 import thunk from 'redux-thunk';
 import { createStore, applyMiddleware } from 'redux';

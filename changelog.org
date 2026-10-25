@@ -3,7 +3,7 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
-* 4.29 (octubre de 2026)
+* 4.31 (octubre de 2026)
 ** Documentos: navegar y enlazar
 - *Tocar una etiqueta* (a la derecha del título) abre una vista con *todas las cabeceras* de los ficheros abiertos que la tienen, por fichero (sin el diario ni el mensual). Cada una con ▸ para ver sus notas y subcabeceras; tocar el título lleva a ella. Arriba, *Incluir heredadas* (encendido) y las otras etiquetas de lo que sale, para afinar.
 - *Quién enlaza aquí* (⋯): las cabeceras que tienen un enlace =[[id:…]]= a la seleccionada, por fichero y con sus madres. Al ver una cabecera sola, al final sale plegado *Referencias* con lo mismo.
@@ -13,6 +13,10 @@ Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay noved
 - Con el ratón encima de un enlace =[[id:…]]= se ve el título y el principio de las notas del destino.
 - *Lista de ficheros*: las carpetas arriba, en tarjetas (2–3 por fila), y debajo los ficheros, con su fecha de modificación (Dropbox).
 - *Anchos* (en el ordenador, guardados en este dispositivo): el borde de la barra lateral de GTD se arrastra (doble clic = el de siempre), y en Ajustes › Documentos, *Ancho del contenido* estrecho, medio o completo para GTD y Documentos.
+
+* 4.30 (octubre de 2026)
+** Etiquetas de las cabeceras
+- Nuevo ajuste *Etiquetas de las cabeceras* (Ajustes › Apariencia): *Al lado* (a la derecha del título, como hasta ahora) o *Debajo* (en una línea propia bajo el título, a la izquierda). Se guarda en cada dispositivo.
 
 * 4.28 (octubre de 2026)
 ** Cabeceras en Documentos

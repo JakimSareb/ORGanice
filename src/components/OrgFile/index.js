@@ -61,7 +61,7 @@ import { fromJS, Map, Set } from 'immutable';
 import { createRawDescriptionText, generateTitleLine } from '../../lib/export_org';
 import FinderModal from './components/FinderModal';
 
-// (4.29) «:etiqueta:» escritas al final del título (con «#» al escribir) pasan a sus etiquetas
+// (4.31) «:etiqueta:» escritas al final del título (con «#» al escribir) pasan a sus etiquetas
 const withTypedTags = (header, titleValue) => {
   const tags = header.getIn(['titleLine', 'tags']);
   const merged = mergeTitleTags(titleValue, tags ? tags.toArray() : []);

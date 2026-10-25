@@ -260,7 +260,7 @@ class TitleLine extends PureComponent {
                         title={`Ver todo lo que tiene «${tag}»`}
                         data-testid="eli-header-tag"
                         onClick={(e) => {
-                          // (4.29) tocar una etiqueta abre la vista por etiqueta
+                          // (4.31) tocar una etiqueta abre la vista por etiqueta
                           e.stopPropagation();
                           e.preventDefault();
                           openTagView(tag);

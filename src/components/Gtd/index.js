@@ -6262,7 +6262,7 @@ export default function GtdView() {
           </div>
         )}
       </aside>
-      {/* (4.29) ancho de la barra lateral (solo ordenador) */}
+      {/* (4.31) ancho de la barra lateral (solo ordenador) */}
       <EliResizeHandle pane="gtdSide" testId="gtd-side-resize" />
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />

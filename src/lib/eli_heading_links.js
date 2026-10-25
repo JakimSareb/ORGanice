@@ -1,4 +1,4 @@
-// ORG Mode para Eli (4.29): enlazar mientras se escribe.
+// ORG Mode para Eli (4.31): enlazar mientras se escribe.
 //   - «[[» (título o notas, en Documentos y en el editor de tarea de GTD) y «Añadir › Enlace a
 //     cabecera…»: buscador de todas las cabeceras de los ficheros cargados; al elegir se inserta
 //     [[id:X][Título]] (si el destino no tiene :ID: se le pone). Última opción: «➕ Crear "texto"»,

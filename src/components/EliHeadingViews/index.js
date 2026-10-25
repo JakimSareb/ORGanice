@@ -1,4 +1,4 @@
-// ORG Mode para Eli (4.29): vistas sobre el índice común de cabeceras (lib/eli_heading_index):
+// ORG Mode para Eli (4.31): vistas sobre el índice común de cabeceras (lib/eli_heading_index):
 //   - Vista por etiqueta (tocar una etiqueta): todas las cabeceras con esa etiqueta de todos los
 //     ficheros cargados (sin diario ni mensual), por fichero, con notas y subcabeceras plegables.
 //   - Referencias entrantes («Quién enlaza aquí», y al pie de la cabecera vista sola): las
