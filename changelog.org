@@ -3,6 +3,10 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.30 (octubre de 2026)
+** Etiquetas de las cabeceras
+- Nuevo ajuste *Etiquetas de las cabeceras* (Ajustes › Apariencia): *Al lado* (a la derecha del título, como hasta ahora) o *Debajo* (en una línea propia bajo el título, a la izquierda). Se guarda en cada dispositivo.
+
 * 4.28 (octubre de 2026)
 ** Cabeceras en Documentos
 - *Estado* y *Etiquetas* salen directamente en la barra de abajo (ya no en ⋯). Estado abre un menú con los estados del fichero y «Sin estado».

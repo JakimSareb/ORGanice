@@ -28,6 +28,7 @@ import {
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
 import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
+import { useTagsPos, setTagsPos } from '../../lib/eli_tags_pos';
 import {
   MENU_ENTRIES,
   getMenuLayout,
@@ -499,6 +500,31 @@ const EliLogseqEditSetting = () => {
   );
 };
 
+// (4.30) «Etiquetas de las cabeceras»: al lado del título o debajo
+const EliTagsPosSetting = () => {
+  const pos = useTagsPos();
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-tags-pos"
+    >
+      <div className="setting-label">
+        Etiquetas de las cabeceras
+        <div className="setting-label__description">
+          Al lado: a la derecha del título, en la misma línea. Debajo: en una línea propia bajo el
+          título.
+        </div>
+      </div>
+      <TabButtons
+        buttons={['Al lado', 'Debajo']}
+        values={['side', 'below']}
+        selectedButton={pos}
+        onSelect={(v) => setTagsPos(v)}
+      />
+    </div>
+  );
+};
+
 // (3.40) «Procesar Inbox»: una a una o todo junto
 const EliProcessModeSettings = () => {
   const [mode, setMode] = React.useState(getProcessMode());
@@ -808,6 +834,8 @@ const Settings = ({
         )}
 
         <EliLogseqEditSetting />
+
+        <EliTagsPosSetting />
 
         {/* (4.04) más estilos (cambian el icono según el nivel); también en el Modo Notas */}
         <div className="setting-container" data-testid="eli-setting-bullets">
