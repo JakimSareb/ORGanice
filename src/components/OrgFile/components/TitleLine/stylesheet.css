@@ -52,6 +52,28 @@
   }
 }
 
+/* (4.30) ajuste «Etiquetas debajo del título»: bajan a su propia línea, a la izquierda */
+body.eli-tags-below .title-line-text {
+  flex-wrap: wrap;
+}
+body.eli-tags-below .title-line-text > span:first-child {
+  flex: 1 1 100%;
+}
+body.eli-tags-below .header-tags {
+  flex: 1 1 100%;
+  margin-left: 0;
+  padding-left: 0;
+  align-self: flex-start;
+  white-space: normal;
+}
+body.eli-tags-below .header-tag:first-child {
+  margin-left: 0;
+}
+body.eli-tags-below .header-tag {
+  margin-right: 6px;
+  margin-left: 0;
+}
+
 .title-line__edit-container {
   width: 100%;
 }
