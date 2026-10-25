@@ -271,3 +271,29 @@ export const pagesFilePath = (chosen, inboxPath) => {
 
 export const newPageFileText = (title, orgId) =>
   `#+TITLE: Páginas\n\n* ${String(title || '').trim()}\n:PROPERTIES:\n:ID: ${orgId}\n:END:\n`;
+
+// (4.34) Las primeras líneas de las notas de una cabecera para la vista previa (sin cajones,
+// planificación, reloj ni líneas «#+»); cada línea recortada a 160 caracteres
+export const notePreview = (notes, maxLines = 2) => {
+  const out = [];
+  let inDrawer = false;
+  String(notes || '')
+    .split('\n')
+    .forEach((raw) => {
+      if (out.length >= maxLines) return;
+      const line = raw.trim();
+      if (!line) return;
+      if (inDrawer) {
+        if (/^:END:$/i.test(line)) inDrawer = false;
+        return;
+      }
+      if (/^:[A-Za-z_-]+:$/.test(line) && !/^:END:$/i.test(line)) {
+        inDrawer = true;
+        return;
+      }
+      if (/^(CLOSED|SCHEDULED|DEADLINE):/.test(line) || /^#\+/.test(line)) return;
+      if (/^CLOCK:/.test(line)) return;
+      out.push(line.length > 160 ? `${line.slice(0, 160)}…` : line);
+    });
+  return out;
+};

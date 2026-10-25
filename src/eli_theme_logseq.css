@@ -1,0 +1,110 @@
+/* ORG Mode para Eli (4.34): tema «Logseq». Los colores están en lib/color.js; aquí, solo para este
+   tema (html[data-eli-theme='Logseq']): tipografía tipo Inter, espaciados de bloques, viñetas
+   redondas y la guía vertical de sangría. No cambia ningún componente. */
+html[data-eli-theme='Logseq'] {
+  --lq-font: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+  --lq-guide: color-mix(in srgb, var(--base1) 60%, var(--base3));
+  --lq-bullet: var(--base0);
+  --lq-ring: color-mix(in srgb, var(--base1) 70%, var(--base3));
+}
+
+/* Tipografía: solo si no se ha elegido otro «Tipo de letra» en Ajustes */
+html[data-eli-theme='Logseq']:not([data-eli-font]) body,
+html[data-eli-theme='Logseq']:not([data-eli-font]) button,
+html[data-eli-theme='Logseq']:not([data-eli-font]) input,
+html[data-eli-theme='Logseq']:not([data-eli-font]) select,
+html[data-eli-theme='Logseq']:not([data-eli-font]) textarea,
+html[data-eli-theme='Logseq']:not([data-eli-font]) .header-list-container,
+html[data-eli-theme='Logseq']:not([data-eli-font]) .gtd,
+html[data-eli-theme='Logseq']:not([data-eli-font]) .eli-prompt__box {
+  font-family: var(--lq-font);
+}
+html[data-eli-theme='Logseq'] body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Documentos: texto en el color normal (sin colores por nivel), peso 400, más aire entre líneas */
+html[data-eli-theme='Logseq'] .header-list-container {
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+html[data-eli-theme='Logseq'] .title-line-text > span:first-child {
+  color: var(--base01) !important;
+}
+html[data-eli-theme='Logseq'] .header-content-container,
+html[data-eli-theme='Logseq'] .eli-inline-edit--desc {
+  color: var(--base00);
+  line-height: 1.55;
+}
+
+/* Espaciado de bloques: filas seguidas, con poco aire, como los bloques de Logseq */
+html[data-eli-theme='Logseq'] .header {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 5px;
+  padding-bottom: 1px;
+  border-radius: 4px;
+}
+html[data-eli-theme='Logseq'] .header--selected {
+  background-color: var(--base1-soft);
+}
+
+/* Viñetas: punto gris redondo (plegada: con un aro, como en Logseq). El hueco no cambia. */
+html[data-eli-theme='Logseq'] .header__bullet {
+  color: transparent !important;
+}
+html[data-eli-theme='Logseq'] .header__bullet::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: calc(0.75em - 3px);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lq-bullet);
+}
+html[data-eli-theme='Logseq'] .header__bullet--folded::after {
+  box-shadow: 0 0 0 3px var(--lq-ring);
+}
+html[data-eli-theme='Logseq'] .header__bullet-fold {
+  display: none;
+}
+
+/* Guía vertical de sangría: una línea fina bajo la viñeta de cada cabecera madre */
+html[data-eli-theme='Logseq'] .header::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  padding-left: inherit;
+  box-sizing: content-box;
+  pointer-events: none;
+  clip-path: inset(0 0 0 20px);
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent 11px,
+    var(--lq-guide) 11px,
+    var(--lq-guide) 12px,
+    transparent 12px,
+    transparent 20px
+  );
+}
+
+/* Enlaces y etiquetas en el azul de enlace */
+html[data-eli-theme='Logseq'] .App:not(.landing-page) a,
+html[data-eli-theme='Logseq'] .eli-org-link {
+  color: var(--blue);
+}
+html[data-eli-theme='Logseq'] .header-tag {
+  color: var(--blue);
+  opacity: 0.85;
+}
+html[data-eli-theme='Logseq'] .header-tag::before {
+  content: '#';
+}

@@ -43,7 +43,7 @@ export const readRgbaVariable = (varName) => {
   }
 };
 
-const themes = {
+export const themes = {
   Solarized: {
     /* 
       https://ethanschoonover.com/solarized/ 
@@ -447,6 +447,52 @@ const themes = {
       '--magenta': '#d9788a',
       '--violet': '#b7ace0',
       '--green-soft': 'rgba(143, 208, 176, 0.2)',
+    },
+  },
+  // (4.34) tema «Logseq»: blanco y gris cálido con enlaces azules (oscuro: el azul petróleo de
+  // Logseq). La tipografía, los espaciados y las viñetas están en eli_theme_logseq.css.
+  Logseq: {
+    Light: {
+      '--base3': '#ffffff',
+      '--base2': '#f4f4f2',
+      '--base1': '#d9d8d4',
+      '--base0': '#a1a09b',
+      '--base00': '#433f38',
+      '--base01': '#433f38',
+      '--base02': '#2f2c27',
+      '--base03': '#1f1d1a',
+      '--base0-soft': 'rgba(67, 63, 56, 0.22)',
+      '--base1-soft': 'rgba(4, 85, 145, 0.08)',
+      '--blue': '#045591',
+      '--green': '#3d8b5e',
+      '--cyan': '#2f7f94',
+      '--yellow': '#b8860b',
+      '--orange': '#d9730d',
+      '--red': '#d44c47',
+      '--magenta': '#6f5bb3',
+      '--violet': '#8d6bb5',
+      '--green-soft': 'rgba(61, 139, 94, 0.2)',
+    },
+    Dark: {
+      '--base3': '#002b36',
+      '--base2': '#073642',
+      '--base1': '#16505f',
+      '--base0': '#5b7c84',
+      '--base00': '#a4b5b6',
+      '--base01': '#b4c3c4',
+      '--base02': '#cad6d7',
+      '--base03': '#e4ecec',
+      '--base0-soft': 'rgba(0, 12, 16, 0.7)',
+      '--base1-soft': 'rgba(111, 163, 208, 0.14)',
+      '--blue': '#6fa3d0',
+      '--green': '#6cc391',
+      '--cyan': '#5bb8cc',
+      '--yellow': '#e0b94f',
+      '--orange': '#f0a060',
+      '--red': '#f0726d',
+      '--magenta': '#a58ce6',
+      '--violet': '#c39be0',
+      '--green-soft': 'rgba(108, 195, 145, 0.2)',
     },
   },
   // (3.05) tema «Nirvana», inspirado en NirvanaHQ: grises claros, filas blancas y acento azul
