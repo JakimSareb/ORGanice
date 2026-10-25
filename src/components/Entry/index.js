@@ -26,6 +26,7 @@ import FileSettingsEditor from '../FileSettingsEditor';
 import GtdView from '../Gtd';
 import EliConflicts from '../EliConflicts';
 import EliCommandPalette from '../EliCommandPalette';
+import EliHeadingViews from '../EliHeadingViews';
 import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
 import EliScratch from '../EliScratch';
@@ -313,6 +314,7 @@ class Entry extends PureComponent {
         <EliCalculator />
         {isAuthenticated && <EliScratch />}
         {isAuthenticated && <EliDiary />}
+        {isAuthenticated && <EliHeadingViews />}
 
         {isAuthenticated &&
           ([

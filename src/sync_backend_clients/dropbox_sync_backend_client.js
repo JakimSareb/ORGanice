@@ -168,6 +168,8 @@ export default () => {
         name: entry.name,
         isDirectory: entry['.tag'] === 'folder',
         path: entry.path_display,
+        // (4.31) fecha de modificación (se ve en la lista de ficheros)
+        modified: entry.server_modified || null,
       }))
     );
   };

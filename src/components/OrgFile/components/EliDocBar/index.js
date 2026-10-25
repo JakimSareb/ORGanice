@@ -29,6 +29,8 @@ import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task
 import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 import { insertLinkInto } from '../../../../lib/eli_links';
+import { insertHeadingLink } from '../../../../lib/eli_heading_links';
+import { openBacklinks } from '../../../../lib/eli_heading_events';
 import { showMessage, askPick, askText, askDate, askConfirm } from '../../../../lib/eli_prompt';
 import { getPriority } from '../../../../lib/eli_priority';
 import { shareContent } from '../../../../lib/share_utils';
@@ -356,6 +358,17 @@ export default function EliDocBar({
     org('openHeader', id);
     base('activatePopup', 'description-editor');
     setTimeout(() => insertLinkInto(activeField(), insertIntoField), 120);
+  };
+  // (4.31) Enlace a una cabecera de cualquier fichero cargado (buscador; por ID)
+  const insertHeadingLinkHere = () => {
+    const field = activeField();
+    if (field) {
+      dispatch(insertHeadingLink(field, insertIntoField));
+      return;
+    }
+    org('openHeader', id);
+    base('activatePopup', 'description-editor');
+    setTimeout(() => dispatch(insertHeadingLink(activeField(), insertIntoField)), 120);
   };
   // (3.04) Agenda y plantillas de captura (antes, botones redondos grandes)
   // (3.29) Abrir el encabezado seleccionado en la vista GTD (si es una tarea, es decir, tiene
@@ -1025,6 +1038,13 @@ export default function EliDocBar({
             text: true,
           },
           {
+            id: 'link-heading',
+            icon: 'fas fa-sitemap',
+            label: 'Enlace a cabecera…',
+            onClick: insertHeadingLinkHere,
+            text: true,
+          },
+          {
             id: 'date-today',
             icon: 'far fa-calendar-plus',
             label: 'Fecha de hoy',
@@ -1103,6 +1123,17 @@ export default function EliDocBar({
             label: 'Duplicar',
             onClick: () => org('duplicateHeader', id),
           },
+          // (4.31) referencias entrantes ([[id:…]] a esta cabecera)
+          ...(path && !path.startsWith('/__')
+            ? [
+                {
+                  id: 'backlinks',
+                  icon: 'fas fa-link',
+                  label: 'Quién enlaza aquí',
+                  onClick: () => openBacklinks(path, id),
+                },
+              ]
+            : []),
           ...(notes
             ? []
             : [

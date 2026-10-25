@@ -246,6 +246,7 @@ import {
 import { getTapMode } from '../../lib/eli_tap_mode';
 import { usePullToRefresh, pullReady } from '../../lib/eli_pull_refresh';
 import { isDiaryPath, diaryLinkDetail, openDiary } from '../../lib/eli_diary';
+import EliResizeHandle from '../EliResizeHandle';
 
 const selectClient = (s) => s.syncBackend.get('client');
 
@@ -6261,6 +6262,8 @@ export default function GtdView() {
           </div>
         )}
       </aside>
+      {/* (4.31) ancho de la barra lateral (solo ordenador) */}
+      <EliResizeHandle pane="gtdSide" testId="gtd-side-resize" />
 
       <div className="gtd-scrim" onClick={() => setSideOpen(false)} />
 

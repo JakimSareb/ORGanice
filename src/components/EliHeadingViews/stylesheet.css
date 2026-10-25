@@ -1,0 +1,186 @@
+/* ORG Mode para Eli (4.31): vista por etiqueta y referencias entrantes */
+.eli-hv__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 12px;
+  box-sizing: border-box;
+}
+.eli-hv__box {
+  width: 100%;
+  max-width: 760px;
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--base3, #fff);
+  color: var(--base00, #333);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  text-align: left;
+}
+.eli-hv__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--base2, #eee);
+}
+.eli-hv__heading {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 1.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eli-hv__total,
+.eli-hv__count {
+  font-size: 0.8em;
+  color: var(--base1, #999);
+  margin-left: 6px;
+}
+.eli-hv__close {
+  border: 0;
+  background: none;
+  color: var(--base1, #999);
+  font-size: 1.1em;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.eli-hv__scroll {
+  overflow-y: auto;
+  padding: 8px 14px 18px;
+}
+.eli-hv__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.85em;
+}
+.eli-hv__inherit {
+  margin-right: 6px;
+  color: var(--base01, #666);
+}
+.eli-hv__chip {
+  border: 1px solid var(--base2, #ddd);
+  background: none;
+  color: var(--base01, #666);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 0.95em;
+  cursor: pointer;
+}
+.eli-hv__chip.is-on {
+  background: var(--blue, #268bd2);
+  border-color: var(--blue, #268bd2);
+  color: #fff;
+}
+.eli-hv__group {
+  margin-top: 10px;
+}
+.eli-hv__file {
+  margin: 6px 0 2px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--base1, #999);
+}
+.eli-hv__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.eli-hv__list .eli-hv__list {
+  padding-left: 18px;
+  border-left: 1px solid var(--base2, #eee);
+  margin-left: 9px;
+}
+.eli-hv__row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.eli-hv__fold {
+  flex: none;
+  width: 20px;
+  border: 0;
+  background: none;
+  color: var(--base1, #999);
+  cursor: pointer;
+  padding: 3px 0;
+}
+.eli-hv__fold.is-empty {
+  cursor: default;
+  opacity: 0.5;
+}
+.eli-hv__title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 3px 0;
+  cursor: pointer;
+}
+.eli-hv__title:hover {
+  color: var(--blue, #268bd2);
+}
+.eli-hv__kw {
+  font-weight: 600;
+  font-size: 0.85em;
+  margin-right: 6px;
+  color: var(--magenta, #d33682);
+}
+.eli-hv__tags {
+  margin-left: 8px;
+  font-size: 0.75em;
+  color: var(--base1, #999);
+}
+.eli-hv__ctx {
+  margin: -2px 0 2px 24px;
+  font-size: 0.75em;
+  color: var(--base1, #999);
+}
+.eli-hv__body {
+  margin-left: 24px;
+}
+.eli-hv__notes {
+  white-space: pre-wrap;
+  font-size: 0.9em;
+  color: var(--base01, #666);
+  padding: 2px 0 6px;
+}
+.eli-hv__empty {
+  padding: 16px 4px;
+  color: var(--base1, #999);
+}
+.eli-narrow-refs {
+  margin: 24px 12px 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--base2, #eee);
+  text-align: left;
+}
+.eli-narrow-refs > summary {
+  cursor: pointer;
+  color: var(--base1, #999);
+  font-size: 0.9em;
+  font-weight: 600;
+}
+/* (4.31) etiqueta tocable */
+.header-tag[role='link'] {
+  cursor: pointer;
+}
+.header-tag[role='link']:hover {
+  text-decoration: underline;
+}

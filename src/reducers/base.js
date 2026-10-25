@@ -214,6 +214,8 @@ export default (state = Map(), action) => {
         'eliNoSwipeDocs',
         'eliNoSwipeGtd',
         'eliGtdSections',
+        'eliPagesFile',
+        'eliNoHashTagTitle',
       ].includes(action.name)
         ? state.set(action.name, action.value)
         : state;

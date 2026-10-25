@@ -14,8 +14,8 @@
 
 /* ---------- Menú lateral ---------- */
 .gtd-side {
-  flex: 0 0 240px;
-  width: 240px;
+  flex: 0 0 var(--eli-gtd-side-w, 240px);
+  width: var(--eli-gtd-side-w, 240px);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -4779,4 +4779,28 @@ input.gtd-proc__input:not([type]) {
   color: var(--base1);
   margin-right: -4px;
   flex: none;
+}
+
+/* (4.31) «Ancho del contenido» (Ajustes › Documentos, en este dispositivo) */
+@media (min-width: 721px) {
+  html[data-eli-width='narrow'] .gtd-main > * {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  html[data-eli-width='medium'] .gtd-main > * {
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  html[data-eli-width='narrow'] .org-file-container {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  html[data-eli-width='medium'] .org-file-container {
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }

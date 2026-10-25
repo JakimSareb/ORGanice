@@ -1,0 +1,25 @@
+/* ORG Mode para Eli (4.31): tirador de ancho */
+.eli-resize-handle {
+  flex: 0 0 6px;
+  width: 6px;
+  margin-left: -3px;
+  margin-right: -3px;
+  position: relative;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+}
+.eli-resize-handle:hover,
+body.eli-resizing .eli-resize-handle {
+  background: var(--blue, #268bd2);
+  opacity: 0.35;
+}
+body.eli-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+@media (max-width: 720px), (pointer: coarse) {
+  .eli-resize-handle {
+    display: none;
+  }
+}

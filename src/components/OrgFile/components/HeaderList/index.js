@@ -5,6 +5,7 @@ import { bindActionCreators } from 'redux';
 import './stylesheet.css';
 
 import Header from '../Header';
+import { EliNarrowRefs } from '../../../EliHeadingViews';
 
 import * as orgActions from '../../../../actions/org';
 import { startBulletDrag } from './eliBulletDrag';
@@ -568,6 +569,8 @@ class HeaderList extends PureComponent {
             />
           );
         })}
+        {/* (4.31) vista sola: quién enlaza aquí, plegado al final (como una página de Logseq) */}
+        {!!narrowedHeaderId && <EliNarrowRefs path={this.props.path} headerId={narrowedHeaderId} />}
         <div style={{ height: '90px' }} />
       </div>
     );
@@ -581,6 +584,7 @@ const mapStateToProps = (state) => {
     headers: file.get('headers', List()),
     selectedHeaderId: file.get('selectedHeaderId'),
     narrowedHeaderId: file.get('narrowedHeaderId'),
+    path,
   };
 };
 

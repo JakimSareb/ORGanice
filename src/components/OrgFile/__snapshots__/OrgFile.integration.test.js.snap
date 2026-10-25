@@ -357,11 +357,17 @@ exports[`Render all views Org Functionality Renders everything starting from an 
                   >
                     <span
                       class="header-tag"
+                      data-testid="eli-header-tag"
+                      role="link"
+                      title="Ver todo lo que tiene «tag1»"
                     >
                       tag1
                     </span>
                     <span
                       class="header-tag"
+                      data-testid="eli-header-tag"
+                      role="link"
+                      title="Ver todo lo que tiene «tag2»"
                     >
                       tag2
                     </span>
@@ -918,11 +924,17 @@ exports[`Render all views Org Functionality Renders everything starting from an 
               >
                 <span
                   class="header-tag"
+                  data-testid="eli-header-tag"
+                  role="link"
+                  title="Ver todo lo que tiene «tag1»"
                 >
                   tag1
                 </span>
                 <span
                   class="header-tag"
+                  data-testid="eli-header-tag"
+                  role="link"
+                  title="Ver todo lo que tiene «tag2»"
                 >
                   tag2
                 </span>
