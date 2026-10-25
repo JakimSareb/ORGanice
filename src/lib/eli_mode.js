@@ -67,6 +67,26 @@ let resumeRoute = (() => {
   }
 })();
 
+// (4.33) ¿Ha arrancado la app en la página inicial (icono de la pantalla de inicio)? Para abrir el
+// Diario de hoy (Ajustes › Diario › Al abrir la app). Solo una vez.
+let startAtRoot = (() => {
+  try {
+    const base = BASE_PATH;
+    let here = window.location.pathname;
+    if (base && here.startsWith(base)) here = here.substring(base.length);
+    // (sin la vuelta del inicio de sesión de Dropbox ni la captura rápida)
+    return here.replace(/\/+$/, '') === '' && !/capture|code=/.test(window.location.search);
+  } catch (e) {
+    return false;
+  }
+})();
+export const startedAtRoot = () => startAtRoot;
+export const takeStartAtRoot = () => {
+  const r = startAtRoot;
+  startAtRoot = false;
+  return r;
+};
+
 export const takeResumeRoute = () => {
   const r = resumeRoute;
   resumeRoute = null;

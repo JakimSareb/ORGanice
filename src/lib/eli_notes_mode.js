@@ -53,6 +53,20 @@ applyBodyClass();
 
 const notify = () => listeners.forEach((l) => l(notes));
 
+// (4.33) Ajustes llegados de otro dispositivo (Ajustes sincronizados): se vuelven a leer
+try {
+  window.addEventListener('eli:prefs-applied', () => {
+    notes = read(KEY) === 'true';
+    try {
+      tools = JSON.parse(read(TOOLS_KEY) || '{}') || {};
+    } catch (e) {
+      tools = {};
+    }
+    applyBodyClass();
+    notify();
+  });
+} catch (e) {}
+
 export const isNotesMode = () => notes;
 
 // Al cambiar de modo, las herramientas vuelven a su valor de inicio (apagadas en Modo Notas)

@@ -50,6 +50,14 @@ export const DEFAULT_COUNTERS = [
   { key: 'B', name: 'Biblia', type: 'bool' },
   { key: 'KM', name: 'Kilómetros', type: 'num' },
 ];
+// (4.33) Frecuencia: los diarios van en el día; los mensuales (p. ej. Cintura) en el MES del diari
+export const COUNTER_FREQS = [
+  { id: 'day', label: 'Diario' },
+  { id: 'month', label: 'Mensual' },
+];
+export const isMonthlyCounter = (c) => !!c && c.freq === 'month';
+export const dailyCounters = (list) => (list || []).filter((c) => !isMonthlyCounter(c));
+export const monthlyCounters = (list) => (list || []).filter(isMonthlyCounter);
 const RESERVED_KEYS = ['ID', 'CREATED', 'PROPERTIES', 'END'];
 export const counterKey = (k) =>
   String(k || '')
@@ -62,6 +70,8 @@ export const cleanCounters = (list) => {
       key: counterKey(c && c.key),
       name: String((c && c.name) || '').trim(),
       type: COUNTER_TYPES.some((t) => t.id === (c && c.type)) ? c.type : 'bool',
+      // (4.33) solo los mensuales llevan `freq` (los diarios, como antes)
+      ...(c && c.freq === 'month' ? { freq: 'month' } : {}),
     }))
     .filter((c) => {
       if (!c.key || RESERVED_KEYS.includes(c.key) || seen.has(c.key)) return false;
@@ -88,7 +98,11 @@ export const getDiaryCfg = () => {
       : DEFAULT_CFG.template,
     inSystem: r.inSystem !== false,
     monthlyOn: r.monthlyOn !== false,
-    counters: Array.isArray(r.counters) ? cleanCounters(r.counters) : DEFAULT_COUNTERS,
+    counters: Array.isArray(r.counters)
+      ? cleanCounters(r.counters)
+      : cleanCounters(DEFAULT_COUNTERS),
+    // (4.33) al abrir la app (desde el icono): 'diary' = Diario de hoy | 'last' = última vista
+    startView: r.startView === 'last' ? 'last' : 'diary',
   };
 };
 export const setDiaryCfg = (patch) => {
@@ -505,4 +519,71 @@ export const withDiaryIds = (text) => {
     if (any && m.key && ensureIdIn(m.body, monthOrgId(m.key))) changed = true;
   });
   return changed ? serializeTree(tree) : text;
+};
+
+// ---- (4.33) Contadores mensuales: propiedades del MES en el diari (`* 2026-10 octubre` › `:CINTURA: 82`) ----
+// Propiedades de cada mes: { 'AAAA-MM': { CLAVE: valor } }
+export const parseMonthProps = (text) => {
+  const out = {};
+  parseTree(text).months.forEach((m) => {
+    if (!m.key) return;
+    const props = {};
+    if (/^\s*:PROPERTIES:\s*$/i.test(m.body[0] || '')) {
+      for (let i = 1; i < m.body.length; i++) {
+        if (/^\s*:END:\s*$/i.test(m.body[i])) break;
+        const p = /^\s*:([^:\s]+):\s*(.*)$/.exec(m.body[i]);
+        if (p) props[p[1].toUpperCase()] = p[2].trim();
+      }
+    }
+    out[m.key] = props;
+  });
+  return out;
+};
+
+// Contador del mes: `:KEY: valor` en el cajón del mes (vacío = se quita). Crea el mes si falta.
+export const setMonthProp = (text, date, key, value) => {
+  const k = counterKey(key);
+  const tree = parseTree(text || newFileText(date.getFullYear()));
+  const mk = monthKey(date);
+  let m = tree.months.find((x) => x.key === mk);
+  if (!m) {
+    m = { line: monthLine(date), key: mk, body: [], days: [] };
+    insertSorted(tree.months, m);
+  }
+  const v = String(value == null ? '' : value)
+    .replace(/\s+/g, ' ')
+    .trim();
+  const hadDrawer = /^\s*:PROPERTIES:\s*$/i.test(m.body[0] || '');
+  if (!hadDrawer && !v) return serializeTree(tree);
+  const end = drawerEnd(m.body);
+  const re = new RegExp(`^\\s*:${k}:(\\s|$)`, 'i');
+  const i = m.body.findIndex((l, j) => j > 0 && j < end && re.test(l));
+  if (i >= 0) {
+    if (v) m.body[i] = `:${k}: ${v}`;
+    else m.body.splice(i, 1);
+  } else if (v) m.body.splice(end, 0, `:${k}: ${v}`);
+  if (/^\s*:END:\s*$/i.test(m.body[1] || '')) m.body.splice(0, 2);
+  return serializeTree(tree);
+};
+
+// (4.33) Título del día como en Logseq: «Domingo, 25 oct 2026»
+const MONTHS_SHORT = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sept',
+  'oct',
+  'nov',
+  'dic',
+];
+export const journalTitle = (d) => {
+  const w = WEEKDAYS[d.getDay()];
+  return `${w.charAt(0).toUpperCase()}${w.slice(1)}, ${d.getDate()} ${
+    MONTHS_SHORT[d.getMonth()]
+  } ${d.getFullYear()}`;
 };

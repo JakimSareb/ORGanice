@@ -31,6 +31,7 @@ import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
 import EliScratch from '../EliScratch';
 import EliDiary from '../EliDiary';
+import EliSyncLog from '../EliSyncLog';
 import { installFormatHotkeys } from '../EliFormatBar';
 import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
 import { isNotesMode, subscribeNotesMode } from '../../lib/eli_notes_mode';
@@ -314,6 +315,7 @@ class Entry extends PureComponent {
         <EliCalculator />
         {isAuthenticated && <EliScratch />}
         {isAuthenticated && <EliDiary />}
+        {isAuthenticated && <EliSyncLog />}
         {isAuthenticated && <EliHeadingViews />}
 
         {isAuthenticated &&

@@ -436,3 +436,44 @@
   font-family: inherit;
   font-size: 16px;
 }
+
+/* (4.33) Subcategorías dentro de una sección: rótulo pequeño en mayúsculas con el color de acento,
+   separador y las opciones agrupadas en una tarjeta con algo de sangría */
+.eli-settings-sub {
+  margin: 18px 12px 6px 14px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--base1-soft, var(--base2));
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.eli-settings-section > summary + .eli-settings-sub {
+  margin-top: 14px;
+}
+.eli-settings-group {
+  margin: 4px 10px 12px 18px;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.eli-settings-group--pad {
+  padding: 10px 12px;
+}
+.eli-settings-section .eli-settings-group > .setting-container:first-of-type,
+.eli-settings-group > .setting-container:first-child {
+  border-top: none;
+}
+.eli-settings-group > .setting-container:last-child {
+  border-bottom: none;
+}
+@media (max-width: 480px) {
+  .eli-settings-sub {
+    margin-left: 12px;
+  }
+  .eli-settings-group {
+    margin-left: 10px;
+    margin-right: 8px;
+  }
+}

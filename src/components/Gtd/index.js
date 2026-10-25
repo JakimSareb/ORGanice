@@ -182,6 +182,8 @@ import {
   eliReviewFinishedAttachments,
   eliRemoveAttachmentLink,
   eliLoadArchivedFiles,
+  eliPlanArchiveByYear,
+  eliApplyArchiveByYear,
   createPlainFile,
 } from '../../actions/org';
 import { parseOrgLink } from '../../lib/eli_org_links';
@@ -226,6 +228,7 @@ import {
 } from '../../lib/gtd/gtd_sections';
 import { createRawDescriptionText } from '../../lib/export_org';
 import { getShowArchived, setShowArchived, isArchiveFile } from '../../lib/eli_archived';
+import { planSummary } from '../../lib/eli_archive_years';
 import { Map as IMap } from 'immutable';
 import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import { headerWithPath, STATIC_FILE_PREFIX } from '../../lib/org_utils';
@@ -1239,7 +1242,9 @@ export default function GtdView() {
           (wanted.includes(p) || !wanted.length) &&
           p !== horizonsSet &&
           !/(^|\/)horizons\.org$/i.test(p) &&
-          !isDiaryPath(p)
+          !isDiaryPath(p) &&
+          // (4.33) lo archivado (también archive-AAAA.org) no son tareas en curso
+          !isArchiveFile(p)
       ),
     [loadedPaths, wanted, horizonsSet]
   );
@@ -1880,6 +1885,54 @@ export default function GtdView() {
       .sort((a, b) => (b.closed || 0) - (a.closed || 0))
       .slice(0, 300);
   }, [isLogbook, showArchived, files, area, text, filters, logSearch]);
+
+  // (4.33) «Por años»: mueve lo archivado hace más de un año a archive-AAAA.org (con resumen)
+  const [groupingArchive, setGroupingArchive] = useState(false);
+  const groupArchiveByYear = async () => {
+    if (groupingArchive) return;
+    setGroupingArchive(true);
+    try {
+      const { plans, skipped, unsupported } = await dispatch(eliPlanArchiveByYear());
+      if (unsupported) {
+        showMessage('Archivo por años', 'Esta conexión no permite listar los ficheros.');
+        return;
+      }
+      const summary = planSummary(plans);
+      const skippedNote = skipped.length
+        ? `\n\nNo se tocan (con cambios sin guardar o sin poder leerlos): ${skipped.join(', ')}.`
+        : '';
+      if (!summary) {
+        showMessage(
+          'Archivo por años',
+          'No hay nada archivado hace más de un año en los ficheros _archive.' + skippedNote
+        );
+        return;
+      }
+      const ok = await askConfirm({
+        title: 'Agrupar archivo por años',
+        message:
+          `${summary}.\n\nLo archivado hace más de un año (fecha de CLOSED o, si no tiene, ` +
+          'ARCHIVE_TIME) pasa al final de archive-AAAA.org, junto a cada fichero _archive. Lo ' +
+          'de menos de un año se queda. Primero se escribe el fichero del año y luego se quita ' +
+          'del _archive; si se repite, no se duplica nada.' +
+          skippedNote,
+        okLabel: 'Agrupar',
+      });
+      if (!ok) return;
+      const r = await dispatch(eliApplyArchiveByYear(plans));
+      showMessage(
+        'Archivo por años',
+        r.failed
+          ? `Movidos ${r.moved}. No se ha podido escribir ${r.failed} fichero(s) del año: mira ` +
+              'Ajustes › Sincronización › Registro.'
+          : `Movidos ${r.moved} árbol${r.moved === 1 ? '' : 'es'}.`
+      );
+    } catch (e) {
+      showMessage('Archivo por años', 'No se ha podido: ' + ((e && e.message) || e));
+    } finally {
+      setGroupingArchive(false);
+    }
+  };
 
   const archivableBySection = useMemo(() => {
     const out = {};
@@ -7126,6 +7179,18 @@ export default function GtdView() {
               <i className={loadingArchived ? 'fas fa-spinner fa-spin' : 'fas fa-archive'} />{' '}
               Archivadas
             </button>
+            {showArchived && (
+              <button
+                type="button"
+                className="agenda__log-toggle gtd-archived-toggle"
+                onClick={groupArchiveByYear}
+                title="Agrupar archivo por años: lo archivado hace más de un año pasa a archive-AAAA.org"
+                data-testid="gtd-archive-years"
+              >
+                <i className={groupingArchive ? 'fas fa-spinner fa-spin' : 'fas fa-boxes'} /> Por
+                años
+              </button>
+            )}
           </div>
         )}
 

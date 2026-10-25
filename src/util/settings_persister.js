@@ -3,12 +3,25 @@ import _ from 'lodash';
 
 import { getOpenHeaderPaths } from '../lib/org_utils';
 
-import { restoreBaseSettings } from '../actions/base';
+import { restoreBaseSettings, setEliSetting } from '../actions/base';
 import { restoreCaptureSettings } from '../actions/capture';
 import { restoreFileSettings, eliRefreshAllOrgFiles } from '../actions/org';
 
 import generateId from '../lib/id_generator';
 import { loadFilesFromLocalStorage } from './file_persister';
+import {
+  readStamps,
+  writeStamps,
+  collectLocalPrefs,
+  mergeSettings,
+  installPrefsWatcher,
+  applyRemotePrefs,
+  withRemoteApply,
+  setPrefsReady,
+  isApplyingRemote,
+  canonical,
+} from '../lib/eli_synced_prefs';
+import { logSyncEvent } from '../lib/eli_sync_log';
 
 export const localStorageAvailable = (() => {
   try {
@@ -51,27 +64,60 @@ const updateConfigForGitLab = async (client, contents) => {
 // ORG Mode para Eli (2.15): si no se pudieron leer los ajustes del servidor (fallo pasajero), no
 // se suben los de aquí encima (se perderían los guardados allí)
 let eliConfigLoadFailed = false;
+// (4.33) Hasta haber leído el fichero no se sube nada (antes, un cambio al arrancar podía subir los
+// ajustes viejos de este dispositivo encima de los del fichero)
+let eliConfigReady = false;
+let eliStore = null;
+const CONFIG_PATH = '/.organice-config.json';
+
+const parseConfig = (contents) => (typeof contents === 'string' ? JSON.parse(contents) : contents);
+
+const writeConfig = (client, contents) => {
+  switch (client.type) {
+    case 'Dropbox':
+    case 'WebDAV':
+    case 'LocalFolder':
+      return client.createFile(CONFIG_PATH, contents);
+    case 'GitLab':
+      return updateConfigForGitLab(client, contents);
+    default:
+      return Promise.resolve();
+  }
+};
+
+// (4.33) Subir = leer el fichero, fusionar por clave (gana lo más reciente de cada ajuste) y
+// escribir el resultado. Así un dispositivo que lleva horas abierto no pisa lo que se cambió en otro.
+const eliPushMergedConfig = async () => {
+  const store = eliStore;
+  if (!store || eliConfigLoadFailed || !eliConfigReady) return;
+  const client = store.getState().syncBackend.get('client');
+  if (!client || !store.getState().base.get('shouldStoreSettingsInSyncBackend')) return;
+  let remote = null;
+  try {
+    remote = parseConfig(await client.getFileContents(CONFIG_PATH));
+  } catch (error) {
+    // sin motivo = no existe todavía (se crea); con motivo = no se sube nada ahora
+    if (error) {
+      logSyncEvent({ file: CONFIG_PATH, op: 'ajustes (leer)', error });
+      return;
+    }
+  }
+  if (remote && typeof remote === 'object')
+    applyRemoteConfig(store.dispatch, store.getState, remote);
+  const contents = getConfigFileContents(getFieldsToPersist(store.getState(), persistableFields));
+  window.previousSettingsFileContents = contents;
+  if (remote && canonical(remote) === canonical(JSON.parse(contents))) return;
+  try {
+    await writeConfig(client, contents);
+  } catch (error) {
+    logSyncEvent({ file: CONFIG_PATH, op: 'ajustes (subir)', error });
+    alert(`There was an error trying to push settings to your sync backend: ${error}`);
+  }
+};
 
 const debouncedPushConfigToSyncBackend = _.debounce(
-  (syncBackendClient, contents) => {
-    if (eliConfigLoadFailed) return;
-    switch (syncBackendClient.type) {
-      case 'Dropbox':
-      case 'WebDAV':
-      case 'LocalFolder':
-        syncBackendClient
-          .createFile('/.organice-config.json', contents)
-          .catch((error) =>
-            alert(`There was an error trying to push settings to your sync backend: ${error}`)
-          );
-        break;
-      case 'GitLab':
-        updateConfigForGitLab(syncBackendClient, contents).catch((error) =>
-          alert(`There was an error trying to push settings to your sync backend: ${error}`)
-        );
-        break;
-      default:
-    }
+  () => {
+    eliPushMergedConfig();
   },
   1000,
   { maxWait: 3000 }
@@ -328,8 +374,48 @@ const getFieldsToPersist = (state, fields) => {
     );
 };
 
+const persistableNames = () => persistableFields.map((f) => f.name);
+
+// (4.33) Además de los ajustes de organice: sus marcas de tiempo (`eliStamps`) y los ajustes de la
+// app con la suya (`eliPrefs`)
 const getConfigFileContents = (fieldsToPersist) => {
-  return JSON.stringify(_.fromPairs(fieldsToPersist), null, 2);
+  const names = persistableNames();
+  const stamps = localStorageAvailable ? readStamps() : {};
+  const eliStamps = _.pick(stamps, names);
+  const eliPrefs = localStorageAvailable ? collectLocalPrefs(names, stamps) : {};
+  return JSON.stringify({ ..._.fromPairs(fieldsToPersist), eliStamps, eliPrefs }, null, 2);
+};
+
+// Valores actuales de los ajustes de organice (texto), para ver cuáles cambian
+let eliPrevValues = null;
+const fieldValues = (fieldsToPersist) =>
+  _.fromPairs(fieldsToPersist.map(([name, value]) => [name, String(value)]));
+
+// (4.33) Aplica el fichero de ajustes fusionando por clave
+const applyRemoteConfig = (dispatch, getState, config) => {
+  const names = persistableNames();
+  const stamps = readStamps();
+  const merged = mergeSettings({
+    remote: config,
+    localStamps: stamps,
+    localPrefs: collectLocalPrefs(names, stamps),
+    fieldNames: names,
+  });
+  const cfg = _.pick(config, merged.fieldsFromRemote);
+  withRemoteApply(() => {
+    try {
+      if (Object.keys(cfg).length) {
+        dispatch(restoreBaseSettings(cfg));
+        if (cfg.captureTemplates !== undefined) dispatch(restoreCaptureSettings(cfg));
+        if (cfg.fileSettings !== undefined) dispatch(restoreFileSettings(cfg));
+      }
+    } catch (_error) {
+      // Algo del fichero no se ha podido leer: se queda lo de aquí (y se subirá)
+    }
+  });
+  writeStamps(merged.stamps);
+  eliPrevValues = fieldValues(getFieldsToPersist(getState(), persistableFields));
+  if (applyRemotePrefs(merged.prefsFromRemote)) dispatch(setEliSetting('eliPrefsRev', Date.now()));
 };
 
 export const applyCategorySettingsFromConfig = (state, config, category) => {
@@ -490,9 +576,8 @@ export const loadSettingsFromConfigFile = (dispatch, getState) => {
   fileContentsPromise
     .then((configFileContents) => {
       eliConfigLoadFailed = false;
+      let config = null;
       try {
-        let config;
-
         /* Rationale for the type check:
           When loading the settings file, `configFileContents` is
           sometimes already an object. Therefore, when JSON.parse is
@@ -501,35 +586,48 @@ export const loadSettingsFromConfigFile = (dispatch, getState) => {
           https:github.com/200ok-ch/organice/issues/472. Settings will
           never load from file and default config always loads.
           */
-        if (typeof configFileContents === 'string') {
-          config = JSON.parse(configFileContents);
-        } else {
-          config = configFileContents;
-        }
-
-        dispatch(restoreBaseSettings(config));
-        dispatch(restoreCaptureSettings(config));
-        dispatch(restoreFileSettings(config));
+        config = parseConfig(configFileContents);
       } catch (_error) {
         // Something went wrong parsing the config file, but we don't care, we'll just
         // overwrite it with a good local copy.
       }
+      if (config && typeof config === 'object') applyRemoteConfig(dispatch, getState, config);
+      eliSettingsLoaded(getState, config);
     })
     .catch((error) => {
       // Sin motivo = no existe (se creará con los ajustes de aquí). Con motivo (red, Dropbox…):
       // no se sube nada hasta la próxima vez que se lean bien
-      if (error) eliConfigLoadFailed = true;
+      if (error) {
+        eliConfigLoadFailed = true;
+        logSyncEvent({ file: CONFIG_PATH, op: 'ajustes (leer)', error });
+      } else eliSettingsLoaded(getState, null);
     })
     // ORG Mode para Eli: con «todos los ficheros .org», buscar los nuevos después de restaurar
     // los ajustes (si no, la restauración pisaría la lista recién actualizada)
     .then(() => dispatch(eliRefreshAllOrgFiles({ force: true })));
 };
 
+// (4.33) Leído el fichero (o no existe): ya se puede subir. Si lo de aquí (fusionado) no coincide
+// con el fichero, se sube una vez (así le llegan a los demás los ajustes y marcas de este).
+const eliSettingsLoaded = (getState, config) => {
+  eliConfigReady = true;
+  setPrefsReady(true);
+  if (!localStorageAvailable) return;
+  const contents = getConfigFileContents(getFieldsToPersist(getState(), persistableFields));
+  // Sin fichero: se crea con el primer cambio (como antes)
+  const same = !config || canonical(config) === canonical(JSON.parse(contents));
+  window.previousSettingsFileContents = same ? contents : null;
+  if (!same && getState().base.get('shouldStoreSettingsInSyncBackend'))
+    debouncedPushConfigToSyncBackend();
+};
+
 export const subscribeToChanges = (store) => {
   if (!localStorageAvailable) {
     return () => {};
   } else {
-    return () => {
+    eliStore = store;
+    eliPrevValues = fieldValues(getFieldsToPersist(store.getState(), persistableFields));
+    const persist = () => {
       const state = store.getState();
 
       const fieldsToPersist = getFieldsToPersist(state, persistableFields);
@@ -538,14 +636,31 @@ export const subscribeToChanges = (store) => {
         if (name && (value || value === false)) localStorage.setItem(name, value);
       });
 
+      // (4.33) hora del cambio de cada ajuste de organice (no al llegar del fichero)
+      const values = fieldValues(fieldsToPersist);
+      const changed = Object.keys(values).filter(
+        (n) => eliPrevValues && eliPrevValues[n] !== undefined && eliPrevValues[n] !== values[n]
+      );
+      eliPrevValues = values;
+      const remoteNow = isApplyingRemote();
+      if (changed.length && !remoteNow) {
+        const st = readStamps();
+        changed.forEach((n) => (st[n] = Date.now()));
+        writeStamps(st);
+      }
+
       if (state.base.get('shouldStoreSettingsInSyncBackend')) {
         const settingsFileContents = getConfigFileContents(fieldsToPersist);
 
-        if (window.previousSettingsFileContents !== settingsFileContents) {
-          debouncedPushConfigToSyncBackend(state.syncBackend.get('client'), settingsFileContents);
+        // (4.33) antes de leer el fichero no se sube (ni se da por subido)
+        if (
+          eliConfigReady &&
+          !remoteNow &&
+          window.previousSettingsFileContents !== settingsFileContents
+        ) {
+          debouncedPushConfigToSyncBackend();
+          window.previousSettingsFileContents = settingsFileContents;
         }
-
-        window.previousSettingsFileContents = settingsFileContents;
       }
 
       const currentFilePath = state.org.present.get('path');
@@ -563,6 +678,9 @@ export const subscribeToChanges = (store) => {
         localStorage.setItem('headerOpenness', JSON.stringify(opennessState));
       }
     };
+    // (4.33) los ajustes de la app (localStorage `eli…`) también se suben al cambiar
+    installPrefsWatcher({ redux: persistableNames(), changed: () => persist() });
+    return persist;
   }
 };
 

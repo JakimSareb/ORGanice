@@ -3,6 +3,20 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.33 (octubre de 2026)
+** Diario
+- *Al abrir la app* (desde el icono de la pantalla de inicio) sale el *Diario de hoy*; al cerrarlo, la última vista. Se cambia en Ajustes › Diario › *Al abrir la app* (Diario de hoy / Última vista).
+- Aspecto tipo *Logseq*: el día con su título grande («Domingo, 25 oct 2026»), las preguntas de la plantilla ya puestas para rellenar en línea y, debajo, los *días anteriores* en scroll continuo (hoy arriba; al bajar, ayer, anteayer…; *Más días* carga más). Tocar el título de un día lo abre arriba.
+- *Contadores mensuales* (p. ej. Cintura en cm): en Ajustes › Diario cada contador tiene *frecuencia* Diario o Mensual. Los mensuales se apuntan desde el día (botón con «/mes», muestra el valor del mes) y se guardan en el *mes* del diari (=:CINTURA: 82=). En el registro mensual salen en la cabecera de cada mes y en *Totales del año* (una columna, una fila por mes).
+** Ajustes
+- Los ajustes ya *no se resetean entre dispositivos*: además de los de siempre viajan las herramientas, el Menú ☰, el Diario, el Pomodoro, Allen estricto, las opciones de GTD… Cada ajuste lleva su hora: si cambias el mismo en dos dispositivos, gana el cambio más reciente *de ese ajuste* (un dispositivo con ajustes viejos ya no pisa los nuevos). Lo propio de cada dispositivo (anchos, margen, etiquetas al lado/debajo, Logseq, letra, legibilidad, toques, seguridad…) se queda en él; la lista está en Ajustes › Sincronización.
+- Dentro de cada sección, *subcategorías* con su rótulo (Letra y colores, Toques y edición, GTD, Documentos, Menú ☰; Editor, Agenda y hábitos…) y las opciones agrupadas.
+- Nueva sección *Sincronización*: cuándo se sincroniza, ajustes entre dispositivos y el *Registro* de errores.
+** Sincronización
+- *Registro de errores*: los últimos 200 (hora, fichero, operación y error), guardado en este dispositivo, con *Copiar* y *Vaciar*. Se abre en Ajustes › Sincronización, con el aviso ⚠ que sale junto al botón de sincronizar cuando hay errores nuevos y con *Registro* en el aviso de error de un fichero.
+** Archivo
+- *Agrupar archivo por años*: en el Logbook de GTD, con *Archivadas* encendido, el botón *Por años* mueve lo archivado hace más de un año (fecha de CLOSED o, si no tiene, ARCHIVE_TIME) de los ficheros =_archive= al final de =archive-AAAA.org= (junto a cada uno). Antes, un resumen para confirmar («Se moverán 37 árboles a 2023, 2024»). Primero se escribe el fichero del año y luego se quita del =_archive=; repetirlo no duplica nada. Los =archive-AAAA.org= cuentan como archivo (salen con *Archivadas*, no en las listas de GTD).
+
 * 4.32 (octubre de 2026)
 ** GTD
 - *Referencias con ▸*: en la lista Referencia, cada referencia despliega sus subcabeceras (a varios niveles) y sus notas sin salir de GTD. Tocar el título sigue abriéndola.
