@@ -1,7 +1,7 @@
 import React from 'react';
 import { getProcessMode, setProcessMode } from '../../lib/gtd/gtd_process';
 import { strictOn, setStrictOn, dailyOptIn, setDailyOptIn } from '../../lib/gtd/gtd_strict';
-import { connect } from 'react-redux';
+import { connect, useSelector, useDispatch } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
 import { withRouter, Link, useHistory } from 'react-router-dom';
@@ -28,6 +28,9 @@ import {
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
 import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
+import { CONTENT_WIDTHS, getContentWidth, setContentWidth } from '../../lib/eli_layout';
+import { pagesPathFor } from '../../lib/eli_heading_links';
+import { askPick } from '../../lib/eli_prompt';
 import {
   MENU_ENTRIES,
   getMenuLayout,
@@ -166,6 +169,98 @@ const EliPomodoroSettings = () => {
 };
 
 // (4.0) Herramientas opcionales (apagadas de inicio en el Modo Notas)
+// (4.29) Documentos: fichero para páginas nuevas, «#» al escribir el título y ancho del contenido
+const selectPagesFile = (s) => s.base.get('eliPagesFile') || '';
+const selectHashOn = (s) => s.base.get('eliNoHashTagTitle') !== true;
+const selectPagesAuto = (s) => pagesPathFor({ ...s, base: s.base.set('eliPagesFile', '') });
+const selectOrgPaths = (s) =>
+  Array.from(
+    new Set([
+      ...s.org.present.get('files').keySeq().toArray(),
+      ...s.org.present
+        .get('fileSettings')
+        .map((x) => x.get('path'))
+        .toArray(),
+    ])
+  )
+    .filter((p) => p && p.startsWith('/') && /\.org$/i.test(p))
+    .sort()
+    .join('\n');
+const EliDocsSettings = () => {
+  const dispatch = useDispatch();
+  const pagesFile = useSelector(selectPagesFile);
+  const auto = useSelector(selectPagesAuto);
+  const hashOn = useSelector(selectHashOn);
+  const paths = useSelector(selectOrgPaths);
+  const [width, setWidth] = React.useState(getContentWidth());
+  const set = (name, value) => dispatch(baseActions.setEliSetting(name, value));
+  const choose = async () => {
+    const list = paths ? paths.split('\n') : [];
+    const chosen = await askPick({
+      title: 'Fichero para páginas nuevas',
+      message:
+        'Donde van las cabeceras que se crean desde el buscador «[[». Si no existe, se crea.',
+      placeholder: 'Buscar fichero o escribir una ruta nueva…',
+      items: [{ id: '', label: `Automático (${auto})` }, ...list.map((p) => ({ id: p, label: p }))],
+      newItem: (raw) => ({ label: `Usar ${raw.startsWith('/') ? raw : '/' + raw}` }),
+    });
+    if (chosen === null || chosen === undefined) return;
+    const v = typeof chosen === 'object' ? chosen.new.trim() : chosen;
+    set('eliPagesFile', v ? (v.startsWith('/') ? v : `/${v}`) : '');
+  };
+  return (
+    <details className="eli-settings-section" data-testid="eli-settings-docs">
+      <summary>
+        <span className="eli-settings-section__title">Documentos</span>
+        <span className="eli-settings-section__hint">Páginas nuevas, etiquetas y ancho</span>
+      </summary>
+      <div className="setting-container" data-testid="eli-setting-pages-file">
+        <div className="setting-label">
+          Fichero para páginas nuevas
+          <div className="setting-label__description">
+            «➕ Crear» en el buscador de «[[» añade allí una cabecera con :ID: y la enlaza. Se puede
+            mover luego sin romper el enlace.
+          </div>
+        </div>
+        <button type="button" className="btn" onClick={choose} data-testid="eli-pages-file-btn">
+          {pagesFile || `Automático (${auto.split('/').pop()})`}
+        </button>
+      </div>
+      <div className="setting-container" data-testid="eli-setting-hash-tag">
+        <div className="setting-label">
+          # añade etiqueta al escribir el título
+          <div className="setting-label__description">
+            Al escribir «#» al principio de una palabra del título se abre el buscador de etiquetas;
+            la elegida se pone al final como :etiqueta:. Apagado: «#» se escribe tal cual.
+          </div>
+        </div>
+        <Switch isEnabled={hashOn} onToggle={() => set('eliNoHashTagTitle', hashOn)} />
+      </div>
+      <div
+        className="setting-container setting-container--vertical"
+        data-testid="eli-setting-width"
+      >
+        <div className="setting-label">
+          Ancho del contenido (GTD y Documentos)
+          <div className="setting-label__description">
+            En el ordenador. Se guarda en este dispositivo, igual que el ancho de la barra lateral
+            de GTD (arrastra su borde; doble clic = el de siempre).
+          </div>
+        </div>
+        <TabButtons
+          buttons={CONTENT_WIDTHS.map((w) => w.label)}
+          values={CONTENT_WIDTHS.map((w) => w.id)}
+          selectedButton={width}
+          onSelect={(v) => {
+            setContentWidth(v);
+            setWidth(v);
+          }}
+        />
+      </div>
+    </details>
+  );
+};
+
 const EliToolsSettings = () => (
   <details className="eli-settings-section" data-testid="eli-settings-tools">
     <summary>
@@ -838,6 +933,8 @@ const Settings = ({
       </details>
 
       <EliToolsSettings />
+
+      <EliDocsSettings />
 
       <EliDiarySettings />
 

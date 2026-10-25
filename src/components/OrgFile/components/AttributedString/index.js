@@ -52,6 +52,7 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
           role="link"
           tabIndex={0}
           title={uri}
+          data-eli-uri={uri}
           onClick={(e) => {
             e.stopPropagation();
             // 2.15: con dos columnas, se puede abrir en la de al lado

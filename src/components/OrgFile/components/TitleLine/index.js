@@ -18,6 +18,7 @@ import AttributedString from '../AttributedString';
 import { attachmentCountOfHeader } from '../../../../lib/eli_attachments';
 import { legacyHeaderTapOpen, headerTapMode } from '../../../../lib/eli_tap_mode';
 import { isDocLocked } from '../../../../lib/eli_doc_lock';
+import { openTagView } from '../../../../lib/eli_heading_events';
 
 class TitleLine extends PureComponent {
   constructor(props) {
@@ -252,7 +253,19 @@ class TitleLine extends PureComponent {
                     .toList()
                     .filter((tag) => !!tag)
                     .map((tag) => (
-                      <span className="header-tag" key={tag}>
+                      <span
+                        className="header-tag"
+                        key={tag}
+                        role="link"
+                        title={`Ver todo lo que tiene «${tag}»`}
+                        data-testid="eli-header-tag"
+                        onClick={(e) => {
+                          // (4.29) tocar una etiqueta abre la vista por etiqueta
+                          e.stopPropagation();
+                          e.preventDefault();
+                          openTagView(tag);
+                        }}
+                      >
                         {tag}
                       </span>
                     ))}

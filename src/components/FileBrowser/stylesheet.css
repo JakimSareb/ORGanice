@@ -62,3 +62,80 @@
 .eli-file-fav.is-on {
   color: var(--magenta, #d33682);
 }
+
+/* (4.29) carpetas en rejilla y ficheros en lista */
+.eli-fb__label {
+  margin: 14px 6px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--base1);
+}
+.eli-fb__folders {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 6px;
+}
+@media (max-width: 720px) {
+  .eli-fb__folders {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.file-browser-container a.eli-fb__folder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 12px;
+  border: 1px solid var(--base2);
+  border-radius: 10px;
+  background: var(--base3);
+  color: var(--base00);
+}
+.file-browser-container a.eli-fb__folder:hover {
+  border-color: var(--blue, #268bd2);
+}
+.eli-fb__folder-icon {
+  font-size: 1.25em;
+  color: var(--blue, #268bd2);
+}
+.eli-fb__folder.is-up .eli-fb__folder-icon {
+  color: var(--base1);
+}
+.eli-fb__folder-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eli-fb__file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eli-fb__file .file-browser__file-list__icon {
+  color: var(--base1);
+}
+.eli-fb__file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eli-fb__lock {
+  opacity: 0.6;
+}
+.eli-fb__date {
+  flex: none;
+  font-size: 0.8em;
+  color: var(--base1);
+}
+.eli-fb__file .eli-file-fav {
+  float: none;
+}
+.file-browser__file-list__element.eli-fb__file {
+  font-family: inherit;
+}

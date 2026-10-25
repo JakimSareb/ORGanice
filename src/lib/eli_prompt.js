@@ -305,6 +305,8 @@ export const askPick = ({
   items = [],
   emptyText = 'Nada que elegir.',
   newItem = null,
+  // (4.29) como mucho tantas filas a la vista (listas muy largas: todas las cabeceras)
+  limit = 0,
 }) =>
   new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -328,7 +330,12 @@ export const askPick = ({
     let active = 0;
     const paint = () => {
       const q = plainText(input.value.trim());
-      shown = items.filter((it) => !q || plainText(`${it.label} ${it.hint || ''}`).includes(q));
+      shown = items.filter((it) => {
+        if (!q) return true;
+        if (it.__plain === undefined) it.__plain = plainText(`${it.label} ${it.hint || ''}`);
+        return q.split(/\s+/).every((w) => it.__plain.includes(w));
+      });
+      if (limit && shown.length > limit) shown = shown.slice(0, limit);
       const raw = input.value.trim();
       if (newItem && raw && !items.some((it) => plainText(it.label) === plainText(raw))) {
         shown = shown.concat([{ ...newItem(raw), id: { new: raw }, isNew: true }]);

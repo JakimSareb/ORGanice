@@ -30,6 +30,7 @@ import ExternalLink from '../UI/ExternalLink';
 import Drawer from '../UI/Drawer/';
 import UnifiedHeaderEditor, { UNIFIED_EDITOR_POPUP_TYPES } from './components/UnifiedHeaderEditor';
 import EliEditSheet from './components/EliEditSheet';
+import { mergeTitleTags } from '../../lib/eli_heading_index';
 import { EliInlineEditContext, NOT_EDITING } from './components/EliInlineEdit';
 import { subscribeDocLock, isDocLocked, setCaptureActive } from '../../lib/eli_doc_lock';
 import { isMultiActive } from '../../lib/eli_multi_select';
@@ -59,6 +60,14 @@ import _ from 'lodash';
 import { fromJS, Map, Set } from 'immutable';
 import { createRawDescriptionText, generateTitleLine } from '../../lib/export_org';
 import FinderModal from './components/FinderModal';
+
+// (4.29) «:etiqueta:» escritas al final del título (con «#» al escribir) pasan a sus etiquetas
+const withTypedTags = (header, titleValue) => {
+  const tags = header.getIn(['titleLine', 'tags']);
+  const merged = mergeTitleTags(titleValue, tags ? tags.toArray() : []);
+  const h = header.setIn(['titleLine', 'rawTitle'], merged.title);
+  return merged.changed ? h.setIn(['titleLine', 'tags'], fromJS(merged.tags)) : h;
+};
 
 class OrgFile extends PureComponent {
   constructor(props) {
@@ -678,10 +687,7 @@ class OrgFile extends PureComponent {
       if (selectedHeader.getIn(['titleLine', 'rawTitle']) !== titleValue) {
         this.props.org.updateHeaderTitle(
           selectedHeader.get('id'),
-          generateTitleLine(
-            selectedHeader.setIn(['titleLine', 'rawTitle'], titleValue).toJS(),
-            false
-          )
+          generateTitleLine(withTypedTags(selectedHeader, titleValue).toJS(), false)
         );
       }
     }
@@ -721,7 +727,7 @@ class OrgFile extends PureComponent {
     if (h && titleValue !== undefined && h.getIn(['titleLine', 'rawTitle']) !== titleValue) {
       this.props.org.updateHeaderTitle(
         h.get('id'),
-        generateTitleLine(h.setIn(['titleLine', 'rawTitle'], titleValue).toJS(), false)
+        generateTitleLine(withTypedTags(h, titleValue).toJS(), false)
       );
     }
     if (h && descriptionValue !== undefined && h.get('rawDescription') !== descriptionValue) {

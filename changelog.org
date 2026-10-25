@@ -3,6 +3,17 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.29 (octubre de 2026)
+** Documentos: navegar y enlazar
+- *Tocar una etiqueta* (a la derecha del título) abre una vista con *todas las cabeceras* de los ficheros abiertos que la tienen, por fichero (sin el diario ni el mensual). Cada una con ▸ para ver sus notas y subcabeceras; tocar el título lleva a ella. Arriba, *Incluir heredadas* (encendido) y las otras etiquetas de lo que sale, para afinar.
+- *Quién enlaza aquí* (⋯): las cabeceras que tienen un enlace =[[id:…]]= a la seleccionada, por fichero y con sus madres. Al ver una cabecera sola, al final sale plegado *Referencias* con lo mismo.
+- Escribir *[[* en el título o las notas (también en el editor de tarea de GTD) abre un buscador de cabeceras (sin tildes ni mayúsculas, con sus madres y su fichero); al elegir se escribe =[[id:…][Título]]= (si no tenía :ID:, se le pone). Esc deja «[[» tal cual. También en *Añadir › Enlace a cabecera…*.
+- La última opción del buscador, *➕ Crear «texto»*, crea esa cabecera (nivel 1, con :ID:) al final del *fichero de páginas* (Ajustes › Documentos; si no, =paginas.org= junto al de entrada, que se crea si no existe) y la enlaza. Se puede mover después sin romper el enlace.
+- Escribir *#* al principio de una palabra del *título* abre el buscador de etiquetas (o escribe una nueva); la elegida se pone al final como =:etiqueta:= y al guardar pasa a las etiquetas. Se apaga en Ajustes › Documentos.
+- Con el ratón encima de un enlace =[[id:…]]= se ve el título y el principio de las notas del destino.
+- *Lista de ficheros*: las carpetas arriba, en tarjetas (2–3 por fila), y debajo los ficheros, con su fecha de modificación (Dropbox).
+- *Anchos* (en el ordenador, guardados en este dispositivo): el borde de la barra lateral de GTD se arrastra (doble clic = el de siempre), y en Ajustes › Documentos, *Ancho del contenido* estrecho, medio o completo para GTD y Documentos.
+
 * 4.28 (octubre de 2026)
 ** Cabeceras en Documentos
 - *Estado* y *Etiquetas* salen directamente en la barra de abajo (ya no en ⋯). Estado abre un menú con los estados del fichero y «Sin estado».

@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import * as syncBackendActions from '../../actions/sync_backend';
 import { toggleEliFavoriteFile } from '../../actions/org';
 import { favoritePaths } from '../EliTools';
+import { shortDate } from '../../lib/eli_layout';
 
 const FileBrowser = ({
   path,
@@ -45,6 +46,8 @@ const FileBrowser = ({
   };
 
   const isTopLevelDirectory = path === '';
+  const dirs = (listing || []).filter((f) => f.get('isDirectory'));
+  const files = (listing || []).filter((f) => !f.get('isDirectory'));
 
   return (
     <div className="file-browser-container">
@@ -54,17 +57,35 @@ const FileBrowser = ({
 
       <ActionDrawer />
 
-      <ul className="file-browser__file-list">
-        {!isTopLevelDirectory && (
-          <Link to={`/files${getParentDirectoryPath()}`}>
-            <li className="file-browser__file-list__element">
-              <i className="fas fa-folder file-browser__file-list__icon--directory" /> ..
-            </li>
-          </Link>
-        )}
+      {/* (4.29) carpetas arriba en rejilla (tarjetas), ficheros debajo en lista */}
+      {(!isTopLevelDirectory || dirs.length > 0) && (
+        <>
+          <div className="eli-fb__label">Carpetas</div>
+          <div className="eli-fb__folders" data-testid="eli-fb-folders">
+            {!isTopLevelDirectory && (
+              <Link to={`/files${getParentDirectoryPath()}`} className="eli-fb__folder is-up">
+                <i className="fas fa-level-up-alt eli-fb__folder-icon" />
+                <span className="eli-fb__folder-name">..</span>
+              </Link>
+            )}
+            {dirs.map((file) => (
+              <Link
+                to={`/files${file.get('path')}`}
+                key={file.get('id')}
+                className="eli-fb__folder"
+                data-testid="eli-fb-folder"
+              >
+                <i className="fas fa-folder eli-fb__folder-icon" />
+                <span className="eli-fb__folder-name">{file.get('name')}</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
-        {(listing || []).map((file) => {
-          const isDirectory = file.get('isDirectory');
+      {files.length > 0 && <div className="eli-fb__label">Ficheros</div>}
+      <ul className="file-browser__file-list">
+        {files.map((file) => {
           const isBackupFile = file.get('name').endsWith('.organice-bak');
           const isOrgFile = /\.org(\.gpg|\.asc)?$/.test(file.get('name'));
           const isEncryptedFile = /\.(gpg|asc)$/.test(file.get('name'));
@@ -73,53 +94,42 @@ const FileBrowser = ({
           const isSettingsFile = file.get('name') === '.organice-config.json';
 
           const iconClass = classNames('file-browser__file-list__icon fas', {
-            'fa-folder': isDirectory,
-            'file-browser__file-list__icon--directory': isDirectory,
-            'fa-file': !isDirectory && !isBackupFile && !isSettingsFile && !isFountain,
+            'fa-file-alt': !isBackupFile && !isSettingsFile && !isFountain,
             'fa-film': isFountain,
             'file-browser__file-list__icon--fountain': isFountain,
             'file-browser__file-list__icon--not-org': !isOrgFile,
             'fa-copy': isBackupFile,
             'fa-cogs': isSettingsFile,
           });
+          const modified = shortDate(file.get('modified'));
 
-          if (file.get('isDirectory')) {
-            return (
-              <Link to={`/files${file.get('path')}`} key={file.get('id')}>
-                <li className="file-browser__file-list__element">
-                  <i className={iconClass} /> {file.get('name')}/
-                </li>
-              </Link>
-            );
-          } else {
-            return (
-              <Link
-                to={`${isFountain ? '/fountain' : '/file'}${file.get('path')}`}
-                key={file.get('id')}
-              >
-                <li className="file-browser__file-list__element">
-                  <i className={iconClass} /> {file.get('name')}
-                  {isEncryptedFile && (
-                    <i className="fas fa-lock" style={{ marginLeft: 6, opacity: 0.6 }} />
-                  )}
-                  {isOrgFile && (
-                    <i
-                      className={`${
-                        favorites.includes(file.get('path')) ? 'fas is-on' : 'far'
-                      } fa-copy eli-file-fav`}
-                      title="Fichero principal (acceso directo con el botón de hojas)"
-                      data-testid="eli-file-fav"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleFavorite(file.get('path'));
-                      }}
-                    />
-                  )}
-                </li>
-              </Link>
-            );
-          }
+          return (
+            <Link
+              to={`${isFountain ? '/fountain' : '/file'}${file.get('path')}`}
+              key={file.get('id')}
+            >
+              <li className="file-browser__file-list__element eli-fb__file">
+                <i className={iconClass} />
+                <span className="eli-fb__file-name">{file.get('name')}</span>
+                {isEncryptedFile && <i className="fas fa-lock eli-fb__lock" />}
+                {modified && <span className="eli-fb__date">{modified}</span>}
+                {isOrgFile && (
+                  <i
+                    className={`${
+                      favorites.includes(file.get('path')) ? 'fas is-on' : 'far'
+                    } fa-copy eli-file-fav`}
+                    title="Fichero principal (acceso directo con el botón de hojas)"
+                    data-testid="eli-file-fav"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleFavorite(file.get('path'));
+                    }}
+                  />
+                )}
+              </li>
+            </Link>
+          );
         })}
 
         {hasMore &&

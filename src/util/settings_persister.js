@@ -204,6 +204,16 @@ export const persistableFields = [
   },
   {
     category: 'base',
+    name: 'eliPagesFile',
+    type: 'string',
+  },
+  {
+    category: 'base',
+    name: 'eliNoHashTagTitle',
+    type: 'boolean',
+  },
+  {
+    category: 'base',
     name: 'eliNoSwipeDocs',
     type: 'boolean',
   },
