@@ -22,21 +22,32 @@ Empieza tocando el encabezado «Lo básico» de aquí abajo.
 - Con el teclado: ↑ y ↓ recorren los encabezados; Intro abre o cierra el seleccionado.
 
 ** La barra de acciones (estilo Logseq)
-Selecciona este encabezado: abajo sale *una sola barra* flotante con *cinco botones grandes con texto*, siempre en el mismo orden (4.0). Mientras editas el título o la descripción en su sitio, la misma barra sube encima del teclado y trae además *Aa* (formato) y ⌨↓ (ocultar el teclado). Con el candado puesto solo lleva acciones que no editan (ver sola, compartir o PDF, quitar el candado); mientras escribes en una tabla, lleva sus botones (filas y columnas).
+Selecciona este encabezado: abajo sale *una sola barra* flotante con *botones grandes con texto*, siempre en el mismo orden (4.0; 4.28: también *Estado* y *Etiquetas*). Mientras editas el título o la descripción en su sitio, la misma barra sube encima del teclado y trae además *Aa* (formato) y ⌨↓ (ocultar el teclado). Con el candado puesto solo lleva acciones que no editan (ver sola, compartir o PDF, quitar el candado); mientras escribes en una tabla, lleva sus botones (filas y columnas).
 
 | Botón    | Qué hace                                                                                                          |
 |----------+-------------------------------------------------------------------------------------------------------------------|
 | Editar   | (4.04) Pone el *título* en edición en su sitio; otra vez, las *notas*; otra vez, el título. Mientras editas, el botón dice dónde estás (*Título* o *Notas*). Intro (en el título), Esc o tocar fuera guardan |
+| Estado   | (4.28) Menú con los estados del fichero (TODO, NEXT, WAITING, DONE, CANCELLED… o los de Ajustes) y *Sin estado*. El botón dice el estado actual. No sale en el Modo Notas |
+| Etiquetas | (4.28) Abre las etiquetas de la cabecera. Tecla *#* (también Alt+3 en el Mac en español; se cambia en Ajustes › Atajos) |
 | Nueva    | *Arriba* o *Debajo* (otra cabecera del mismo nivel) o *Subcabecera* (una hija, al final de las suyas). Aparece en el documento con el título listo para escribir; si sales sin escribir nada (ni título ni notas), se borra sola (4.04) |
 | Añadir   | *Archivo o foto*, *Enlace* (a una nota o a una web) y la *fecha de hoy* (y borrar adjuntos)                     |
 | Mover    | Subir, bajar, *hacia dentro* y *hacia fuera* (con sus subcabeceras), *solo la cabecera* hacia dentro o hacia fuera, y *a otro fichero*. El menú se queda abierto para repetir. Tecla m |
-| Más      | *Hecha / Pendiente*, *Ver sola* (narrow; se vuelve con Atrás ←), *Etiquetas*, *Compartir o PDF* (esta cabecera o todo el fichero; copiar enlace), *Duplicar* y *Borrar*. En el modo completo, además lo de tareas: estado, ★, fechas, cancelada, propiedades, reloj y tiempo registrado, nota al registro, texto plano, archivar, *Abrir en GTD* (la diana) y capturar |
+| Más      | *Hecha / Pendiente*, *Ver sola* (narrow; se vuelve con Atrás ←), *Compartir o PDF* (esta cabecera o todo el fichero; copiar enlace), *Duplicar* y *Borrar*. En el modo completo, además lo de tareas: ★, fechas, cancelada, propiedades, reloj y tiempo registrado, nota al registro, texto plano, archivar, *Abrir en GTD* (la diana) y capturar |
 Los submenús se abren *encima del botón*, en vertical; tocar fuera o Esc los cierra. Mientras escribes en el título o la descripción, *«/»* (al principio o tras un espacio) abre un buscador con todas las acciones. Si usas una acción del encabezado con el editor abierto, primero se guarda lo escrito. Sin nada seleccionado, la barra no trae nada (4.17: *Capturar* con plantilla está en el Menú ☰; tecla c). Deshacer y rehacer están *arriba*. En la lista de ficheros, sin ningún fichero abierto, la barra trae *Nuevo* (fichero Org o guion) y *Capturar*. Al tocar un *elemento de lista* («-» o «+») de las notas, la barra trae sus acciones: editar el texto, editar el contenido, ＋ nuevo, subir, bajar, sangrar, borrar y ✓ terminar. *Doble clic (o doble toque) en las notas* las edita en su sitio, y editando, *Tab* salta del título a las notas y al revés. Al *saltar a un encabezado* desde otro sitio (lupa, agenda, GTD, enlaces) se abre *solo con las cabeceras*: un toque en el título muestra sus notas y otro lo pliega.
+(4.28) Las *etiquetas* se ven a la derecha del título, en la misma línea, pequeñas y en gris.
+
+*** Varias cabeceras a la vez (4.28)
+- En el ordenador: *Mayús+clic* selecciona desde la cabecera seleccionada hasta esa; *Cmd+clic* (Ctrl en Windows) añade o quita cabeceras sueltas.
+- En el teléfono: *mantén la viñeta* y suéltala sin moverla; desde ahí, cada toque en una cabecera la añade o la quita.
+- Con varias seleccionadas, la barra de abajo actúa sobre *todas*: ✕ (con el número; quita la selección), hacia fuera y hacia dentro (con sus subcabeceras), subir, bajar, *Estado*, *Etiquetas* (escribe las que se añaden; con «-» delante se quitan, p. ej. =casa -trabajo=) y ⋯ (★, programada, fecha límite, archivar y borrar). Cada acción se deshace de una vez con ↶. Esc o tocar fuera quitan la selección.
+
 Las ventanas que se abren desde la barra (fechas, etiquetas, propiedades, nota) solo tienen lo suyo y un botón *Listo* arriba (o tocar fuera, o Esc); todo lo demás está en la barra.
 
 ** Editar en su sitio
 (4.04) Un toque en el título selecciona la cabecera; otro toque (ya seleccionada) pone el título en edición ahí mismo, con la misma letra. (4.11) En Ajustes › Apariencia puedes elegir qué hace el toque en el título: *Seleccionar, luego editar* (lo de siempre), *Editar* (ya el primero) o *Desplegar* (pliega y despliega); la viñeta siempre pliega. Con el dedo, la lista deja 14 píxeles libres a la izquierda para pulsar la viñeta (4.12: se cambian en Ajustes › Apariencia › Margen izquierdo de Documentos). Para plegar y desplegar, toca la *viñeta* (el asterisco o el icono de la izquierda; 4.09: con el dedo vale tocar cerca, también un poco a su izquierda, encima o debajo). Ctrl+d (o tu atajo de «editar descripción») edita el texto de debajo, también en su sitio.
 - Intro (en el título), Esc o tocar fuera guardan.
+- (4.28) El cuadro donde escribes ya no tiene fondo de color: solo un subrayado fino.
+- (4.28) *Edición estilo Logseq* (Ajustes › Apariencia): se escribe sin ninguna marca, las notas se ven como un bloque bajo el título y *un toque* en ellas ya las edita; *Intro* en el título guarda y crea otra cabecera debajo; *Mayús+Intro* pasa a las notas.
 - (3.47) En las notas (y en «Editar como texto»), Intro empieza la línea nueva con la *misma sangría* que la anterior. En las notas largas, la vista sigue al cursor mientras escribes.
 - La ★, el estado, las fechas y el resto: en la barra de abajo.
 - Con el *tabulador* saltas al siguiente editor: título → descripción → etiquetas → fecha límite → fecha programada (mayúsculas + tabulador, al revés).

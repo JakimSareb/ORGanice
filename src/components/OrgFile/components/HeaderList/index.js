@@ -8,6 +8,7 @@ import Header from '../Header';
 
 import * as orgActions from '../../../../actions/org';
 import { startBulletDrag } from './eliBulletDrag';
+import { setMulti, getMulti, toggleId } from '../../../../lib/eli_multi_select';
 import { numSubheadersOfHeaderWithId, hasHeaderContent } from '../../../../lib/org_utils';
 
 import _ from 'lodash';
@@ -433,6 +434,15 @@ class HeaderList extends PureComponent {
       onDrop: (id, where) => {
         this.props.org.eliDropSubtree(id, where);
         this.props.org.selectHeader(id);
+      },
+      // (4.28) mantener la viñeta y soltar sin moverla: empezar a seleccionar varias
+      onHold: (id) => {
+        const cur = getMulti();
+        if (cur.touch && cur.ids.length) setMulti(toggleId(cur.ids, id), true);
+        else {
+          this.props.org.selectHeader(id);
+          setMulti([String(id)], true);
+        }
       },
     });
   }

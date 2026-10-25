@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.28 (octubre de 2026)
+** Cabeceras en Documentos
+- *Estado* y *Etiquetas* salen directamente en la barra de abajo (ya no en ⋯). Estado abre un menú con los estados del fichero y «Sin estado».
+- Tecla *#*: etiquetas de la cabecera seleccionada (también Alt+3 en el Mac en español; se cambia en Ajustes › Atajos).
+- Las etiquetas se ven a la derecha del título, en la misma línea, pequeñas y en gris, sin caja.
+- Al editar el título o las notas, el cuadro ya no tiene fondo de color (solo un subrayado fino).
+- *Varias cabeceras a la vez*: Mayús+clic (rango) y Cmd/Ctrl+clic (sueltas) en el ordenador; en el teléfono, mantener la viñeta y soltarla, y luego tocar más. La barra actúa sobre todas: hacia dentro/fuera, subir, bajar, estado, etiquetas, ★, fechas, archivar y borrar; cada acción se deshace de una vez. Esc o tocar fuera = deseleccionar.
+- *Edición estilo Logseq* (Ajustes › Apariencia): sin marca al escribir, notas como bloque bajo el título, un toque en las notas las edita, Intro en el título crea otra cabecera debajo y Mayús+Intro pasa a las notas.
+
 * 4.27 (octubre de 2026)
 ** Registro mensual
 - *Registro de hoy* en el día del diario: un botón por cada contador Sí/No (de serie *B*, Biblia) y un cuadro por cada Número (de serie *KM*; vale «4,5» y «4.5») o Nota. Se guardan como propiedades del día (=:B: X=, =:KM: 4,5=). Los contadores se cambian en Ajustes › Diario.

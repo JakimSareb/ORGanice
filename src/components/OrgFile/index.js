@@ -32,6 +32,7 @@ import UnifiedHeaderEditor, { UNIFIED_EDITOR_POPUP_TYPES } from './components/Un
 import EliEditSheet from './components/EliEditSheet';
 import { EliInlineEditContext, NOT_EDITING } from './components/EliInlineEdit';
 import { subscribeDocLock, isDocLocked, setCaptureActive } from '../../lib/eli_doc_lock';
+import { isMultiActive } from '../../lib/eli_multi_select';
 
 import * as baseActions from '../../actions/base';
 import * as syncBackendActions from '../../actions/sync_backend';
@@ -101,6 +102,7 @@ class OrgFile extends PureComponent {
       'handleCaptureCancel',
       'getPopupSwitchAction',
       'eliSwitchInlineEditor',
+      'eliInlineNewSibling',
       'checkPopupAndHeader',
       'checkPopupAndHeaderOrListItem',
       'applyEliPendingNarrow',
@@ -809,6 +811,13 @@ class OrgFile extends PureComponent {
     );
   }
 
+  // (4.28) «Edición estilo Logseq»: Intro en el título = otra cabecera hermana debajo, en edición
+  eliInlineNewSibling() {
+    const id = this.props.selectedHeaderId;
+    if (!id || this.state.captureMode) return;
+    setTimeout(() => this.props.org.eliAddHeaderWithSheet(id, 'below'), 0);
+  }
+
   // (3.04) Tab al editar en el sitio: del título a las notas y de las notas al título (guardando)
   eliSwitchInlineEditor(target) {
     const cur = this.props.activePopupType;
@@ -1214,6 +1223,16 @@ class OrgFile extends PureComponent {
       openSearch: this.checkPopup(
         notWhileTyping(preventDefault(() => this.props.base.activatePopup('search')))
       ),
+      // (4.28) # = etiquetas de la cabecera seleccionada (o de las seleccionadas)
+      eliEditTags: this.checkPopupAndHeader(
+        notWhileTyping(
+          preventDefault(() =>
+            isMultiActive()
+              ? window.dispatchEvent(new CustomEvent('eli:multi-tags'))
+              : !isDocLocked() && this.props.base.activatePopup('tags-editor')
+          )
+        )
+      ),
       // Escape cierra la ventana de edición del encabezado (guardando) y la búsqueda
       closeEditor: (event) => {
         if (
@@ -1248,6 +1267,7 @@ class OrgFile extends PureComponent {
         inline={inline}
         onInlineDone={this.handleActivePopupClose}
         onInlineSwitch={this.state.captureMode ? null : this.eliSwitchInlineEditor}
+        onInlineNewSibling={this.state.captureMode ? null : this.eliInlineNewSibling}
         activePopupType={activePopupType}
         activePopupData={activePopupData}
         selectedHeader={
