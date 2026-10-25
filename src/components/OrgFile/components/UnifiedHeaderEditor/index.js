@@ -21,6 +21,7 @@ import { isMobileBrowser } from '../../../../lib/browser_utils';
 import EliFormatBar from '../../../EliFormatBar';
 import { InlineTextarea } from '../EliInlineEdit';
 import { autoIndentEnter, isPlainEnter } from '../../../../lib/eli_autoindent';
+import { isLogseqEdit } from '../../../../lib/eli_logseq_edit';
 
 // Header-editing popup types that use the unified editor
 export const UNIFIED_EDITOR_POPUP_TYPES = [
@@ -396,7 +397,15 @@ class UnifiedHeaderEditor extends PureComponent {
             if (e.key === 'Enter' && !(e.nativeEvent && e.nativeEvent.isComposing)) {
               e.preventDefault();
               e.stopPropagation();
-              this.props.getPopupCloseAction('title-editor')(this.state.titleValue);
+              // (4.28) estilo Logseq: Mayús+Intro = a las notas; Intro = otra cabecera debajo
+              const logseq = isLogseqEdit() && !!this.props.onInlineNewSibling;
+              if (logseq && e.shiftKey && this.props.onInlineSwitch) {
+                this.props.onInlineSwitch('description-editor');
+                return;
+              }
+              const value = this.state.titleValue;
+              this.props.getPopupCloseAction('title-editor')(value);
+              if (logseq && (value || '').trim()) this.props.onInlineNewSibling();
             }
           }}
           onDone={this.props.onInlineDone}

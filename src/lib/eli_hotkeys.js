@@ -91,6 +91,17 @@ export const matchesBinding = (event, binding) => {
   const rawKey = parts.pop();
   const key = BINDING_ALIASES[rawKey] || rawKey;
   const mods = new Set(parts.map((m) => BINDING_ALIASES[m] || m));
+  // (4.28) un símbolo sin modificadores («#») vale aunque el teclado necesite Alt para escribirlo
+  // (Mac en español: Alt+3 = «#»)
+  if (
+    !mods.size &&
+    key.length === 1 &&
+    !/^[a-z0-9]$/.test(key) &&
+    event.key === key &&
+    !event.ctrlKey &&
+    !event.metaKey
+  )
+    return true;
   if (!!event.ctrlKey !== mods.has('ctrl')) return false;
   if (!!event.altKey !== mods.has('alt')) return false;
   if (!!event.metaKey !== mods.has('meta')) return false;

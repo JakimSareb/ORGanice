@@ -27,6 +27,7 @@ import {
   parseTagsLine,
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
+import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
 import {
   MENU_ENTRIES,
   getMenuLayout,
@@ -480,6 +481,24 @@ const EliTapModeSettings = ({ onlyHeader }) => {
   );
 };
 
+// (4.28) «Edición estilo Logseq»
+const EliLogseqEditSetting = () => {
+  const on = useLogseqEdit();
+  return (
+    <div className="setting-container" data-testid="eli-setting-logseq-edit">
+      <div className="setting-label">
+        Edición estilo Logseq
+        <div className="setting-label__description">
+          El título y las notas se escriben donde están, sin marca; las notas se ven como un bloque
+          bajo el título. Intro en el título crea otra cabecera debajo; Mayús+Intro pasa a las
+          notas.
+        </div>
+      </div>
+      <Switch isEnabled={on} onToggle={() => setLogseqEdit(!on)} />
+    </div>
+  );
+};
+
 // (3.40) «Procesar Inbox»: una a una o todo junto
 const EliProcessModeSettings = () => {
   const [mode, setMode] = React.useState(getProcessMode());
@@ -787,6 +806,8 @@ const Settings = ({
             <EliRemindersSettings />
           </>
         )}
+
+        <EliLogseqEditSetting />
 
         {/* (4.04) más estilos (cambian el icono según el nivel); también en el Modo Notas */}
         <div className="setting-container" data-testid="eli-setting-bullets">

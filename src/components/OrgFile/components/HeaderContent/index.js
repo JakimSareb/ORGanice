@@ -1,3 +1,4 @@
+import { isLogseqEdit } from '../../../../lib/eli_logseq_edit';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -307,7 +308,8 @@ class HeaderContent extends PureComponent {
     const now = Date.now();
     const isDouble = this.eliLastNotesTap && now - this.eliLastNotesTap < 400;
     this.eliLastNotesTap = isDouble ? 0 : now;
-    if (!isDouble) return;
+    // (4.28) «Edición estilo Logseq»: un toque en las notas ya las edita (salvo en una lista)
+    if (!isDouble && !(isLogseqEdit() && !onListItem)) return;
     event.stopPropagation();
     // (3.06) el cursor irá donde se ha pulsado
     rememberNotesCaret(header.get('id'), event.currentTarget, event.clientX, event.clientY);

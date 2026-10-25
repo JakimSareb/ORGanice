@@ -23,12 +23,33 @@
   color: var(--base01);
 }
 
+/* (4.28) etiquetas: en la línea del título, a la derecha, pequeñas y grises, sin caja */
+.header-tags {
+  flex: none;
+  margin-left: auto;
+  padding-left: 8px;
+  align-self: center;
+  font-size: 0.75em;
+  line-height: 1.2;
+  color: var(--base1);
+  white-space: nowrap;
+}
 .header-tag {
-  border: 1px solid var(--base01);
-  padding: 1px 2px;
-  margin: 2px;
   display: inline-block;
-  border-radius: 5px;
+  margin-left: 6px;
+}
+.title-line-text > span:first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* en el teléfono, si no cabe, las etiquetas bajan (pequeñas, a la derecha) */
+@media (pointer: coarse) {
+  .title-line-text {
+    flex-wrap: wrap;
+  }
+  .title-line-text > span:first-child {
+    flex: 1 1 10em;
+  }
 }
 
 .title-line__edit-container {

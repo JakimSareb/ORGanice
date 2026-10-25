@@ -29,7 +29,7 @@ import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task
 import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 import { insertLinkInto } from '../../../../lib/eli_links';
-import { showMessage, askPick } from '../../../../lib/eli_prompt';
+import { showMessage, askPick, askText, askDate, askConfirm } from '../../../../lib/eli_prompt';
 import { getPriority } from '../../../../lib/eli_priority';
 import { shareContent } from '../../../../lib/share_utils';
 import { exportHeaderWithSubheaders, exportOrg } from '../../../../lib/export_org';
@@ -46,7 +46,22 @@ import { applyEmphasis, applyList, cycleListIn, sortListIn } from '../../../EliF
 import { emptyOrgTable } from '../../../../lib/eli_format';
 
 import { subscribeActiveTable, getActiveTable } from '../../../../lib/eli_table_focus';
-import { useDocLock, toggleDocLock } from '../../../../lib/eli_doc_lock';
+import { useDocLock, toggleDocLock, isDocLocked } from '../../../../lib/eli_doc_lock';
+import { justDragged } from '../HeaderList/eliBulletDrag';
+import {
+  useMulti,
+  setMulti,
+  clearMulti,
+  getMulti,
+  multiActions,
+  batchOf,
+  topIds,
+  orderedIds,
+  rangeIds,
+  toggleId,
+  parseTagEdit,
+  visibleHeaderIds,
+} from '../../../../lib/eli_multi_select';
 import './stylesheet.css';
 
 const isCoarse = () =>
@@ -125,6 +140,9 @@ export default function EliDocBar({
   const [bottom, setBottom] = useState(0);
   const press = useLongPress();
   const locked = useDocLock();
+  // (4.28) varias cabeceras seleccionadas
+  const multi = useMulti();
+  const multiAnchor = useRef(null);
   const [table, setTable] = useState(getActiveTable());
   useEffect(() => subscribeActiveTable(setTable), []);
   const [coarse, setCoarse] = useState(isCoarse());
@@ -143,7 +161,8 @@ export default function EliDocBar({
 
   // (3.04) Siempre a la vista en el documento: sin nada seleccionado, una píldora pequeña con
   // Agenda, Capturar y deshacer/rehacer (antes, botones redondos grandes abajo).
-  const idle = !header && !table && !(listItemId && !locked);
+  const multiOn = !locked && (multi.ids.length > 1 || (multi.touch && multi.ids.length > 0));
+  const idle = !header && !table && !multiOn && !(listItemId && !locked);
   const visible = !hidden && (!!external || (!!path && file.has('headers')));
 
   // Encima del teclado (visualViewport): lo que tapa el teclado por abajo
@@ -232,6 +251,7 @@ export default function EliDocBar({
         return;
       dispatch(orgActions.selectHeader(null));
       if (listItemId) dispatch(orgActions.setSelectedListItemId(null));
+      clearMulti();
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
@@ -267,7 +287,8 @@ export default function EliDocBar({
   const attachments = header && path ? attachmentsOfHeader(header, path) : [];
 
   // (3.02) estados del fichero (#+TODO / #+SEQ_TODO; sin línea, los de Ajustes), por conjunto
-  const todoMenu = () => {
+  // (4.28) `pick` (selección múltiple): qué hacer con el estado elegido
+  const todoMenu = (pick = null) => {
     const out = [];
     const seen = new Set();
     (todoKeywordSets || []).forEach((set, si) => {
@@ -280,10 +301,11 @@ export default function EliDocBar({
           id: `st-${kw}`,
           label: kw,
           icon: isDone ? 'far fa-check-square' : 'far fa-square',
-          current: kw === keyword,
+          current: !pick && kw === keyword,
           group: si,
           done: isDone,
-          onClick: () => kw !== keyword && org('setTodoState', id, kw, logIntoDrawer),
+          onClick: () =>
+            pick ? pick(kw) : kw !== keyword && org('setTodoState', id, kw, logIntoDrawer),
         });
       });
     });
@@ -291,9 +313,9 @@ export default function EliDocBar({
       id: 'st-none',
       label: 'Sin estado',
       icon: 'fas fa-minus',
-      current: !keyword,
+      current: !pick && !keyword,
       group: 'none',
-      onClick: () => keyword && org('setTodoState', id, '', logIntoDrawer),
+      onClick: () => (pick ? pick('') : keyword && org('setTodoState', id, '', logIntoDrawer)),
     });
     return out;
   };
@@ -545,6 +567,226 @@ export default function EliDocBar({
         setTimeout(open, 80);
       }, 30);
     });
+
+  // (4.28) Selección múltiple: Mayús+clic (rango) y Cmd/Ctrl+clic (sueltas) en el ordenador; en el
+  // teléfono, tras mantener la viñeta, cada toque añade o quita. Un clic normal la quita.
+  const selRef = useRef(headerId);
+  selRef.current = headerId;
+  const headersRef = useRef(headers);
+  headersRef.current = headers;
+  useEffect(() => {
+    if (!visible || external) return undefined;
+    const boxOf = (t) =>
+      t && t.closest ? t.closest('.header-list-container .header[data-header-id]') : null;
+    const skip = (t) =>
+      !!t.closest(
+        'textarea, input, select, [contenteditable="true"], .eli-docbar, .eli-docbar-menu, ' +
+          '.eli-prompt__overlay'
+      );
+    const onDown = (e) => {
+      // Mayús+clic no debe seleccionar texto
+      if (e.shiftKey && boxOf(e.target) && !skip(e.target)) e.preventDefault();
+    };
+    const onClickCap = (e) => {
+      const t = e.target;
+      const box = boxOf(t);
+      if (!box || skip(t) || isDocLocked()) return;
+      const hid = box.getAttribute('data-header-id');
+      const cur = getMulti();
+      const mod = e.metaKey || e.ctrlKey;
+      if (e.shiftKey || mod) {
+        e.preventDefault();
+        e.stopPropagation();
+        const sel = selRef.current != null ? String(selRef.current) : null;
+        const baseIds = cur.ids.length ? cur.ids : sel ? [sel] : [];
+        let next;
+        if (e.shiftKey) {
+          const anchor = multiAnchor.current || sel || hid;
+          next = rangeIds(visibleHeaderIds(), anchor, hid);
+          if (mod) next = Array.from(new Set([...baseIds, ...next]));
+        } else {
+          next = toggleId(baseIds, hid);
+          multiAnchor.current = hid;
+        }
+        if (!sel) {
+          const hs = headersRef.current;
+          const real = hs && hs.find((h) => String(h.get('id')) === hid);
+          if (real) dispatch(orgActions.selectHeader(real.get('id')));
+        }
+        setMulti(next, false);
+        return;
+      }
+      if (cur.touch && cur.ids.length) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (justDragged()) return;
+        setMulti(toggleId(cur.ids, hid), true);
+        return;
+      }
+      if (cur.ids.length) {
+        multiAnchor.current = null;
+        clearMulti();
+      }
+    };
+    document.addEventListener('mousedown', onDown, true);
+    document.addEventListener('click', onClickCap, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown, true);
+      document.removeEventListener('click', onClickCap, true);
+    };
+  }, [visible, external, dispatch]);
+  // otro fichero o candado: sin selección múltiple
+  useEffect(() => {
+    multiAnchor.current = null;
+    clearMulti();
+  }, [path, locked]);
+  // Esc quita la selección (si no hay un menú ni un aviso abiertos)
+  useEffect(() => {
+    if (!multiOn) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape' && e.key !== 'Esc') return;
+      if (document.querySelector('.eli-prompt__overlay, .eli-docbar-menu')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      clearMulti();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [multiOn]);
+
+  const multiIds = multiOn ? multi.ids : [];
+  const multiCount = multiOn ? orderedIds(headers, multiIds).length : 0;
+  const doMulti = (op, args) => {
+    const action = batchOf(multiActions(headers, multiIds, op, args));
+    if (action) dispatch(action);
+  };
+  const multiTags = async () => {
+    const text = await askText({
+      title: `Etiquetas (${multiCount} cabeceras)`,
+      message:
+        'Etiquetas que se añaden, separadas por espacios. Con «-» delante se quitan (p. ej. «casa -trabajo»).',
+      placeholder: 'casa -trabajo',
+    });
+    if (text == null) return;
+    const edit = parseTagEdit(text);
+    if (edit.add.length || edit.remove.length) doMulti('tags', edit);
+  };
+  const multiPlan = async (type) => {
+    const date = await askDate({
+      title: type === 'DEADLINE' ? 'Fecha límite' : 'Programada',
+      message: `Para las ${multiCount} cabeceras seleccionadas`,
+    });
+    if (date) doMulti('plan', { type, date });
+  };
+  const multiArchive = async () => {
+    const tops = topIds(headers, multiIds);
+    const ok = await askConfirm({
+      title: 'Archivar',
+      message: `¿Archivar ${tops.length} cabecera(s) con sus subcabeceras?`,
+      okLabel: 'Archivar',
+    });
+    if (!ok) return;
+    clearMulti();
+    dispatch(orgActions.eliArchiveMany(tops.map((hid) => ({ path, id: hid }))));
+  };
+  const multiRemove = async () => {
+    const tops = topIds(headers, multiIds);
+    const ok = await askConfirm({
+      title: 'Borrar',
+      message: `¿Borrar ${tops.length} cabecera(s) con sus subcabeceras? Se puede deshacer (↶).`,
+      okLabel: 'Borrar',
+      focusCancel: true,
+    });
+    if (!ok) return;
+    doMulti('remove');
+    clearMulti();
+    dispatch(orgActions.selectHeader(null));
+  };
+  useEffect(() => {
+    if (!multiOn) return undefined;
+    const onTags = () => multiTags();
+    window.addEventListener('eli:multi-tags', onTags);
+    return () => window.removeEventListener('eli:multi-tags', onTags);
+  }); // eslint-disable-line
+  const multiSubs = multiOn
+    ? {
+        mtodo: todoMenu((kw) => doMulti('todo', { keyword: kw, logIntoDrawer })),
+        mmore: [
+          ...(notes
+            ? []
+            : [
+                {
+                  id: 'm-star',
+                  icon: 'far fa-star',
+                  label: 'Prioridad A (★)',
+                  hint: 'pone o quita',
+                  onClick: () => doMulti('priority'),
+                },
+                {
+                  id: 'm-sched',
+                  icon: 'far fa-calendar-check',
+                  label: 'Programada…',
+                  onClick: () => multiPlan('SCHEDULED'),
+                },
+                {
+                  id: 'm-dead',
+                  icon: 'fas fa-calendar-check',
+                  label: 'Fecha límite…',
+                  onClick: () => multiPlan('DEADLINE'),
+                },
+                {
+                  id: 'm-archive',
+                  icon: 'fas fa-archive',
+                  label: 'Archivar…',
+                  onClick: multiArchive,
+                },
+              ]),
+          { id: 'sep-m', sep: true },
+          {
+            id: 'm-delete',
+            icon: 'fas fa-trash',
+            label: 'Borrar…',
+            onClick: multiRemove,
+            danger: true,
+          },
+        ],
+      }
+    : {};
+  const multiMain = multiOn
+    ? [
+        {
+          id: 'multi-clear',
+          icon: 'fas fa-times',
+          label: String(multiCount),
+          title: 'Quitar la selección (Esc)',
+          onClick: () => clearMulti(),
+        },
+        {
+          id: 'multi-outdent',
+          icon: 'fas fa-angle-double-left',
+          title: 'Hacia fuera (con subcabeceras)',
+          onClick: () => doMulti('outdent'),
+        },
+        {
+          id: 'multi-indent',
+          icon: 'fas fa-angle-double-right',
+          title: 'Hacia dentro (con subcabeceras)',
+          onClick: () => doMulti('indent'),
+        },
+        { id: 'multi-up', icon: 'fas fa-arrow-up', title: 'Subir', onClick: () => doMulti('up') },
+        {
+          id: 'multi-down',
+          icon: 'fas fa-arrow-down',
+          title: 'Bajar',
+          onClick: () => doMulti('down'),
+        },
+        ...(notes
+          ? []
+          : [{ id: 'multi-todo', icon: 'far fa-check-circle', title: 'Estado', sub: 'mtodo' }]),
+        { id: 'multi-tags', icon: 'fas fa-tags', title: 'Etiquetas', onClick: multiTags },
+        { id: 'multi-more', icon: 'fas fa-ellipsis-h', title: 'Más', sub: 'mmore' },
+      ]
+    : [];
 
   // Submenús: [{ id, icon, label, onClick, text, danger }]
   const subs = header
@@ -853,12 +1095,7 @@ export default function EliDocBar({
                 hint: 'se vuelve con Atrás',
                 onClick: () => org('narrowHeader', id),
               },
-          {
-            id: 'tags',
-            icon: 'fas fa-hashtag',
-            label: 'Etiquetas',
-            onClick: () => base('activatePopup', 'tags-editor'),
-          },
+          // (4.28) Etiquetas y Estado: en la fila de la barra (ya no en ⋯)
           { id: 'share', icon: 'fas fa-share-alt', label: 'Compartir o PDF', openSub: 'share' },
           {
             id: 'dup',
@@ -870,13 +1107,6 @@ export default function EliDocBar({
             ? []
             : [
                 { id: 'sep-tasks', sep: true },
-                {
-                  id: 'todo',
-                  icon: 'far fa-check-circle',
-                  label: 'Estado',
-                  hint: keyword || '',
-                  openSub: 'todo',
-                },
                 {
                   id: 'star',
                   icon: getPriority(header) === 'A' ? 'fas fa-star' : 'far fa-star',
@@ -985,6 +1215,25 @@ export default function EliDocBar({
               base('activatePopup', 'title-editor');
             }
           },
+        },
+        // (4.28) Estado (menú con los del fichero y «Sin estado») y Etiquetas, a la vista
+        ...(notes
+          ? []
+          : [
+              {
+                id: 'todo',
+                icon: 'far fa-check-circle',
+                label: keyword || 'Estado',
+                title: 'Estado de la tarea',
+                sub: 'todo',
+              },
+            ]),
+        {
+          id: 'tags',
+          icon: 'fas fa-tags',
+          label: 'Etiquetas',
+          title: 'Etiquetas (tecla #)',
+          onClick: () => base('activatePopup', 'tags-editor'),
         },
         { id: 'new', icon: 'fas fa-plus', label: 'Nueva', title: 'Cabecera nueva', sub: 'new' },
         { id: 'insert', icon: 'fas fa-paperclip', label: 'Añadir', title: 'Añadir', sub: 'insert' },
@@ -1266,6 +1515,8 @@ export default function EliDocBar({
     ? external.items
     : table
     ? tableMain
+    : multiOn
+    ? multiMain
     : listItemId && !locked
     ? listMain
     : idle
@@ -1277,6 +1528,8 @@ export default function EliDocBar({
     ? 'browser'
     : table
     ? 'table'
+    : multiOn
+    ? 'multi'
     : listItemId && !locked
     ? 'list'
     : idle
@@ -1431,7 +1684,9 @@ export default function EliDocBar({
   };
 
   // Submenú: lista vertical encima del botón (lo del ⋯ incluye lo que no cabe en la fila)
-  let menuItems = sub ? (external ? external.subs || {} : subs)[sub] || [] : null;
+  let menuItems = sub
+    ? (external ? external.subs || {} : { ...subs, ...multiSubs })[sub] || []
+    : null;
   if (sub === 'more' && overflow.length) {
     menuItems = [
       ...overflow.map((b) => ({
@@ -1469,7 +1724,8 @@ export default function EliDocBar({
       {menuItems.map((c, i) => {
         if (c.sep) return <div key={c.id} className="eli-docbar-menu__sep" role="separator" />;
         const prev = menuItems[i - 1];
-        const groupBreak = sub === 'todo' && prev && !prev.sep && prev.group !== c.group;
+        const groupBreak =
+          (sub === 'todo' || sub === 'mtodo') && prev && !prev.sep && prev.group !== c.group;
         return (
           <React.Fragment key={c.id}>
             {groupBreak && <div className="eli-docbar-menu__sep" role="separator" />}
@@ -1536,4 +1792,4 @@ export default function EliDocBar({
 }
 
 // Para pruebas: lo que tiene que estar en la barra, en orden
-export const DOCBAR_ORDER = ['edit', 'new', 'insert', 'move', 'more'];
+export const DOCBAR_ORDER = ['edit', 'todo', 'tags', 'new', 'insert', 'move', 'more'];

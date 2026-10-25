@@ -45,7 +45,14 @@ const visibleRows = (hidden) =>
  * opts: { headerId, event, headers (List), narrowedHeaderId, onDrop(headerId, {beforeId,
  *   afterId, level}) }
  */
-export const startBulletDrag = ({ headerId, event, headers, narrowedHeaderId, onDrop }) => {
+export const startBulletDrag = ({
+  headerId,
+  event,
+  headers,
+  narrowedHeaderId,
+  onDrop,
+  onHold = null,
+}) => {
   if (!event || (event.button !== undefined && event.button !== 0 && event.pointerType === 'mouse'))
     return;
   if (headerId === narrowedHeaderId) return;
@@ -258,6 +265,11 @@ export const startBulletDrag = ({ headerId, event, headers, narrowedHeaderId, on
     cleanup();
     if (!was) return;
     lastDropAt = Date.now();
+    // (4.28) con el dedo: levantada y soltada sin moverla = seleccionar (varias)
+    if (touch && onHold && Math.hypot(x - x0, y - y0) <= TOUCH_SLOP) {
+      onHold(srcId);
+      return;
+    }
     if (s && !s.noop) onDrop(srcId, { beforeId: s.beforeId, afterId: s.afterId, level: s.level });
   }
   function onCancel(e) {

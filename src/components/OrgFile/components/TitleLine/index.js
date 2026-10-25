@@ -243,21 +243,22 @@ class TitleLine extends PureComponent {
                   {deadlineString}
                 </span>
               )}
+              {/* (4.28) etiquetas en la misma línea, a la derecha, discretas */}
+              {header.getIn(['titleLine', 'tags']).filter((tag) => !!tag).size > 0 && (
+                <span className="header-tags">
+                  {header
+                    .getIn(['titleLine', 'tags'])
+                    .toSet()
+                    .toList()
+                    .filter((tag) => !!tag)
+                    .map((tag) => (
+                      <span className="header-tag" key={tag}>
+                        {tag}
+                      </span>
+                    ))}
+                </span>
+              )}
             </div>
-            {header.getIn(['titleLine', 'tags']).size > 0 && (
-              <div>
-                {header
-                  .getIn(['titleLine', 'tags'])
-                  .toSet()
-                  .toList()
-                  .filter((tag) => !!tag)
-                  .map((tag) => (
-                    <div className="header-tag" key={tag}>
-                      {tag}
-                    </div>
-                  ))}
-              </div>
-            )}
           </div>
         }
       </div>

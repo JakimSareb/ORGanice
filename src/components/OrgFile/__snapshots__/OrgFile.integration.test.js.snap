@@ -352,18 +352,20 @@ exports[`Render all views Org Functionality Renders everything starting from an 
                     </span>
                     
                   </span>
-                </div>
-                <div>
-                  <div
-                    class="header-tag"
+                  <span
+                    class="header-tags"
                   >
-                    tag1
-                  </div>
-                  <div
-                    class="header-tag"
-                  >
-                    tag2
-                  </div>
+                    <span
+                      class="header-tag"
+                    >
+                      tag1
+                    </span>
+                    <span
+                      class="header-tag"
+                    >
+                      tag2
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -911,18 +913,20 @@ exports[`Render all views Org Functionality Renders everything starting from an 
                 </span>
                 
               </span>
-            </div>
-            <div>
-              <div
-                class="header-tag"
+              <span
+                class="header-tags"
               >
-                tag1
-              </div>
-              <div
-                class="header-tag"
-              >
-                tag2
-              </div>
+                <span
+                  class="header-tag"
+                >
+                  tag1
+                </span>
+                <span
+                  class="header-tag"
+                >
+                  tag2
+                </span>
+              </span>
             </div>
           </div>
         </div>
