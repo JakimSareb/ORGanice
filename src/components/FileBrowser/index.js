@@ -46,8 +46,10 @@ const FileBrowser = ({
   };
 
   const isTopLevelDirectory = path === '';
-  const dirs = (listing || []).filter((f) => f.get('isDirectory'));
-  const files = (listing || []).filter((f) => !f.get('isDirectory'));
+  // (el listado es una lista Immutable)
+  const all = listing ? (listing.toArray ? listing.toArray() : Array.from(listing)) : [];
+  const dirs = all.filter((f) => f.get('isDirectory'));
+  const files = all.filter((f) => !f.get('isDirectory'));
 
   return (
     <div className="file-browser-container">
