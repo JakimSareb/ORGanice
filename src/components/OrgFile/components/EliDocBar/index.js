@@ -796,7 +796,7 @@ export default function EliDocBar({
         ...(notes
           ? []
           : [{ id: 'multi-todo', icon: 'far fa-check-circle', title: 'Estado', sub: 'mtodo' }]),
-        { id: 'multi-tags', icon: 'fas fa-tags', title: 'Etiquetas', onClick: multiTags },
+        { id: 'multi-tags', icon: 'eli-glyph-hash', title: 'Etiquetas', onClick: multiTags },
         { id: 'multi-more', icon: 'fas fa-ellipsis-h', title: 'Más', sub: 'mmore' },
       ]
     : [];
@@ -1261,7 +1261,7 @@ export default function EliDocBar({
             ]),
         {
           id: 'tags',
-          icon: 'fas fa-tags',
+          icon: 'eli-glyph-hash',
           label: 'Etiquetas',
           title: 'Etiquetas (tecla #)',
           onClick: () => base('activatePopup', 'tags-editor'),

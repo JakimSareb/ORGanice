@@ -6,7 +6,7 @@
 //   - Al escribir «[[» (título/notas) o «#» (título de Documentos): los buscadores de
 //     lib/eli_heading_links.
 //   - Pasar el ratón por un enlace [[id:…]]: título y principio de las notas del destino.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 
 import './stylesheet.css';
@@ -20,6 +20,7 @@ import {
   fileNameOf,
   hashStartsWord,
   openedDoubleBracket,
+  notePreview,
 } from '../../lib/eli_heading_index';
 import { insertHeadingLink, pickTagForTitle } from '../../lib/eli_heading_links';
 import { selectHeaderAndOpenParents, loadFileQuietly } from '../../actions/org';
@@ -49,10 +50,14 @@ export const useGoToHeading = () => {
 };
 
 // Una cabecera con ▸ (notas y subcabeceras plegables)
-const Item = ({ entry, index, onGo, depth = 0, showContext = false }) => {
+const Item = ({ entry, index, onGo, depth = 0, showContext = false, preview = false }) => {
   const [open, setOpen] = useState(false);
   const kids = useMemo(() => (open ? childrenOf(index, entry) : []), [open, index, entry]);
   const hasMore = !!entry.notes.trim() || childrenOf(index, entry).length > 0;
+  const previewLines = useMemo(() => (preview ? notePreview(entry.notes, 2) : []), [
+    preview,
+    entry,
+  ]);
   return (
     <li className="eli-hv__item" data-testid="eli-hv-item">
       <div className="eli-hv__row">
@@ -81,6 +86,15 @@ const Item = ({ entry, index, onGo, depth = 0, showContext = false }) => {
       {showContext && entry.parents.length > 0 && (
         <div className="eli-hv__ctx">{entry.parents.join(' › ')}</div>
       )}
+      {preview && !open && previewLines.length > 0 && (
+        <div className="eli-hv__preview" data-testid="eli-hv-preview">
+          {previewLines.map((l, i) => (
+            <div key={i} className="eli-hv__preview-line">
+              {l}
+            </div>
+          ))}
+        </div>
+      )}
       {open && (
         <div className="eli-hv__body">
           {entry.notes.trim() && <div className="eli-hv__notes">{entry.notes.trim()}</div>}
@@ -97,7 +111,7 @@ const Item = ({ entry, index, onGo, depth = 0, showContext = false }) => {
   );
 };
 
-export const Groups = ({ entries, index, onGo, showContext }) => (
+export const Groups = ({ entries, index, onGo, showContext, preview = false }) => (
   <div className="eli-hv__groups">
     {groupByPath(entries).map((g) => (
       <section key={g.path} className="eli-hv__group" data-testid="eli-hv-group">
@@ -113,6 +127,7 @@ export const Groups = ({ entries, index, onGo, showContext }) => (
               index={index}
               onGo={onGo}
               showContext={showContext}
+              preview={preview}
             />
           ))}
         </ul>
@@ -191,7 +206,7 @@ const TagView = ({ tag, onClose }) => {
         ))}
       </div>
       {entries.length ? (
-        <Groups entries={entries} index={index} onGo={(e) => go(e, onClose)} showContext />
+        <Groups entries={entries} index={index} onGo={(e) => go(e, onClose)} showContext preview />
       ) : (
         <div className="eli-hv__empty">Ninguna cabecera con esta etiqueta.</div>
       )}
@@ -238,6 +253,35 @@ const BacklinksView = ({ path, headerId, onClose }) => {
 };
 
 const Overlay = ({ title, count, onClose, testId, children }) => {
+  const overlayRef = useRef(null);
+  const scrollRef = useRef(null);
+  // (4.34) El fondo no se mueve mientras la vista está abierta: al plegar un elemento la lista
+  // podía quedar sin recorrido y el gesto de scroll pasaba a la pantalla de detrás
+  useEffect(() => {
+    document.body.classList.add('eli-hv-open');
+    const el = overlayRef.current;
+    const onTouch = (e) => {
+      const sc = scrollRef.current;
+      if (!sc || !sc.contains(e.target) || sc.scrollHeight <= sc.clientHeight + 1)
+        e.preventDefault();
+    };
+    const onWheel = (e) => {
+      const sc = scrollRef.current;
+      if (!sc || !sc.contains(e.target) || sc.scrollHeight <= sc.clientHeight + 1)
+        e.preventDefault();
+    };
+    if (el) {
+      el.addEventListener('touchmove', onTouch, { passive: false });
+      el.addEventListener('wheel', onWheel, { passive: false });
+    }
+    return () => {
+      document.body.classList.remove('eli-hv-open');
+      if (el) {
+        el.removeEventListener('touchmove', onTouch);
+        el.removeEventListener('wheel', onWheel);
+      }
+    };
+  }, []);
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape' && !document.querySelector('.eli-prompt__overlay')) {
@@ -250,7 +294,7 @@ const Overlay = ({ title, count, onClose, testId, children }) => {
     return () => document.removeEventListener('keydown', onKey, true);
   }, [onClose]);
   return (
-    <div className="eli-hv__overlay" onClick={onClose}>
+    <div className="eli-hv__overlay" onClick={onClose} ref={overlayRef}>
       <div className="eli-hv__box" data-testid={testId} onClick={(e) => e.stopPropagation()}>
         <div className="eli-hv__head">
           <div className="eli-hv__heading">{title}</div>
@@ -267,7 +311,9 @@ const Overlay = ({ title, count, onClose, testId, children }) => {
             <i className="fas fa-times" />
           </button>
         </div>
-        <div className="eli-hv__scroll">{children}</div>
+        <div className="eli-hv__scroll" ref={scrollRef}>
+          {children}
+        </div>
       </div>
     </div>
   );

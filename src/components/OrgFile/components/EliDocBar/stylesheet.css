@@ -323,3 +323,16 @@ body.eli-docbar-on .action-drawer-container {
 .eli-docbar.is-desk.is-main {
   min-width: min(520px, calc(100% - 24px));
 }
+
+/* (4.34) el botón de etiquetas es un «#» (como en Logseq), no la etiqueta de FA */
+.eli-glyph-hash {
+  font-style: normal;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1;
+  display: inline-block;
+  text-align: center;
+}
+.eli-glyph-hash::before {
+  content: '#';
+}

@@ -94,7 +94,7 @@ const EliPrefsSyncInfo = ({ on }) => {
 };
 
 // (4.0) Temas: tres a la vista y el resto tras «⋯ Más temas»
-const MAIN_THEMES = ['Unicornio', 'Cuki', 'Nirvana'];
+const MAIN_THEMES = ['Unicornio', 'Cuki', 'Nirvana', 'Logseq'];
 const MORE_THEMES = ['Solarized', 'One', 'Gruvbox', 'Smyck', 'Code'];
 const EliThemeSetting = ({ theme, onSelect }) => {
   const [more, setMore] = React.useState(MORE_THEMES.includes(theme));

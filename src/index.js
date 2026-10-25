@@ -10,6 +10,7 @@ import '@fontsource/atkinson-hyperlegible/700.css';
 import './eli_readability.css';
 import { applyReadability } from './lib/eli_readability';
 import './eli_font.css';
+import './eli_theme_logseq.css';
 import { applyFont } from './lib/eli_font';
 import { applyDocMargin } from './lib/eli_menu_layout';
 import App from './App';

@@ -9,6 +9,11 @@
   align-items: flex-start;
   padding: 24px 12px;
   box-sizing: border-box;
+  overscroll-behavior: contain;
+}
+/* (4.34) el fondo no se desplaza con la vista abierta */
+body.eli-hv-open {
+  overflow: hidden;
 }
 .eli-hv__box {
   width: 100%;
@@ -54,7 +59,11 @@
   padding: 4px 6px;
 }
 .eli-hv__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 8px 14px 18px;
 }
 .eli-hv__filters {
@@ -183,4 +192,17 @@
 }
 .header-tag[role='link']:hover {
   text-decoration: underline;
+}
+
+/* (4.34) vista previa de un par de líneas de notas bajo cada cabecera de la vista por etiqueta */
+.eli-hv__preview {
+  margin: 0 0 4px 24px;
+  font-size: 0.82em;
+  line-height: 1.4;
+  color: var(--base1, #999);
+}
+.eli-hv__preview-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

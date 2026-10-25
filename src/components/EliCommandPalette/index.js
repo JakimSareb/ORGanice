@@ -38,13 +38,24 @@ import {
   setLastViewedFile,
 } from '../../actions/base';
 import { openFavorites, openMoonPhases, openRawEditor, openPrintPreview } from '../EliTools';
+import { openTagView } from '../../lib/eli_heading_events';
 import { openAcomodadores } from '../EliAcomodadores';
 import { isNotesMode, toolOn } from '../../lib/eli_notes_mode';
 
 const selectIsAuthenticated = (s) => s.syncBackend.get('isAuthenticated');
 const MAX_RESULTS = 50;
 const LS_RECENT = 'eliPaletteRecent';
-const THEMES = ['Unicornio', 'Cuki', 'Solarized', 'One', 'Gruvbox', 'Smyck', 'Code', 'Nirvana'];
+const THEMES = [
+  'Unicornio',
+  'Cuki',
+  'Solarized',
+  'One',
+  'Gruvbox',
+  'Smyck',
+  'Code',
+  'Nirvana',
+  'Logseq',
+];
 const SCHEMES = [
   ['OS', 'Sistema'],
   ['Light', 'Claro'],
@@ -769,9 +780,11 @@ export default function EliCommandPalette() {
 
   const choose = (item) => {
     if (!item) return;
+    // (4.34) Una etiqueta abre directamente la vista por etiqueta (todas las líneas con ella y,
+    // debajo de cada una, un par de líneas de sus notas); «#etiqueta texto» sigue filtrando aquí
     if (item.kind === 'tag') {
-      setQuery(`#${item.tag} `);
-      setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
+      close();
+      setTimeout(() => openTagView(item.tag), 0);
       return;
     }
     // (2.18) Varios encabezados distintos con el mismo título: primero se elige cuál

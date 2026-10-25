@@ -146,6 +146,24 @@ const toggleHeaderOpened = (state, action) => {
   const { header, headerIndex } = indexAndHeaderWithId(headers, action.headerId);
   const isOpened = header.get('opened');
 
+  // (4.34) Reducido con «cerrar subcabeceras» activo: lo primero es plegar sus subcabeceras
+  // abiertas (antes no hacía nada con ellas)
+  if (
+    isOpened &&
+    action.closeSubheadersRecursively &&
+    state.get('narrowedHeaderId') === action.headerId
+  ) {
+    const openSubs = subheaderIndicesOfHeaderWithId(headers, action.headerId).filter((i) =>
+      headers.getIn([i, 'opened'])
+    );
+    if (openSubs.size || openSubs.length) {
+      openSubs.forEach((i) => {
+        state = state.setIn(['headers', i, 'opened'], false);
+      });
+      return state;
+    }
+  }
+
   // (3.04) Abierto «solo cabeceras» (sin notas, al saltar desde otro sitio): el toque muestra
   // las notas, como el ciclo de org-mode (CHILDREN → SUBTREE), en vez de plegar
   if (isOpened && header.get('eliHideBody') && hasHeaderContent(header)) {

@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.34 (octubre de 2026)
+** Tema Logseq
+- Nuevo tema *Logseq* (Ajustes › Apariencia › Tema; claro y oscuro): tipografía tipo Inter, texto en un solo color sin colores por nivel, filas de poco aire, *viñetas redondas grises* (plegada: con un aro) y una *guía vertical* fina bajo cada cabecera madre; enlaces y etiquetas en azul (las etiquetas con «#»). Si eliges otro «Tipo de letra», gana el tuyo.
+** Etiquetas y Documentos
+- Al elegir una *etiqueta en la paleta de comandos* se abre directamente la *vista por etiqueta*, con todas las líneas que la tienen y, *debajo de cada una, un par de líneas de sus notas*. Con «#etiqueta texto» sigue filtrando en la paleta.
+- En la barra flotante, el botón de etiquetas es ahora un *«#»* (antes la etiqueta).
+- Con una cabecera en *vista reducida* (narrow) y el ajuste de cerrar subcabeceras activo, tocar su título *pliega ahora sus subcabeceras* abiertas (antes no hacía nada con ellas).
+- En la vista por etiqueta y en «Quién enlaza aquí», al desplegar y plegar una cabecera el scroll ya no se pierde ni se mueve la pantalla de detrás: mientras la vista está abierta, el fondo queda quieto.
+
 * 4.33 (octubre de 2026)
 ** Diario
 - *Al abrir la app* (desde el icono de la pantalla de inicio) sale el *Diario de hoy*; al cerrarlo, la última vista. Se cambia en Ajustes › Diario › *Al abrir la app* (Diario de hoy / Última vista).
