@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.32 (octubre de 2026)
+** GTD
+- *Referencias con ▸*: en la lista Referencia, cada referencia despliega sus subcabeceras (a varios niveles) y sus notas sin salir de GTD. Tocar el título sigue abriéndola.
+- *Icono de repetición*: las tareas y cabeceras con repetidor (+1w, .+1d, ++1m…) muestran un calendario con una flecha en círculo; el texto emergente dice «cada semana», «cada 2 días»…
+- *Planificar un proyecto*: el *Quién* de una siguiente acción la delega; pasa a Waiting con esa persona como etiqueta (antes solo ponía la etiqueta).
+- *Procesar Inbox*: en «¿Cuándo?» eliges *contextos* de una lista (varios a la vez, o uno nuevo), el *tiempo* (Effort) y la *energía*.
+- Las *cabeceras sin estado* (Referencias de un proyecto, cabeceras de una etiqueta) aportan todas sus etiquetas a la barra de filtros y responden a ella igual que las tareas.
+- Menú lateral: las etiquetas van en dos grupos, *Por defecto* (las de Ajustes) y *Otras* (las que hay en los ficheros).
+
 * 4.31 (octubre de 2026)
 ** Documentos: navegar y enlazar
 - *Tocar una etiqueta* (a la derecha del título) abre una vista con *todas las cabeceras* de los ficheros abiertos que la tienen, por fichero (sin el diario ni el mensual). Cada una con ▸ para ver sus notas y subcabeceras; tocar el título lleva a ella. Arriba, *Incluir heredadas* (encendido) y las otras etiquetas de lo que sale, para afinar.

@@ -52,7 +52,7 @@ describe('4.14: Planificación Natural', () => {
     });
     expect(p.notes).toBe('Propósito: Vivir mejor\nPrincipios: Sin deudas\nResultado: Casa pintada');
   });
-  test('componentes: con ≥2 acciones = subproyecto; con 1 = tarea; quién = etiqueta', () => {
+  test('componentes: con ≥2 acciones = subproyecto; con 1 = tarea; quién = delegar (Waiting con la persona)', () => {
     const plan = {
       name: 'Boda',
       ideas: [
@@ -74,7 +74,7 @@ describe('4.14: Planificación Natural', () => {
         title: 'Banquete',
         list: 'project',
         children: [
-          { title: 'Pedir presupuestos', list: 'next', tags: ['Ana'] },
+          { title: 'Pedir presupuestos', list: 'waiting', tags: ['Ana'] },
           { title: 'Elegir menú', list: 'later' },
         ],
       },

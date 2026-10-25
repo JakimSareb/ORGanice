@@ -243,7 +243,7 @@ export default function GtdGuidedProcess({
             type="text"
             className="gtd-guided__who"
             value={n.who}
-            placeholder="¿Quién? (opcional)"
+            placeholder="¿Quién? (delegar: pasa a Waiting)"
             onChange={(e) => setNext(u.key, { who: e.target.value })}
             data-testid={`gtd-plan-who${id}`}
             aria-label={`Quién: ${u.title}`}

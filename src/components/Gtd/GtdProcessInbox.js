@@ -39,6 +39,9 @@ export default function GtdProcessInbox({
   paused,
   strict = false,
   projects = [],
+  contextTags = [],
+  effortOptions = [],
+  energyOptions = [],
   onDecide,
   onSkip,
   onBack,
@@ -54,6 +57,9 @@ export default function GtdProcessInbox({
   const [first, setFirst] = useState('');
   const [area, setArea] = useState('');
   const [tagsText, setTagsText] = useState('');
+  // (4.32) esfuerzo (Effort) y energía, como en el editor de tarea
+  const [effort, setEffort] = useState('');
+  const [energy, setEnergy] = useState('');
   const [sched, setSched] = useState('');
   const [schedTime, setSchedTime] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -77,6 +83,8 @@ export default function GtdProcessInbox({
   const details = () => ({
     area: area || undefined,
     tags: parseTagsInput(tagsText),
+    effort: effort || undefined,
+    energy: energy || undefined,
     scheduled: fromDateInput(sched),
     scheduledTime: sched ? schedTime : '',
     deadline: fromDateInput(deadline),
@@ -493,9 +501,68 @@ export default function GtdProcessInbox({
           className="gtd-proc__input gtd-proc__input--grow"
           value={tagsText}
           onChange={(e) => setTagsText(e.target.value)}
-          placeholder="Etiquetas (contextos…)"
+          placeholder="Etiquetas (contextos…) o uno nuevo"
           data-testid="gtd-proc-tags"
         />
+        {effortOptions.length > 0 && (
+          <select
+            className="gtd-proc__input"
+            value={effort}
+            onChange={(e) => setEffort(e.target.value)}
+            data-testid="gtd-proc-effort"
+            aria-label="Tiempo (Effort)"
+          >
+            <option value="">Tiempo</option>
+            {effortOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+        )}
+        {energyOptions.length > 0 && (
+          <select
+            className="gtd-proc__input"
+            value={energy}
+            onChange={(e) => setEnergy(e.target.value)}
+            data-testid="gtd-proc-energy"
+            aria-label="Energía (Energy)"
+          >
+            <option value="">Energía</option>
+            {energyOptions.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+        )}
+        {contextTags.length > 0 && (
+          <div className="gtd-proc__chips" data-testid="gtd-proc-contexts">
+            {contextTags.map((c) => {
+              const cur = parseTagsInput(tagsText);
+              const on = cur.some((x) => x.toLowerCase() === c.toLowerCase());
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  className={'gtd-proc__chip' + (on ? ' is-on' : '')}
+                  aria-pressed={on}
+                  onClick={() =>
+                    setTagsText(
+                      (on
+                        ? cur.filter((x) => x.toLowerCase() !== c.toLowerCase())
+                        : [...cur, c]
+                      ).join(', ')
+                    )
+                  }
+                  data-testid="gtd-proc-context"
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }

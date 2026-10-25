@@ -12,6 +12,8 @@ import {
   LISTS,
   EXTRA_LISTS,
   nestSubtasks,
+  nestRefKids,
+  filterHeadings,
   buildTasks,
   tasksForView,
   projectsOf,
@@ -110,6 +112,7 @@ import GtdProcessInbox from './GtdProcessInbox';
 import {
   getProcessMode,
   mergeTags,
+  personTag,
   isTicklerPath,
   ticklerPathNear,
 } from '../../lib/gtd/gtd_process';
@@ -162,6 +165,7 @@ import {
 import { weeklyReview, reviewSteps } from '../../lib/gtd/gtd_review';
 import { strictOn, NOT_ALLEN_DAILY } from '../../lib/gtd/gtd_strict';
 import GtdTagManager from './GtdTagManager';
+import { describeRepeat } from './ScheduleField';
 import useRowDrag, { useLasso } from './useRowDrag';
 import EliOrgTable from '../EliOrgTable';
 import { toggleCheckboxLine } from './TaskEditor';
@@ -893,6 +897,19 @@ function TaskRow({
               {task.attachmentCount > 1 ? ` ${task.attachmentCount}` : ''}
             </span>
           )}
+          {/* (4.32) tarea con repetición: calendario con flechita en círculo */}
+          {(task.scheduledRepeat || task.deadlineRepeat) && !task.isDone && (
+            <span
+              className="gtd-meta gtd-meta--repeat"
+              title={describeRepeat(task.scheduledRepeat || task.deadlineRepeat)}
+              data-testid="gtd-task-repeat"
+            >
+              <span className="gtd-repeat-icon">
+                <i className="far fa-calendar-alt" />
+                <i className="fas fa-redo-alt" />
+              </span>
+            </span>
+          )}
           {task.scheduled && task.scheduled > today && (
             <span className="gtd-date" title="Empieza">
               <i className="far fa-calendar-alt" /> {fmtDate(task.scheduled)}
@@ -1372,13 +1389,16 @@ export default function GtdView() {
   const clockTotals = useMemo(() => clockTotalsOf(tasks), [tasks]);
 
   // (4.21) Tickler: sus entradas con el Área y el texto de la sección (las etiquetas salen de ahí)
-  const baseList = useMemo(
-    () =>
-      view.id === 'tickler'
-        ? filterTickler(ticklerTasks, { area, text })
-        : tasksForView(tasks, view, { area, text }, today),
-    [tasks, view, area, text, today, ticklerTasks]
-  );
+  // (4.32) …y las cabeceras sin estado (Referencias del proyecto, cabeceras de la etiqueta)
+  // aportan sus etiquetas a la barra y responden a ella como las tareas
+  const baseList = useMemo(() => {
+    if (view.id === 'tickler') return filterTickler(ticklerTasks, { area, text });
+    const base = tasksForView(tasks, view, { area, text }, today);
+    const heads = filterHeadings(tasks, view, headingTags.includes(view.tag)).filter((t) =>
+      matchesFilters(t, { area, text })
+    );
+    return heads.length ? [...base, ...heads] : base;
+  }, [tasks, view, area, text, today, ticklerTasks, headingTags]);
   const facets = useMemo(() => facetsFor(baseList, { ownOnly: tagInherit !== 'all' }), [
     baseList,
     tagInherit,
@@ -1552,6 +1572,16 @@ export default function GtdView() {
   // ella (p. ej. al terminarla desde el editor): se queda en su sitio hasta cerrarla
   const stickyRef = useRef(null);
   const [folded, setFolded] = useState(() => new Set(readLS(LS_FOLDED, [])));
+  // (4.32) Referencias desplegadas con ▸ (solo en memoria: por defecto todas plegadas)
+  const [refOpen, setRefOpen] = useState(() => new Set());
+  const toggleRefOpen = (task) =>
+    setRefOpen((s) => {
+      const id = foldIdOf(task);
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
   const toggleFold = (task) =>
     setFolded((s) => {
       const id = foldIdOf(task);
@@ -1580,10 +1610,13 @@ export default function GtdView() {
     const nested = subtasksOn
       ? nestSubtasks(buildItems(), byDate ? () => true : null)
       : buildItems();
+    // (4.32) lista Referencia: ▸ despliega subcabeceras y notas
+    const withRefKids =
+      view.id === 'reference' ? nestRefKids(nested, tasks, refOpen, foldIdOf) : nested;
     // (3.02) subtareas plegadas (▸): se ocultan los descendientes de las tareas plegadas
     const out = [];
     let hideBelow = null;
-    nested.forEach((i) => {
+    withRefKids.forEach((i) => {
       if (i.kind !== 'task') {
         hideBelow = null;
         out.push(i);
@@ -1594,7 +1627,7 @@ export default function GtdView() {
         if (d > hideBelow) return;
         hideBelow = null;
       }
-      if (i.hasKids && folded.has(foldIdOf(i.task))) {
+      if (i.hasKids && !i.refKids && folded.has(foldIdOf(i.task))) {
         out.push({ ...i, folded: true });
         hideBelow = d;
       } else {
@@ -1621,7 +1654,7 @@ export default function GtdView() {
     }
     return out;
     // eslint-disable-next-line
-  }, [buildDeps, openKey, tasks, view.id, folded, subtasksOn]);
+  }, [buildDeps, openKey, tasks, view.id, folded, subtasksOn, refOpen]);
   function buildItems() {
     const out = buildMainItems();
     // (3.01) Vista de una etiqueta con «cabeceras sin tarea»: los encabezados sin estado que la
@@ -3460,13 +3493,24 @@ export default function GtdView() {
         else addPlanTasks(fresh.path, fresh.id, [c]);
       });
     // siguientes acciones elegidas entre las que ya había → Next
-    const chosen = [plan.first, ...Object.values(plan.nexts || {}).map((n) => n.action)]
-      .map((x) =>
-        String(x || '')
+    // (4.32) con «Quién» la elegida pasa a Waiting (con la persona) en vez de Next
+    const picks = [
+      { action: plan.first, who: plan.firstWho },
+      ...Object.values(plan.nexts || {}).map((n) => ({ action: n.action, who: n.who })),
+    ]
+      .map((x) => ({
+        title: String(x.action || '')
           .trim()
-          .toLowerCase()
-      )
-      .filter(Boolean);
+          .toLowerCase(),
+        who: personTag(String(x.who || '').replace(/^@/, '')),
+      }))
+      .filter((x) => x.title);
+    const chosen = picks.map((x) => x.title);
+    const whoOf = (t) => {
+      const k = t.title.trim().toLowerCase();
+      const pick = picks.find((x) => x.title === k);
+      return pick ? pick.who : null;
+    };
     const scope = [...own, ...own.filter((t) => t.isProject).flatMap(members)];
     scope
       .filter(
@@ -3474,9 +3518,16 @@ export default function GtdView() {
           !t.isProject &&
           !t.isDone &&
           chosen.includes(t.title.trim().toLowerCase()) &&
-          listOf(t, today) !== 'next'
+          listOf(t, today) !== (whoOf(t) ? 'waiting' : 'next')
       )
-      .forEach((t) => reviewMove(t, 'next'));
+      .forEach((t) => {
+        const who = whoOf(t);
+        if (who) {
+          dispatch(
+            gtdSaveTask(t, { list: 'waiting', tags: mergeTags(tagsForList(t, 'waiting'), [who]) })
+          );
+        } else reviewMove(t, 'next');
+      });
     toast('Proyecto replanificado');
   };
   const guidedCreateProject = (title, plan) => {
@@ -3768,6 +3819,8 @@ export default function GtdView() {
     if (d.deadline) dates.deadline = d.deadline;
     const extra = { ...dates };
     if (d.area) extra.area = d.area;
+    if (d.effort) extra.effort = d.effort;
+    if (d.energy) extra.energy = d.energy;
     // (4.15) Allen estricto: la siguiente acción reescrita
     if (d.title) extra.rawTitle = d.title;
     let label = '';
@@ -5989,6 +6042,10 @@ export default function GtdView() {
       })
       .map((x) => ({ tag: x, n: n[x] }));
   })();
+  // (4.32) dos grupos: «Por defecto» (los de Ajustes) y «Otras» (las que hay en los ficheros)
+  const defaultTagSet = new Set(defaultTags().map((x) => x.toLowerCase()));
+  const sideTagsDefault = sideTags.filter((x) => defaultTagSet.has(x.tag.toLowerCase()));
+  const sideTagsOther = sideTags.filter((x) => !defaultTagSet.has(x.tag.toLowerCase()));
   // Filtros de la barra (como Nirvana): clic = solo ese; Ctrl/⌘+clic = añadir (todos a la vez: Y)
   // (3.01) Etiquetas: 1.er clic = solo las que la llevan, 2.º = tachada (fuera las que la llevan),
   // 3.º = quitar el filtro
@@ -6073,7 +6130,7 @@ export default function GtdView() {
       if (item.task.refAggregated) return;
       dispatch(gtdSaveTask(item.task, { notes: toggleCheckboxLine(item.task.description, index) }));
     },
-    onToggleFold: () => toggleFold(item.task),
+    onToggleFold: () => (item.refKids ? toggleRefOpen(item.task) : toggleFold(item.task)),
     onGoParent: () => goToTask(parentTaskOf(item.task)),
     onCycleNotes: () =>
       setNotesOverride((o) => {
@@ -6126,7 +6183,7 @@ export default function GtdView() {
         folded={!!item.folded}
         parentTitle={parentTitleOf(item.task)}
         noSubtasks={!subtasksOn}
-        notesMode={notesOverride[item.task.key] || notesMode}
+        notesMode={notesOverride[item.task.key] || (item.forceNotes ? 'full' : notesMode)}
         badProject={!!item.task.badProject}
         showTags={details.tags}
         showEffort={details.effort}
@@ -6241,24 +6298,38 @@ export default function GtdView() {
               </span>
             </button>
             {tagsOpen &&
-              sideTags.map(({ tag, n }) => (
-                <button
-                  key={tag}
-                  className={
-                    'gtd-side__item gtd-side__item--tag' +
-                    (view.id === 'tag' && view.tag === tag ? ' is-on' : '')
-                  }
-                  onClick={(e) => {
-                    selectView({ id: 'tag', tag });
-                    afterSideClick(e);
-                  }}
-                  data-testid="gtd-side-tag"
-                >
-                  <i className="fas fa-tag gtd-side__icon" />
-                  <span className="gtd-side__label">{tag}</span>
-                  <span className="gtd-side__count">{n}</span>
-                </button>
-              ))}
+              [
+                { id: 'default', label: 'Por defecto', list: sideTagsDefault },
+                { id: 'other', label: 'Otras', list: sideTagsOther },
+              ]
+                .filter((g) => g.list.length > 0)
+                .map((g) => (
+                  <div
+                    key={g.id}
+                    className="gtd-side__taggroup"
+                    data-testid={`gtd-side-tags-${g.id}`}
+                  >
+                    <div className="gtd-side__grouplabel">{g.label}</div>
+                    {g.list.map(({ tag, n }) => (
+                      <button
+                        key={tag}
+                        className={
+                          'gtd-side__item gtd-side__item--tag' +
+                          (view.id === 'tag' && view.tag === tag ? ' is-on' : '')
+                        }
+                        onClick={(e) => {
+                          selectView({ id: 'tag', tag });
+                          afterSideClick(e);
+                        }}
+                        data-testid="gtd-side-tag"
+                      >
+                        <i className="fas fa-tag gtd-side__icon" />
+                        <span className="gtd-side__label">{tag}</span>
+                        <span className="gtd-side__count">{n}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
           </div>
         )}
       </aside>
@@ -6614,6 +6685,9 @@ export default function GtdView() {
             total={proc.queue.length}
             mode={getProcessMode()}
             areas={areas}
+            contextTags={contextTags}
+            effortOptions={effortOptions}
+            energyOptions={energyOptions}
             today={today}
             paused={!!(openKey || draft || newProject || menu || showAgenda)}
             strict={strictOn()}

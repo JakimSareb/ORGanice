@@ -769,6 +769,29 @@ export const projectSections = (tasks, projectKey, filters = {}, today = new Dat
   return out;
 };
 
+// (4.32) Cabeceras sin estado que cuentan para las etiquetas de la barra de filtros de una vista:
+// las Referencias de un proyecto (view.type 'project') o las que llevan la etiqueta de una vista
+// de etiqueta con «cabeceras sin tarea» (`withHeadings`). Las demás vistas: ninguna.
+export const filterHeadings = (tasks, view, withHeadings = false) => {
+  if (view.type === 'project') {
+    const p = tasks.find((t) => t.key === view.key && !t.isTrashed);
+    return p
+      ? tasks.filter((t) => !t.keyword && !t.isTrashed && inProject(t, p) && t.key !== p.key)
+      : [];
+  }
+  if (view.id === 'tag' && withHeadings) {
+    return tasks.filter(
+      (t) =>
+        !t.keyword &&
+        !t.isTrashed &&
+        !t.isProject &&
+        (t.tags || []).includes(view.tag) &&
+        listOf(t) !== 'inbox'
+    );
+  }
+  return [];
+};
+
 // (4.22) Tarea (o cabecera) por su :ID: (org-id), sin distinguir mayúsculas; las de la Papelera no
 export const taskByOrgId = (tasks, id) => {
   const want = String(id || '')
@@ -1078,6 +1101,61 @@ export const nestSubtasks = (items, skip = null) => {
     }
   });
   flush();
+  return out;
+};
+
+// (4.32) Lista Referencia con ▸: cada referencia despliega sus subcabeceras (con estado si lo
+// tienen) y sus notas, a varios niveles. Las filas de la lista que cuelgan de otra fila de la lista
+// no salen sueltas: van dentro de su madre. `openSet` = ids (idOf) de las desplegadas.
+export const nestRefKids = (items, allTasks, openSet, idOf) => {
+  const kidsOf = new Map();
+  allTasks.forEach((t) => {
+    if (!t.parentId || t.isTrashed) return;
+    const k = `${t.path}::${t.parentId}`;
+    if (!kidsOf.has(k)) kidsOf.set(k, []);
+    kidsOf.get(k).push(t);
+  });
+  const inList = new Set(items.filter((i) => i.kind === 'task').map((i) => i.task.key));
+  const byKey = new Map(allTasks.map((t) => [t.key, t]));
+  const hasListAncestor = (t) => {
+    let p = t.parentId ? byKey.get(`${t.path}::${t.parentId}`) : null;
+    let guard = 0;
+    while (p && guard++ < 50) {
+      if (inList.has(p.key)) return true;
+      p = p.parentId ? byKey.get(`${p.path}::${p.parentId}`) : null;
+    }
+    return false;
+  };
+  const out = [];
+  const emitKids = (t, depth, section) => {
+    (kidsOf.get(t.key) || []).forEach((k) => {
+      const sub = kidsOf.get(k.key) || [];
+      out.push({
+        kind: 'task',
+        task: k,
+        section,
+        reorderable: false,
+        isRef: !k.keyword,
+        depth,
+        refKids: true,
+        hasKids: sub.length > 0,
+        folded: !openSet.has(idOf(k)),
+        forceNotes: true,
+      });
+      if (sub.length && openSet.has(idOf(k))) emitKids(k, depth + 1, section);
+    });
+  };
+  items.forEach((i) => {
+    if (i.kind !== 'task') {
+      out.push(i);
+      return;
+    }
+    if (hasListAncestor(i.task)) return;
+    const n = (kidsOf.get(i.task.key) || []).length;
+    const open = n > 0 && openSet.has(idOf(i.task));
+    out.push(n ? { ...i, refKids: true, hasKids: true, folded: !open } : i);
+    if (open) emitKids(i.task, (i.depth || 0) + 1, i.section);
+  });
   return out;
 };
 
