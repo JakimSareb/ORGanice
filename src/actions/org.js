@@ -2289,13 +2289,9 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
   window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
   if (header) {
     dispatch(selectHeaderAndOpenParents(targetPath, header.get('id'), { widen: true }));
-    // (3.04) el encabezado del enlace se abre «solo cabeceras» (sin notas)
-    dispatch({
-      type: 'ELI_OPEN_SUBTREE',
-      headerId: header.get('id'),
-      titlesOnly: true,
-      hideBody: true,
-    });
+    // (4.36) el encabezado del enlace se abre en NARROW (con sus notas y las subcabeceras
+    // plegadas); al pie salen sus Backlinks. La flecha «←» vuelve al documento entero.
+    dispatch(eliNarrowAndExpand(header.get('id'), { titlesOnly: true, hideBody: false }));
     // (3.09) que la cabecera de destino quede marcada aunque la vista se vuelva a pintar después
     // (al abrir otro fichero, al cerrar menús…)
     const targetId = header.get('id');
@@ -2310,6 +2306,66 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
   } else {
     dispatch(setPath(targetPath));
   }
+  return true;
+};
+
+// (4.36) Guarda en el servicio un fichero con cambios pendientes y espera (como mucho 10 s)
+export const eliSyncFile = (path) => (dispatch, getState) =>
+  new Promise((resolve) => {
+    if (!path || !getState().org.present.getIn(['files', path, 'isDirty'])) {
+      resolve();
+      return;
+    }
+    const t = setTimeout(resolve, 10000);
+    dispatch(
+      doSync({
+        forceAction: 'manual',
+        shouldSuppressMessages: true,
+        path,
+        onDone: () => {
+          clearTimeout(t);
+          resolve();
+        },
+      })
+    );
+  });
+
+// (4.36) Vuelve a leer un fichero del servicio (el Diario lo escribe por su cuenta) salvo que
+// tenga cambios sin subir
+export const eliReloadFile = (path) => async (dispatch, getState) => {
+  const client = getState().syncBackend.get('client');
+  if (!client || !path) return false;
+  if (getState().org.present.getIn(['files', path, 'isDirty'])) return false;
+  try {
+    const result = await withTimeout(client.getFileContentsAndMetadata(path), 20000, 'timeout');
+    dispatch(parseFile(path, result.contents));
+    dispatch(setLastSyncAt(lastSyncAtFor(result), path));
+    dispatch(setDirty(false, path));
+    await dispatch(eliApplyPendingLocalVersion(path));
+    return true;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('ORGanice: no se pudo recargar', path, e);
+    return false;
+  }
+};
+
+// (4.36) Diario editable: abre el fichero del año y reduce (narrow) al día con ese :ID:
+export const eliOpenDiaryDayNarrow = (path, orgId) => async (dispatch, getState) => {
+  await dispatch(eliReloadFile(path));
+  if (!getState().org.present.getIn(['files', path, 'headers']))
+    await dispatch(loadFileQuietly(path));
+  const files = getState().org.present.get('files');
+  const only = files.filter((_, p) => p === path);
+  const found = findHeaderById(only, orgId);
+  if (!found) {
+    showMessage('Diario', 'No se encuentra el día en el fichero.');
+    return false;
+  }
+  window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${path}` }));
+  const id = found.header.get('id');
+  dispatch(selectHeaderAndOpenParents(path, id, { widen: true }));
+  dispatch(eliNarrowAndExpand(id, { titlesOnly: true, hideBody: false }));
   return true;
 };
 

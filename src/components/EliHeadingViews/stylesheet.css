@@ -243,3 +243,62 @@ body.eli-hv-open {
   cursor: pointer;
   padding: 2px 0;
 }
+
+/* (4.36) Bloque «Backlinks» (al pie de la cabecera en narrow y en «Quién enlaza aquí») */
+.eli-narrow-refs {
+  border-top: 1px solid var(--base2, #eee);
+}
+.eli-narrow-refs__title {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--base1, #999);
+  font-size: 0.9em;
+  font-weight: 600;
+  padding: 6px 0;
+}
+.eli-hv__order {
+  display: inline-flex;
+  gap: 4px;
+  margin-right: 8px;
+}
+.eli-hv__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--base2, #eee);
+  margin-top: 8px;
+}
+.eli-hv__chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.eli-hv__date {
+  color: var(--base1, #999);
+}
+/* texto renderizado dentro de los resultados (los saltos de línea como en Documentos) */
+.eli-hv__org {
+  white-space: pre-wrap;
+}
+.eli-hv__org .attributed-string__list-part {
+  margin: 0;
+}
+.eli-hv__title .eli-hv__org,
+.eli-hv__title > span {
+  display: inline;
+}
+.eli-hv__org img,
+.eli-hv__notes img,
+.eli-hv__links img {
+  max-width: 100%;
+  height: auto;
+}
+@media print {
+  .eli-hv__overlay {
+    display: none !important;
+  }
+}

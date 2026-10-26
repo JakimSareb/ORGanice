@@ -134,6 +134,10 @@ const isCoarsePointer = () => {
   }
 };
 
+// (4.36) subventanas que se abren desde el editor y se pintan fuera de él
+const SUBWINDOW_SEL =
+  '.gtd-menu:not(.gtd-rapid__ac), .eli-hv__overlay, .eli-prompt__overlay, .eli-palette__overlay';
+
 export default function TaskEditor({
   task,
   projects,
@@ -459,7 +463,11 @@ export default function TaskEditor({
       return true;
     };
     const onDown = (e) => {
-      pending = isOutside(e) ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
+      // (4.36) con una subventana abierta desde el editor (Lista GTD, Enviar a, Backlinks…), el
+      // toque fuera cierra SOLO esa subventana (ya lo hace ella); el editor se queda. Se mira en
+      // el pointerdown, antes de que la subventana se cierre.
+      const sub = document.querySelector(SUBWINDOW_SEL);
+      pending = !sub && isOutside(e) ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
     };
     const onMove = (e) => {
       if (pending && e.pointerId === pending.id) {

@@ -381,17 +381,21 @@ export const parseDays = (text) => {
           else if (l.trim()) notes.push(l);
         }
       });
-      const fromHeads = d.entries.map((e) => {
+      // (4.36) Las subcabeceras del usuario bajo el día (`*** Título`, sin hora) ya no son apuntes:
+      // salen aparte (`heads`, plegadas y con su título) y siguen contando como «algo del día»
+      const heads = [];
+      const fromHeads = [];
+      d.entries.forEach((e) => {
         const x = ENTRY.exec(e.line);
         const body = e.body.join('\n').replace(/\s+$/, '');
-        if (!x) return { time: '', mark: '-', text: e.line.replace(/^\*+\s*/, ''), body };
-        return { time: x[1].padStart(5, '0'), mark: x[2] || '-', text: x[3], body };
+        if (!x) heads.push({ title: e.line.replace(/^\*+\s*/, ''), body });
+        else fromHeads.push({ time: x[1].padStart(5, '0'), mark: x[2] || '-', text: x[3], body });
       });
       const entries = bodyEntries
         .map((e) => ({ ...e, body: e.body.join('\n') }))
         .concat(fromHeads)
         .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-      days.push({ key: d.key, answers, notes, entries, props });
+      days.push({ key: d.key, answers, notes, entries, heads, props });
     })
   );
   return days;
@@ -401,7 +405,13 @@ export const parseDays = (text) => {
 export const daysWithEntries = (text) =>
   new Set(
     parseDays(text)
-      .filter((d) => d.entries.length || d.notes.length || d.answers.some((a) => a.answer.trim()))
+      .filter(
+        (d) =>
+          d.entries.length ||
+          (d.heads || []).length ||
+          d.notes.length ||
+          d.answers.some((a) => a.answer.trim())
+      )
       .map((d) => d.key)
   );
 
@@ -458,6 +468,7 @@ export const templateFromText = (s) =>
 export const dayHasData = (d) =>
   !!d &&
   (d.entries.length > 0 ||
+    (d.heads || []).length > 0 ||
     d.notes.length > 0 ||
     d.answers.some((a) => a.answer.trim()) ||
     Object.keys(d.props || {}).some((k) => k !== 'ID' && String(d.props[k]).trim()));

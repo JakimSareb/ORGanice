@@ -28,17 +28,10 @@ import {
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
 import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
-import {
-  CONTENT_PX,
-  CONTENT_WIDTHS,
-  getContentPx,
-  getContentWidth,
-  setContentPx,
-  setContentWidth,
-} from '../../lib/eli_layout';
 import { pagesPathFor } from '../../lib/eli_heading_links';
 import { askPick } from '../../lib/eli_prompt';
 import { useTagsPos, setTagsPos } from '../../lib/eli_tags_pos';
+import { useGapHeaders, setGapHeaders } from '../../lib/eli_gap_headers';
 import {
   MENU_ENTRIES,
   getMenuLayout,
@@ -228,9 +221,8 @@ const EliDocsSettings = () => {
   const auto = useSelector(selectPagesAuto);
   const hashOn = useSelector(selectHashOn);
   const slashOn = useSelector(selectSlashOn);
+  const gapOn = useGapHeaders();
   const paths = useSelector(selectOrgPaths);
-  const [width, setWidth] = React.useState(getContentWidth());
-  const [widthPx, setWidthPx] = React.useState(String(getContentPx()));
   const set = (name, value) => dispatch(baseActions.setEliSetting(name, value));
   const choose = async () => {
     const list = paths ? paths.split('\n') : [];
@@ -284,42 +276,15 @@ const EliDocsSettings = () => {
         </div>
         <Switch isEnabled={slashOn} onToggle={() => set('eliSlashMenu', !slashOn)} />
       </div>
-      <div
-        className="setting-container setting-container--vertical"
-        data-testid="eli-setting-width"
-      >
+      <div className="setting-container" data-testid="eli-setting-gap-headers">
         <div className="setting-label">
-          Ancho del contenido (GTD y Documentos)
+          Espacio tras cada cabecera
           <div className="setting-label__description">
-            En el ordenador. Se guarda en este dispositivo, igual que el ancho de la barra lateral
-            de GTD (arrastra su borde; doble clic = el de siempre). «Personalizado»: ancho en
-            píxeles para todas las vistas.
+            Deja un hueco de una línea al final de cada cabecera (tras su nota y sus subcabeceras),
+            como el que queda tras una lista. Solo se ve; el fichero no cambia.
           </div>
         </div>
-        <TabButtons
-          buttons={CONTENT_WIDTHS.map((w) => w.label)}
-          values={CONTENT_WIDTHS.map((w) => w.id)}
-          selectedButton={width}
-          onSelect={(v) => {
-            setContentWidth(v);
-            setWidth(v);
-          }}
-        />
-        {width === 'custom' && (
-          <div className="eli-width-px" data-testid="eli-width-px">
-            <input
-              type="number"
-              className="textfield"
-              min={CONTENT_PX.min}
-              max={CONTENT_PX.max}
-              value={widthPx}
-              onChange={(e) => setWidthPx(e.target.value)}
-              onBlur={() => setWidthPx(String(setContentPx(widthPx)))}
-              data-testid="eli-width-px-input"
-            />{' '}
-            px (también se arrastra el borde del contenido)
-          </div>
-        )}
+        <Switch isEnabled={gapOn} onToggle={() => setGapHeaders(!gapOn)} />
       </div>
     </details>
   );

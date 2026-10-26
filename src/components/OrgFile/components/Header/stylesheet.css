@@ -15,6 +15,14 @@
 .header--selected {
   background-color: var(--base1-soft);
 }
+/* (4.36) «Espacio tras cada cabecera»: hueco de una línea al final de cada cabecera (después de
+   su nota y de sus subcabeceras). Solo visual; se enciende con la clase de <body>. */
+body.eli-gap-headers .header-list-container .header {
+  margin-bottom: 18px;
+}
+body.eli-gap-headers .header-list-container .header--removing {
+  margin-bottom: 0;
+}
 /* (4.35) escribiendo (título o nota en su sitio): fondo del documento, sin tinte azul; la línea
    actual se marca con una barrita fina a la izquierda */
 .header--selected:has(.eli-inline-textarea) {

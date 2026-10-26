@@ -170,12 +170,9 @@ const toggleHeaderOpened = (state, action) => {
     return state.setIn(['headers', headerIndex, 'eliHideBody'], false);
   }
 
-  if (isOpened && state.get('narrowedHeaderId') === action.headerId) {
-    // (3.04) el reducido no se pliega: vuelve a «solo cabeceras»
-    return hasHeaderContent(header)
-      ? state.setIn(['headers', headerIndex, 'eliHideBody'], true)
-      : state;
-  }
+  // (4.36) La cabecera reducida se pliega y se despliega como cualquiera (antes, abierta, un toque
+  // solo alternaba «notas ↔ solo cabeceras» y no se podía volver a plegar). Sus padres siguen
+  // abiertos, así que plegada se ve su título.
 
   if (isOpened && action.closeSubheadersRecursively) {
     const subheaderIndices = subheaderIndicesOfHeaderWithId(headers, action.headerId);
@@ -1111,6 +1108,10 @@ const narrowHeader = (state, action) => {
     subheaderIndicesOfHeaderWithId(headers, action.headerId).forEach((i) => {
       next = next.setIn([i, 'opened'], false);
     });
+    // (4.36) al entrar se despliega UNA vez (con las subcabeceras plegadas); luego se pliega y
+    // se despliega con normalidad
+    const idx = indexOfHeaderWithId(headers, action.headerId);
+    if (idx >= 0) next = next.setIn([idx, 'opened'], true).setIn([idx, 'eliHideBody'], false);
     state = state.set('headers', next);
   }
   return state.set('narrowedHeaderId', action.headerId);

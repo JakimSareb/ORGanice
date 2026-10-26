@@ -42,7 +42,9 @@ export const InlineTextarea = React.forwardRef(function InlineTextarea(
     // la actual, y la página no da saltos
     const grew = (value || '').length >= prevLen.current;
     prevLen.current = (value || '').length;
-    if (grew) el.style.minHeight = `${el.offsetHeight}px`;
+    // (4.36) 2 px menos que la altura actual (es scrollHeight + 2): si no, scrollHeight nunca baja de
+    // la altura actual y cada tecla sumaba 2 px (el subrayado «bajaba» poco a poco)
+    if (grew) el.style.minHeight = `${Math.max(0, el.offsetHeight - 2)}px`;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight + 2}px`;
     el.style.minHeight = '';

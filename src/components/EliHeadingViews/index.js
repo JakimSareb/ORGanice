@@ -24,8 +24,24 @@ import {
   nestEntries,
   filterEntries,
   linkingParagraph,
-  splitLinkParts,
+  tagsOf,
+  filterBacklinks,
+  anyDated,
+  contextLabel,
+  entryDate,
 } from '../../lib/eli_heading_index';
+import {
+  applyBacklinksView,
+  serializeBacklinks,
+  publishBacklinksSnapshot,
+  backlinksKey,
+  entryKey,
+  useBacklinksOrder,
+  setBacklinksOrder,
+  useHvFilters,
+  setHvFilters,
+} from '../../lib/eli_backlinks_view';
+import { OrgText, OrgTitle } from './OrgRender';
 import { insertHeadingLink, pickTagForTitle } from '../../lib/eli_heading_links';
 import { selectHeaderAndOpenParents, loadFileQuietly } from '../../actions/org';
 import { insertIntoField } from '../EliTools';
@@ -56,18 +72,27 @@ export const useGoToHeading = () => {
 // Una cabecera con ▸ (notas y subcabeceras plegables). (4.35) `node.children` = resultados de la
 // lista que cuelgan de esta (indentados y plegables con su propio ▸/▾). `paragraphFor` (solo en
 // «Quién enlaza aquí»): enseña el párrafo que enlaza y un botón «Ver el resto».
+// (4.36) Título, párrafos y notas van RENDERIZADOS (enlaces, imágenes, formato…); `markId` resalta
+// el enlace a ese ID; `openCtl` ({ has, toggle }) lleva el «Ver el resto» fuera (para imprimir).
 const Item = ({
   node,
   index,
   onGo,
   depth = 0,
   showContext = false,
+  contextWithFile = false,
+  dateLabel = false,
   preview = false,
   paragraphFor = null,
+  markId = null,
+  openCtl = null,
 }) => {
   const entry = node.entry;
   const nested = node.children || [];
-  const [open, setOpen] = useState(false);
+  const [openLocal, setOpenLocal] = useState(false);
+  const key = entryKey(entry);
+  const open = openCtl ? openCtl.has(key) : openLocal;
+  const setOpen = (v) => (openCtl ? openCtl.toggle(key, v) : setOpenLocal(v));
   const [showNested, setShowNested] = useState(true);
   const nestedIds = useMemo(() => new Set(nested.map((n) => n.entry.headerId)), [nested]);
   const own = useMemo(() => childrenOf(index, entry).filter((k) => !nestedIds.has(k.headerId)), [
@@ -84,6 +109,7 @@ const Item = ({
     paragraphFor,
     entry,
   ]);
+  const when = dateLabel ? entryDate(entry) : null;
   return (
     <li className="eli-hv__item" data-testid="eli-hv-item">
       <div className="eli-hv__row">
@@ -96,18 +122,24 @@ const Item = ({
         >
           {hasMore ? (open ? '▾' : '▸') : '•'}
         </button>
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           className="eli-hv__title"
-          onClick={() => onGo(entry)}
+          onClick={(e) => {
+            // tocar un enlace del título no abre ni pliega el resultado
+            if (e.target.closest && e.target.closest('a, .eli-org-link, img')) return;
+            onGo(entry);
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && onGo(entry)}
           data-testid="eli-hv-title"
         >
           {entry.keyword && <span className="eli-hv__kw">{entry.keyword}</span>}
-          {entry.title || '(sin título)'}
+          <OrgTitle rawTitle={entry.rawTitle} />
           {entry.ownTags.length > 0 && (
             <span className="eli-hv__tags">{entry.ownTags.join(' ')}</span>
           )}
-        </button>
+        </div>
         {nested.length > 0 && (
           <button
             type="button"
@@ -120,22 +152,21 @@ const Item = ({
           </button>
         )}
       </div>
-      {showContext && entry.parents.length > 0 && (
-        <div className="eli-hv__ctx">{entry.parents.join(' › ')}</div>
+      {(showContext || contextWithFile || when) && (
+        <div className="eli-hv__ctx">
+          {when ? <span className="eli-hv__date">{formatDay(when)} · </span> : null}
+          {contextWithFile
+            ? contextLabel(entry)
+            : showContext && entry.parents.length > 0
+            ? entry.parents.join(' › ')
+            : ''}
+        </div>
       )}
       {paragraphs.length > 0 && (
         <div className="eli-hv__links" data-testid="eli-hv-link-paragraphs">
           {paragraphs.map((p, i) => (
             <div key={i} className="eli-hv__link-par" data-testid="eli-hv-link-paragraph">
-              {p.map((part, j) =>
-                part.link ? (
-                  <mark key={j} className="eli-hv__link-mark">
-                    {part.text}
-                  </mark>
-                ) : (
-                  <span key={j}>{part.text}</span>
-                )
-              )}
+              <OrgText text={p} markId={markId} />
             </div>
           ))}
           {hasMore && (
@@ -161,7 +192,11 @@ const Item = ({
       )}
       {open && (
         <div className="eli-hv__body">
-          {entry.notes.trim() && <div className="eli-hv__notes">{entry.notes.trim()}</div>}
+          {entry.notes.trim() && (
+            <div className="eli-hv__notes">
+              <OrgText text={entry.notes.trim()} markId={markId} />
+            </div>
+          )}
           {own.length > 0 && (
             <ul className="eli-hv__list">
               {own.map((k) => (
@@ -171,6 +206,7 @@ const Item = ({
                   index={index}
                   onGo={onGo}
                   depth={depth + 1}
+                  markId={markId}
                 />
               ))}
             </ul>
@@ -189,12 +225,33 @@ const Item = ({
               showContext={false}
               preview={preview}
               paragraphFor={paragraphFor}
+              markId={markId}
+              openCtl={openCtl}
             />
           ))}
         </ul>
       )}
     </li>
   );
+};
+
+const MONTHS_ES = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+];
+export const formatDay = (ms) => {
+  const d = new Date(ms);
+  return `${d.getDate()} ${MONTHS_ES[d.getMonth()]} ${d.getFullYear()}`;
 };
 
 export const Groups = ({
@@ -204,6 +261,8 @@ export const Groups = ({
   showContext,
   preview = false,
   paragraphFor = null,
+  markId = null,
+  openCtl = null,
 }) => (
   <div className="eli-hv__groups">
     {groupByPath(entries).map((g) => (
@@ -222,6 +281,8 @@ export const Groups = ({
               showContext={showContext}
               preview={preview}
               paragraphFor={paragraphFor}
+              markId={markId}
+              openCtl={openCtl}
             />
           ))}
         </ul>
@@ -230,13 +291,49 @@ export const Groups = ({
   </div>
 );
 
+// (4.36) Orden «Por fecha»: lista plana (fecha y fichero en cada resultado) y, al final, «Sin fecha»
+const DateList = ({ applied, index, onGo, paragraphFor, markId, openCtl }) => {
+  const rows = (list) => (
+    <ul className="eli-hv__list">
+      {list.map((e) => (
+        <Item
+          key={`${e.path}|${e.headerId}`}
+          node={{ entry: e, children: [] }}
+          index={index}
+          onGo={onGo}
+          contextWithFile
+          dateLabel
+          paragraphFor={paragraphFor}
+          markId={markId}
+          openCtl={openCtl}
+        />
+      ))}
+    </ul>
+  );
+  return (
+    <div className="eli-hv__groups" data-testid="eli-hv-bydate">
+      {applied.dated.length > 0 && rows(applied.dated)}
+      {applied.undated.length > 0 && (
+        <section className="eli-hv__group" data-testid="eli-hv-undated">
+          <h4 className="eli-hv__file">
+            Sin fecha<span className="eli-hv__count">{applied.undated.length}</span>
+          </h4>
+          {rows(applied.undated)}
+        </section>
+      )}
+    </div>
+  );
+};
+
 const TagView = ({ tag, onClose }) => {
   const files = useSelector(selectFiles);
   const index = useMemo(() => headingIndex(files, { skipDiary: true }), [files]);
   const [inherited, setInherited] = useState(true);
-  // (4.35) interruptores pasajeros (apagados al abrir la vista)
-  const [hideArchived, setHideArchived] = useState(false);
-  const [hideTasks, setHideTasks] = useState(false);
+  // (4.35) interruptores pasajeros (apagados al abrir la app). (4.36) Los comparte el bloque de
+  // Backlinks
+  const { hideArchived, hideTasks } = useHvFilters();
+  const setHideArchived = (v) => setHvFilters({ hideArchived: v });
+  const setHideTasks = (v) => setHvFilters({ hideTasks: v });
   const [extra, setExtra] = useState([]);
   const go = useGoToHeading();
   const entries = useMemo(
@@ -331,6 +428,216 @@ const TagView = ({ tag, onClose }) => {
   );
 };
 
+// (4.36) Bloque de Backlinks: lista de las cabeceras que enlazan a `self`, con filtros (como la
+// vista por etiqueta), etiquetas encontradas (chips), orden «Por fichero» / «Por fecha»
+// y, si `collapsible`, el bloque entero plegable (desplegado por defecto). Lo que se ve se publica
+// para el PDF / imprimir (`publish`).
+const BacklinksPanel = ({ index, self, refs, onGo, collapsible = false, publish = false }) => {
+  const { order, dir } = useBacklinksOrder();
+  const { hideArchived, hideTasks } = useHvFilters();
+  const [inherited, setInherited] = useState(true);
+  const [tags, setTags] = useState([]);
+  const [collapsed, setCollapsed] = useState(false);
+  const [openKeys, setOpenKeys] = useState(() => new Set());
+  const orgId = self.orgId;
+  const datedOk = useMemo(() => anyDated(refs), [refs]);
+  const effOrder = order === 'date' && !datedOk ? 'file' : order;
+  const view = { hideArchived, hideTasks, inherited, tags, order: effOrder, dir };
+  const applied = useMemo(() => applyBacklinksView(refs, view), [
+    refs,
+    hideArchived,
+    hideTasks,
+    inherited,
+    tags,
+    effOrder,
+    dir,
+  ]);
+  // etiquetas de lo que sale ANTES de filtrar por ellas (para poder quitar o añadir otra)
+  const chips = useMemo(
+    () =>
+      tagsOf(filterBacklinks(refs, { hideArchived, hideTasks, inherited, tags: [] }), {
+        inherited,
+      }),
+    [refs, hideArchived, hideTasks, inherited]
+  );
+  const paragraphFor = useMemo(() => (e) => linkingParagraph(e, orgId), [orgId]);
+  const openCtl = useMemo(
+    () => ({
+      has: (k) => openKeys.has(k),
+      toggle: (k, v) =>
+        setOpenKeys((cur) => {
+          const next = new Set(cur);
+          if (v) next.add(k);
+          else next.delete(k);
+          return next;
+        }),
+    }),
+    [openKeys]
+  );
+  const snapKey = backlinksKey(self.path, self.headerId);
+  useEffect(() => {
+    if (!publish) return undefined;
+    publishBacklinksSnapshot(
+      snapKey,
+      serializeBacklinks({ refs, index, orgId, view, openKeys: Array.from(openKeys), collapsed })
+    );
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    publish,
+    snapKey,
+    refs,
+    index,
+    orgId,
+    hideArchived,
+    hideTasks,
+    inherited,
+    tags,
+    effOrder,
+    dir,
+    openKeys,
+    collapsed,
+  ]);
+  useEffect(() => () => publish && publishBacklinksSnapshot(snapKey, null), [publish, snapKey]);
+
+  const body = (
+    <>
+      <div className="eli-hv__filters" data-testid="eli-backlinks-filters">
+        <span className="eli-hv__order" data-testid="eli-backlinks-order">
+          <button
+            type="button"
+            className={'eli-hv__chip' + (effOrder === 'file' ? ' is-on' : '')}
+            onClick={() => setBacklinksOrder({ order: 'file', dir })}
+            data-testid="eli-backlinks-order-file"
+          >
+            Por fichero
+          </button>
+          <button
+            type="button"
+            className={'eli-hv__chip' + (effOrder === 'date' ? ' is-on' : '')}
+            disabled={!datedOk}
+            title={datedOk ? '' : 'Ningún resultado tiene fecha'}
+            onClick={() => setBacklinksOrder({ order: 'date', dir })}
+            data-testid="eli-backlinks-order-date"
+          >
+            Por fecha
+          </button>
+          {effOrder === 'date' && (
+            <button
+              type="button"
+              className="eli-hv__chip"
+              onClick={() =>
+                setBacklinksOrder({ order: 'date', dir: dir === 'asc' ? 'desc' : 'asc' })
+              }
+              aria-label={dir === 'asc' ? 'Más antiguas primero' : 'Más recientes primero'}
+              data-testid="eli-backlinks-dir"
+            >
+              {dir === 'asc' ? '↑' : '↓'}
+            </button>
+          )}
+        </span>
+        <label className="eli-hv__inherit">
+          <input
+            type="checkbox"
+            checked={inherited}
+            onChange={(e) => setInherited(e.target.checked)}
+            data-testid="eli-backlinks-inherited"
+          />{' '}
+          Incluir heredadas
+        </label>
+        <label className="eli-hv__inherit">
+          <input
+            type="checkbox"
+            checked={hideArchived}
+            onChange={(e) => setHvFilters({ hideArchived: e.target.checked })}
+            data-testid="eli-backlinks-hide-archived"
+          />{' '}
+          Ocultar archivadas
+        </label>
+        <label className="eli-hv__inherit">
+          <input
+            type="checkbox"
+            checked={hideTasks}
+            onChange={(e) => setHvFilters({ hideTasks: e.target.checked })}
+            data-testid="eli-backlinks-hide-tasks"
+          />{' '}
+          Ocultar tareas
+        </label>
+      </div>
+      {applied.count ? (
+        applied.mode === 'date' ? (
+          <DateList
+            applied={applied}
+            index={index}
+            onGo={onGo}
+            paragraphFor={paragraphFor}
+            markId={orgId}
+            openCtl={openCtl}
+          />
+        ) : (
+          <Groups
+            entries={applied.entries}
+            index={index}
+            onGo={onGo}
+            showContext
+            paragraphFor={paragraphFor}
+            markId={orgId}
+            openCtl={openCtl}
+          />
+        )
+      ) : (
+        <div className="eli-hv__empty" data-testid="eli-backlinks-filtered-none">
+          Ningún resultado con estos filtros.
+        </div>
+      )}
+      {(chips.length > 0 || tags.length > 0) && (
+        <div className="eli-hv__chips" data-testid="eli-backlinks-tags">
+          {tags.map((t) => (
+            <button
+              type="button"
+              key={`on-${t}`}
+              className="eli-hv__chip is-on"
+              onClick={() => setTags(tags.filter((x) => x !== t))}
+              data-testid="eli-backlinks-tag-on"
+            >
+              {t} ✕
+            </button>
+          ))}
+          {chips
+            .filter((c) => !tags.some((x) => x.toLowerCase() === c.tag.toLowerCase()))
+            .map((c) => (
+              <button
+                type="button"
+                key={c.tag}
+                className="eli-hv__chip"
+                onClick={() => setTags([...tags, c.tag])}
+                data-testid="eli-backlinks-tag"
+              >
+                {c.tag} <span className="eli-hv__count">{c.count}</span>
+              </button>
+            ))}
+        </div>
+      )}
+    </>
+  );
+  if (!collapsible) return body;
+  return (
+    <>
+      <button
+        type="button"
+        className="eli-narrow-refs__title"
+        aria-expanded={!collapsed}
+        onClick={() => setCollapsed(!collapsed)}
+        data-testid="eli-narrow-refs-toggle"
+      >
+        {collapsed ? '▸' : '▾'} <i className="fas fa-link" /> Backlinks{' '}
+        <span className="eli-hv__count">{refs.length}</span>
+      </button>
+      {!collapsed && body}
+    </>
+  );
+};
+
 const BacklinksView = ({ path, headerId, onClose }) => {
   const files = useSelector(selectFiles);
   const index = useMemo(() => headingIndex(files), [files]);
@@ -343,14 +650,6 @@ const BacklinksView = ({ path, headerId, onClose }) => {
     index,
     self,
   ]);
-  // (4.35) de cada resultado, solo el párrafo que enlaza (el enlace resaltado) + «Ver el resto»
-  const paragraphFor = useMemo(
-    () =>
-      self && self.orgId
-        ? (e) => linkingParagraph(e, self.orgId).map((p) => splitLinkParts(p, self.orgId))
-        : null,
-    [self]
-  );
   return (
     <Overlay
       title={
@@ -367,12 +666,12 @@ const BacklinksView = ({ path, headerId, onClose }) => {
           Sin enlaces: esta cabecera aún no tiene :ID:, así que nada la enlaza.
         </div>
       ) : refs.length ? (
-        <Groups
-          entries={refs}
+        <BacklinksPanel
+          key={`${path}|${headerId}`}
           index={index}
+          self={self}
+          refs={refs}
           onGo={(e) => go(e, onClose)}
-          showContext
-          paragraphFor={paragraphFor}
         />
       ) : (
         <div className="eli-hv__empty" data-testid="eli-backlinks-none">
@@ -442,7 +741,14 @@ const Overlay = ({ title, count, onClose, testId, children }) => {
             <i className="fas fa-times" />
           </button>
         </div>
-        <div className="eli-hv__scroll" ref={scrollRef}>
+        <div
+          className="eli-hv__scroll"
+          ref={scrollRef}
+          onClickCapture={(e) => {
+            // (4.36) seguir un enlace [[id:…]] de un resultado cierra la página y abre su destino
+            if (e.target.closest && e.target.closest('.eli-org-link')) setTimeout(onClose, 0);
+          }}
+        >
           {children}
         </div>
       </div>
@@ -450,7 +756,8 @@ const Overlay = ({ title, count, onClose, testId, children }) => {
   );
 };
 
-// Bloque plegado «Referencias» al pie de la cabecera vista sola (narrow), como en Logseq
+// (4.36) Bloque «Backlinks» al pie de la cabecera vista sola (narrow), DESPLEGADO por defecto y
+// plegable con su título. Sin backlinks no se muestra.
 export const EliNarrowRefs = ({ path, headerId }) => {
   const files = useSelector(selectFiles);
   const index = useMemo(() => headingIndex(files), [files]);
@@ -463,15 +770,19 @@ export const EliNarrowRefs = ({ path, headerId }) => {
     index,
     self,
   ]);
-  if (!refs.length) return null;
+  if (!self || !refs.length) return null;
   return (
-    <details className="eli-narrow-refs" data-testid="eli-narrow-refs">
-      <summary>
-        <i className="fas fa-link" /> Referencias{' '}
-        <span className="eli-hv__count">{refs.length}</span>
-      </summary>
-      <Groups entries={refs} index={index} onGo={(e) => go(e)} showContext />
-    </details>
+    <div className="eli-narrow-refs" data-testid="eli-narrow-refs">
+      <BacklinksPanel
+        key={`${path}|${headerId}`}
+        index={index}
+        self={self}
+        refs={refs}
+        onGo={(e) => go(e)}
+        collapsible
+        publish
+      />
+    </div>
   );
 };
 

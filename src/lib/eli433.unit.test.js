@@ -41,7 +41,6 @@ describe('4.33 ajustes entre dispositivos', () => {
     expect(isSyncedKey('eliDiary')).toBe(true);
     expect(isSyncedKey('eliGtdStrict')).toBe(true);
     expect(isSyncedKey('eliWidth:gtd-side')).toBe(false);
-    expect(isSyncedKey('eliContentWidth')).toBe(false);
     expect(isSyncedKey('eliTagsPos')).toBe(false);
     expect(isSyncedKey('eliLogseqEdit')).toBe(false);
     expect(isSyncedKey('eliPrefsStamps')).toBe(false);

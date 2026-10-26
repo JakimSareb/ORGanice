@@ -8,6 +8,8 @@ import { cleanHeadingText } from './eli_org_links';
 import { normalize } from './eli_fuzzy';
 import { isDiaryPath } from './eli_diary';
 import { STATIC_FILE_PREFIX } from './org_utils';
+import { dateForTimestamp } from './timestamps';
+import { attributedStringToRawText } from './export_org';
 
 // Título para enseñar: sin prioridad ni contadores y con los enlaces como su texto
 export const plainHeadingTitle = (rawTitle) =>
@@ -42,6 +44,20 @@ export const isUserPath = (path) =>
   !path.startsWith('/__') &&
   !path.includes(STATIC_FILE_PREFIX);
 
+// (4.36) Fechas de una cabecera para ordenar backlinks: propiedad CREATED, planificación y día del
+// diario (la madre o ella misma con ID «diari-AAAA-MM-DD»)
+const planningMs = (header, type) => {
+  const item = (header.get('planningItems') || List()).find((p) => p.get('type') === type);
+  if (!item) return null;
+  try {
+    const d = dateForTimestamp(item.get('timestamp'));
+    return d && !isNaN(d.getTime()) ? d.getTime() : null;
+  } catch (e) {
+    return null;
+  }
+};
+const DIARY_ID_RE = /^diari-(\d{4})-(\d{2})-(\d{2})$/i;
+
 const cache = new WeakMap();
 
 // Entradas de un fichero (en caché mientras su lista de cabeceras no cambie)
@@ -65,10 +81,17 @@ export const fileHeadings = (path, file) => {
     const title = plainHeadingTitle(rawTitle);
     const props = (h.get('propertyListItems') || List()).map(propertyText).toArray();
     const notes = h.get('rawDescription') || '';
+    const orgId = idOf(h);
+    const createdItem = (h.get('propertyListItems') || List()).find(
+      (p) => (p.get('property') || '').toUpperCase() === 'CREATED'
+    );
+    const diaryHere = orgId && DIARY_ID_RE.exec(orgId);
+    const diaryUp = stack.length ? stack[stack.length - 1].diaryDay : null;
+    const diaryDay = diaryHere ? `${diaryHere[1]}-${diaryHere[2]}-${diaryHere[3]}` : diaryUp;
     entries.push({
       path,
       headerId: h.get('id'),
-      orgId: idOf(h),
+      orgId,
       title,
       rawTitle,
       level,
@@ -80,9 +103,18 @@ export const fileHeadings = (path, file) => {
       keyword: h.getIn(['titleLine', 'todoKeyword']) || null,
       notes,
       linkText: `${rawTitle}\n${notes}\n${props.join('\n')}`,
+      // (4.36) fechas para ordenar
+      created:
+        createdItem && createdItem.get('value')
+          ? attributedStringToRawText(createdItem.get('value')).trim() || null
+          : null,
+      closed: planningMs(h, 'CLOSED'),
+      scheduled: planningMs(h, 'SCHEDULED'),
+      deadline: planningMs(h, 'DEADLINE'),
+      diaryDay,
       pos: entries.length,
     });
-    stack.push({ level, title, tags, pos: entries.length - 1 });
+    stack.push({ level, title, tags, pos: entries.length - 1, diaryDay });
   });
   cache.set(headers, { path, entries });
   return entries;
@@ -454,3 +486,79 @@ export const splitLinkParts = (paragraph, orgId) => {
   if (last < text.length) parts.push({ text: text.slice(last), link: false });
   return parts;
 };
+
+// --- (4.36) Backlinks: filtros, etiquetas y orden por fecha ---
+
+/**
+ * Filtra los backlinks: `hideArchived`, `hideTasks` (como la vista por etiqueta), `inherited`
+ * (las etiquetas heredadas cuentan al filtrar por `tags`) y `tags` (TODAS las elegidas).
+ */
+export const filterBacklinks = (
+  entries,
+  { hideArchived = false, hideTasks = false, inherited = true, tags = [] } = {}
+) => {
+  const want = (tags || []).filter(Boolean);
+  return filterEntries(entries, { hideArchived, hideTasks }).filter((e) =>
+    want.every((t) => hasTag(inherited ? e.tags : e.ownTags, t))
+  );
+};
+
+// Etiquetas de los resultados → [{ tag, count }] (más usadas primero)
+export const tagsOf = (entries, { inherited = true } = {}) => {
+  const counts = new Map();
+  (entries || []).forEach((e) =>
+    (inherited ? e.tags : e.ownTags).forEach((t) => {
+      const k = t.toLowerCase();
+      const prev = counts.get(k);
+      counts.set(k, { tag: prev ? prev.tag : t, count: (prev ? prev.count : 0) + 1 });
+    })
+  );
+  return Array.from(counts.values()).sort(
+    (a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'es', { sensitivity: 'base' })
+  );
+};
+
+const STAMP_RE = /[<[](\d{4})-(\d{2})-(\d{2})(?:\s+[^\d\s>\]]+)?(?:\s+(\d{1,2}):(\d{2}))?[^>\]]*[>\]]/;
+const stampMs = (text) => {
+  const m = STAMP_RE.exec(String(text || ''));
+  if (!m) return null;
+  return new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0).getTime();
+};
+
+/**
+ * Fecha de una cabecera (ms) o null. Prioridad: CREATED → CLOSED → día del diario → SCHEDULED /
+ * DEADLINE → primer timestamp <…> o […] del título o las notas.
+ */
+export const entryDate = (e) => {
+  if (!e) return null;
+  const created = stampMs(e.created);
+  if (created !== null) return created;
+  if (e.closed != null) return e.closed;
+  if (e.diaryDay) {
+    const [y, m, d] = e.diaryDay.split('-').map(Number);
+    return new Date(y, m - 1, d).getTime();
+  }
+  if (e.scheduled != null) return e.scheduled;
+  if (e.deadline != null) return e.deadline;
+  return stampMs(`${e.rawTitle || ''}\n${e.notes || ''}`);
+};
+
+/**
+ * Ordena por fecha (`dir` 'desc' = la más reciente primero). Sin fecha, al final y en su orden.
+ * → { dated: [entradas], undated: [entradas] }
+ */
+export const sortByDate = (entries, dir = 'desc') => {
+  const dated = [];
+  const undated = [];
+  (entries || []).forEach((e, i) => {
+    const t = entryDate(e);
+    if (t === null) undated.push(e);
+    else dated.push({ e, t, i });
+  });
+  const sign = dir === 'asc' ? 1 : -1;
+  dated.sort((a, b) => sign * (a.t - b.t) || a.i - b.i);
+  return { dated: dated.map((x) => x.e), undated };
+};
+
+// ¿Alguna entrada tiene fecha? (si no, «Por fecha» sale deshabilitado)
+export const anyDated = (entries) => (entries || []).some((e) => entryDate(e) !== null);

@@ -2,11 +2,7 @@
 // no ajuste compartido):
 //   - ancho de la barra lateral de GTD (tirador arrastrable, solo ordenador; doble clic = por
 //     defecto), como variable CSS en <html>;
-//   - «Ancho del contenido» de GTD y Documentos: estrecho / medio / completo (data-eli-width).
 const LS_PREFIX = 'eliWidth:';
-const LS_CONTENT = 'eliContentWidth';
-const LS_CONTENT_PX = 'eliContentPx';
-export const CONTENT_PX = { def: 820, min: 420, max: 2400, cssVar: '--eli-content-max' };
 
 export const PANES = {
   gtdSide: { cssVar: '--eli-gtd-side-w', def: 240, min: 170, max: 520 },
@@ -55,54 +51,6 @@ export const setPaneWidth = (pane, px, { save = true } = {}) => {
   return v == null ? PANES[pane].def : v;
 };
 
-export const CONTENT_WIDTHS = [
-  { id: 'narrow', label: 'Estrecho' },
-  { id: 'medium', label: 'Medio' },
-  { id: 'full', label: 'Completo' },
-  { id: 'custom', label: 'Personalizado' },
-];
-
-// (4.35) Ancho «Personalizado» en px (variable CSS --eli-content-max en <html>; todas las vistas)
-export const clampContentPx = (px) => {
-  const n = Math.round(Number(px));
-  if (!Number.isFinite(n) || n <= 0) return CONTENT_PX.def;
-  return Math.max(CONTENT_PX.min, Math.min(CONTENT_PX.max, n));
-};
-export const getContentPx = () => {
-  const v = lsGet(LS_CONTENT_PX);
-  return v ? clampContentPx(v) : CONTENT_PX.def;
-};
-const applyContentPx = (px) => {
-  try {
-    document.documentElement.style.setProperty(CONTENT_PX.cssVar, `${px}px`);
-  } catch (e) {}
-};
-export const setContentPx = (px, { save = true } = {}) => {
-  const v = clampContentPx(px);
-  applyContentPx(v);
-  if (save) lsSet(LS_CONTENT_PX, String(v));
-  return v;
-};
-
-export const getContentWidth = () => {
-  const v = lsGet(LS_CONTENT);
-  return CONTENT_WIDTHS.some((w) => w.id === v) ? v : 'full';
-};
-
-export const applyContentWidth = (id = getContentWidth()) => {
-  try {
-    const el = document.documentElement;
-    if (!id || id === 'full') el.removeAttribute('data-eli-width');
-    else el.setAttribute('data-eli-width', id);
-    if (id === 'custom') applyContentPx(getContentPx());
-  } catch (e) {}
-};
-
-export const setContentWidth = (id) => {
-  lsSet(LS_CONTENT, id);
-  applyContentWidth(id);
-};
-
 // (4.31) Fecha de modificación corta: hoy → hora; este año → «3 oct»; si no → «3 oct 2024»
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 export const shortDate = (value, now = new Date()) => {
@@ -120,5 +68,4 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   Object.keys(PANES).forEach((p) => {
     if (lsGet(LS_PREFIX + p)) applyPane(p, getPaneWidth(p));
   });
-  applyContentWidth();
 }
