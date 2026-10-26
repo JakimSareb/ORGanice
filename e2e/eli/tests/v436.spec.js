@@ -19,6 +19,7 @@ test('4.36: la estrella de Focus del proyecto alterna [#A]', async ({ app }) => 
     '/gtd'
   );
   await gtd.ready(app);
+  if (app.mobile) await page.click('.gtd-main__menu');
   await app.press(
     page.locator('[data-testid=gtd-project]', { hasText: 'Ordenar el trastero' }).first()
   );
