@@ -9,12 +9,12 @@ import { List } from 'immutable';
 import {
   headingIndex,
   searchHeadings,
-  contextLabel,
   allTags,
   pagesFilePath,
   newPageFileText,
   fileNameOf,
   appendTagToTitle,
+  orderHierarchical,
 } from './eli_heading_index';
 import { idHeadingLink, withOrgIdProperty } from './eli_id_links';
 import { newOrgId } from './gtd/gtd_model';
@@ -105,14 +105,21 @@ export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => 
 ) => {
   const state = getState();
   const index = headingIndex(state.org.present.get('files'));
-  const entries = searchHeadings(index, '', 100000);
+  // (4.35) jerárquico: por fichero, nivel 1 primero y bajo cada una sus hijas (orden del documento)
+  const entries = orderHierarchical(searchHeadings(index, '', 100000), index);
   const pagesName = fileNameOf(pagesPathFor(state));
   const chosen = await askPick({
     title,
     placeholder: 'Buscar cabecera…',
     emptyText: 'No hay cabeceras en los ficheros abiertos.',
     limit: 80,
-    items: entries.map((e, i) => ({ id: String(i), label: e.title, hint: contextLabel(e) })),
+    items: entries.map((o, i) => ({
+      id: String(i),
+      label: o.entry.title,
+      // las de nivel 1 llevan el nombre del fichero; las demás, solo su sangría
+      hint: o.depth === 0 ? fileNameOf(o.entry.path) : '',
+      depth: o.depth,
+    })),
     newItem: (raw) => ({ label: `➕ Crear «${raw}»`, hint: `cabecera nueva en ${pagesName}` }),
   });
   if (chosen === null || chosen === undefined) return null;
@@ -120,7 +127,7 @@ export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => 
     const made = await dispatch(createPageHeading(chosen.new));
     return made ? { orgId: made.orgId, title: chosen.new.trim() } : null;
   }
-  const entry = entries[Number(chosen)];
+  const entry = entries[Number(chosen)] && entries[Number(chosen)].entry;
   if (!entry) return null;
   const orgId = entry.orgId || dispatch(ensureHeadingOrgId(entry.path, entry.headerId));
   return orgId ? { orgId, title: entry.rawTitle } : null;
@@ -189,4 +196,37 @@ export const pickTagForTitle = (el, insert, pos) => async (dispatch, getState) =
   const caret = Math.min(at, next.length);
   refocus(el, caret);
   return true;
+};
+
+// (4.35) «Enviar a…»: elegir un fichero (nivel superior) o una cabecera de los ficheros cargados,
+// en orden jerárquico → { path, headerId (null = nivel superior), title } o null (Cancelar)
+export const pickRefileTarget = ({ title = 'Enviar a' } = {}) => async (dispatch, getState) => {
+  const index = headingIndex(getState().org.present.get('files'), { skipDiary: true });
+  const ordered = orderHierarchical(searchHeadings(index, '', 100000), index);
+  const rows = [];
+  const items = [];
+  let lastPath = null;
+  ordered.forEach((o) => {
+    if (o.entry.path !== lastPath) {
+      lastPath = o.entry.path;
+      rows.push({ path: lastPath, headerId: null, title: fileNameOf(lastPath) });
+      items.push({
+        id: String(rows.length - 1),
+        label: fileNameOf(lastPath),
+        hint: 'fichero · nivel superior',
+        depth: 0,
+      });
+    }
+    rows.push({ path: o.entry.path, headerId: o.entry.headerId, title: o.entry.title });
+    items.push({ id: String(rows.length - 1), label: o.entry.title, hint: '', depth: o.depth + 1 });
+  });
+  const chosen = await askPick({
+    title,
+    placeholder: 'Buscar fichero o cabecera…',
+    emptyText: 'No hay ficheros cargados.',
+    limit: 200,
+    items,
+  });
+  if (chosen === null || chosen === undefined) return null;
+  return rows[Number(chosen)] || null;
 };

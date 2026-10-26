@@ -166,7 +166,9 @@ export default function TaskEditor({
   inTrash = false,
   // (3.05) móvil: se abre en vista previa; título y notas se editan al tocarlos
   preview = false,
-  onMove = null, // (3.06) hoja del móvil: «→ Mover» (abre el menú Mover a)
+  onMove = null, // (3.06) hoja del móvil: «→ Lista GTD» (abre el menú Mover a)
+  onBacklinks = null, // (4.35) «Backlinks»: quién enlaza a esta tarea
+  onSendTo = null, // (4.35) «Enviar a»: mover la cabecera dentro de otra
   onSaveProperties = null, // (3.11) ver y editar PROPERTIES
   onAddSubtask = null, // (3.38) «＋ Subtarea»: guarda esta y abre el editor de una hija nueva
   objective = null, // (4.07) objetivo del proyecto (nombre) y elegirlo (fichero de horizontes)
@@ -1559,7 +1561,36 @@ export default function TaskEditor({
               title="Mover a otra lista, proyecto o fichero"
               data-testid="gtd-editor-move"
             >
-              <i className="fas fa-share" /> Mover
+              <i className="fas fa-share" /> Lista GTD
+            </button>
+          )}
+          {/* (4.35) quién enlaza a esta tarea y enviarla dentro de otra cabecera */}
+          {onBacklinks && !isNew && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link"
+              onClick={() => {
+                commit();
+                onBacklinks();
+              }}
+              title="Quién enlaza a esta tarea"
+              data-testid="gtd-editor-backlinks"
+            >
+              <i className="fas fa-link" /> Backlinks
+            </button>
+          )}
+          {onSendTo && !isNew && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link"
+              onClick={() => {
+                commit();
+                onSendTo();
+              }}
+              title="Enviar a otra cabecera o fichero (se mueve dentro de la elegida)"
+              data-testid="gtd-editor-sendto"
+            >
+              <i className="fas fa-paper-plane" /> Enviar a
             </button>
           )}
           {/* (3.11) ver y editar las PROPERTIES de la tarea */}

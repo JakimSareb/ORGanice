@@ -538,6 +538,19 @@ class HeaderList extends PureComponent {
 
     return (
       <div className={className}>
+        {/* (4.35) flechita discreta para volver a ver todo el documento (solo en narrow) */}
+        {!!narrowedHeaderId && (
+          <button
+            type="button"
+            className="eli-narrow-back"
+            title="Volver a ver todo el documento"
+            aria-label="Volver a ver todo el documento"
+            onClick={() => this.props.org.widenHeaderToTop()}
+            data-testid="eli-narrow-back"
+          >
+            ←
+          </button>
+        )}
         {displayedHeaderRenderData.map((headerRenderDatum) => {
           const header = headerRenderDatum.header;
           const headerIndex = headerRenderDatum.absoluteIndex;

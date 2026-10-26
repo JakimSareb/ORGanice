@@ -260,6 +260,11 @@ export const persistableFields = [
   },
   {
     category: 'base',
+    name: 'eliSlashMenu',
+    type: 'boolean',
+  },
+  {
+    category: 'base',
     name: 'eliNoSwipeDocs',
     type: 'boolean',
   },

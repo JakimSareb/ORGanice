@@ -15,6 +15,8 @@ export const STAMPS_KEY = 'eliPrefsStamps';
 // Propio de cada dispositivo (se dice en Ajustes › Sincronización)
 export const LOCAL_KEYS = [
   { key: 'eliContentWidth', label: 'Ancho del texto' },
+  { key: 'eliContentPx', label: 'Ancho del texto (personalizado)' },
+  { key: 'eliGtdTagGroupsFolded', label: 'Grupos de etiquetas plegados' },
   { key: 'eliWidth:', label: 'Anchos de los paneles', prefix: true },
   { key: 'eliDocMargin', label: 'Margen izquierdo de Documentos' },
   { key: 'eliTagsPos', label: 'Etiquetas al lado o debajo' },

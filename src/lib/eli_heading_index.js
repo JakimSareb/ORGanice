@@ -73,6 +73,8 @@ export const fileHeadings = (path, file) => {
       rawTitle,
       level,
       parents: stack.map((s) => s.title),
+      // (4.35) posiciones de TODAS las madres (la más cercana al final), para colgar resultados
+      ancestorPos: stack.map((s) => s.pos),
       ownTags,
       tags,
       keyword: h.getIn(['titleLine', 'todoKeyword']) || null,
@@ -80,7 +82,7 @@ export const fileHeadings = (path, file) => {
       linkText: `${rawTitle}\n${notes}\n${props.join('\n')}`,
       pos: entries.length,
     });
-    stack.push({ level, title, tags });
+    stack.push({ level, title, tags, pos: entries.length - 1 });
   });
   cache.set(headers, { path, entries });
   return entries;
@@ -296,4 +298,159 @@ export const notePreview = (notes, maxLines = 2) => {
       out.push(line.length > 160 ? `${line.slice(0, 160)}…` : line);
     });
   return out;
+};
+
+// --- (4.35) Jerarquía en listas de resultados ---
+
+const keyOf = (e) => `${e.path}\u0000${e.pos}`;
+
+/**
+ * Cuelga cada resultado de su madre MÁS CERCANA que también esté en la lista (aunque entre medias
+ * haya madres que no salen). Devuelve los nodos de primer nivel: [{ entry, children: [nodos] }],
+ * en el orden de los ficheros (por primera aparición) y del documento.
+ */
+export const nestEntries = (entries) => {
+  const order = [];
+  const byFile = new Map();
+  (entries || []).forEach((e) => {
+    if (!byFile.has(e.path)) {
+      byFile.set(e.path, []);
+      order.push(e.path);
+    }
+    byFile.get(e.path).push(e);
+  });
+  const roots = [];
+  order.forEach((path) => {
+    const list = byFile
+      .get(path)
+      .slice()
+      .sort((a, b) => a.pos - b.pos);
+    const nodes = new Map();
+    list.forEach((e) => nodes.set(e.pos, { entry: e, children: [] }));
+    list.forEach((e) => {
+      const node = nodes.get(e.pos);
+      const ap = e.ancestorPos || [];
+      let parent = null;
+      for (let i = ap.length - 1; i >= 0 && !parent; i--) parent = nodes.get(ap[i]) || null;
+      if (parent && parent !== node) parent.children.push(node);
+      else roots.push(node);
+    });
+  });
+  return roots;
+};
+
+// Nº de resultados en un árbol de nodos
+export const countNodes = (nodes) =>
+  nodes.reduce((n, node) => n + 1 + countNodes(node.children), 0);
+
+/**
+ * Orden jerárquico para el buscador «[[»: por fichero, nivel 1 primero y bajo cada una sus hijas
+ * (orden del documento). `matches` = las cabeceras que coinciden con el texto; si coincide una
+ * hija sale bajo su madre aunque la madre no coincida (entonces `dim: true`).
+ * → [{ entry, depth, dim }]
+ */
+export const orderHierarchical = (matches, index) => {
+  const matched = new Set((matches || []).map(keyOf));
+  const files = [];
+  const seen = new Set();
+  (matches || []).forEach((e) => {
+    if (!seen.has(e.path)) {
+      seen.add(e.path);
+      files.push(e.path);
+    }
+  });
+  const out = [];
+  files.forEach((path) => {
+    const list = (index && index.byPath && index.byPath.get(path)) || [];
+    const wanted = new Set();
+    (matches || [])
+      .filter((e) => e.path === path)
+      .forEach((e) => {
+        wanted.add(e.pos);
+        (e.ancestorPos || []).forEach((p) => wanted.add(p));
+      });
+    list.forEach((e) => {
+      if (!wanted.has(e.pos)) return;
+      out.push({
+        entry: e,
+        depth: (e.ancestorPos || []).length,
+        dim: !matched.has(keyOf(e)),
+      });
+    });
+  });
+  return out;
+};
+
+// --- (4.35) Filtros de la vista por etiqueta ---
+
+export const isArchivedEntry = (e) =>
+  /\.org_archive$/i.test(e.path || '') || (e.tags || []).some((t) => /^archive$/i.test(t));
+
+export const isTaskEntry = (e) => !!e.keyword;
+
+export const filterEntries = (entries, { hideArchived = false, hideTasks = false } = {}) =>
+  entries.filter((e) => !(hideArchived && isArchivedEntry(e)) && !(hideTasks && isTaskEntry(e)));
+
+// --- (4.35) Backlinks: solo el párrafo que enlaza ---
+
+// Bloques de texto de unas notas: párrafos (separados por línea en blanco) y, dentro, cada ítem de
+// lista por separado
+const textBlocks = (notes) => {
+  const out = [];
+  String(notes || '')
+    .split(/\n[ \t]*\n/)
+    .forEach((para) => {
+      const lines = para.split('\n');
+      if (lines.some((l) => /^\s*(?:[-+*]|\d+[.)])\s/.test(l))) {
+        let cur = null;
+        lines.forEach((l) => {
+          if (/^\s*(?:[-+*]|\d+[.)])\s/.test(l)) {
+            if (cur !== null) out.push(cur);
+            cur = l.trim();
+          } else if (cur !== null && /^\s+\S/.test(l)) cur += `\n${l.trim()}`;
+          else {
+            if (cur !== null) out.push(cur);
+            cur = null;
+            if (l.trim()) out.push(l.trim());
+          }
+        });
+        if (cur !== null) out.push(cur);
+      } else if (para.trim()) out.push(para.trim());
+    });
+  return out;
+};
+
+const linkRe = (orgId, flags = 'i') =>
+  new RegExp(`\\[\\[id:\\s*${escapeRe(orgId)}\\s*\\](?:\\[([^\\]]*)\\])?\\]`, flags);
+
+/**
+ * Párrafos (o ítems de lista) de la cabecera `entry` donde aparece el enlace al ID `orgId`: el
+ * título si el enlace está ahí y los bloques de las notas que lo llevan.
+ */
+export const linkingParagraph = (entry, orgId) => {
+  if (!entry || !orgId) return [];
+  const re = linkRe(orgId);
+  const out = [];
+  if (re.test(entry.rawTitle || '')) out.push(plainHeadingTitleKeepLink(entry.rawTitle));
+  textBlocks(entry.notes).forEach((b) => re.test(b) && out.push(b));
+  return out;
+};
+
+const plainHeadingTitleKeepLink = (raw) => cleanHeadingText(raw);
+
+// Trozos de un párrafo con el enlace al ID resaltado → [{ text, link }] (el enlace se enseña con
+// su descripción, o con su ID si no la tiene)
+export const splitLinkParts = (paragraph, orgId) => {
+  const re = linkRe(orgId, 'gi');
+  const text = String(paragraph || '');
+  const parts = [];
+  let last = 0;
+  let m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) parts.push({ text: text.slice(last, m.index), link: false });
+    parts.push({ text: m[1] || `id:${orgId}`, link: true });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last), link: false });
+  return parts;
 };

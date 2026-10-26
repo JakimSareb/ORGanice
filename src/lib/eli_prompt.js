@@ -330,11 +330,33 @@ export const askPick = ({
     let active = 0;
     const paint = () => {
       const q = plainText(input.value.trim());
-      shown = items.filter((it) => {
+      const test = (it) => {
         if (!q) return true;
         if (it.__plain === undefined) it.__plain = plainText(`${it.label} ${it.hint || ''}`);
         return q.split(/\s+/).every((w) => it.__plain.includes(w));
-      });
+      };
+      shown = items.filter(test);
+      // (4.35) lista jerárquica (items con `depth`, en orden de documento): lo que coincide sale
+      // bajo sus madres, y las madres que no coinciden salen atenuadas
+      if (q && items.some((it) => it.depth !== undefined)) {
+        const keep = new Array(items.length).fill(false);
+        const dim = new Array(items.length).fill(false);
+        let need = -1;
+        for (let i = items.length - 1; i >= 0; i--) {
+          const d = items[i].depth || 0;
+          if (test(items[i])) {
+            keep[i] = true;
+            need = need < 0 ? d : Math.min(need, d);
+          } else if (need >= 0 && d < need) {
+            keep[i] = true;
+            dim[i] = true;
+            need = d;
+          }
+        }
+        shown = items
+          .map((it, i) => (keep[i] ? (dim[i] ? { ...it, dim: true } : it) : null))
+          .filter(Boolean);
+      }
       if (limit && shown.length > limit) shown = shown.slice(0, limit);
       const raw = input.value.trim();
       if (newItem && raw && !items.some((it) => plainText(it.label) === plainText(raw))) {
@@ -352,7 +374,9 @@ export const askPick = ({
       shown.forEach((it, i) => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'eli-pick__item' + (i === active ? ' is-active' : '');
+        b.className =
+          'eli-pick__item' + (i === active ? ' is-active' : '') + (it.dim ? ' is-dim' : '');
+        if (it.depth) b.style.paddingLeft = `${10 + 16 * it.depth}px`;
         b.setAttribute('data-testid', it.isNew ? 'eli-pick-new' : 'eli-pick-item');
         const label = document.createElement('span');
         label.textContent = it.label;

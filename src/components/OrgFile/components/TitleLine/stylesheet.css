@@ -53,6 +53,11 @@
 }
 
 /* (4.30) ajuste «Etiquetas debajo del título»: bajan a su propia línea, a la izquierda */
+/* (4.35) etiquetas al lado: separadas ~14px del margen derecho (el título cede) */
+body:not(.eli-tags-below) .header-tags {
+  margin-right: 14px;
+}
+
 body.eli-tags-below .title-line-text {
   flex-wrap: wrap;
 }

@@ -110,6 +110,10 @@ export const scrollDeltaFor = (cTop, cBottom, band, margin = 12) => {
   return 0;
 };
 
+// (4.35) Estilo «Word»: mientras el cursor esté dentro de la franja visible no se toca el
+// scroll; si sale, se desplaza lo justo dejando ~2 líneas de margen, sin animación
+export const CARET_MARGIN_LINES = 2;
+
 export const keepCaretVisible = (el) => {
   try {
     if (!el || !el.isConnected || document.activeElement !== el) return;
@@ -118,9 +122,27 @@ export const keepCaretVisible = (el) => {
     const r = el.getBoundingClientRect();
     const cTop = r.top + top - el.scrollTop;
     const scroller = scrollParentOf(el);
-    const d = scrollDeltaFor(cTop, cTop + height, visibleBand(scroller));
+    const d = scrollDeltaFor(
+      cTop,
+      cTop + height,
+      visibleBand(scroller),
+      Math.round(height * CARET_MARGIN_LINES)
+    );
     if (!d) return;
     if (scroller) scroller.scrollTop += d;
-    else window.scrollBy(0, d);
+    else window.scrollBy({ top: d, left: 0, behavior: 'auto' });
   } catch (e) {}
+};
+
+// (4.35) UN solo ajuste por pulsación: varias llamadas seguidas (cambio de texto, tecla,
+// selectionchange) se juntan en el siguiente fotograma
+let caretRaf = 0;
+export const scheduleCaretVisible = (el) => {
+  const raf = typeof window !== 'undefined' && window.requestAnimationFrame;
+  if (!raf) return keepCaretVisible(el);
+  if (caretRaf) window.cancelAnimationFrame(caretRaf);
+  caretRaf = raf(() => {
+    caretRaf = 0;
+    keepCaretVisible(el);
+  });
 };

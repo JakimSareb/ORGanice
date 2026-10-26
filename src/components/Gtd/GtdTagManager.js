@@ -14,7 +14,7 @@ export default function GtdTagManager({
   onRenameArea,
   onAddDefaultTag,
   onRemoveDefaultTag,
-  headingTags = [],
+  headingsOff = [],
   onToggleHeadings = null,
 }) {
   useEffect(() => {
@@ -164,13 +164,13 @@ export default function GtdTagManager({
                   // (en un grupo aparte, debajo de las acciones)
                   <button
                     type="button"
-                    className={'gtd-tagman__btn' + (headingTags.includes(tag) ? ' is-on' : '')}
+                    className={'gtd-tagman__btn' + (!headingsOff.includes(tag) ? ' is-on' : '')}
                     onClick={() => onToggleHeadings(tag)}
-                    aria-pressed={headingTags.includes(tag)}
+                    aria-pressed={!headingsOff.includes(tag)}
                     title={
-                      headingTags.includes(tag)
-                        ? 'Cabeceras sin tarea: se ven (en un grupo aparte, debajo)'
-                        : 'Cabeceras sin tarea: mostrarlas también en la vista de esta etiqueta'
+                      !headingsOff.includes(tag)
+                        ? 'Cabeceras sin tarea: se ven (en un grupo aparte, debajo). Toca para ocultarlas'
+                        : 'Cabeceras sin tarea: ocultas. Toca para mostrarlas también en la vista de esta etiqueta'
                     }
                     data-testid="gtd-tagman-headings"
                   >

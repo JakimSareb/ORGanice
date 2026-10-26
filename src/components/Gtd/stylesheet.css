@@ -4803,6 +4803,16 @@ input.gtd-proc__input:not([type]) {
     margin-left: auto;
     margin-right: auto;
   }
+  /* (4.35) «Personalizado»: --eli-content-max en TODAS las vistas */
+  html[data-eli-width='custom'] .gtd-main > *,
+  html[data-eli-width='custom'] .org-file-container,
+  html[data-eli-width='custom'] .eli-diary,
+  html[data-eli-width='custom'] .eli-hv__box,
+  html[data-eli-width='custom'] .eli-split__pane > * {
+    max-width: var(--eli-content-max, 820px);
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 /* (4.32) icono de repetición: calendario con flechita en círculo encima */
@@ -4854,4 +4864,10 @@ input.gtd-proc__input:not([type]) {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--base1);
+}
+
+/* (4.35) grupos de la barra de etiquetas plegables */
+.gtd-side__grouplabel--toggle {
+  cursor: pointer;
+  user-select: none;
 }
