@@ -360,3 +360,26 @@
   margin: 0 0 6px;
   font-style: italic;
 }
+
+/* (4.36) Editar el día como documento; subcabeceras del usuario plegadas bajo el día */
+.eli-diary__edit-day {
+  margin-left: 10px;
+  border: 0;
+  background: none;
+  color: var(--base1);
+  font-size: 0.5em;
+  cursor: pointer;
+  opacity: 0.6;
+  vertical-align: middle;
+}
+.eli-diary__edit-day:hover {
+  opacity: 1;
+  color: var(--blue);
+}
+.eli-diary__heads {
+  margin: 4px 0;
+}
+.eli-diary__head > summary {
+  cursor: pointer;
+  font-weight: 600;
+}

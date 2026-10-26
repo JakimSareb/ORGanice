@@ -6477,6 +6477,21 @@ export default function GtdView() {
             <i className="fas fa-bars" />
           </button>
           <h1 className="gtd-main__title" data-testid="gtd-title">
+            {/* (4.36) estrella de Focus del proyecto, a la izquierda del nombre (misma acción que la de las tareas) */}
+            {projectTask && (
+              <button
+                type="button"
+                className={
+                  'gtd-star gtd-main__star' + (projectTask.priority === 'A' ? ' is-on' : '')
+                }
+                onClick={() => dispatch(gtdToggleStar(projectTask))}
+                title="Focus (★ [#A])"
+                aria-pressed={projectTask.priority === 'A'}
+                data-testid="gtd-project-star"
+              >
+                <i className={projectTask.priority === 'A' ? 'fas fa-star' : 'far fa-star'} />
+              </button>
+            )}
             {projectTask ? (
               <span
                 className="gtd-main__title-text is-link"

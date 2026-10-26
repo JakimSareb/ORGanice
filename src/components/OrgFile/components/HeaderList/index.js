@@ -10,6 +10,7 @@ import { EliNarrowRefs } from '../../../EliHeadingViews';
 import * as orgActions from '../../../../actions/org';
 import { startBulletDrag } from './eliBulletDrag';
 import { setMulti, getMulti, toggleId } from '../../../../lib/eli_multi_select';
+import { isDiaryPath, dayOfOrgId, openDiary } from '../../../../lib/eli_diary';
 import { numSubheadersOfHeaderWithId, hasHeaderContent } from '../../../../lib/org_utils';
 
 import _ from 'lodash';
@@ -536,6 +537,25 @@ class HeaderList extends PureComponent {
       'header-list-container--reordering': !!draggingHeaderId,
     });
 
+    // (4.36) día del diario en narrow: «← Diario» vuelve al diario continuo
+    let diaryDay = null;
+    if (narrowedHeaderId && isDiaryPath(this.props.path)) {
+      const nh = headers.find((h) => h.get('id') === narrowedHeaderId);
+      const idItem =
+        nh &&
+        (nh.get('propertyListItems') || List()).find(
+          (p) => (p.get('property') || '').toUpperCase() === 'ID'
+        );
+      const idText =
+        idItem && idItem.get('value')
+          ? idItem
+              .get('value')
+              .map((x) => x.get('contents') || '')
+              .join('')
+          : '';
+      diaryDay = dayOfOrgId(String(idText).trim());
+    }
+
     return (
       <div className={className}>
         {/* (4.35) flechita discreta para volver a ver todo el documento (solo en narrow) */}
@@ -549,6 +569,21 @@ class HeaderList extends PureComponent {
             data-testid="eli-narrow-back"
           >
             ←
+          </button>
+        )}
+        {!!diaryDay && (
+          <button
+            type="button"
+            className="eli-narrow-back eli-narrow-back--diary"
+            title="Volver al diario continuo"
+            onClick={async () => {
+              await this.props.org.eliSyncFile(this.props.path);
+              this.props.org.widenHeaderToTop();
+              openDiary({ date: diaryDay });
+            }}
+            data-testid="eli-narrow-diary"
+          >
+            ← Diario
           </button>
         )}
         {displayedHeaderRenderData.map((headerRenderDatum) => {

@@ -55,6 +55,7 @@ import { fileLinkTarget } from '../../lib/eli_media';
 import { showMessage } from '../../lib/eli_prompt';
 import EliMedia, { MediaPathContext } from '../OrgFile/components/EliMedia';
 import { PrintButton } from '../EliTools';
+import { eliSyncFile, eliOpenDiaryDayNarrow } from '../../actions/org';
 
 const PAST_YEARS = 10; // «Tal día como hoy»: cuántos años atrás se buscan
 
@@ -300,9 +301,28 @@ const Counters = ({ counters, props, monthProps, dayK, onSet }) => (
   </div>
 );
 
+// (4.36) Subcabeceras del usuario bajo el día (`*** Título`): plegadas, con su título
+const Heads = ({ heads, path }) =>
+  heads && heads.length ? (
+    <div className="eli-diary__heads" data-testid="eli-diary-heads">
+      {heads.map((h, i) => (
+        <details key={i} className="eli-diary__head" data-testid="eli-diary-head">
+          <summary>
+            <DiaryText text={h.title} path={path} />
+          </summary>
+          {h.body && (
+            <div className="eli-diary__note">
+              <DiaryText text={h.body} path={path} />
+            </div>
+          )}
+        </details>
+      ))}
+    </div>
+  ) : null;
+
 // (4.33) Día anterior en el diario continuo (tipo Logseq): título, respuestas (editables en línea),
 // notas y apuntes. Tocar el título lo abre arriba.
-const PastDay = ({ d, path, counters, onOpen, onAnswer }) => {
+const PastDay = ({ d, path, counters, onOpen, onAnswer, onEdit }) => {
   const date = parseDayKey(d.key);
   const vals = counters
     .filter((c) => !isMonthlyCounter(c) && (d.props || {})[c.key])
@@ -312,6 +332,16 @@ const PastDay = ({ d, path, counters, onOpen, onAnswer }) => {
       <h2 className="eli-diary__ptitle">
         <button type="button" className="eli-diary__link-btn" onClick={() => onOpen(date)}>
           {journalTitle(date)}
+        </button>
+        <button
+          type="button"
+          className="eli-diary__edit-day"
+          onClick={() => onEdit(date)}
+          title="Editar el día como documento (subcabeceras, enlaces, etiquetas…)"
+          aria-label="Editar día"
+          data-testid="eli-diary-pday-edit"
+        >
+          <i className="fas fa-pen" />
         </button>
       </h2>
       {vals.length > 0 && <div className="eli-diary__pvals">{vals.join(' · ')}</div>}
@@ -339,6 +369,7 @@ const PastDay = ({ d, path, counters, onOpen, onAnswer }) => {
       {d.entries.map((e, i) => (
         <Entry key={i} e={e} path={path} />
       ))}
+      <Heads heads={d.heads} path={path} />
     </section>
   );
 };
@@ -620,6 +651,29 @@ export default function EliDiary() {
     await queue.current;
     setOpen(false);
   };
+  // (4.36) «Editar día»: abre el documento del año con ese día en NARROW (editor normal de
+  // Documentos: subcabeceras, enlaces, etiquetas…). El día se crea con su :ID: si falta, se guarda
+  // lo pendiente y se recarga el fichero. «← Diario» (en el narrow) vuelve aquí.
+  const editDay = async (d) => {
+    const year = d.getFullYear();
+    try {
+      setStatus('Abriendo el día…');
+      await queue.current;
+      await store.dispatch(eliSyncFile(pathFor(year)));
+      delete textsRef.current[year];
+      const base = await load(year);
+      const r = ensureDayId(base || newFileText(year), d);
+      if (r.text !== base) await write(year, r.text);
+      await queue.current;
+      setOpen(false);
+      await store.dispatch(eliOpenDiaryDayNarrow(pathFor(year), r.id));
+      setStatus('');
+    } catch (e) {
+      setStatus('');
+      showMessage('Diario', 'No se ha podido abrir el día: ' + ((e && e.message) || e));
+    }
+  };
+
   const asDocument = async () => {
     await queue.current;
     setOpen(false);
@@ -815,6 +869,16 @@ export default function EliDiary() {
       </div>
       <h1 className="eli-diary__jtitle" data-testid="eli-diary-date">
         {journalTitle(date)}
+        <button
+          type="button"
+          className="eli-diary__edit-day"
+          onClick={() => editDay(date)}
+          title="Editar el día como documento (subcabeceras, enlaces, etiquetas…)"
+          aria-label="Editar día"
+          data-testid="eli-diary-edit-day"
+        >
+          <i className="fas fa-pen" />
+        </button>
       </h1>
 
       {cfg.counters.length > 0 && (
@@ -859,9 +923,10 @@ export default function EliDiary() {
           day.entries.map((e, i) => (
             <Entry key={i} e={e} path={path} onInbox={cfg.inSystem ? toInbox : null} />
           ))
-        ) : (
+        ) : day && day.heads && day.heads.length ? null : (
           <div className="eli-diary__empty">Sin apuntes.</div>
         )}
+        <Heads heads={day && day.heads} path={path} />
       </div>
 
       <div className="eli-diary__marks" role="group" aria-label="Marca">
@@ -962,6 +1027,7 @@ export default function EliDiary() {
               counters={cfg.counters}
               onOpen={goTo}
               onAnswer={answerOn}
+              onEdit={editDay}
             />
           ))}
           {pastDays.length > shownPast.length && (

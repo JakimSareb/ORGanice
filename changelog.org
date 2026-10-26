@@ -3,6 +3,24 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.36 (octubre de 2026)
+** Backlinks y enlaces
+- *Tocar un enlace a otra cabecera* (en Documentos) la abre *en narrow*, con sus subcabeceras plegadas y, al final, el bloque *Backlinks*. La flechita *←* vuelve al documento entero.
+- *Bloque Backlinks* (al pie de la cabecera reducida, desplegado por defecto y plegable con su título): cada resultado enseña *solo el párrafo que enlaza* (con el enlace resaltado) y *Ver el resto*. Títulos y textos salen *renderizados* como en Documentos (enlaces, URLs, imágenes, negrita, listas, tablas…).
+- Filtros iguales que en la vista por etiqueta (*Ocultar archivadas*, *Ocultar tareas*, *Incluir heredadas*), *etiquetas* de los resultados debajo (se filtra tocándolas) y orden *Por fichero* o *Por fecha* (↑↓).
+- *PDF / Imprimir* con la opción *Incluir backlinks*: salen tal cual están en pantalla.
+** Diario
+- *Editar día*: cada día del diario tiene un lápiz que abre el documento del año con ese día en narrow (subcabeceras, enlaces, etiquetas…). *← Diario* vuelve al diario continuo. Las subcabeceras que añadas salen plegadas bajo el día.
+** Arreglos
+- La *cabecera reducida* (narrow) se pliega y se despliega todas las veces.
+- Al *teclear* ya no «baja» poco a poco la línea del subrayado.
+- *GTD*: el editor de la tarea ya no se cierra al clicar fuera tras *Backlinks*, *Enviar a* o *Lista GTD* (se cierra solo la ventana abierta).
+** Novedades
+- *GTD*: estrella de *Focus* a la izquierda del nombre del proyecto.
+- *Ajustes › Documentos*: «Espacio tras cada cabecera» (encendido): un hueco de una línea al final de cada cabecera, solo visual.
+** Quitado
+- El *ancho del contenido* (estrecho / medio / completo / personalizado) no funcionaba y se ha quitado; se conserva el ancho de la barra lateral de GTD.
+
 * 4.35 (octubre de 2026)
 ** Arreglos
 - El *menú que sale al escribir «/»* ahora es un ajuste (Ajustes › Documentos › «Menú al escribir «/»») y viene *apagado*: «/» se escribe como texto.

@@ -213,6 +213,15 @@
   font-weight: 600;
   color: var(--base01);
 }
+/* (4.36) estrella de Focus del proyecto, a la izquierda del nombre */
+.gtd-main__star {
+  font-size: 18px;
+  min-width: 32px;
+  min-height: 32px;
+  margin-right: 2px;
+  vertical-align: middle;
+  opacity: 1;
+}
 .gtd-main__count {
   margin-left: 10px;
   font-size: 14px;
@@ -4779,40 +4788,6 @@ input.gtd-proc__input:not([type]) {
   color: var(--base1);
   margin-right: -4px;
   flex: none;
-}
-
-/* (4.31) «Ancho del contenido» (Ajustes › Documentos, en este dispositivo) */
-@media (min-width: 721px) {
-  html[data-eli-width='narrow'] .gtd-main > * {
-    max-width: 680px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  html[data-eli-width='medium'] .gtd-main > * {
-    max-width: 920px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  html[data-eli-width='narrow'] .org-file-container {
-    max-width: 680px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  html[data-eli-width='medium'] .org-file-container {
-    max-width: 920px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  /* (4.35) «Personalizado»: --eli-content-max en TODAS las vistas */
-  html[data-eli-width='custom'] .gtd-main > *,
-  html[data-eli-width='custom'] .org-file-container,
-  html[data-eli-width='custom'] .eli-diary,
-  html[data-eli-width='custom'] .eli-hv__box,
-  html[data-eli-width='custom'] .eli-split__pane > * {
-    max-width: var(--eli-content-max, 820px);
-    margin-left: auto;
-    margin-right: auto;
-  }
 }
 
 /* (4.32) icono de repetición: calendario con flechita en círculo encima */

@@ -18,7 +18,6 @@ import {
 } from './eli_heading_index';
 import { triangleGlyph } from './eli_triangles';
 import { scrollDeltaFor } from './eli_caret_view';
-import { clampContentPx, CONTENT_PX } from './eli_layout';
 import { gtdSendTo, sendPlan } from './gtd/gtd_sendto';
 import { buildTasks } from './gtd/gtd_model';
 import { exportOrg } from './export_org';
@@ -188,13 +187,6 @@ test('scroll tipo Word: el cursor dentro de la franja no mueve nada; fuera, lo j
   expect(scrollDeltaFor(110, 130, band, margin)).toBe(110 - (100 + margin));
   // franja demasiado pequeña: no hace nada
   expect(scrollDeltaFor(300, 320, { top: 100, bottom: 150 }, margin)).toBe(0);
-});
-
-test('ancho personalizado: límites', () => {
-  expect(clampContentPx('900')).toBe(900);
-  expect(clampContentPx(10)).toBe(CONTENT_PX.min);
-  expect(clampContentPx(99999)).toBe(CONTENT_PX.max);
-  expect(clampContentPx('x')).toBe(CONTENT_PX.def);
 });
 
 test('Enviar a: mueve dentro de la cabecera elegida y deja enlazada la tarea a su proyecto', () => {

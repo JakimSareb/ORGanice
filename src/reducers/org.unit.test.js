@@ -895,7 +895,7 @@ describe('org reducer', () => {
         ).toEqual(true);
       });
 
-      it('should ignore if narrowed and open', () => {
+      it('(4.36) narrowed and open: folds and unfolds like any header', () => {
         expect(
           state.org.present.getIn(['files', path, 'headers']).every((hdr) => !hdr.get('opened'))
         ).toEqual(true);
@@ -904,8 +904,16 @@ describe('org reducer', () => {
           types.toggleHeaderOpened(topLevelHeaderId, true)
         );
         const narrowedState = reducer(openState, types.narrowHeader(topLevelHeaderId));
-        const newState = reducer(narrowedState, types.toggleHeaderOpened(topLevelHeaderId, true));
-        expect(newState).toEqual(narrowedState);
+        const opened = (st) =>
+          st
+            .getIn(['files', path, 'headers'])
+            .find((h) => h.get('id') === topLevelHeaderId)
+            .get('opened');
+        expect(opened(narrowedState)).toEqual(true);
+        const folded = reducer(narrowedState, types.toggleHeaderOpened(topLevelHeaderId, true));
+        expect(opened(folded)).toEqual(false);
+        const unfolded = reducer(folded, types.toggleHeaderOpened(topLevelHeaderId, true));
+        expect(opened(unfolded)).toEqual(true);
       });
     });
   });

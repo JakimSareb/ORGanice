@@ -7,6 +7,8 @@ import './stylesheet.css';
 
 import AttributedString from '../OrgFile/components/AttributedString';
 import { MediaPathContext } from '../OrgFile/components/EliMedia';
+import { OrgText, OrgTitle } from '../EliHeadingViews/OrgRender';
+import { getBacklinksSnapshot, backlinksKey } from '../../lib/eli_backlinks_view';
 import { toolOn } from '../../lib/eli_notes_mode';
 import { exportOrg } from '../../lib/export_org';
 import EliAcomodadores from '../EliAcomodadores';
@@ -567,6 +569,55 @@ function PrintHeader({ header, baseLevel, path = null }) {
   );
 }
 
+// (4.36) Los Backlinks tal cual están en pantalla: bloque plegado o desplegado, «Ver el resto»
+// abierto o cerrado, filtros, etiquetas y orden elegidos; títulos y textos renderizados
+export function PrintBacklinks({ snap }) {
+  if (!snap) return null;
+  const orderText =
+    snap.order === 'date'
+      ? `Orden: por fecha (${
+          snap.dir === 'asc' ? 'más antiguas primero' : 'más recientes primero'
+        })`
+      : 'Orden: por fichero';
+  return (
+    <section className="eli-print__section eli-print__backlinks" data-testid="eli-print-backlinks">
+      <h2 className="eli-print__heading">
+        Backlinks ({snap.count}
+        {snap.count !== snap.total ? ` de ${snap.total}` : ''})
+      </h2>
+      {!snap.collapsed && (
+        <>
+          <div className="eli-print__planning">{[orderText, ...snap.filters].join(' · ')}</div>
+          {snap.items.map((it, i) => (
+            <MediaPathContext.Provider key={i} value={it.entry.path}>
+              <div className="eli-print__backlink" data-testid="eli-print-backlink">
+                <div className="eli-print__backlink-title">
+                  {it.entry.keyword ? <strong>{it.entry.keyword} </strong> : null}
+                  <OrgTitle rawTitle={it.entry.rawTitle} />
+                  <span className="eli-print__tags"> {it.entry.path.split('/').pop()}</span>
+                </div>
+                {it.paragraphs.map((p, j) => (
+                  <OrgText key={j} text={p} />
+                ))}
+                {it.open && it.entry.notes.trim() && <OrgText text={it.entry.notes.trim()} />}
+                {it.open && it.subs.length > 0 && (
+                  <ul>
+                    {it.subs.map((k) => (
+                      <li key={k.headerId}>
+                        <OrgTitle rawTitle={k.rawTitle} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </MediaPathContext.Provider>
+          ))}
+        </>
+      )}
+    </section>
+  );
+}
+
 // (4.13) Vista previa de impresión de varias tareas (lo que muestra una vista de GTD): título del
 // documento y, debajo, cada tarea con su estado, fechas y notas (sin subtareas que no se vean)
 function PrintTasks({ files, items, title, onClose }) {
@@ -620,6 +671,11 @@ function PrintTasks({ files, items, title, onClose }) {
 
 function PrintPreview({ path, file, headerId, onClose }) {
   const docRef = useRef(null);
+  // (4.36) Backlinks visibles en pantalla (cabecera reducida): opción «Incluir backlinks»
+  const blSnap = getBacklinksSnapshot(
+    backlinksKey(path, headerId || (file && file.get('narrowedHeaderId')))
+  );
+  const [withBacklinks, setWithBacklinks] = useState(true);
   const headers = file.get('headers');
   let selected = headers;
   let title = fileTitle(path, file);
@@ -650,6 +706,17 @@ function PrintPreview({ path, file, headerId, onClose }) {
           Cerrar
         </button>
         <div className="eli-raw__title">Vista previa</div>
+        {blSnap && (
+          <label className="eli-print__opt">
+            <input
+              type="checkbox"
+              checked={withBacklinks}
+              onChange={(e) => setWithBacklinks(e.target.checked)}
+              data-testid="eli-print-backlinks-opt"
+            />{' '}
+            Incluir backlinks
+          </label>
+        )}
         <PrintButton docRef={docRef} testId="eli-print-file-go" />
       </div>
       <div className="eli-print__hint eli-no-print">
@@ -666,6 +733,7 @@ function PrintPreview({ path, file, headerId, onClose }) {
             baseLevel={headerId ? baseLevel : 0}
           />
         ))}
+        {blSnap && withBacklinks && <PrintBacklinks snap={blSnap} />}
       </article>
     </div>,
     ensurePortal('eli-print-portal')
