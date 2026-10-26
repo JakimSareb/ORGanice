@@ -1101,7 +1101,18 @@ const addNote = (state, action) => {
   return addNoteGeneric(state, { noteText });
 };
 
+// (4.35) Al reducir, las subcabeceras de la reducida quedan SIEMPRE plegadas (antes solo con el
+// ajuste «cerrar subcabeceras» y al tocar la cabecera). «Ir a cabecera» desde una vista
+// (backlinks, etiquetas…) y cualquier otro camino que reduzca pasan por aquí.
 const narrowHeader = (state, action) => {
+  const headers = state.get('headers');
+  if (headers && action.headerId) {
+    let next = headers;
+    subheaderIndicesOfHeaderWithId(headers, action.headerId).forEach((i) => {
+      next = next.setIn([i, 'opened'], false);
+    });
+    state = state.set('headers', next);
+  }
   return state.set('narrowedHeaderId', action.headerId);
 };
 

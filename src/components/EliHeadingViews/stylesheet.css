@@ -19,6 +19,8 @@ body.eli-hv-open {
   width: 100%;
   max-width: 760px;
   max-height: calc(100dvh - 48px);
+  /* (4.35) la caja no encoge del todo al plegar (la altura cambiante rompía el scroll en el móvil) */
+  min-height: min(60dvh, 420px);
   display: flex;
   flex-direction: column;
   background: var(--base3, #fff);
@@ -205,4 +207,39 @@ body.eli-hv-open {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* (4.35) resultados que cuelgan de otro resultado (indentados; ▸/▾ propio con su número) */
+.eli-hv__nest {
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--base1, #999);
+  font-size: 0.8em;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+/* (4.35) «Quién enlaza aquí»: solo el párrafo que enlaza + «Ver el resto» */
+.eli-hv__links {
+  margin: 0 0 4px 24px;
+}
+.eli-hv__link-par {
+  white-space: pre-wrap;
+  font-size: 0.9em;
+  color: var(--base01, #666);
+  padding: 1px 0;
+}
+.eli-hv__link-mark {
+  background: color-mix(in srgb, var(--blue, #268bd2) 22%, transparent);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.eli-hv__more {
+  border: 0;
+  background: none;
+  color: var(--blue, #268bd2);
+  font-size: 0.8em;
+  cursor: pointer;
+  padding: 2px 0;
 }

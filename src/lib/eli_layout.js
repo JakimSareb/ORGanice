@@ -5,6 +5,8 @@
 //   - «Ancho del contenido» de GTD y Documentos: estrecho / medio / completo (data-eli-width).
 const LS_PREFIX = 'eliWidth:';
 const LS_CONTENT = 'eliContentWidth';
+const LS_CONTENT_PX = 'eliContentPx';
+export const CONTENT_PX = { def: 820, min: 420, max: 2400, cssVar: '--eli-content-max' };
 
 export const PANES = {
   gtdSide: { cssVar: '--eli-gtd-side-w', def: 240, min: 170, max: 520 },
@@ -57,7 +59,30 @@ export const CONTENT_WIDTHS = [
   { id: 'narrow', label: 'Estrecho' },
   { id: 'medium', label: 'Medio' },
   { id: 'full', label: 'Completo' },
+  { id: 'custom', label: 'Personalizado' },
 ];
+
+// (4.35) Ancho «Personalizado» en px (variable CSS --eli-content-max en <html>; todas las vistas)
+export const clampContentPx = (px) => {
+  const n = Math.round(Number(px));
+  if (!Number.isFinite(n) || n <= 0) return CONTENT_PX.def;
+  return Math.max(CONTENT_PX.min, Math.min(CONTENT_PX.max, n));
+};
+export const getContentPx = () => {
+  const v = lsGet(LS_CONTENT_PX);
+  return v ? clampContentPx(v) : CONTENT_PX.def;
+};
+const applyContentPx = (px) => {
+  try {
+    document.documentElement.style.setProperty(CONTENT_PX.cssVar, `${px}px`);
+  } catch (e) {}
+};
+export const setContentPx = (px, { save = true } = {}) => {
+  const v = clampContentPx(px);
+  applyContentPx(v);
+  if (save) lsSet(LS_CONTENT_PX, String(v));
+  return v;
+};
 
 export const getContentWidth = () => {
   const v = lsGet(LS_CONTENT);
@@ -69,6 +94,7 @@ export const applyContentWidth = (id = getContentWidth()) => {
     const el = document.documentElement;
     if (!id || id === 'full') el.removeAttribute('data-eli-width');
     else el.setAttribute('data-eli-width', id);
+    if (id === 'custom') applyContentPx(getContentPx());
   } catch (e) {}
 };
 

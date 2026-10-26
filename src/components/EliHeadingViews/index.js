@@ -21,6 +21,10 @@ import {
   hashStartsWord,
   openedDoubleBracket,
   notePreview,
+  nestEntries,
+  filterEntries,
+  linkingParagraph,
+  splitLinkParts,
 } from '../../lib/eli_heading_index';
 import { insertHeadingLink, pickTagForTitle } from '../../lib/eli_heading_links';
 import { selectHeaderAndOpenParents, loadFileQuietly } from '../../actions/org';
@@ -49,13 +53,35 @@ export const useGoToHeading = () => {
   };
 };
 
-// Una cabecera con ▸ (notas y subcabeceras plegables)
-const Item = ({ entry, index, onGo, depth = 0, showContext = false, preview = false }) => {
+// Una cabecera con ▸ (notas y subcabeceras plegables). (4.35) `node.children` = resultados de la
+// lista que cuelgan de esta (indentados y plegables con su propio ▸/▾). `paragraphFor` (solo en
+// «Quién enlaza aquí»): enseña el párrafo que enlaza y un botón «Ver el resto».
+const Item = ({
+  node,
+  index,
+  onGo,
+  depth = 0,
+  showContext = false,
+  preview = false,
+  paragraphFor = null,
+}) => {
+  const entry = node.entry;
+  const nested = node.children || [];
   const [open, setOpen] = useState(false);
-  const kids = useMemo(() => (open ? childrenOf(index, entry) : []), [open, index, entry]);
-  const hasMore = !!entry.notes.trim() || childrenOf(index, entry).length > 0;
+  const [showNested, setShowNested] = useState(true);
+  const nestedIds = useMemo(() => new Set(nested.map((n) => n.entry.headerId)), [nested]);
+  const own = useMemo(() => childrenOf(index, entry).filter((k) => !nestedIds.has(k.headerId)), [
+    index,
+    entry,
+    nestedIds,
+  ]);
+  const hasMore = !!entry.notes.trim() || own.length > 0;
   const previewLines = useMemo(() => (preview ? notePreview(entry.notes, 2) : []), [
     preview,
+    entry,
+  ]);
+  const paragraphs = useMemo(() => (paragraphFor ? paragraphFor(entry) : []), [
+    paragraphFor,
     entry,
   ]);
   return (
@@ -82,9 +108,47 @@ const Item = ({ entry, index, onGo, depth = 0, showContext = false, preview = fa
             <span className="eli-hv__tags">{entry.ownTags.join(' ')}</span>
           )}
         </button>
+        {nested.length > 0 && (
+          <button
+            type="button"
+            className="eli-hv__nest"
+            onClick={() => setShowNested(!showNested)}
+            aria-label={showNested ? 'Ocultar subcabeceras' : 'Mostrar subcabeceras'}
+            data-testid="eli-hv-nest"
+          >
+            {showNested ? '▾' : '▸'} {nested.length}
+          </button>
+        )}
       </div>
       {showContext && entry.parents.length > 0 && (
         <div className="eli-hv__ctx">{entry.parents.join(' › ')}</div>
+      )}
+      {paragraphs.length > 0 && (
+        <div className="eli-hv__links" data-testid="eli-hv-link-paragraphs">
+          {paragraphs.map((p, i) => (
+            <div key={i} className="eli-hv__link-par" data-testid="eli-hv-link-paragraph">
+              {p.map((part, j) =>
+                part.link ? (
+                  <mark key={j} className="eli-hv__link-mark">
+                    {part.text}
+                  </mark>
+                ) : (
+                  <span key={j}>{part.text}</span>
+                )
+              )}
+            </div>
+          ))}
+          {hasMore && (
+            <button
+              type="button"
+              className="eli-hv__more"
+              onClick={() => setOpen(!open)}
+              data-testid="eli-hv-more"
+            >
+              {open ? 'Ocultar' : 'Ver el resto'}
+            </button>
+          )}
+        </div>
       )}
       {preview && !open && previewLines.length > 0 && (
         <div className="eli-hv__preview" data-testid="eli-hv-preview">
@@ -98,20 +162,49 @@ const Item = ({ entry, index, onGo, depth = 0, showContext = false, preview = fa
       {open && (
         <div className="eli-hv__body">
           {entry.notes.trim() && <div className="eli-hv__notes">{entry.notes.trim()}</div>}
-          {kids.length > 0 && (
+          {own.length > 0 && (
             <ul className="eli-hv__list">
-              {kids.map((k) => (
-                <Item key={k.headerId} entry={k} index={index} onGo={onGo} depth={depth + 1} />
+              {own.map((k) => (
+                <Item
+                  key={k.headerId}
+                  node={{ entry: k, children: [] }}
+                  index={index}
+                  onGo={onGo}
+                  depth={depth + 1}
+                />
               ))}
             </ul>
           )}
         </div>
       )}
+      {nested.length > 0 && showNested && (
+        <ul className="eli-hv__list eli-hv__list--nested" data-testid="eli-hv-nested">
+          {nested.map((n) => (
+            <Item
+              key={`${n.entry.path}|${n.entry.headerId}`}
+              node={n}
+              index={index}
+              onGo={onGo}
+              depth={depth + 1}
+              showContext={false}
+              preview={preview}
+              paragraphFor={paragraphFor}
+            />
+          ))}
+        </ul>
+      )}
     </li>
   );
 };
 
-export const Groups = ({ entries, index, onGo, showContext, preview = false }) => (
+export const Groups = ({
+  entries,
+  index,
+  onGo,
+  showContext,
+  preview = false,
+  paragraphFor = null,
+}) => (
   <div className="eli-hv__groups">
     {groupByPath(entries).map((g) => (
       <section key={g.path} className="eli-hv__group" data-testid="eli-hv-group">
@@ -120,14 +213,15 @@ export const Groups = ({ entries, index, onGo, showContext, preview = false }) =
           <span className="eli-hv__count">{g.entries.length}</span>
         </h4>
         <ul className="eli-hv__list">
-          {g.entries.map((e) => (
+          {nestEntries(g.entries).map((n) => (
             <Item
-              key={`${e.path}|${e.headerId}`}
-              entry={e}
+              key={`${n.entry.path}|${n.entry.headerId}`}
+              node={n}
               index={index}
               onGo={onGo}
               showContext={showContext}
               preview={preview}
+              paragraphFor={paragraphFor}
             />
           ))}
         </ul>
@@ -140,14 +234,19 @@ const TagView = ({ tag, onClose }) => {
   const files = useSelector(selectFiles);
   const index = useMemo(() => headingIndex(files, { skipDiary: true }), [files]);
   const [inherited, setInherited] = useState(true);
+  // (4.35) interruptores pasajeros (apagados al abrir la vista)
+  const [hideArchived, setHideArchived] = useState(false);
+  const [hideTasks, setHideTasks] = useState(false);
   const [extra, setExtra] = useState([]);
   const go = useGoToHeading();
-  const entries = useMemo(() => entriesWithTags(index, [tag, ...extra], { inherited }), [
-    index,
-    tag,
-    extra,
-    inherited,
-  ]);
+  const entries = useMemo(
+    () =>
+      filterEntries(entriesWithTags(index, [tag, ...extra], { inherited }), {
+        hideArchived,
+        hideTasks,
+      }),
+    [index, tag, extra, inherited, hideArchived, hideTasks]
+  );
   // Otras etiquetas de lo que sale (para afinar), como la barra de filtros de GTD
   const coTags = useMemo(() => {
     const counts = new Map();
@@ -183,6 +282,24 @@ const TagView = ({ tag, onClose }) => {
             data-testid="eli-tag-view-inherited"
           />{' '}
           Incluir heredadas
+        </label>
+        <label className="eli-hv__inherit">
+          <input
+            type="checkbox"
+            checked={hideArchived}
+            onChange={(e) => setHideArchived(e.target.checked)}
+            data-testid="eli-tag-view-hide-archived"
+          />{' '}
+          Ocultar archivadas
+        </label>
+        <label className="eli-hv__inherit">
+          <input
+            type="checkbox"
+            checked={hideTasks}
+            onChange={(e) => setHideTasks(e.target.checked)}
+            data-testid="eli-tag-view-hide-tasks"
+          />{' '}
+          Ocultar tareas
         </label>
         {extra.map((t) => (
           <button
@@ -226,6 +343,14 @@ const BacklinksView = ({ path, headerId, onClose }) => {
     index,
     self,
   ]);
+  // (4.35) de cada resultado, solo el párrafo que enlaza (el enlace resaltado) + «Ver el resto»
+  const paragraphFor = useMemo(
+    () =>
+      self && self.orgId
+        ? (e) => linkingParagraph(e, self.orgId).map((p) => splitLinkParts(p, self.orgId))
+        : null,
+    [self]
+  );
   return (
     <Overlay
       title={
@@ -242,7 +367,13 @@ const BacklinksView = ({ path, headerId, onClose }) => {
           Sin enlaces: esta cabecera aún no tiene :ID:, así que nada la enlaza.
         </div>
       ) : refs.length ? (
-        <Groups entries={refs} index={index} onGo={(e) => go(e, onClose)} showContext />
+        <Groups
+          entries={refs}
+          index={index}
+          onGo={(e) => go(e, onClose)}
+          showContext
+          paragraphFor={paragraphFor}
+        />
       ) : (
         <div className="eli-hv__empty" data-testid="eli-backlinks-none">
           Sin enlaces: ninguna cabecera de los ficheros abiertos enlaza aquí.
@@ -260,15 +391,15 @@ const Overlay = ({ title, count, onClose, testId, children }) => {
   useEffect(() => {
     document.body.classList.add('eli-hv-open');
     const el = overlayRef.current;
+    // (4.35) solo se bloquea el gesto FUERA de la lista; dentro manda su propio scroll
+    // (`overscroll-behavior: contain` evita que pase al fondo)
     const onTouch = (e) => {
       const sc = scrollRef.current;
-      if (!sc || !sc.contains(e.target) || sc.scrollHeight <= sc.clientHeight + 1)
-        e.preventDefault();
+      if (!sc || !sc.contains(e.target)) e.preventDefault();
     };
     const onWheel = (e) => {
       const sc = scrollRef.current;
-      if (!sc || !sc.contains(e.target) || sc.scrollHeight <= sc.clientHeight + 1)
-        e.preventDefault();
+      if (!sc || !sc.contains(e.target)) e.preventDefault();
     };
     if (el) {
       el.addEventListener('touchmove', onTouch, { passive: false });

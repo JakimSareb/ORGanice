@@ -28,7 +28,14 @@ import {
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
 import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
-import { CONTENT_WIDTHS, getContentWidth, setContentWidth } from '../../lib/eli_layout';
+import {
+  CONTENT_PX,
+  CONTENT_WIDTHS,
+  getContentPx,
+  getContentWidth,
+  setContentPx,
+  setContentWidth,
+} from '../../lib/eli_layout';
 import { pagesPathFor } from '../../lib/eli_heading_links';
 import { askPick } from '../../lib/eli_prompt';
 import { useTagsPos, setTagsPos } from '../../lib/eli_tags_pos';
@@ -200,6 +207,7 @@ const EliPomodoroSettings = () => {
 // (4.31) Documentos: fichero para páginas nuevas, «#» al escribir el título y ancho del contenido
 const selectPagesFile = (s) => s.base.get('eliPagesFile') || '';
 const selectHashOn = (s) => s.base.get('eliNoHashTagTitle') !== true;
+const selectSlashOn = (s) => s.base.get('eliSlashMenu') === true;
 const selectPagesAuto = (s) => pagesPathFor({ ...s, base: s.base.set('eliPagesFile', '') });
 const selectOrgPaths = (s) =>
   Array.from(
@@ -219,8 +227,10 @@ const EliDocsSettings = () => {
   const pagesFile = useSelector(selectPagesFile);
   const auto = useSelector(selectPagesAuto);
   const hashOn = useSelector(selectHashOn);
+  const slashOn = useSelector(selectSlashOn);
   const paths = useSelector(selectOrgPaths);
   const [width, setWidth] = React.useState(getContentWidth());
+  const [widthPx, setWidthPx] = React.useState(String(getContentPx()));
   const set = (name, value) => dispatch(baseActions.setEliSetting(name, value));
   const choose = async () => {
     const list = paths ? paths.split('\n') : [];
@@ -264,6 +274,16 @@ const EliDocsSettings = () => {
         </div>
         <Switch isEnabled={hashOn} onToggle={() => set('eliNoHashTagTitle', hashOn)} />
       </div>
+      <div className="setting-container" data-testid="eli-setting-slash-menu">
+        <div className="setting-label">
+          Menú al escribir «/»
+          <div className="setting-label__description">
+            Al escribir «/» al principio de una palabra se abre el buscador de acciones. Apagado
+            (por defecto): «/» se escribe tal cual.
+          </div>
+        </div>
+        <Switch isEnabled={slashOn} onToggle={() => set('eliSlashMenu', !slashOn)} />
+      </div>
       <div
         className="setting-container setting-container--vertical"
         data-testid="eli-setting-width"
@@ -272,7 +292,8 @@ const EliDocsSettings = () => {
           Ancho del contenido (GTD y Documentos)
           <div className="setting-label__description">
             En el ordenador. Se guarda en este dispositivo, igual que el ancho de la barra lateral
-            de GTD (arrastra su borde; doble clic = el de siempre).
+            de GTD (arrastra su borde; doble clic = el de siempre). «Personalizado»: ancho en
+            píxeles para todas las vistas.
           </div>
         </div>
         <TabButtons
@@ -284,6 +305,21 @@ const EliDocsSettings = () => {
             setWidth(v);
           }}
         />
+        {width === 'custom' && (
+          <div className="eli-width-px" data-testid="eli-width-px">
+            <input
+              type="number"
+              className="textfield"
+              min={CONTENT_PX.min}
+              max={CONTENT_PX.max}
+              value={widthPx}
+              onChange={(e) => setWidthPx(e.target.value)}
+              onBlur={() => setWidthPx(String(setContentPx(widthPx)))}
+              data-testid="eli-width-px-input"
+            />{' '}
+            px (también se arrastra el borde del contenido)
+          </div>
+        )}
       </div>
     </details>
   );
@@ -1033,6 +1069,7 @@ const Settings = ({
                 ['Squares', 'Puntos y cuadrados  ● ○ ■ □'],
                 ['Stars', 'Estrellas  ★ ✦ ✧ ·'],
                 ['Diamonds', 'Rombos  ◆ ◇ ◈ ⬩'],
+                ['Triangles', 'Triángulos  ▸ ▾'],
               ].map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}

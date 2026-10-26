@@ -3,6 +3,27 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.35 (octubre de 2026)
+** Arreglos
+- El *menú que sale al escribir «/»* ahora es un ajuste (Ajustes › Documentos › «Menú al escribir «/»») y viene *apagado*: «/» se escribe como texto.
+- *Ancho del contenido «Personalizado»*: además de Estrecho, Medio y Completo, un ancho en píxeles (campo en Ajustes › Documentos o arrastrando el borde derecho del contenido) para todas las vistas. Es de cada dispositivo.
+- Al *reducir una cabecera* (narrow) sus subcabeceras quedan siempre plegadas. Sobre la cabecera reducida hay una flechita *←* para volver a ver todo el documento.
+- *Vista por etiqueta*: el scroll ya no se pierde al plegar un resultado extendido.
+- *GTD*: con una flecha ↑/↓ mantenida la selección sigue moviéndose (antes solo la primera pulsación).
+- *Escribir una nota en Documentos*: la pantalla ya no da saltos en cada salto de línea; solo se desplaza, lo justo y sin animación, cuando el cursor se acerca al borde (como Word).
+- Al escribir, la cabecera ya no se tiñe de azul: fondo del documento y una barrita fina a la izquierda.
+- Las *etiquetas a la derecha* quedan separadas unos 14 px del margen.
+** Estilo de viñeta «Triángulos»
+- Nuevo estilo en Ajustes › Apariencia › Estilo de viñetas: ▸ plegada, ▾ desplegada y un punto gris si no tiene contenido. Tocar, arrastrar y mantener la viñeta hacen lo mismo que siempre.
+** Vistas y etiquetas
+- El buscador de «[[» es *jerárquico*: por fichero, nivel 1 primero y sus hijas debajo, sangradas; si coincide una hija sale bajo su madre (atenuada).
+- En la vista por etiqueta, en «Quién enlaza aquí» y en «Referencias», las *subcabeceras que también son resultado salen indentadas* bajo su madre y se pliegan con su ▾.
+- «Quién enlaza aquí» enseña solo el *párrafo que enlaza* (el enlace resaltado) y un botón *Ver el resto*.
+- La vista por etiqueta tiene los interruptores *Ocultar archivadas* y *Ocultar tareas* (apagados al abrir).
+- GTD: los grupos «Por defecto» y «Otras» de la barra de etiquetas se pliegan por separado. Y en la vista de una etiqueta las *cabeceras sin tarea se ven por defecto* (se apagan por etiqueta en el gestor de etiquetas).
+** Editor de tarea de GTD
+- Nuevos botones junto al nombre del fichero: *Backlinks* (quién enlaza a la tarea) y *Enviar a* (mueve la tarea dentro de la cabecera o fichero que elijas; si venía de un proyecto, sigue enlazada a él). El antiguo *Mover* se llama ahora *Lista GTD*.
+
 * 4.34 (octubre de 2026)
 ** Tema Logseq
 - Nuevo tema *Logseq* (Ajustes › Apariencia › Tema; claro y oscuro): tipografía tipo Inter, texto en un solo color sin colores por nivel, filas de poco aire, *viñetas redondas grises* (plegada: con un aro) y una *guía vertical* fina bajo cada cabecera madre; enlaces y etiquetas en azul (las etiquetas con «#»). Si eliges otro «Tipo de letra», gana el tuyo.

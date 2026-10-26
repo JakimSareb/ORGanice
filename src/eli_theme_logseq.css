@@ -51,6 +51,10 @@ html[data-eli-theme='Logseq'] .header {
 html[data-eli-theme='Logseq'] .header--selected {
   background-color: var(--base1-soft);
 }
+html[data-eli-theme='Logseq'] .header--selected:has(.eli-inline-textarea) {
+  background-color: transparent;
+  box-shadow: inset 2px 0 0 var(--blue);
+}
 
 /* Viñetas: punto gris redondo (plegada: con un aro, como en Logseq). El hueco no cambia. */
 html[data-eli-theme='Logseq'] .header__bullet {
@@ -65,6 +69,13 @@ html[data-eli-theme='Logseq'] .header__bullet::after {
   height: 6px;
   border-radius: 50%;
   background: var(--lq-bullet);
+}
+/* (4.35) el estilo «Triángulos» dibuja su propio glifo: el tema no lo pisa */
+html[data-eli-theme='Logseq'] .header__bullet--triangle {
+  color: inherit !important;
+}
+html[data-eli-theme='Logseq'] .header__bullet--triangle::after {
+  display: none;
 }
 html[data-eli-theme='Logseq'] .header__bullet--folded::after {
   box-shadow: 0 0 0 3px var(--lq-ring);

@@ -4,7 +4,7 @@
 // el campo aparece en el mismo paso del toque (en el iPhone, el teclado sale a la primera).
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import './stylesheet.css';
-import { keepCaretVisible, scrollParentOf } from '../../../../lib/eli_caret_view';
+import { scheduleCaretVisible, scrollParentOf } from '../../../../lib/eli_caret_view';
 
 export const NOT_EDITING = { editing: null, render: null };
 export const EliInlineEditContext = React.createContext(NOT_EDITING);
@@ -26,6 +26,7 @@ export const InlineTextarea = React.forwardRef(function InlineTextarea(
   ref
 ) {
   const inner = useRef(null);
+  const prevLen = useRef(0);
   const setRef = (el) => {
     inner.current = el;
     if (typeof ref === 'function') ref(el);
@@ -37,20 +38,26 @@ export const InlineTextarea = React.forwardRef(function InlineTextarea(
     // (3.47) al medir, el cuadro se encoge un instante: la página no debe volver arriba
     const scroller = scrollParentOf(el);
     const before = scroller ? scroller.scrollTop : window.scrollY;
+    // (4.35) al crecer (salto de línea) la altura nunca baja y sube: se mide con min-height =
+    // la actual, y la página no da saltos
+    const grew = (value || '').length >= prevLen.current;
+    prevLen.current = (value || '').length;
+    if (grew) el.style.minHeight = `${el.offsetHeight}px`;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight + 2}px`;
+    el.style.minHeight = '';
     const after = scroller ? scroller.scrollTop : window.scrollY;
     if (after !== before) {
       if (scroller) scroller.scrollTop = before;
       else window.scrollTo(window.scrollX, before);
     }
-    keepCaretVisible(el);
+    scheduleCaretVisible(el);
   }, [value]);
   // (3.47) la vista sigue al cursor (notas más largas que la pantalla; teclado del iPhone)
   useEffect(() => {
     const el = inner.current;
     if (!el) return undefined;
-    const follow = () => keepCaretVisible(el);
+    const follow = () => scheduleCaretVisible(el);
     const timers = [60, 350, 700].map((ms) => setTimeout(follow, ms));
     const vv = window.visualViewport;
     if (vv) vv.addEventListener('resize', follow);
@@ -120,9 +127,9 @@ export const InlineTextarea = React.forwardRef(function InlineTextarea(
       }}
       onClick={(e) => {
         e.stopPropagation();
-        keepCaretVisible(e.currentTarget);
+        scheduleCaretVisible(e.currentTarget);
       }}
-      onKeyUp={(e) => keepCaretVisible(e.currentTarget)}
+      onKeyUp={(e) => scheduleCaretVisible(e.currentTarget)}
       onDoubleClick={(e) => e.stopPropagation()}
       {...rest}
     />

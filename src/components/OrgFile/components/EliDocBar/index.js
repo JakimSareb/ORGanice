@@ -136,6 +136,8 @@ export default function EliDocBar({
   const narrowedId = file.get('narrowedHeaderId');
   const logIntoDrawer = useSelector((s) => s.base.get('shouldLogIntoDrawer'));
   const indentOnExport = useSelector((s) => s.base.get('eliIndentOnExport') === true);
+  // (4.35) «/» abre el menú de acciones solo si el ajuste está encendido (por defecto no)
+  const slashMenu = useSelector((s) => s.base.get('eliSlashMenu') === true);
   // (4.0) Modo Notas: sin lo de tareas (estado, ★, fechas, reloj, propiedades, GTD…)
   const notes = useNotesMode();
   const [sub, setSub] = useState(null); // submenú abierto (id)
@@ -1290,7 +1292,7 @@ export default function EliDocBar({
   const latest = useRef();
   latest.current = { main, subs, run, editing };
   useEffect(() => {
-    if (!editing) return undefined;
+    if (!editing || !slashMenu) return undefined;
     const onInput = async (e) => {
       const el = e.target;
       if (!el || !el.matches || !el.matches(`${TITLE_SEL}, ${DESC_SEL}`)) return;
@@ -1329,7 +1331,7 @@ export default function EliDocBar({
     };
     document.addEventListener('input', onInput, true);
     return () => document.removeEventListener('input', onInput, true);
-  }, [editing]);
+  }, [editing, slashMenu]);
 
   // (3.02) Con el candado (modo lectura): solo acciones que no editan
   const lockedMain = header

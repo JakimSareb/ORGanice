@@ -417,3 +417,8 @@ div.eli-viewer__none {
   border-color: var(--red, #dc322f);
   color: #fff;
 }
+
+/* (4.35) buscador «[[» jerárquico: sangría por nivel y madres atenuadas */
+.eli-pick__item.is-dim {
+  opacity: 0.55;
+}

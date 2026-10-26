@@ -98,6 +98,9 @@ import {
   gtdEnsureOrgId,
 } from '../../lib/gtd/gtd_actions';
 import { clockSummary, taskLinkText, isClockRunning } from '../../lib/gtd/gtd_tools';
+import { gtdSendTo } from '../../lib/gtd/gtd_sendto';
+import { pickRefileTarget } from '../../lib/eli_heading_links';
+import { openBacklinks } from '../../lib/eli_heading_events';
 import { ROW_FN_PROPS, rowPropsEqual } from '../../lib/gtd/gtd_rowmemo';
 import { clockTotalsOf, clockTotalLabel } from '../../lib/gtd/gtd_clock';
 import {
@@ -1139,9 +1142,13 @@ export default function GtdView() {
     () => readLS('eliGtdDoneOpen', true) !== false
   );
   const [tagsOpen, setTagsOpen] = useState(() => readLS('eliGtdTagsOpen', true) !== false);
-  // (3.01) etiquetas cuya vista muestra también las cabeceras sin tarea (gestor de etiquetas)
-  const [headingTags, setHeadingTags] = useState(() => readLS('eliGtdTagHeadings', []));
+  // (3.01) cabeceras sin tarea en la vista de una etiqueta (gestor de etiquetas).
+  // (4.35) AHORA SE VEN POR DEFECTO: se guarda la lista de etiquetas donde el usuario las APAGA
+  // (clave nueva; la antigua `eliGtdTagHeadings` se ignora)
+  const [headingsOff, setHeadingsOff] = useState(() => readLS('eliGtdTagHeadingsOff', []));
   const [headingsOpen, setHeadingsOpen] = useState(true);
+  // (4.35) grupos «Por defecto» / «Otras» de la barra de etiquetas: plegado por grupo (este dispositivo)
+  const [foldedTagGroups, setFoldedTagGroups] = useState(() => readLS('eliGtdTagGroupsFolded', []));
   const [projectsOpen, setProjectsOpen] = useState(
     () => readLS('eliGtdProjectsOpen', true) !== false
   );
@@ -1399,11 +1406,11 @@ export default function GtdView() {
   const baseList = useMemo(() => {
     if (view.id === 'tickler') return filterTickler(ticklerTasks, { area, text });
     const base = tasksForView(tasks, view, { area, text }, today);
-    const heads = filterHeadings(tasks, view, headingTags.includes(view.tag)).filter((t) =>
+    const heads = filterHeadings(tasks, view, !headingsOff.includes(view.tag)).filter((t) =>
       matchesFilters(t, { area, text })
     );
     return heads.length ? [...base, ...heads] : base;
-  }, [tasks, view, area, text, today, ticklerTasks, headingTags]);
+  }, [tasks, view, area, text, today, ticklerTasks, headingsOff]);
   const facets = useMemo(() => facetsFor(baseList, { ownOnly: tagInherit !== 'all' }), [
     baseList,
     tagInherit,
@@ -1538,7 +1545,7 @@ export default function GtdView() {
   ]);
   const cleanupCount = useMemo(() => doneWaitingCleanup(tasks).length, [tasks]);
   const tagHeadings = useMemo(() => {
-    if (view.id !== 'tag' || !headingTags.includes(view.tag)) return [];
+    if (view.id !== 'tag' || headingsOff.includes(view.tag)) return [];
     const f = { area, text, ...filters };
     return tasks
       .filter(
@@ -1551,7 +1558,7 @@ export default function GtdView() {
           matchesFilters(t, f)
       )
       .sort((a, b) => (a.path === b.path ? a.index - b.index : a.path.localeCompare(b.path)));
-  }, [view, headingTags, tasks, area, text, filters, today]);
+  }, [view, headingsOff, tasks, area, text, filters, today]);
   const buildDeps = useMemo(
     () => ({}),
     // eslint-disable-next-line
@@ -4204,7 +4211,7 @@ export default function GtdView() {
     const scrollTo = (task) =>
       setTimeout(() => {
         const el = document.querySelector(`[data-reorder-key="${CSS.escape(task.key)}"]`);
-        if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
       }, 0);
     const select = (task) => {
       setSelKey(task ? task.key : null);
@@ -4338,7 +4345,10 @@ export default function GtdView() {
 
   const keyRef = useRef(null);
   keyRef.current = (e) => {
-    if (e.defaultPrevented || e.repeat) return;
+    // (4.35) con la tecla mantenida las flechas siguen moviendo la selección (antes solo la 1.ª
+    // pulsación: las repetidas no hacían preventDefault y la página se desplazaba)
+    if (e.defaultPrevented) return;
+    if (e.repeat && e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     if (['Shift', 'Control', 'Alt', 'Meta', 'AltGraph'].includes(e.key)) return;
     if (isEditable(e.target) || isEditable(document.activeElement)) return;
     if (shouldIgnoreOrganiceHotkey(e, null)) return;
@@ -4351,6 +4361,7 @@ export default function GtdView() {
     )
       return;
     if (listKey(e)) return;
+    if (e.repeat) return;
     // (3.0) Mayús+1…9: ir al área 1…9 (como Nirvana)
     if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && /^Digit[1-9]$/.test(e.code || '')) {
       const a = areas[Number(e.code.slice(5)) - 1];
@@ -5278,8 +5289,24 @@ export default function GtdView() {
       onGoToParent={() => goToTask(parentTaskOf(task))}
       noAutoFocus={jumpedKey === task.key}
       preview={previewKey === task.key}
+      onBacklinks={() => openBacklinks(task.path, task.id)}
+      onSendTo={async () => {
+        const target = await dispatch(pickRefileTarget({ title: `Enviar «${task.title}» a` }));
+        if (!target) return;
+        const r = dispatch(gtdSendTo(task, target.path, target.headerId));
+        if (!r.moved) {
+          showMessage('Enviar a', 'No se puede mover una tarea dentro de sí misma.');
+          return;
+        }
+        setOpenKey(null);
+        showMessage(
+          'Enviar a',
+          `«${task.title}» ahora está en «${target.title}»` +
+            (r.linkedTo ? ` y sigue enlazada al proyecto «${r.linkedTo}».` : '.')
+        );
+      }}
       onMove={(e) => {
-        // (3.06) hoja del móvil: «→ Mover» abre directamente «Mover a»
+        // (3.06) hoja del móvil: «→ Lista GTD» abre directamente «Mover a»
         const mv = taskMenuItems([task]).find((i) => i.testId === 'gtd-menu-move');
         const r = e && e.currentTarget ? e.currentTarget.getBoundingClientRect() : null;
         setMenu({
@@ -6362,25 +6389,48 @@ export default function GtdView() {
                     className="gtd-side__taggroup"
                     data-testid={`gtd-side-tags-${g.id}`}
                   >
-                    <div className="gtd-side__grouplabel">{g.label}</div>
-                    {g.list.map(({ tag, n }) => (
-                      <button
-                        key={tag}
+                    <div
+                      className="gtd-side__grouplabel gtd-side__grouplabel--toggle"
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={!foldedTagGroups.includes(g.id)}
+                      onClick={() => {
+                        const next = foldedTagGroups.includes(g.id)
+                          ? foldedTagGroups.filter((x) => x !== g.id)
+                          : [...foldedTagGroups, g.id];
+                        setFoldedTagGroups(next);
+                        writeLS('eliGtdTagGroupsFolded', next);
+                      }}
+                      data-testid={`gtd-side-taggroup-toggle-${g.id}`}
+                    >
+                      <i
                         className={
-                          'gtd-side__item gtd-side__item--tag' +
-                          (view.id === 'tag' && view.tag === tag ? ' is-on' : '')
+                          foldedTagGroups.includes(g.id)
+                            ? 'fas fa-caret-right'
+                            : 'fas fa-caret-down'
                         }
-                        onClick={(e) => {
-                          selectView({ id: 'tag', tag });
-                          afterSideClick(e);
-                        }}
-                        data-testid="gtd-side-tag"
-                      >
-                        <i className="fas fa-tag gtd-side__icon" />
-                        <span className="gtd-side__label">{tag}</span>
-                        <span className="gtd-side__count">{n}</span>
-                      </button>
-                    ))}
+                      />{' '}
+                      {g.label}
+                    </div>
+                    {!foldedTagGroups.includes(g.id) &&
+                      g.list.map(({ tag, n }) => (
+                        <button
+                          key={tag}
+                          className={
+                            'gtd-side__item gtd-side__item--tag' +
+                            (view.id === 'tag' && view.tag === tag ? ' is-on' : '')
+                          }
+                          onClick={(e) => {
+                            selectView({ id: 'tag', tag });
+                            afterSideClick(e);
+                          }}
+                          data-testid="gtd-side-tag"
+                        >
+                          <i className="fas fa-tag gtd-side__icon" />
+                          <span className="gtd-side__label">{tag}</span>
+                          <span className="gtd-side__count">{n}</span>
+                        </button>
+                      ))}
                   </div>
                 ))}
           </div>
@@ -7361,13 +7411,13 @@ export default function GtdView() {
             if (!defaultTags().includes(tag))
               dispatch(setEliSetting('eliDefaultTagsLine', `${line} ${tag}`));
           }}
-          headingTags={headingTags}
+          headingsOff={headingsOff}
           onToggleHeadings={(tag) => {
-            const next = headingTags.includes(tag)
-              ? headingTags.filter((x) => x !== tag)
-              : [...headingTags, tag];
-            setHeadingTags(next);
-            writeLS('eliGtdTagHeadings', next);
+            const next = headingsOff.includes(tag)
+              ? headingsOff.filter((x) => x !== tag)
+              : [...headingsOff, tag];
+            setHeadingsOff(next);
+            writeLS('eliGtdTagHeadingsOff', next);
           }}
           onRemoveDefaultTag={(tag) => {
             const line = defaultTagsLine()

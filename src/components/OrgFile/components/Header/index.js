@@ -28,6 +28,8 @@ import { isDocLocked } from '../../../../lib/eli_doc_lock';
 import { justDragged } from '../HeaderList/eliBulletDrag';
 import { legacyHeaderTapOpen } from '../../../../lib/eli_tap_mode';
 
+import { TRIANGLES_STYLE, triangleGlyph } from '../../../../lib/eli_triangles';
+
 // ORG Mode para Eli: dentro de un cuadro de texto no se desliza ni se arrastra el encabezado
 const eliIsEditableTarget = (el) =>
   !!(el && el.closest && el.closest('textarea, input, select, [contenteditable="true"]'));
@@ -513,7 +515,11 @@ class Header extends PureComponent {
       showDeadlineDisplay,
     } = this.props;
     const bulletCycle = BULLET_STYLES[bulletStyle];
-    const bulletGlyph = bulletCycle
+    // (4.35) «Triángulos»: el propio glifo es el indicador de plegado (no se duplica con ▸ naranja)
+    const isTriangles = bulletStyle === TRIANGLES_STYLE;
+    const bulletGlyph = isTriangles
+      ? triangleGlyph(hasContent, header.get('opened'))
+      : bulletCycle
       ? bulletCycle[(Math.max(1, header.get('nestingLevel')) - 1) % bulletCycle.length]
       : bulletStyle === 'Fancy'
       ? '●'
@@ -697,8 +703,20 @@ class Header extends PureComponent {
               {/* (4.04) estilos que cambian el icono según el nivel; plegada = color de acento +
                   triángulo. Arrastrar la viñeta = mover la cabecera (HeaderList) */}
               <div
-                style={{ marginLeft: -16, color: bulletFolded ? 'var(--orange)' : color }}
-                className={'header__bullet' + (bulletFolded ? ' header__bullet--folded' : '')}
+                style={{
+                  marginLeft: -16,
+                  color:
+                    isTriangles && !hasContent
+                      ? 'var(--base1)'
+                      : bulletFolded
+                      ? 'var(--orange)'
+                      : color,
+                }}
+                className={
+                  'header__bullet' +
+                  (bulletFolded ? ' header__bullet--folded' : '') +
+                  (isTriangles ? ' header__bullet--triangle' : '')
+                }
                 data-testid="header-bullet"
                 onPointerDown={this.handleBulletPointerDown}
               >
