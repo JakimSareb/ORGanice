@@ -99,6 +99,25 @@ export const monthRows = (daysByKey, year, month, counters) => {
   return rows;
 };
 
+// (4.38) «Ver en el diari»: el :ID: del mes (formato anterior) o, en org-journal (sin mes), el del
+// primer día del mes con algo
+const monthIdsOf = (src) => {
+  const files = src && typeof src === 'object' ? src.files || [] : [{ text: src || '' }];
+  const out = new Set();
+  files.forEach((f) =>
+    String(f.text || '').replace(/^\s*:ID:\s*diari-(\d{4}-\d{2})\s*$/gm, (all, mk) => {
+      out.add(mk);
+      return all;
+    })
+  );
+  return out;
+};
+const monthLinkId = (days, mlinks, mk) => {
+  if (mlinks.has(mk)) return monthOrgId(mk);
+  const d = days.find((x) => x.key.startsWith(mk) && dayHasData(x));
+  return d ? dayOrgId(d.key) : monthOrgId(mk);
+};
+
 const monthHasData = (days, mk) => days.some((d) => d.key.startsWith(mk) && dayHasData(d));
 
 // Datos del año (para el fichero y para el PDF). (4.33) `counters` = los diarios (columnas de la
@@ -108,6 +127,7 @@ export const monthlyData = (diaryText, year, allCounters) => {
   const monthCounters = monthlyCounters(allCounters);
   const days = parseDays(diaryText || '');
   const mprops = monthCounters.length ? parseMonthProps(diaryText || '') : {};
+  const mlinks = monthIdsOf(diaryText);
   const byKey = new Map(days.map((d) => [d.key, d]));
   const months = [];
   for (let m = 0; m < 12; m++) {
@@ -120,6 +140,7 @@ export const monthlyData = (diaryText, year, allCounters) => {
       label: MONTHS[m],
       rows: monthRows(byKey, year, m, counters),
       monthValues,
+      link: monthLinkId(days, mlinks, mk),
     });
   }
   return { year, counters, monthCounters, months };
@@ -239,8 +260,12 @@ export const regenerateMonthly = (old, year, diaryText, counters) => {
     const rows = md ? md.rows : monthRows(new Map(), year, m, data.counters);
     const mline = md ? monthValuesLine(data.monthCounters, md.monthValues) : '';
     const content = [...(mline ? [mline, ''] : []), ...monthTableLines(rows, data.counters)];
+    const hi0 = lines.findIndex((l) => (MONTH_HEAD.exec(l) || [])[1] === mk);
+    // (4.38) enlace del mes que ya no existe (diario pasado a org-journal): al primer día del mes
+    if (hi0 >= 0 && md && md.link !== monthOrgId(mk))
+      lines[hi0] = lines[hi0].replace(`[[id:${monthOrgId(mk)}]`, `[[id:${md.link}]`);
     if (replaceBlock(lines, mk, content) || !md) continue;
-    const hi = lines.findIndex((l) => (MONTH_HEAD.exec(l) || [])[1] === mk);
+    const hi = hi0;
     if (hi >= 0) {
       // apartado del mes sin marcas: la tabla al principio (tras su cajón, si lo tiene)
       let at = hi + 1;
@@ -252,7 +277,7 @@ export const regenerateMonthly = (old, year, diaryText, counters) => {
       continue;
     }
     const section = [
-      `* ${mk} ${MONTHS[m]} [[id:${monthOrgId(mk)}][Ver en el diari]]`,
+      `* ${mk} ${MONTHS[m]} [[id:${md.link}][Ver en el diari]]`,
       BEGIN(mk),
       ...content,
       END(mk),

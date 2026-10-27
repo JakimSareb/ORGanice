@@ -50,6 +50,9 @@ import {
   COUNTER_TYPES,
   COUNTER_FREQS,
   cleanCounters,
+  JOURNAL_TYPES,
+  journalFileName,
+  strftime,
 } from '../../lib/eli_diary';
 import {
   TOOLS,
@@ -321,6 +324,14 @@ const EliDiarySettings = () => {
   const [cfg, setCfg] = React.useState(getDiaryCfg());
   const [tpl, setTpl] = React.useState(getDiaryCfg().template.join('\n'));
   const save = (patch) => setCfg(setDiaryCfg(patch));
+  // (4.38) formato org-journal: los campos de texto se guardan al salir
+  const [jdraft, setJdraft] = React.useState(getDiaryCfg().journal);
+  const saveJ = (patch) => {
+    const next = { ...cfg.journal, ...jdraft, ...patch };
+    setJdraft(next);
+    save({ journal: next });
+  };
+  const today = new Date();
   // (4.27) contadores: se editan aquí y se guardan limpios al salir del campo
   const [counters, setCounters] = React.useState(getDiaryCfg().counters);
   const saveCounters = (list = counters) => save({ counters: cleanCounters(list) });
@@ -361,9 +372,9 @@ const EliDiarySettings = () => {
           <div className="setting-label">
             Carpeta
             <div className="setting-label__description">
-              Un fichero por año (diari-AAAA.org). Por defecto «journal/» junto al fichero de
-              entrada (si ya tenías el diario en «pages/», se respeta lo que hay aquí guardado);
-              vacío = «pages/». Una ruta sin «/» delante es relativa a esa carpeta.
+              Por defecto «journal/» junto al fichero de entrada (si ya tenías el diario en
+              «pages/», se respeta lo que hay aquí guardado); vacío = «pages/». Una ruta sin «/»
+              delante es relativa a esa carpeta.
             </div>
           </div>
           <input
@@ -374,6 +385,93 @@ const EliDiarySettings = () => {
             onChange={(e) => save({ dir: e.target.value })}
             data-testid="eli-diary-dir"
           />
+        </div>
+        <div className="setting-container" data-testid="eli-setting-diary-jtype">
+          <div className="setting-label">
+            Un fichero por…
+            <div className="setting-label__description">
+              Formato org-journal (también lo abre Emacs). Hoy se escribe en «
+              {journalFileName(today, { ...cfg.journal, ...jdraft })}». Cambiarlo solo mueve los
+              apuntes NUEVOS: los ficheros que ya hay se siguen leyendo y no se tocan.
+            </div>
+          </div>
+          <TabButtons
+            buttons={JOURNAL_TYPES.map((t) => t.label)}
+            values={JOURNAL_TYPES.map((t) => t.id)}
+            selectedButton={cfg.journal.type}
+            onSelect={(v) => saveJ({ type: v })}
+          />
+        </div>
+        <div className="setting-container setting-container--vertical eli-setting-child">
+          <div className="setting-label">
+            Nombre del fichero
+            <div className="setting-label__description">
+              Patrón de org-journal (sin «.org»): %Y año, %m mes, %d día. Por defecto «%Y»
+              (2026.org).
+            </div>
+          </div>
+          <input
+            type="text"
+            value={jdraft.fileFormat}
+            placeholder="%Y"
+            onChange={(e) => setJdraft({ ...jdraft, fileFormat: e.target.value })}
+            onBlur={() => saveJ({})}
+            data-testid="eli-diary-jfile"
+          />
+        </div>
+        <div className="setting-container setting-container--vertical eli-setting-child">
+          <div className="setting-label">
+            Título del día
+            <div className="setting-label__description">
+              %A día de la semana, %d día, %B mes, %Y año. Hoy: «
+              {strftime(jdraft.dateFormat || cfg.journal.dateFormat, today)}». La hora de los
+              apuntes va como HH:MM.
+            </div>
+          </div>
+          <input
+            type="text"
+            value={jdraft.dateFormat}
+            placeholder="%A, %d %B %Y"
+            onChange={(e) => setJdraft({ ...jdraft, dateFormat: e.target.value })}
+            onBlur={() => saveJ({})}
+            data-testid="eli-diary-jdate"
+          />
+        </div>
+        <div className="setting-container setting-container--vertical eli-setting-child">
+          <div className="setting-label">
+            Cabecera de un fichero nuevo
+            <div className="setting-label__description">
+              Se pone al crear el fichero (%Y = año).
+            </div>
+          </div>
+          <textarea
+            rows={2}
+            value={jdraft.header}
+            onChange={(e) => setJdraft({ ...jdraft, header: e.target.value })}
+            onBlur={() => saveJ({})}
+            data-testid="eli-diary-jheader"
+          />
+        </div>
+        {cfg.journal.type === 'weekly' && (
+          <div className="setting-container eli-setting-child">
+            <div className="setting-label">Primer día de la semana</div>
+            <TabButtons
+              buttons={['Lunes', 'Domingo']}
+              values={[1, 7]}
+              selectedButton={cfg.journal.weekStart === 7 ? 7 : 1}
+              onSelect={(v) => saveJ({ weekStart: v })}
+            />
+          </div>
+        )}
+        <div className="setting-container" data-testid="eli-setting-diary-habits">
+          <div className="setting-label">
+            Mostrar hábitos de hoy
+            <div className="setting-label__description">
+              En el día de hoy, los hábitos que tocan, para marcarlos hechos (se apuntan en el
+              fichero del hábito, no en el diario).
+            </div>
+          </div>
+          <Switch isEnabled={cfg.habitsOn} onToggle={() => save({ habitsOn: !cfg.habitsOn })} />
         </div>
         <div className="setting-container" data-testid="eli-setting-diary-template">
           <div className="setting-label">

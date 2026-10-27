@@ -101,6 +101,17 @@ export const DIARY_DEFAULTS = {
   inSystem: true,
   monthlyOn: true,
   startView: 'last',
+  // (4.38) formato org-journal: un fichero por año `journal/AAAA.org` (cabecera `* día` con
+  // `:CREATED: AAAAMMDD` y apuntes `** HH:MM …`)
+  journal: {
+    type: 'yearly',
+    fileFormat: '%Y',
+    header: '#+TITLE: Diari %Y\n#+STARTUP: folded',
+    dateFormat: '%A, %d %B %Y',
+    weekStart: 1,
+  },
+  // (4.38) franja «Hábitos de hoy» en el diario
+  habitsOn: true,
 };
 
 // --- Vista GTD: secciones predefinidas, en su orden (solo cuando no hay nada guardado) ---

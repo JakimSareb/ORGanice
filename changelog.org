@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.38 (octubre de 2026)
+** Diario compatible con org-journal
+- El diario se guarda en el *formato de org-journal* (lo abre Emacs con =M-x org-journal=): por defecto un fichero por año, =journal/2026.org=. Cada día es una cabecera (=* sábado, 24 octubre 2026=) con =:CREATED: 20261024= (y su =:ID:= y contadores) y *cada apunte es una cabecera* =** 13:23 o texto= (lo que sigue, su texto). Las respuestas de las preguntas van bajo =** Plantilla del día=.
+- Los *contadores mensuales* (p. ej. Cintura) se guardan en el día en que los anotas; el valor del mes es el último.
+- *Tu =diari-AAAA.org= sigue funcionando*: la app lee los dos formatos y, mientras ese fichero esté en el formato anterior, sigue escribiendo en él tal cual (no mezcla formatos). Cuando lo pases a mano al formato nuevo y lo renombres a =AAAA.org=, la app sigue con él. Guía paso a paso en el manual (Diario › Pasar el diari a org-journal).
+- *Ajustes › Diario*: un fichero por *día, semana, mes o año*, nombre del fichero (=%Y=, =%Y%m%d=…), título del día y cabecera de los ficheros nuevos. Cambiarlo solo afecta a lo que apuntes después: los ficheros que ya hay se siguen leyendo.
+- El registro mensual (=mensual-AAAA.org=) enlaza «Ver en el diari» al primer día del mes con algo.
+** Hábitos de hoy
+- En el día de hoy del Diario, una fila con los *hábitos que tocan hoy*: tocar uno lo marca hecho, igual que en GTD (se apunta en el fichero del hábito, no en el diario). Se apaga en Ajustes › Diario › Mostrar hábitos de hoy.
+
 * 4.37 (octubre de 2026)
 ** Documentos
 - *Margen derecho de 14 px* al escribir notas y títulos: el texto ya no queda pegado al borde.

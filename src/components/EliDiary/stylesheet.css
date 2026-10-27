@@ -389,3 +389,31 @@
   break-before: page;
   page-break-before: always;
 }
+
+/* (4.38) Hábitos de hoy: píldoras con casilla bajo el título del día */
+.eli-diary__habits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.eli-diary__habits-label {
+  font-size: 0.85em;
+  color: var(--base1);
+  margin-right: 2px;
+}
+.eli-diary__habit {
+  border: 1px solid var(--base1);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  padding: 3px 10px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+.eli-diary__habit.is-done {
+  opacity: 0.6;
+  text-decoration: line-through;
+  cursor: default;
+}
