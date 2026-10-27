@@ -1,7 +1,9 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { GTD_EDITOR_SAVE_NAME } from '../../lib/keybindings';
+import { matchesBinding } from '../../lib/eli_hotkeys';
 import { insertHeadingLink } from '../../lib/eli_heading_links';
 import { focusField } from '../../lib/eli_keyboard_bridge';
 import { askPick } from '../../lib/eli_prompt';
@@ -128,13 +130,6 @@ export const currentListOf = (task) => {
 };
 
 // (3.09) pantalla táctil (móvil o tableta)
-const isCoarsePointer = () => {
-  try {
-    return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-  } catch (e) {
-    return false;
-  }
-};
 
 // (4.36) subventanas que se abren desde el editor y se pintan fuera de él
 const SUBWINDOW_SEL =
@@ -775,25 +770,23 @@ export default function TaskEditor({
     }
     return false;
   };
+  // (4.40) «guardar desde cualquier campo»: atajo configurable (Ajustes › Atajos), Ctrl+Intro por
+  // defecto; ⌘+Intro sigue valiendo en el Mac
+  const saveBinding = useSelector((st) => {
+    const custom = st.base.get('customKeybindings');
+    return (custom && custom.get(GTD_EDITOR_SAVE_NAME)) || 'ctrl+enter';
+  });
   const onKeyDown = (e) => {
     if (e.key === 'Tab' && onTabKey(e)) return;
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
       closeEditor();
-    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+    } else if (
+      e.key === 'Enter' &&
+      (matchesBinding(e.nativeEvent || e, saveBinding) || (e.metaKey && !e.ctrlKey && !e.altKey))
+    ) {
       if (e.nativeEvent && e.nativeEvent.isComposing) return;
-      // (3.09) en el móvil, el teclado pone Mayúsculas tras un salto de línea y el 2.º Intro
-      // llega como Mayús+Intro: dentro de las notas solo es un salto de línea
-      if (
-        e.shiftKey &&
-        !e.metaKey &&
-        !e.ctrlKey &&
-        e.target &&
-        e.target.tagName === 'TEXTAREA' &&
-        isCoarsePointer()
-      )
-        return;
       e.preventDefault();
       e.stopPropagation();
       closeEditor();

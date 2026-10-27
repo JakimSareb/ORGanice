@@ -163,6 +163,7 @@ class Entry extends PureComponent {
     window.addEventListener('eli:open-gtd', this.openGtd);
     window.addEventListener('eli:open-docs', this.openDocs);
     window.addEventListener('keydown', this.eliGtdKey);
+    window.addEventListener('keydown', this.eliEscBack);
     window.addEventListener('eli:navigate', this.eliNavigate);
     window.addEventListener('eli:follow-link', this.eliFollowLink);
     window.addEventListener('eli:open-task', this.eliOpenTask);
@@ -174,6 +175,38 @@ class Entry extends PureComponent {
     document.addEventListener('visibilitychange', this.eliOnVisible);
     this.eliUnsubNotes = subscribeNotesMode(() => this.forceUpdate());
   }
+
+  // (4.40) Esc en Ajustes tira atrás: cierra la subpágina (atajos, plantillas…), si no la sección
+  // abierta y, si no hay nada abierto, vuelve a la pantalla anterior
+  eliEscBack = (event) => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    const { location, activeModalPage } = this.props;
+    const inSettings = location && location.pathname === '/settings';
+    if (!inSettings && !activeModalPage) return;
+    const t = event.target;
+    if (
+      t &&
+      (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) &&
+      !(t.tagName === 'INPUT' && /^(checkbox|radio|button)$/i.test(t.type || ''))
+    )
+      return;
+    if (document.querySelector('.eli-prompt__overlay, .eli-palette__overlay, [role="dialog"]'))
+      return;
+    event.preventDefault();
+    if (activeModalPage) {
+      this.props.base.popModalPage();
+      return;
+    }
+    const open = Array.from(document.querySelectorAll('details[open]')).filter((d) =>
+      d.closest('.settings-container')
+    );
+    if (open.length) {
+      open[open.length - 1].removeAttribute('open');
+      return;
+    }
+    this.props.history.goBack();
+  };
 
   eliOnVisible = () => {
     if (document.visibilityState === 'visible') this.props.org.eliRefreshAllOrgFiles();
@@ -206,6 +239,7 @@ class Entry extends PureComponent {
     window.removeEventListener('eli:open-gtd', this.openGtd);
     window.removeEventListener('eli:open-docs', this.openDocs);
     window.removeEventListener('keydown', this.eliGtdKey);
+    window.removeEventListener('keydown', this.eliEscBack);
     window.removeEventListener('eli:navigate', this.eliNavigate);
     window.removeEventListener('eli:follow-link', this.eliFollowLink);
     window.removeEventListener('eli:open-task', this.eliOpenTask);
