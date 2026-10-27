@@ -614,6 +614,13 @@ Los guiones se escriben en ficheros =.fountain= aparte (formato abierto de texto
   - Lo que solo puede tener un fichero, como «Fichero que se abre al iniciar», se elige en su propio desplegable.
 - *Plantillas de captura* y *Atajos de teclado*.
 
+* Zettelkasten (4.46)
+Notas al estilo Zettelkasten, compatibles con org-roam. Ajustes › Zettelkasten elige la *carpeta ZK* (por defecto =ZK/= junto al fichero de entrada). Dentro: =literatura/=, =permanentes/=, =indices/= e =inbox.org= (las fugaces); se crean al primer uso. El tipo de nota va en =#+filetags:= (fugaz, literatura, permanente, indice) y el fichero se llama =AAAAMMDDHHMMSS-titulo.org=, como org-roam. Para verlas separadas en Emacs: =org-roam-directory= = la carpeta ZK.
+- *Menú ☰ › Nueva nota ZK*: nota permanente, índice o *ficha de fuente* (libro, artículo, vídeo; pide tipo, título, autor, año, fuente y URL o ISBN).
+- *Menú ☰ › Fugaz ZK* (tecla *z*): apunta una idea rápida en =ZK/inbox.org= (la primera línea es el título). En el Diario, el botón ⚡ de cada apunte y, en Documentos, ⋯ › *Selección → ZK* y *Enviar a ZK* la mandan con un enlace por ID al origen.
+- En una ficha de fuente, ⋯ › *+ Punto* añade una fila a la tabla «Puntos destacados» (Dónde, Sección, texto, Tipo; el =|= se escribe =\vert{}=). Con «Cita larga abajo» el texto entero va a «Citas» (subcabecera con =:ID:=) y la celda lleva las primeras palabras y un enlace ↓.
+- ⋯ › *Alias…* edita =:ROAM_ALIASES:= de la cabecera; ⋯ › *Enlaces entrantes* lista quién enlaza a la nota (también las citas).
+
 * Diario en formato org-journal (4.38)
 - El Diario (Menú ☰ › Diario de hoy) guarda en el formato de *org-journal* de Emacs: por defecto un fichero por año, =journal/2026.org=. Cada día es una cabecera con =:CREATED: AAAAMMDD= (y su =:ID:= y contadores) y cada apunte es una subcabecera con su hora y su marca (– nota, o evento, x hecho, ! importante); lo que escribas en más líneas va como texto del apunte. Las respuestas de las preguntas del día van bajo =Plantilla del día=. Tus cabeceras sin hora debajo del día se respetan.
 - Los *contadores diarios* (B, KM…) son propiedades del día; los *mensuales* (Cintura…) también, del día en que los anotas: el valor del mes es el último que hayas apuntado ese mes.

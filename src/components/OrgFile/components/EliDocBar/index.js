@@ -22,6 +22,10 @@ import * as orgActions from '../../../../actions/org';
 import * as baseActions from '../../../../actions/base';
 import { getCurrentTimestampAsText, getCurrentTimestamp } from '../../../../lib/timestamps';
 import { storeHeadingLink } from '../../../../lib/eli_org_links';
+import { zkCommand } from '../../../../lib/eli_zk_actions';
+import { isSourceCard } from '../../../../lib/eli_zk';
+import { fileRoamInfo } from '../../../../lib/eli_roam';
+import { plainHeadingTitle } from '../../../../lib/eli_heading_index';
 import { headerOrgId, withOrgIdProperty } from '../../../../lib/eli_id_links';
 import { newOrgId } from '../../../../lib/gtd/gtd_model';
 import generateId from '../../../../lib/id_generator';
@@ -434,6 +438,33 @@ export default function EliDocBar({
         `${text}\n\nEn el fichero solo se guarda esa línea (como org-transclusion de Emacs).`
     );
   };
+  // (4.46) Zettelkasten: la cabecera como fugaz (con enlace por ID al origen) y sus alias
+  const sendToZk = () => {
+    const orgId = ensureOrgId();
+    const rawTitle = header.getIn(['titleLine', 'rawTitle']);
+    zkCommand({
+      action: 'fugaz',
+      text: plainHeadingTitle(rawTitle) || 'Fugaz',
+      origin: storeHeadingLink(orgId, rawTitle),
+    });
+  };
+  // (4.46) el texto seleccionado en el campo que se edita → fugaz con enlace a esta cabecera
+  const selectionToZk = () => {
+    const field = activeField();
+    const sel = field
+      ? String(field.value || '').slice(field.selectionStart, field.selectionEnd)
+      : '';
+    if (!sel.trim()) {
+      showMessage('Selecciona un texto', 'Selecciona en el texto lo que quieres mandar a ZK.');
+      return;
+    }
+    zkCommand({
+      action: 'fugaz',
+      text: sel,
+      origin: storeHeadingLink(ensureOrgId(), header.getIn(['titleLine', 'rawTitle'])),
+    });
+  };
+  const editAliases = () => zkCommand({ action: 'aliases', path, headerId: id });
   const copyLink = async () => {
     const orgId = ensureOrgId();
     const text = storeHeadingLink(orgId, header.getIn(['titleLine', 'rawTitle']));
@@ -1229,9 +1260,55 @@ export default function EliDocBar({
                 {
                   id: 'backlinks',
                   icon: 'fas fa-link',
-                  label: 'Quién enlaza aquí',
+                  label: 'Enlaces entrantes',
+                  hint: 'quién enlaza aquí',
                   onClick: () => openBacklinks(path, id),
                 },
+              ]
+            : []),
+          // (4.46) Zettelkasten: alias de la nota, enviarla a ZK como fugaz y, en una ficha de
+          // fuente, «+ Punto» (fila nueva en «Puntos destacados»)
+          ...(path && !path.startsWith('/__')
+            ? [
+                { id: 'sep-zk', sep: true },
+                {
+                  id: 'zk-aliases',
+                  icon: 'fas fa-tag',
+                  label: 'Alias…',
+                  hint: 'otros nombres para buscarla',
+                  onClick: editAliases,
+                },
+                ...(editing
+                  ? [
+                      {
+                        id: 'zk-selection',
+                        icon: 'fas fa-bolt',
+                        label: 'Selección → ZK',
+                        hint: 'como fugaz',
+                        onClick: selectionToZk,
+                        text: true,
+                      },
+                    ]
+                  : []),
+                {
+                  id: 'zk-send',
+                  icon: 'fas fa-bolt',
+                  label: 'Enviar a ZK',
+                  hint: 'como fugaz',
+                  onClick: sendToZk,
+                },
+                ...(isSourceCard(fileRoamInfo(file).filetags)
+                  ? [
+                      {
+                        id: 'zk-add-point',
+                        testId: 'eli-zk-add-point',
+                        icon: 'fas fa-plus-circle',
+                        label: '+ Punto',
+                        hint: 'en la ficha de fuente',
+                        onClick: () => zkCommand({ action: 'point', path }),
+                      },
+                    ]
+                  : []),
               ]
             : []),
           ...(notes
@@ -1884,7 +1961,7 @@ export default function EliDocBar({
                     }
                   : run(c.onClick, { text: !!c.text, keepOpen: !!c.keepOpen })
               }
-              data-testid={`eli-docbar-${c.id}`}
+              data-testid={c.testId || `eli-docbar-${c.id}`}
             >
               <i className={c.icon} />
               <span className="eli-docbar-menu__label">{c.label}</span>

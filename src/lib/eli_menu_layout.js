@@ -13,6 +13,9 @@ export const MENU_ENTRIES = [
   { id: 'clocks', label: 'Tareas con reloj activo' },
   { id: 'scratch', label: 'Bloc de notas rápido' },
   { id: 'diary', label: 'Diario de hoy' },
+  // (4.46) Zettelkasten: nota nueva y captura fugaz
+  { id: 'zk', label: 'Nueva nota ZK' },
+  { id: 'fugaz', label: 'Fugaz ZK' },
   // (4.37) orden por defecto = el del usuario (lib/eli_defaults.js › MENU_ORDER)
   { id: 'split', label: 'Dos columnas' },
   { id: 'processes', label: 'Procesos' },

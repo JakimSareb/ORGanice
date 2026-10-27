@@ -25,6 +25,8 @@ const DEFAULT_BINDINGS = [
   // (4.45) Ajustes y Diario también con el teclado en Documentos (en GTD ya estaban)
   ['Abrir los ajustes', 'openSettings', ','],
   ['Abrir el diario de hoy', 'openDiary', 'j'],
+  // (4.46) idea fugaz al Zettelkasten (ZK/inbox.org)
+  ['Fugaz ZK (idea rápida al Zettelkasten)', 'zkFugaz', 'z'],
   // (4.45) estilo Emacs (M-u / M-c) en los campos de texto; los gestiona lib/eli_word_case.js
   ['Palabra siguiente en MAYÚSCULAS (campos de texto)', 'eliWordUpper', 'alt+u'],
   ['Palabra siguiente con inicial en mayúscula (campos de texto)', 'eliWordCapital', 'alt+c'],
@@ -87,6 +89,7 @@ export const GTD_BINDINGS = [
   ['GTD: ajustes', 'gtdSettings', ',', 'Más'],
   // (4.45) el diario de hoy (j de journal)
   ['GTD: diario de hoy', 'gtdDiary', 'j', 'Más'],
+  ['GTD: fugaz ZK', 'gtdZkFugaz', 'z', 'Más'],
   ['GTD: manual', 'gtdManual', 'h', 'Más'],
   ['GTD: ventana de atajos', 'gtdShortcuts', 'k', 'Más'],
   ['GTD: ventana de atajos (otra tecla)', 'gtdShortcuts2', '?', 'Más'],

@@ -264,6 +264,7 @@ import {
 import { getTapMode } from '../../lib/eli_tap_mode';
 import { usePullToRefresh, pullReady } from '../../lib/eli_pull_refresh';
 import { isDiaryPath, diaryLinkDetail, openDiary } from '../../lib/eli_diary';
+import { zkCommand } from '../../lib/eli_zk_actions';
 import EliResizeHandle from '../EliResizeHandle';
 
 const selectClient = (s) => s.syncBackend.get('client');
@@ -4101,6 +4102,7 @@ export default function GtdView() {
     gtdDocs: () => openDocuments(),
     gtdSettings: () => history.push('/settings'),
     gtdDiary: () => openDiary(),
+    gtdZkFugaz: () => zkCommand({ action: 'fugaz' }),
     gtdManual: () => history.push('/sample'),
     gtdShortcuts: () => setShowShortcuts(true),
     gtdShortcuts2: () => setShowShortcuts(true),

@@ -24,6 +24,7 @@ import { rememberDoc, openDocuments, openGtdMode } from '../../lib/eli_mode';
 import EliPomodoro from '../EliPomodoro';
 import { openScratch } from '../../lib/eli_scratch';
 import { openDiary } from '../../lib/eli_diary';
+import { zkCommand } from '../../lib/eli_zk_actions';
 import { unseenCount, subscribeSyncLog, openSyncLog } from '../../lib/eli_sync_log';
 import {
   getPomodoroState,
@@ -943,6 +944,21 @@ class HeaderBar extends PureComponent {
               onClick: () => openDiary(),
               testId: 'eli-diary-menu',
               menuId: 'diary',
+            },
+            // (4.46) Zettelkasten: nota nueva (permanente, ficha de fuente, índice) y fugaz
+            {
+              icon: 'far fa-lightbulb',
+              label: 'Nueva nota ZK',
+              onClick: () => zkCommand({ action: 'note' }),
+              testId: 'eli-zk-new-menu',
+              menuId: 'zk',
+            },
+            {
+              icon: 'fas fa-bolt',
+              label: 'Fugaz ZK',
+              onClick: () => zkCommand({ action: 'fugaz' }),
+              testId: 'eli-zk-fugaz-menu',
+              menuId: 'fugaz',
             },
             // (4.09) con algún reloj en marcha: la lista de esas tareas (al tocar una, va a ella)
             this.props.activeClocks > 0 && {
