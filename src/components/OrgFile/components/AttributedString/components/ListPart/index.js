@@ -35,6 +35,7 @@ export default class ListPart extends PureComponent {
       'handleInsertTimestampListTitle',
       'handleInsertTimestampListContents',
       'handleTextareaRef',
+      'handleBulletClick',
     ]);
 
     this.state = {
@@ -374,15 +375,39 @@ export default class ListPart extends PureComponent {
     });
   }
 
+  // (4.40) La viñeta cae fuera del <li> (en el margen de la lista): un toque ahí llega a la propia
+  // lista. Se busca la fila tocada y se pliega/despliega si tiene hijos.
+  handleBulletClick(e) {
+    if (e.target !== e.currentTarget) return;
+    const y = e.clientY;
+    const lis = Array.from(e.currentTarget.children);
+    const li = lis.find((el) => {
+      const row = el.firstElementChild;
+      if (!row) return false;
+      const r = row.getBoundingClientRect();
+      return y >= r.top && y <= r.bottom;
+    });
+    if (!li) return;
+    const item = this.props.part
+      .get('items')
+      .find((it) => String(it.get('id')) === li.getAttribute('data-list-item-id'));
+    if (item && itemHasChildren(item)) toggleListFold(item.get('id'));
+  }
+
   render() {
     return (
       <Fragment>
         {this.props.part.get('isOrdered') ? (
-          <ol className="attributed-string__list-part attributed-string__list-part--ordered">
+          <ol
+            className="attributed-string__list-part attributed-string__list-part--ordered"
+            onClick={this.handleBulletClick}
+          >
             {this.renderContent()}
           </ol>
         ) : (
-          <ul className="attributed-string__list-part">{this.renderContent()}</ul>
+          <ul className="attributed-string__list-part" onClick={this.handleBulletClick}>
+            {this.renderContent()}
+          </ul>
         )}
       </Fragment>
     );
