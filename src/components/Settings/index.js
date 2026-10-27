@@ -30,7 +30,8 @@ import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
 import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
 import { useNotesPlain, setNotesPlain } from '../../lib/eli_notes_plain';
 import { pagesPathFor } from '../../lib/eli_heading_links';
-import { askPick } from '../../lib/eli_prompt';
+import { askPick, askText } from '../../lib/eli_prompt';
+import { ZK_DEFAULT_FOLDER, normalizeZkFolder } from '../../lib/eli_zk';
 import { useTagsPos, setTagsPos } from '../../lib/eli_tags_pos';
 import { useGapHeaders, setGapHeaders } from '../../lib/eli_gap_headers';
 import {
@@ -225,6 +226,47 @@ const selectOrgPaths = (s) =>
     .filter((p) => p && p.startsWith('/') && /\.org$/i.test(p))
     .sort()
     .join('\n');
+// (4.46) Zettelkasten: carpeta de las notas (literatura/, permanentes/, indices/ e inbox.org)
+const selectZkFolder = (s) => s.base.get('eliZkFolder') || '';
+const EliZkSettings = () => {
+  const dispatch = useDispatch();
+  const folder = useSelector(selectZkFolder);
+  const set = (name, value) => dispatch(baseActions.setEliSetting(name, value));
+  const choose = async () => {
+    const v = await askText({
+      title: 'Carpeta ZK',
+      message:
+        'Relativa a la carpeta del fichero de entrada (o absoluta, con «/» delante). Dentro: literatura/, permanentes/, indices/ e inbox.org; se crean al primer uso.',
+      value: folder || ZK_DEFAULT_FOLDER,
+      okLabel: 'Guardar',
+    });
+    if (v === null || v === undefined) return;
+    const n = normalizeZkFolder(v);
+    set('eliZkFolder', n === ZK_DEFAULT_FOLDER ? '' : n);
+  };
+  return (
+    <details className="eli-settings-section" data-testid="eli-settings-zk">
+      <summary>
+        <span className="eli-settings-section__title">Zettelkasten</span>
+        <span className="eli-settings-section__hint">
+          Carpeta ZK, notas permanentes, fichas de fuente y fugaces
+        </span>
+      </summary>
+      <div className="setting-container" data-testid="eli-setting-zk-folder">
+        <div className="setting-label">
+          Carpeta ZK
+          <div className="setting-label__description">
+            Compatible con org-roam: para separarla en Emacs, pon org-roam-directory en esta
+            carpeta.
+          </div>
+        </div>
+        <button type="button" className="btn" onClick={choose} data-testid="eli-zk-folder-btn">
+          {folder || ZK_DEFAULT_FOLDER}
+        </button>
+      </div>
+    </details>
+  );
+};
 const EliDocsSettings = ({ children }) => {
   const dispatch = useDispatch();
   const pagesFile = useSelector(selectPagesFile);
@@ -1353,6 +1395,8 @@ const Settings = ({
       </EliDocsSettings>
 
       <EliDiarySettings />
+
+      <EliZkSettings />
 
       {!notes && (
         <details className="eli-settings-section" data-testid="eli-settings-gtd">

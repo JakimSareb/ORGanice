@@ -477,3 +477,104 @@ export const askChoice = ({ title, message = '', choices = [] }) =>
     document.body.appendChild(overlay);
     setTimeout(() => overlay.querySelector('.eli-prompt__cancel').focus(), 30);
   });
+
+// (4.46) Formulario corto. fields: [{ id, label, type: 'text'|'textarea'|'select'|'check',
+// value, options: [{ id, label }], placeholder, required }]. Devuelve Promise<{ [id]: valor }|null>
+// (null = Cancelar o Esc). Cada campo lleva data-testid `eli-form-<id>`.
+export const askForm = ({ title, message = '', fields = [], okLabel = 'Aceptar' }) =>
+  new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'eli-prompt__overlay';
+    overlay.innerHTML = `
+      <form class="eli-prompt__box" autocomplete="off" data-testid="eli-ask-form">
+        <div class="eli-prompt__title"></div>
+        <div class="eli-prompt__message"></div>
+        <div class="eli-prompt__fields"></div>
+        <div class="eli-prompt__error"></div>
+        <div class="eli-prompt__buttons">
+          <button type="button" class="btn eli-prompt__cancel">Cancelar</button>
+          <button type="submit" class="btn eli-prompt__ok"></button>
+        </div>
+      </form>`;
+    overlay.querySelector('.eli-prompt__title').textContent = title;
+    overlay.querySelector('.eli-prompt__message').textContent = message;
+    overlay.querySelector('.eli-prompt__ok').textContent = okLabel;
+    const box = overlay.querySelector('.eli-prompt__fields');
+    const controls = {};
+    fields.forEach((f) => {
+      const row = document.createElement('label');
+      row.className = 'eli-prompt__field';
+      row.style.cssText = 'display:flex;flex-direction:column;gap:2px;margin:6px 0;text-align:left';
+      if (f.type === 'check') row.style.cssText += ';flex-direction:row;align-items:center;gap:8px';
+      const span = document.createElement('span');
+      span.textContent = f.label;
+      span.style.fontSize = '0.85em';
+      let input;
+      if (f.type === 'select') {
+        input = document.createElement('select');
+        (f.options || []).forEach((o) => {
+          const op = document.createElement('option');
+          op.value = o.id;
+          op.textContent = o.label;
+          input.appendChild(op);
+        });
+        input.value =
+          f.value != null ? f.value : (f.options && f.options[0] && f.options[0].id) || '';
+      } else if (f.type === 'textarea') {
+        input = document.createElement('textarea');
+        input.rows = 3;
+        input.value = f.value || '';
+      } else if (f.type === 'check') {
+        input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = !!f.value;
+      } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.value = f.value || '';
+      }
+      if (f.type !== 'select' && f.type !== 'check') {
+        input.className = 'eli-prompt__input';
+        input.placeholder = f.placeholder || '';
+        input.setAttribute('autocapitalize', 'off');
+        input.setAttribute('spellcheck', 'false');
+      }
+      input.setAttribute('data-testid', `eli-form-${f.id}`);
+      if (f.type === 'check') row.append(input, span);
+      else row.append(span, input);
+      box.appendChild(row);
+      controls[f.id] = input;
+    });
+    const done = (v) => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        done(null);
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    overlay.querySelector('.eli-prompt__cancel').addEventListener('click', () => done(null));
+    overlay.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const out = {};
+      fields.forEach((f) => {
+        const c = controls[f.id];
+        out[f.id] = f.type === 'check' ? c.checked : String(c.value || '').trim();
+      });
+      const missing = fields.find((f) => f.required && !out[f.id]);
+      if (missing) {
+        overlay.querySelector('.eli-prompt__error').textContent = `Falta: ${missing.label}.`;
+        controls[missing.id].focus();
+        return;
+      }
+      done(out);
+    });
+    document.body.appendChild(overlay);
+    const firstText = fields.find((f) => f.type !== 'check' && f.type !== 'select');
+    setTimeout(() => firstText && controls[firstText.id].focus(), 50);
+  });

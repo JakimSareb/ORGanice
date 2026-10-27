@@ -5,6 +5,7 @@ import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import { openFavorites } from '../EliTools';
 import { openDiary } from '../../lib/eli_diary';
+import { zkCommand } from '../../lib/eli_zk_actions';
 import {
   notWhileTyping,
   notOnButton,
@@ -1377,6 +1378,9 @@ class OrgFile extends PureComponent {
         )
       ),
       openDiary: this.checkPopup(notWhileTyping(preventDefault(() => openDiary()))),
+      zkFugaz: this.checkPopup(
+        notWhileTyping(preventDefault(() => zkCommand({ action: 'fugaz' })))
+      ),
       // (4.28) # = etiquetas de la cabecera seleccionada (o de las seleccionadas)
       eliEditTags: this.checkPopupAndHeader(
         notWhileTyping(

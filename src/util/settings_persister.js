@@ -254,6 +254,12 @@ export const persistableFields = [
     name: 'eliPagesFile',
     type: 'string',
   },
+  // (4.46) carpeta del Zettelkasten (por defecto ZK/ junto al fichero de entrada)
+  {
+    category: 'base',
+    name: 'eliZkFolder',
+    type: 'string',
+  },
   {
     category: 'base',
     name: 'eliNoHashTagTitle',

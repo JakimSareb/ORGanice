@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.46 (octubre de 2026)
+** Zettelkasten (base)
+- *Nueva nota ZK* y *Fugaz ZK* en el Menú ☰. Las notas viven en la carpeta ZK (Ajustes › Zettelkasten; por defecto =ZK/= junto al fichero de entrada) en =literatura/=, =permanentes/= e =indices/=, con nombre estilo org-roam (=AAAAMMDDHHMMSS-titulo.org=) y el tipo en =#+filetags:=. Las carpetas se crean al primer uso.
+- *Ficha de fuente* (libro, artículo o vídeo): formulario corto y plantilla con datos, estado, «Puntos destacados» (tabla), «Citas» y «Notas permanentes creadas». En la ficha, ⋯ → *+ Punto* añade una fila (Dónde, Sección, texto, Tipo); con «Cita larga abajo» marcado, el texto entero va a «Citas» como subcabecera con =:ID:= y la celda lleva las primeras palabras y un enlace ↓.
+- *Fugaz ZK* (tecla *z*): caja rápida que añade una entrada a =ZK/inbox.org=. «→ ZK» en cada apunte del Diario, y ⋯ → *Selección → ZK* / *Enviar a ZK* en Documentos, la mandan con un enlace al origen.
+- ⋯ de una cabecera: *Alias…* (=:ROAM_ALIASES:=; el buscador «[[» y las menciones sin enlazar también buscan por alias) y *Enlaces entrantes* (antes «Quién enlaza aquí»).
+
 * 4.45 (octubre de 2026)
 ** Diario
 - El *resumen mensual* ya no pone «N días con algo» en la fila de total (ni en el PDF).

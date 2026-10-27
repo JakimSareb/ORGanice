@@ -54,6 +54,7 @@ import {
   monthValuesLine,
 } from '../../lib/eli_monthly';
 import { getGtdFiles } from '../../lib/gtd/gtd_sections';
+import { zkCommand } from '../../lib/eli_zk_actions';
 import { buildTasks } from '../../lib/gtd/gtd_model';
 import { gtdAddTask, createdStamp, gtdToggleDone } from '../../lib/gtd/gtd_actions';
 import { fileLinkTarget } from '../../lib/eli_media';
@@ -90,7 +91,7 @@ export const DiaryText = ({ text, path }) => {
   return <>{out}</>;
 };
 
-const Entry = ({ e, path, onInbox, sent }) => (
+const Entry = ({ e, path, onInbox, onZk, sent }) => (
   <div className={`eli-diary__entry eli-diary__entry--${e.mark === '!' ? 'imp' : 'n'}`}>
     <span className="eli-diary__time">{e.time}</span>
     <span className="eli-diary__mark" title={(MARKS.find((x) => x.id === e.mark) || {}).label}>
@@ -115,6 +116,18 @@ const Entry = ({ e, path, onInbox, sent }) => (
       >
         <i className="fas fa-inbox" />
         {sent && <i className="fas fa-check eli-diary__sent" data-testid="eli-diary-sent" />}
+      </button>
+    )}
+    {onZk && (
+      <button
+        type="button"
+        className="eli-diary__mini"
+        onClick={() => onZk(e)}
+        title="A ZK (idea fugaz)"
+        aria-label="A ZK"
+        data-testid="eli-diary-entry-zk"
+      >
+        <i className="fas fa-bolt" />
       </button>
     )}
   </div>
@@ -750,6 +763,19 @@ export default function EliDiary() {
     await write(f, d.getFullYear(), setAnswer(f.text, d, q, value, jcRef.current));
   };
 
+  // (4.46) apunte → fugaz del Zettelkasten (ZK/inbox.org) con enlace al día por ID
+  const toZk = async (e) => {
+    const f = await fileFor(date);
+    const r = ensureDayId(f.text, date, jcRef.current);
+    if (r.text !== f.text) await write(f, year, r.text);
+    zkCommand({
+      action: 'fugaz',
+      text: e.text.trim() || `Del diario ${key}`,
+      origin: `[[id:${r.id}][${key} ${e.time}]]`,
+    });
+    setStatus('Enviado a ZK');
+  };
+
   // (integración) apunte → tarea en el Inbox con enlace al día
   const toInbox = async (e) => {
     const sentKey = `${key} ${e.time} ${e.text}`;
@@ -1113,6 +1139,7 @@ export default function EliDiary() {
               e={e}
               path={path}
               onInbox={cfg.inSystem ? toInbox : null}
+              onZk={toZk}
               sent={!!sentSet[`${key} ${e.time} ${e.text}`]}
             />
           ))

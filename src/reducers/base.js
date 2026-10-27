@@ -215,6 +215,8 @@ export default (state = Map(), action) => {
         'eliNoSwipeGtd',
         'eliGtdSections',
         'eliPagesFile',
+        // (4.46) carpeta del Zettelkasten
+        'eliZkFolder',
         'eliNoHashTagTitle',
         // (4.35) menú al escribir «/» (apagado por defecto)
         'eliSlashMenu',
