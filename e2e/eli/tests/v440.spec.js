@@ -79,6 +79,11 @@ test('4.40: al guardar las notas, la tabla queda con todos los | alineados', asy
   else await t.dblclick();
   await expect(page.locator('.gtd-editor')).toHaveCount(1);
   await page.waitForTimeout(600);
+  // en el móvil, las notas salen como vista previa: un toque las abre para escribir
+  const notes = page.locator('[data-testid=gtd-editor-notes]');
+  if (app.mobile) await app.press(notes);
+  else await notes.click();
+  await page.waitForTimeout(400);
   await page.fill('[data-testid=gtd-editor-notes]', '| a | b |\n| ccc | largo |\n| x | y |');
   await page.click('[data-testid=gtd-editor-save]');
   await expect
