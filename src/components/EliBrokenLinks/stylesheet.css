@@ -1,0 +1,68 @@
+/* (4.41) Enlaces rotos */
+.eli-bl__list,
+.eli-bl__occ {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.eli-bl__group {
+  border-bottom: 1px solid var(--base2, rgba(127, 127, 127, 0.25));
+  padding: 6px 0;
+}
+.eli-bl__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.eli-bl__row input {
+  margin-top: 4px;
+}
+.eli-bl__target,
+.eli-bl__go {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  word-break: break-all;
+}
+.eli-bl__go {
+  text-decoration: underline;
+}
+.eli-bl__body {
+  padding: 6px 0 4px 26px;
+}
+.eli-bl__occ li {
+  margin: 2px 0;
+}
+.eli-bl__suggs,
+.eli-bl__actions,
+.eli-bl__bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+.eli-bl__bulk {
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--base2, rgba(127, 127, 127, 0.25));
+}
+.eli-bl__label {
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+.eli-bl__sugg {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eli-bl__ignored {
+  margin-top: 12px;
+  opacity: 0.8;
+  font-size: 0.9em;
+}

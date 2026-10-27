@@ -37,6 +37,8 @@ export const LOCAL_KEYS = [
 // Estado pasajero (no son ajustes): ni se sincroniza ni se lista
 const STATE_KEYS = [
   STAMPS_KEY,
+  // (4.41) nº de enlaces rotos del último escaneo (contador de Herramientas)
+  'eliBrokenLinksCount',
   'eliSyncLog',
   'eliSyncLogSeen',
   'eliLastRoute',

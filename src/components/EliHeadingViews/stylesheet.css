@@ -302,3 +302,39 @@ body.eli-hv-open {
     display: none !important;
   }
 }
+
+/* (4.41) Menciones sin enlazar */
+.eli-mentions {
+  margin-top: 8px;
+}
+.eli-mentions__list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.eli-mentions__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+}
+.eli-mentions__title {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  flex: 1 1 auto;
+}
+.eli-mentions__snippet {
+  flex-basis: 100%;
+  opacity: 0.75;
+  font-size: 0.9em;
+}
+.eli-mentions__link {
+  font-size: 0.85em;
+}

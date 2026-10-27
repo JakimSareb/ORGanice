@@ -4,6 +4,7 @@ import liveSync from './middleware/live_sync';
 import toggleColorScheme from './middleware/toggle_color_scheme';
 import doneAttachments from './middleware/done_attachments';
 import subtasksDone from './middleware/subtasks_done';
+import renameLinks from './middleware/rename_links';
 import rootReducer from './reducers';
 import { setRemoveStore } from './lib/eli_confirm_remove';
 
@@ -14,7 +15,14 @@ export default (initialState) => {
     rootReducer,
     initialState,
     composeEnhancers(
-      applyMiddleware(thunk, subtasksDone, liveSync, toggleColorScheme, doneAttachments)
+      applyMiddleware(
+        thunk,
+        subtasksDone,
+        liveSync,
+        toggleColorScheme,
+        doneAttachments,
+        renameLinks
+      )
     )
   );
   // (4.24) para avisar de los enlaces [[id:…]] al borrar un encabezado

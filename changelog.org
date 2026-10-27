@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.41 (octubre de 2026)
+** Compatible con org-roam
+- *Notas-fichero*: un fichero con =:ID:= al principio y =#+title:= es una nota (como en org-roam): los enlaces [[id:…]] lo abren, sale en el buscador de «[[» y al final del fichero tiene sus *Backlinks*.
+- Se entienden =#+filetags:= (etiquetas heredadas por todo el fichero), =:ROAM_ALIASES:= (buscar por otros nombres), =:ROAM_EXCLUDE:= (fuera del buscador y de Backlinks) y =:ROAM_REFS:= (sus direcciones, como enlaces).
+- *Buscar o crear nota* en «[[»: si no existe, *➕ Nota nueva* crea =pages/nombre.org= con su =:ID:= y =#+title:= (o, como antes, *➕ Cabecera* en el fichero de páginas).
+- *Menciones sin enlazar* bajo los Backlinks, con un botón *Enlazar*.
+- Al *cambiar el título* de una nota, la app ofrece actualizar el texto de los enlaces que muestran el título antiguo.
+** Enlaces rotos
+- *Menú › Herramientas › Enlaces rotos*: repasa todos los ficheros y lista los enlaces sin destino (IDs, ficheros y cabeceras) agrupados, con *Reparar*, *Crear nota*, *Dejar solo el texto*, *Borrar* e *Ignorar*, uno a uno o en lote.
+
 * 4.40 (octubre de 2026)
 ** Selección y edición rápida
 - *Elementos de lista con teclado* (Documentos): con un elemento seleccionado, *↑/↓* te mueven entre elementos, *←* pliega (o sube al padre) y *→* despliega; *Alt+↑/↓* lo suben o bajan entre sus hermanos y *Alt+←/→* lo cambian de nivel, siempre con sus hijos. Tocar la viñeta de un elemento con hijos lo pliega o despliega (solo se ve así; el fichero no cambia).

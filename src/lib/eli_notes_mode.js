@@ -18,6 +18,8 @@ export const TOOLS = [
   // (4.18) apagado: no se ofrece «Nuevo guion Fountain» (los guiones que haya se siguen abriendo).
   // Encendido de inicio en los dos modos
   { id: 'fountain', label: 'Guiones Fountain', defaultOn: true },
+  // (4.41) org-roam: buscar y reparar enlaces rotos. Encendido en el modo completo
+  { id: 'links', label: 'Enlaces rotos' },
 ];
 
 const read = (k) => {

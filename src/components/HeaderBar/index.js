@@ -1,6 +1,7 @@
 import { dailyShown } from '../../lib/gtd/gtd_strict';
 import { isDocLocked, toggleDocLock, subscribeDocLock } from '../../lib/eli_doc_lock';
 import { openRawEditor, openMoonPhases, openFavorites } from '../EliTools';
+import { openBrokenLinks, brokenLinksCount } from '../../lib/eli_broken_links';
 import { openAcomodadores } from '../EliAcomodadores';
 import { openPalette } from '../../lib/eli_palette';
 import { openCalendar } from '../EliCalendar';
@@ -820,6 +821,13 @@ class HeaderBar extends PureComponent {
           label: 'Turnos de acomodadores',
           onClick: openAcomodadores,
           testId: 'eli-acomodadores',
+        },
+        // (4.41) con el nº del último escaneo si había enlaces rotos
+        toolOn('links') && {
+          icon: 'fas fa-unlink',
+          label: brokenLinksCount() ? `Enlaces rotos (${brokenLinksCount()})` : 'Enlaces rotos',
+          onClick: openBrokenLinks,
+          testId: 'eli-broken-links-menu',
         },
         toolOn('moon') && {
           icon: 'fas fa-moon',

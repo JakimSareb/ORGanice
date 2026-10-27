@@ -619,6 +619,10 @@ class HeaderList extends PureComponent {
         })}
         {/* (4.31) vista sola: quién enlaza aquí, plegado al final (como una página de Logseq) */}
         {!!narrowedHeaderId && <EliNarrowRefs path={this.props.path} headerId={narrowedHeaderId} />}
+        {/* (4.41) fichero entero que es una nota de org-roam (:ID: antes de la 1.ª cabecera) */}
+        {!narrowedHeaderId && !!this.props.path && (
+          <EliNarrowRefs path={this.props.path} headerId={null} />
+        )}
         <div style={{ height: '90px' }} />
       </div>
     );
