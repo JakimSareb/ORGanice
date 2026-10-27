@@ -28,6 +28,7 @@ import {
 } from '../../lib/eli_todo_defaults';
 import { TAP_MODES, getTapMode, setTapMode } from '../../lib/eli_tap_mode';
 import { useLogseqEdit, setLogseqEdit } from '../../lib/eli_logseq_edit';
+import { useNotesPlain, setNotesPlain } from '../../lib/eli_notes_plain';
 import { pagesPathFor } from '../../lib/eli_heading_links';
 import { askPick } from '../../lib/eli_prompt';
 import { useTagsPos, setTagsPos } from '../../lib/eli_tags_pos';
@@ -836,6 +837,32 @@ const EliLogseqEditSetting = () => {
   );
 };
 
+// (4.44) «Notas en texto plano / Secciones editables»
+const EliNotesPlainSetting = () => {
+  const plain = useNotesPlain();
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-notes-plain"
+    >
+      <div className="setting-label">
+        Notas
+        <div className="setting-label__description">
+          Secciones editables: cada elemento con guion de las notas se selecciona y se edita por
+          separado, con sus herramientas. Texto plano: las notas se editan siempre enteras, en un
+          solo cuadro de texto.
+        </div>
+      </div>
+      <TabButtons
+        buttons={['Secciones editables', 'Notas en texto plano']}
+        values={['sections', 'plain']}
+        selectedButton={plain ? 'plain' : 'sections'}
+        onSelect={(v) => setNotesPlain(v === 'plain')}
+      />
+    </div>
+  );
+};
+
 // (4.30) «Etiquetas de las cabeceras»: al lado del título o debajo
 const EliTagsPosSetting = () => {
   const pos = useTagsPos();
@@ -1211,6 +1238,7 @@ const Settings = ({
         <div className="eli-settings-group">
           {notes ? <EliTapModeSettings onlyHeader /> : <EliTapModeSettings />}
           <EliLogseqEditSetting />
+          <EliNotesPlainSetting />
         </div>
         {!notes && (
           <>

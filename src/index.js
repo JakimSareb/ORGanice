@@ -22,8 +22,11 @@ import { BASE_PATH } from './lib/base_path';
 import { registerServiceWorker } from './lib/eli_offline';
 import { initOfflineStore, isOfflineStoreReady } from './lib/eli_offline_store';
 import { flushLocalSaves } from './util/file_persister';
+import { installDragClickGuard } from './lib/eli_drag_click_guard';
 
 applyReadability();
+// (4.44) soltar una selección de texto fuera del cuadro no es un clic
+installDragClickGuard();
 applyFont();
 applyDocMargin();
 applyEdgePad();

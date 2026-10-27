@@ -37,9 +37,17 @@ export const foldedIds = () => Array.from(folded);
 const listPartsOf = (contents) =>
   (contents || List()).filter((p) => p && p.get && p.get('type') === 'list');
 
-// ¿El elemento tiene sub-elementos?
+// ¿El elemento tiene algo que plegar? (4.44) sub-elementos O texto debajo (las «secciones» con
+// guion y texto debajo: en la 4.40 solo contaban los sub-elementos y esas no se plegaban nunca)
+const partHasText = (p) => {
+  if (!p || !p.get) return false;
+  const t = p.get('type');
+  if (t === 'list') return (p.get('items') || List()).size > 0;
+  if (t === 'text') return /\S/.test(p.get('contents') || '');
+  return true; // enlaces, tablas, marcas…
+};
 export const itemHasChildren = (item) =>
-  !!item && listPartsOf(item.get('contents')).some((lp) => (lp.get('items') || List()).size > 0);
+  !!item && (item.get('contents') || List()).some(partHasText);
 
 // Elementos de las notas de una cabecera, en el orden en que se ven: [{ id, parentId,
 // hasChildren, folded }]. Con `foldedSet`, los hijos de un elemento plegado no salen.
@@ -59,6 +67,17 @@ export const visibleListItems = (description, foldedSet = new Set(foldedIds())) 
   };
   walk(description, null);
   return out;
+};
+
+// (4.44) Primer / último elemento visible de las notas de una cabecera (para entrar en la lista
+// con ↓ desde su título o con ↑ desde lo que hay debajo), o null si no tiene lista
+export const firstListItemId = (description, foldedSet = new Set(foldedIds())) => {
+  const items = visibleListItems(description, foldedSet);
+  return items.length ? items[0].id : null;
+};
+export const lastListItemId = (description, foldedSet = new Set(foldedIds())) => {
+  const items = visibleListItems(description, foldedSet);
+  return items.length ? items[items.length - 1].id : null;
 };
 
 // Cabecera (y su lista) que contiene el elemento

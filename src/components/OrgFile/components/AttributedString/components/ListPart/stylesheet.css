@@ -57,7 +57,7 @@
 }
 
 /* 4.40: elemento de lista plegado (solo visual): se esconden sus sub-elementos y queda un «…» */
-.list-part__li--folded > .list-part__item-contents .attributed-string__list-part {
+.list-part__li--folded > .list-part__item-contents {
   display: none;
 }
 .list-part__li--folded > .list-part__not_checkbox-container::after,

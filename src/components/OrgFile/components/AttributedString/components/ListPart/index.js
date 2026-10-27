@@ -66,13 +66,17 @@ export default class ListPart extends PureComponent {
     } = this.props;
     const { listTitleValues, listContentsValues } = this.state;
 
+    // (4.44) al salir de la edición se guarda lo escrito en el elemento QUE SE EDITABA (el
+    // seleccionado antes): si a la vez se quitaba la selección (p. ej. un clic en las notas), lo
+    // escrito se perdía
+    const prevSelectedListItemId = prevProps.subPartDataAndHandlers.selectedListItemId;
+    const editedId = prevSelectedListItemId != null ? prevSelectedListItemId : selectedListItemId;
     if (prevProps.subPartDataAndHandlers.inListTitleEditMode && !inListTitleEditMode) {
-      if (listTitleValues.has(selectedListItemId)) {
-        onListTitleValueUpdate(selectedListItemId, listTitleValues.get(selectedListItemId));
+      if (listTitleValues.has(editedId) && listPartContainsItemId(this.props.part, editedId)) {
+        onListTitleValueUpdate(editedId, listTitleValues.get(editedId));
       }
     }
 
-    const prevSelectedListItemId = prevProps.subPartDataAndHandlers.selectedListItemId;
     if (
       prevSelectedListItemId !== selectedListItemId &&
       inListTitleEditMode &&
@@ -87,8 +91,8 @@ export default class ListPart extends PureComponent {
     }
 
     if (prevProps.subPartDataAndHandlers.inListContentsEditMode && !inListContentsEditMode) {
-      if (listContentsValues.has(selectedListItemId)) {
-        onListContentsValueUpdate(selectedListItemId, listContentsValues.get(selectedListItemId));
+      if (listContentsValues.has(editedId) && listPartContainsItemId(this.props.part, editedId)) {
+        onListContentsValueUpdate(editedId, listContentsValues.get(editedId));
       }
     }
 
@@ -289,7 +293,12 @@ export default class ListPart extends PureComponent {
             'list-part__li--folded': isFolded,
           })}
           onClick={(e) => {
-            if (hasChildren && e.target === e.currentTarget) toggleListFold(item.get('id'));
+            if (hasChildren && e.target === e.currentTarget) {
+              // (4.44) el toque en la viñeta no sigue hacia las notas (seleccionar la cabecera,
+              // doble toque = editar las notas, estilo Logseq = editar)
+              e.stopPropagation();
+              toggleListFold(item.get('id'));
+            }
           }}
         >
           <div className={lineContainerClass} onClick={this.handleListItemSelect(item.get('id'))}>
@@ -391,6 +400,8 @@ export default class ListPart extends PureComponent {
     const item = this.props.part
       .get('items')
       .find((it) => String(it.get('id')) === li.getAttribute('data-list-item-id'));
+    // (4.44) el toque en la viñeta no sigue hacia las notas (ver arriba)
+    e.stopPropagation();
     if (item && itemHasChildren(item)) toggleListFold(item.get('id'));
   }
 

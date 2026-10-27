@@ -34,7 +34,7 @@ Selecciona este encabezado: abajo sale *una sola barra* flotante con *botones gr
 | Mover    | Subir, bajar, *hacia dentro* y *hacia fuera* (con sus subcabeceras), *solo la cabecera* hacia dentro o hacia fuera, y *a otro fichero*. El menú se queda abierto para repetir. Tecla m |
 | Más      | *Hecha / Pendiente*, *Ver sola* (narrow; se vuelve con Atrás ←), *Compartir o PDF* (esta cabecera o todo el fichero; copiar enlace), *Duplicar* y *Borrar*. En el modo completo, además lo de tareas: ★, fechas, cancelada, propiedades, reloj y tiempo registrado, nota al registro, texto plano, archivar, *Abrir en GTD* (la diana) y capturar |
 Los submenús se abren *encima del botón*, en vertical; tocar fuera o Esc los cierra. Mientras escribes en el título o la descripción, *«/»* (al principio o tras un espacio) abre un buscador con todas las acciones. Si usas una acción del encabezado con el editor abierto, primero se guarda lo escrito. Sin nada seleccionado, la barra no trae nada (4.17: *Capturar* con plantilla está en el Menú ☰; tecla c). Deshacer y rehacer están *arriba*. En la lista de ficheros, sin ningún fichero abierto, la barra trae *Nuevo* (fichero Org o guion) y *Capturar*. Al tocar un *elemento de lista* («-» o «+») de las notas, la barra trae sus acciones: editar el texto, editar el contenido, ＋ nuevo, subir, bajar, sangrar, borrar y ✓ terminar. *Doble clic (o doble toque) en las notas* las edita en su sitio, y editando, *Tab* salta del título a las notas y al revés. Al *saltar a un encabezado* desde otro sitio (lupa, agenda, GTD, enlaces) se abre *solo con las cabeceras*: un toque en el título muestra sus notas y otro lo pliega.
-(4.28) Las *etiquetas* se ven a la derecha del título, en la misma línea, pequeñas y en gris. (4.30) En Ajustes › Apariencia › *Etiquetas de las cabeceras* puedes ponerlas *debajo* del título. (4.31) *Tocar una etiqueta* abre todas las cabeceras con ella (de todos los ficheros abiertos, sin el diario), con ▸ para ver notas y subcabeceras e *Incluir heredadas*.
+(4.28) Las *etiquetas* se ven a la derecha del título, en la misma línea, pequeñas y en gris. (4.30) En Ajustes › Apariencia › *Etiquetas de las cabeceras* puedes ponerlas *debajo* del título. (4.31) *Tocar una etiqueta* abre todas las cabeceras con ella (de todos los ficheros abiertos, sin el diario), con ▸ para ver notas y subcabeceras e *Incluir heredadas* (4.44: con ella salen también las subcabeceras que la heredan, anidadas bajo su madre). (4.44) En GTD, la vista de una etiqueta pone esas subcabeceras dentro de su cabecera, con ▸.
 
 *** Enlazar mientras escribes (4.31)
 - Escribe *[[* en el título o las notas: sale un buscador con todas las cabeceras (sin tildes ni mayúsculas). Al elegir, se escribe =[[id:…][Título]]= (y la cabecera recibe :ID: si no lo tenía). Esc deja «[[». También en *Añadir › Enlace a cabecera…* y en el editor de tarea de GTD.
@@ -317,7 +317,7 @@ En Ajustes → *Vista GTD y gestos* → «Secciones de la vista GTD» está la l
 
 ** Áreas
 Un área agrupa tareas de una parte de tu vida (Hogar, Trabajo, Salud…). Se indica con la propiedad AREA, y los subencabezados la heredan:
-- En la vista GTD: edita la tarea y toca «Área»: (4.09) sale un buscador con las áreas que ya usas; elige una o escribe una nueva (*＋ Nueva área*).
+- En la vista GTD: edita la tarea y toca «Área»: (4.09) sale un buscador con las áreas que ya usas; elige una o escribe una nueva (*＋ Nueva área*). (4.44) La nueva se añade también a =horizons.org= y el buscador enseña las áreas de ese fichero.
 - En la hoja: selecciona el encabezado → icono de lista (propiedades) → añade AREA con su valor.
 - Truco: ponla una sola vez en el encabezado padre y todas sus tareas quedarán en esa área.
 Luego filtra con el selector de áreas de arriba del menú lateral.
@@ -355,7 +355,7 @@ Las etiquetas van al final del título, entre dos puntos. Las que empiezan por @
 - [ ] Leche
 - [ ] Café
 Toca una casilla para marcarla. El contador del título se actualiza solo.
-(4.40) *Con el teclado*: con un elemento seleccionado, ↑/↓ te mueven entre elementos, ← pliega (o sube al padre) y → despliega; Alt+↑/↓ lo suben o bajan y Alt+←/→ lo cambian de nivel (con sus hijos). Tocar la viñeta de un elemento con hijos lo pliega.
+(4.40) *Con el teclado*: con un elemento seleccionado, ↑/↓ te mueven entre elementos, ← pliega (o sube al padre) y → despliega; Alt+↑/↓ lo suben o bajan y Alt+←/→ lo cambian de nivel (con sus hijos). Tocar la viñeta de un elemento con hijos lo pliega. (4.44) También se pliega un elemento con *texto debajo* (plegado lleva «…»); ↓ en una cabecera entra en el primer elemento de sus notas y ↑ desde la cabecera de debajo, en el último. Seleccionar con el ratón y soltar fuera del cuadro de un elemento ya no cierra nada ni pierde lo escrito. (4.44) En Ajustes › Documentos › Toques y edición, *Notas*: *Secciones editables* (lo de siempre) o *Notas en texto plano* (los elementos no se seleccionan uno a uno: las notas se editan siempre enteras).
 ** Elementos con texto debajo
 - Primer elemento
   Este texto cuelga del primer elemento: tócalo y queda seleccionado el elemento.
