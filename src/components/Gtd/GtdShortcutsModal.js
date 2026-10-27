@@ -1,6 +1,6 @@
 // ORG Mode para Eli (2.15): ventana con los atajos de teclado (como la de Nirvana): los de la
 // vista GTD por grupos y, debajo, los de Documentos. «Configurar» lleva a Ajustes.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Map as IMap } from 'immutable';
 
@@ -87,7 +87,14 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
   // (4.04) en el Modo Notas, solo los de Documentos
   const notes = isNotesMode();
   const [query, setQuery] = useState('');
-  const [editing, setEditing] = useState(null); // nombre del atajo que se está grabando
+  const [editing, setEditingState] = useState(null); // atajo que se está grabando { name, pool }
+  // (la copia en un ref vale en el acto: la tecla puede llegar antes de que React re-registre el
+  // oyente)
+  const editingRef = useRef(null);
+  const setEditing = (v) => {
+    editingRef.current = v;
+    setEditingState(v);
+  };
   const [msg, setMsg] = useState('');
 
   const gtdList = notes ? [] : bindings;
@@ -113,6 +120,7 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
 
   useEffect(() => {
     const onKey = (e) => {
+      const editing = editingRef.current;
       if (editing) {
         // grabando un atajo: la tecla es para él (Esc incluida)
         if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
@@ -134,7 +142,7 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
     // eslint-disable-next-line
-  }, [onClose, editing, docs, bindings]);
+  }, [onClose]);
 
   const q = query.trim().toLowerCase();
   const matches = (b) =>
