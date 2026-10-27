@@ -85,6 +85,7 @@ import { localStorageAvailable, readOpennessState } from '../util/settings_persi
 import { parseExcludedFolders, withoutExcluded } from '../lib/eli_excluded_folders';
 import { idLinksToText, isOnlyIdLink } from '../lib/eli_id_links';
 import { diaryLinkDetail, openDiary } from '../lib/eli_diary';
+import { findFileNodeById } from '../lib/eli_roam';
 import { markView, pushView, sameView } from '../lib/eli_nav_history';
 
 export const parseFile = (path, contents) => (dispatch) => {
@@ -2064,6 +2065,87 @@ export const eliIdLinksToText = (refs, ids) => (dispatch, getState) => {
   });
 };
 
+// ORG Mode para Eli (4.41): reescribir títulos, notas y propiedades de varias cabeceras (enlaces
+// rotos, menciones, renombrar). edits = [{ path, headerId, title?, notes?, props? }]; cada uno es
+// una función texto → texto (o null para no tocarlo). Una propiedad que se queda vacía se quita.
+// Un solo guardado por fichero. → nº de cabeceras cambiadas
+export const eliRewriteHeadings = (edits) => (dispatch, getState) => {
+  const touched = new Set();
+  let changed = 0;
+  (edits || []).forEach(({ path, headerId, title, notes, props }) => {
+    const h = (getState().org.present.getIn(['files', path, 'headers']) || List()).find(
+      (x) => x.get('id') === headerId
+    );
+    if (!h) return;
+    const inners = [];
+    if (title) {
+      const oldTitle = generateTitleLine(h.toJS(), false);
+      const newTitle = title(oldTitle);
+      if (newTitle !== oldTitle)
+        inners.push({
+          type: 'UPDATE_HEADER_TITLE',
+          headerId,
+          newRawTitle: newTitle,
+          dirtying: true,
+        });
+    }
+    if (notes) {
+      const oldRaw = h.get('rawDescription') || '';
+      const newRaw = notes(oldRaw);
+      if (newRaw !== oldRaw)
+        inners.push({
+          type: 'UPDATE_HEADER_DESCRIPTION',
+          headerId,
+          newRawDescription: createRawDescriptionText(
+            h.set('rawDescription', newRaw),
+            false,
+            getState().base.get('eliIndentOnExport') !== true
+          ),
+          dirtying: true,
+        });
+    }
+    if (props) {
+      const items = h.get('propertyListItems') || List();
+      let any = false;
+      const out = [];
+      items.forEach((p) => {
+        const v = p.get('value');
+        if (!v || typeof v === 'string' || !v.map) return out.push(p);
+        let mine = false;
+        const nv = v.map((part) => {
+          if (part.get('type') !== 'text') return part;
+          const t = part.get('contents') || '';
+          const nt = props(t);
+          if (nt === t) return part;
+          mine = true;
+          return part.set('contents', nt);
+        });
+        if (!mine) return out.push(p);
+        any = true;
+        const text = nv.map((part) => part.get('contents') || '').join('');
+        if (typeof text === 'string' && !text.trim()) return null;
+        return out.push(p.set('value', nv));
+      });
+      if (any)
+        inners.push({
+          type: 'UPDATE_PROPERTY_LIST_ITEMS',
+          headerId,
+          newPropertyListItems: List(out),
+          dirtying: true,
+        });
+    }
+    if (!inners.length) return;
+    dispatch({ type: 'ELI_IN_FILE', path, dirtying: true, eliSkipRename: true, inner: inners });
+    touched.add(path);
+    changed++;
+  });
+  touched.forEach((path) => {
+    dispatch(setDirty(true, path));
+    dispatch(sync({ path, shouldSuppressMessages: true }));
+  });
+  return changed;
+};
+
 // ORG Mode para Eli (2.13): quitar ya del fichero el enlace a un adjunto borrado (p. ej. desde
 // el editor de la vista GTD: así no queda un enlace roto aunque luego se cancele la edición)
 export const eliRemoveAttachmentLink = (path, headerId, target) => (dispatch, getState) => {
@@ -2322,6 +2404,18 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
     // (4.26) un día del diario ([[id:diari-AAAA-MM-DD]]) se abre en la hoja del Diario
     if (!found && diaryLinkDetail(link.id)) {
       openDiary(diaryLinkDetail(link.id));
+      return true;
+    }
+    // (4.41) nodo de FICHERO (org-roam: :ID: antes de la primera cabecera): se abre el fichero
+    const fileNode = found ? null : findFileNodeById(files, link.id);
+    if (fileNode) {
+      const originView = eliCurrentView(state);
+      const targetView = { path: fileNode.path, narrowId: null };
+      if (!sameView(originView, targetView)) markView(originView);
+      if (getState().org.present.getIn(['files', fileNode.path, 'narrowedHeaderId']))
+        dispatch({ type: 'ELI_IN_FILE', path: fileNode.path, inner: widenHeader() });
+      window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${fileNode.path}` }));
+      dispatch(setPath(fileNode.path));
       return true;
     }
     if (!found) {

@@ -389,6 +389,19 @@ Formato › *Lista ›* pone Casilla, Guion, Más, Numerada o lo quita en la lí
 - *Clip*: un encabezado o una tarea con archivos adjuntos lleva un clip junto al título (con el número si hay más de uno), en la hoja y en las listas de la vista GTD, sin tener que abrirlos.
 - *Revisar adjuntos de tareas terminadas*: las tareas terminadas, canceladas o archivadas rara vez necesitan ya sus archivos. En la vista GTD → Logbook, botón *Revisar* (o en la paleta, «Revisar adjuntos de tareas terminadas»): lista esas tareas con sus adjuntos (también las de los ficheros _archive, aunque no estén abiertos), para abrirlos, borrarlos uno a uno o *Borrar todos*. Borrar todos conserva los archivos que siguen enlazados en una tarea abierta o una nota. Al borrar un archivo se quita también su enlace; si el archivo ya no existía, «Quitar enlace» limpia solo el enlace.
 
+** Notas al estilo org-roam y enlaces rotos (4.41)
+- *Notas-fichero*: un fichero que empieza con un cajón =:PROPERTIES:= con =:ID:= y un =#+title:= es una nota entera (como en org-roam). Los enlaces [[id:…]] a ese ID abren el fichero, el buscador de «[[» la ofrece (con «nota · fichero») y al final del fichero salen sus *Backlinks*.
+- =#+filetags: :a:b:= pone etiquetas a todo el fichero: sus cabeceras las heredan (vista por etiqueta, filtros de Backlinks…).
+- =:ROAM_ALIASES: "Otro nombre" corto= (en el fichero o en una cabecera): el buscador de «[[» también la encuentra por esos nombres.
+- =:ROAM_EXCLUDE: t=: esa nota (y lo que tiene debajo; en el fichero, el fichero entero) no sale en el buscador de «[[» ni como origen en Backlinks.
+- =:ROAM_REFS:=: sus direcciones web se ven como enlaces en las propiedades.
+- *Buscar o crear nota*: en el buscador de «[[», si escribes algo que no existe, salen dos opciones: *➕ Nota nueva* (fichero =pages/nombre.org= junto al de entrada, con =:ID:= y =#+title:=, como org-roam) y *➕ Cabecera* (como antes, en el fichero de páginas de Ajustes › Documentos). En los dos casos se inserta el enlace.
+- *Menciones sin enlazar*: bajo los Backlinks de una nota (vista sola, final del fichero o «Quién enlaza aquí»), «▸ Menciones sin enlazar» lista las cabeceras que escriben su título o un alias sin enlazarlo; *Enlazar* convierte esa mención en [[id:…][texto]].
+- *Cambiar el título* de una nota con =:ID:=: si hay enlaces que muestran el título antiguo, la app pregunta si quieres actualizar su texto (los enlaces con otro texto no se tocan; el enlace sigue funcionando igual, va por ID).
+- *Menú › Herramientas › Enlaces rotos* (o en la paleta): lee todos los ficheros .org de la carpeta y lista los [[id:…]] sin destino, los [[file:…]] a ficheros que no existen y los enlaces a cabeceras que no existen, agrupados por destino, con cuántas veces y dónde. Para cada uno: *Reparar* (sugerencias: una nota con el mismo título o alias, el fichero que se ha movido), *Crear nota* (si era un [[id:…]], con ese mismo ID, así el enlace ya funciona), *Dejar solo el texto*, *Borrar* o *Ignorar* (la lista de ignorados viaja entre tus dispositivos). Marcando varios, en lote. El número de rotos del último repaso sale junto a «Enlaces rotos».
+- *Diario*: con org-journal cada día ya tiene su =:ID:=, así que es una nota más; no hace falta org-roam-dailies.
+- *Emacs*: pon =org-roam-directory= en tu carpeta de Dropbox y activa =(org-roam-db-autosync-mode)=; verá las mismas notas y enlaces.
+
 * Buscar, mover y archivar
 - *b*: buscar en tareas, encabezados o texto, con fragmentos; «Solo esta hoja» limita la búsqueda al fichero abierto y «Archivadas» busca también en los ficheros _archive (se recuerda; en la paleta, «Archivadas: mostrar lo archivado»).
 - *m*: mover el encabezado seleccionado con las flechas.

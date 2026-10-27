@@ -10,6 +10,7 @@ import { isDiaryPath } from './eli_diary';
 import { STATIC_FILE_PREFIX } from './org_utils';
 import { dateForTimestamp } from './timestamps';
 import { attributedStringToRawText } from './export_org';
+import { fileRoamInfo, parseAliases, isExcludeValue, parseRefs } from './eli_roam';
 
 // Título para enseñar: sin prioridad ni contadores y con los enlaces como su texto
 export const plainHeadingTitle = (rawTitle) =>
@@ -61,13 +62,24 @@ const DIARY_ID_RE = /^diari-(\d{4})-(\d{2})-(\d{2})$/i;
 const cache = new WeakMap();
 
 // Entradas de un fichero (en caché mientras su lista de cabeceras no cambie)
+const propOf = (h, name) => {
+  const item = (h.get('propertyListItems') || List()).find(
+    (p) => (p.get('property') || '').toUpperCase() === name
+  );
+  return item ? propertyText(item).trim() : '';
+};
+
 export const fileHeadings = (path, file) => {
   const headers = file && file.get && file.get('headers');
   if (!headers || typeof headers.forEach !== 'function') return [];
+  const lbh = file.get('linesBeforeHeadings') || null;
   const hit = cache.get(headers);
-  if (hit && hit.path === path) return hit.entries;
+  if (hit && hit.path === path && hit.lbh === lbh) return hit.entries;
   const entries = [];
   const stack = []; // [{ level, title, tags }]
+  // (4.41) org-roam: #+filetags: las heredan todas las cabeceras; :ROAM_EXCLUDE: del fichero
+  // deja fuera todo el fichero (y el de una cabecera, todo su subárbol)
+  const roam = fileRoamInfo(file);
   headers.forEach((h) => {
     const level = h.get('nestingLevel') || 1;
     while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
@@ -76,7 +88,7 @@ export const fileHeadings = (path, file) => {
       ? h.getIn(['titleLine', 'tags']).toArray()
       : h.getIn(['titleLine', 'tags']) || []
     ).filter(Boolean);
-    const inherited = stack.length ? stack[stack.length - 1].tags : [];
+    const inherited = stack.length ? stack[stack.length - 1].tags : roam.filetags;
     const tags = Array.from(new Set([...inherited, ...ownTags]));
     const title = plainHeadingTitle(rawTitle);
     const props = (h.get('propertyListItems') || List()).map(propertyText).toArray();
@@ -88,6 +100,9 @@ export const fileHeadings = (path, file) => {
     const diaryHere = orgId && DIARY_ID_RE.exec(orgId);
     const diaryUp = stack.length ? stack[stack.length - 1].diaryDay : null;
     const diaryDay = diaryHere ? `${diaryHere[1]}-${diaryHere[2]}-${diaryHere[3]}` : diaryUp;
+    const exclude =
+      (stack.length ? stack[stack.length - 1].exclude : roam.exclude) ||
+      isExcludeValue(propOf(h, 'ROAM_EXCLUDE'));
     entries.push({
       path,
       headerId: h.get('id'),
@@ -112,11 +127,15 @@ export const fileHeadings = (path, file) => {
       scheduled: planningMs(h, 'SCHEDULED'),
       deadline: planningMs(h, 'DEADLINE'),
       diaryDay,
+      // (4.41) org-roam
+      aliases: parseAliases(propOf(h, 'ROAM_ALIASES')),
+      refs: parseRefs(propOf(h, 'ROAM_REFS')),
+      exclude,
       pos: entries.length,
     });
-    stack.push({ level, title, tags, pos: entries.length - 1, diaryDay });
+    stack.push({ level, title, tags, pos: entries.length - 1, diaryDay, exclude });
   });
-  cache.set(headers, { path, entries });
+  cache.set(headers, { path, entries, lbh });
   return entries;
 };
 
@@ -204,7 +223,8 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export const backlinkEntries = (index, orgId) => {
   if (!orgId) return [];
   const re = new RegExp(`\\[\\[id:\\s*${escapeRe(orgId)}\\s*\\]`, 'i');
-  return index.filter((e) => e.orgId !== orgId && re.test(e.linkText));
+  // (4.41) las cabeceras con :ROAM_EXCLUDE: no salen
+  return index.filter((e) => e.orgId !== orgId && !e.exclude && re.test(e.linkText));
 };
 
 // (4.37) Nº de cabeceras que enlazan a cada ID, para el indicador de la cabecera. Barato: se
@@ -280,7 +300,8 @@ export const searchHeadings = (index, query, limit = 60) => {
   const scored = [];
   index.forEach((e) => {
     if (!e.title) return;
-    const t = normalize(e.title);
+    // (4.41) también por sus alias (:ROAM_ALIASES:)
+    const t = normalize([e.title, ...(e.aliases || [])].join(' '));
     if (!words.every((w) => t.includes(w))) return;
     const starts = words.length && t.startsWith(words[0]) ? 0 : 1;
     scored.push({ e, starts, len: t.length });

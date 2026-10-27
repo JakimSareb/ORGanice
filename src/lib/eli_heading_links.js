@@ -22,6 +22,8 @@ import { getGtdFiles } from './gtd/gtd_sections';
 import { gtdAddTask } from './gtd/gtd_actions';
 import generateId from './id_generator';
 import { askPick, showMessage } from './eli_prompt';
+import { fileNodes, freeNotePath, newNoteFileText, slugify } from './eli_roam';
+import { diaryDir } from './eli_diary';
 import { defaultTags } from './eli_todo_defaults';
 import {
   sync,
@@ -98,37 +100,111 @@ export const createPageHeading = (title) => async (dispatch, getState) => {
   return ok ? { orgId, path } : null;
 };
 
+// (4.41) Carpeta de las notas nuevas (como org-roam, un fichero por nota): `pages/` junto al
+// fichero de entrada
+export const notesDirFor = (state) =>
+  diaryDir('pages/', pagesPathFor({ ...state, base: state.base.set('eliPagesFile', '') }));
+
+// (4.41) Nota nueva: fichero `pages/<slug>.org` con :ID: y #+title: → { orgId, path } o null
+export const createNoteFile = (title, orgId = null) => async (dispatch, getState) => {
+  const clean = String(title || '').trim();
+  if (!clean) return null;
+  const state = getState();
+  const known = new Set(
+    [
+      ...state.org.present.get('files').keySeq().toArray(),
+      ...state.org.present
+        .get('fileSettings')
+        .map((x) => x.get('path'))
+        .toArray(),
+    ].map((p) => String(p || '').toLowerCase())
+  );
+  const client = state.syncBackend && state.syncBackend.get('client');
+  let path = freeNotePath(notesDirFor(state), clean, (p) => known.has(p.toLowerCase()));
+  // (si el servicio lo dice) que no exista ya en la carpeta aunque no esté cargado
+  for (let i = 0; i < 20 && client && client.pathExists; i++) {
+    let taken = false;
+    try {
+      taken = await client.pathExists(path);
+    } catch (e) {
+      taken = false;
+    }
+    if (!taken) break;
+    known.add(path.toLowerCase());
+    path = freeNotePath(notesDirFor(state), clean, (p) => known.has(p.toLowerCase()));
+  }
+  const id = orgId || newOrgId();
+  const ok = await dispatch(createNewFile(path, newNoteFileText(clean, id)));
+  return ok ? { orgId: id, path } : null;
+};
+
 // Buscador de cabeceras → { orgId, title } o null (Cancelar)
+// (4.41) Un solo selector «buscar o crear nota»: también las notas-fichero (org-roam), se busca
+// por alias, no salen las de :ROAM_EXCLUDE: y al final se ofrece crear una nota nueva (fichero
+// en pages/) o, como antes, una cabecera en el fichero de páginas.
 export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => async (
   dispatch,
   getState
 ) => {
   const state = getState();
-  const index = headingIndex(state.org.present.get('files'));
+  const files = state.org.present.get('files');
+  const index = headingIndex(files);
   // (4.35) jerárquico: por fichero, nivel 1 primero y bajo cada una sus hijas (orden del documento)
-  const entries = orderHierarchical(searchHeadings(index, '', 100000), index);
+  const ordered = orderHierarchical(searchHeadings(index, '', 100000), index).filter(
+    (o) => !o.entry.exclude
+  );
+  const nodes = fileNodes(files).filter((n) => !n.exclude);
+  const nodeOf = new Map(nodes.map((n) => [n.path, n]));
+  const entries = [];
+  const done = new Set();
+  ordered.forEach((o) => {
+    const n = nodeOf.get(o.entry.path);
+    if (n && !done.has(n.path)) {
+      done.add(n.path);
+      entries.push({ entry: n, depth: 0 });
+    }
+    entries.push(o);
+  });
+  nodes.forEach((n) => !done.has(n.path) && entries.push({ entry: n, depth: 0 }));
   const pagesName = fileNameOf(pagesPathFor(state));
+  const notesDir = notesDirFor(state);
   const chosen = await askPick({
     title,
-    placeholder: 'Buscar cabecera…',
+    placeholder: 'Buscar o crear nota…',
     emptyText: 'No hay cabeceras en los ficheros abiertos.',
     limit: 80,
     items: entries.map((o, i) => ({
       id: String(i),
       label: o.entry.title,
       // las de nivel 1 llevan el nombre del fichero; las demás, solo su sangría
-      hint: o.depth === 0 ? fileNameOf(o.entry.path) : '',
+      hint: o.entry.isFile
+        ? `nota · ${fileNameOf(o.entry.path)}`
+        : o.depth === 0
+        ? fileNameOf(o.entry.path)
+        : '',
+      keywords: (o.entry.aliases || []).join(' '),
       depth: o.depth,
     })),
-    newItem: (raw) => ({ label: `➕ Crear «${raw}»`, hint: `cabecera nueva en ${pagesName}` }),
+    newItem: (raw) => [
+      {
+        label: `➕ Nota nueva «${raw}»`,
+        hint: `fichero ${notesDir.split('/').slice(-2).join('/')}${slugify(raw)}.org`,
+        kind: 'note',
+      },
+      { label: `➕ Cabecera «${raw}»`, hint: `cabecera nueva en ${pagesName}`, kind: 'heading' },
+    ],
   });
   if (chosen === null || chosen === undefined) return null;
   if (typeof chosen === 'object' && chosen.new) {
-    const made = await dispatch(createPageHeading(chosen.new));
+    const made =
+      chosen.kind === 'note'
+        ? await dispatch(createNoteFile(chosen.new))
+        : await dispatch(createPageHeading(chosen.new));
     return made ? { orgId: made.orgId, title: chosen.new.trim() } : null;
   }
   const entry = entries[Number(chosen)] && entries[Number(chosen)].entry;
   if (!entry) return null;
+  if (entry.isFile) return { orgId: entry.orgId, title: entry.title };
   const orgId = entry.orgId || dispatch(ensureHeadingOrgId(entry.path, entry.headerId));
   return orgId ? { orgId, title: entry.rawTitle } : null;
 };

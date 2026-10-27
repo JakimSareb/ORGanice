@@ -44,7 +44,19 @@ import {
 } from '../../lib/eli_backlinks_view';
 import { OrgText, OrgTitle } from './OrgRender';
 import { insertHeadingLink, pickTagForTitle } from '../../lib/eli_heading_links';
-import { selectHeaderAndOpenParents, loadFileQuietly, eliCurrentView } from '../../actions/org';
+import {
+  selectHeaderAndOpenParents,
+  loadFileQuietly,
+  eliCurrentView,
+  eliRewriteHeadings,
+} from '../../actions/org';
+import {
+  fileNodeOf,
+  findFileNodeById,
+  unlinkedMentions,
+  linkFirstMention,
+  findMention,
+} from '../../lib/eli_roam';
 import { markView, pushView, sameView } from '../../lib/eli_nav_history';
 import { insertIntoField } from '../EliTools';
 
@@ -647,14 +659,99 @@ const BacklinksPanel = ({ index, self, refs, onGo, collapsible = false, publish 
   );
 };
 
+// (4.41) La nota de la que se miran los backlinks: una cabecera o, con headerId null, el propio
+// fichero (nodo de fichero de org-roam: :ID: antes de la primera cabecera)
+const selfOf = (index, files, path, headerId) =>
+  headerId
+    ? ((index.byPath && index.byPath.get(path)) || []).find((e) => e.headerId === headerId)
+    : fileNodeOf(path, files && files.get ? files.get(path) : null);
+
+// (4.41) «Menciones sin enlazar» (como org-roam): cabeceras que escriben el título o un alias de la
+// nota sin enlazarla. Se calcula al desplegar (no cuesta nada mientras está plegado). «Enlazar»
+// convierte esa mención (la primera de la cabecera) en [[id:…][texto]].
+const UnlinkedMentions = ({ index, self, onGo }) => {
+  const dispatch = useDispatch();
+  const [open, setOpen] = useState(false);
+  const [done, setDone] = useState(() => new Set());
+  const list = useMemo(() => (open ? unlinkedMentions(index, self) : []), [open, index, self]);
+  const phrases = [self.title, ...(self.aliases || [])];
+  const link = (m) => {
+    const fn = (t) => linkFirstMention(t, phrases, self.orgId);
+    dispatch(
+      eliRewriteHeadings([
+        {
+          path: m.entry.path,
+          headerId: m.entry.headerId,
+          title: m.where === 'title' ? fn : null,
+          notes: m.where === 'notes' ? fn : null,
+        },
+      ])
+    );
+    setDone((cur) => new Set(cur).add(`${m.entry.path}|${m.entry.headerId}`));
+  };
+  const snippet = (m) => {
+    if (m.where === 'title') return '';
+    const hit = findMention(m.entry.notes, phrases);
+    if (!hit) return '';
+    const text = m.entry.notes;
+    const a = Math.max(0, hit.index - 50);
+    const b = Math.min(text.length, hit.index + hit.length + 50);
+    return `${a ? '…' : ''}${text.slice(a, b).replace(/\s+/g, ' ')}${b < text.length ? '…' : ''}`;
+  };
+  const shown = list.filter((m) => !done.has(`${m.entry.path}|${m.entry.headerId}`));
+  return (
+    <div className="eli-mentions" data-testid="eli-mentions">
+      <button
+        type="button"
+        className="eli-narrow-refs__title eli-mentions__toggle"
+        onClick={() => setOpen(!open)}
+        data-testid="eli-mentions-toggle"
+      >
+        {open ? '▾' : '▸'} <i className="fas fa-unlink" /> Menciones sin enlazar
+        {open && <span className="eli-hv__count">{shown.length}</span>}
+      </button>
+      {open &&
+        (shown.length ? (
+          <ul className="eli-mentions__list">
+            {shown.map((m) => (
+              <li
+                key={`${m.entry.path}|${m.entry.headerId}`}
+                className="eli-mentions__item"
+                data-testid="eli-mention"
+              >
+                <button
+                  type="button"
+                  className="eli-mentions__title"
+                  onClick={() => onGo(m.entry)}
+                  title={contextLabel(m.entry)}
+                >
+                  {m.entry.title || '(sin título)'}
+                  <small> · {fileNameOf(m.entry.path)}</small>
+                </button>
+                {snippet(m) && <div className="eli-mentions__snippet">{snippet(m)}</div>}
+                <button
+                  type="button"
+                  className="btn eli-mentions__link"
+                  onClick={() => link(m)}
+                  data-testid="eli-mention-link"
+                >
+                  Enlazar
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="eli-hv__empty">Ninguna mención sin enlazar en los ficheros abiertos.</div>
+        ))}
+    </div>
+  );
+};
+
 const BacklinksView = ({ path, headerId, onClose }) => {
   const files = useSelector(selectFiles);
   const index = useMemo(() => headingIndex(files), [files]);
   const go = useGoToHeading();
-  const self = useMemo(
-    () => ((index.byPath && index.byPath.get(path)) || []).find((e) => e.headerId === headerId),
-    [index, path, headerId]
-  );
+  const self = useMemo(() => selfOf(index, files, path, headerId), [index, files, path, headerId]);
   const refs = useMemo(() => (self && self.orgId ? backlinkEntries(index, self.orgId) : []), [
     index,
     self,
@@ -674,18 +771,23 @@ const BacklinksView = ({ path, headerId, onClose }) => {
         <div className="eli-hv__empty" data-testid="eli-backlinks-none">
           Sin enlaces: esta cabecera aún no tiene :ID:, así que nada la enlaza.
         </div>
-      ) : refs.length ? (
-        <BacklinksPanel
-          key={`${path}|${headerId}`}
-          index={index}
-          self={self}
-          refs={refs}
-          onGo={(e) => go(e, onClose)}
-        />
       ) : (
-        <div className="eli-hv__empty" data-testid="eli-backlinks-none">
-          Sin enlaces: ninguna cabecera de los ficheros abiertos enlaza aquí.
-        </div>
+        <>
+          {refs.length ? (
+            <BacklinksPanel
+              key={`${path}|${headerId}`}
+              index={index}
+              self={self}
+              refs={refs}
+              onGo={(e) => go(e, onClose)}
+            />
+          ) : (
+            <div className="eli-hv__empty" data-testid="eli-backlinks-none">
+              Sin enlaces: ninguna cabecera de los ficheros abiertos enlaza aquí.
+            </div>
+          )}
+          <UnlinkedMentions index={index} self={self} onGo={(e) => go(e, onClose)} />
+        </>
       )}
     </Overlay>
   );
@@ -771,15 +873,19 @@ export const EliNarrowRefs = ({ path, headerId }) => {
   const files = useSelector(selectFiles);
   const index = useMemo(() => headingIndex(files), [files]);
   const go = useGoToHeading();
-  const self = useMemo(
-    () => ((index.byPath && index.byPath.get(path)) || []).find((e) => e.headerId === headerId),
-    [index, path, headerId]
-  );
+  const self = useMemo(() => selfOf(index, files, path, headerId), [index, files, path, headerId]);
   const refs = useMemo(() => (self && self.orgId ? backlinkEntries(index, self.orgId) : []), [
     index,
     self,
   ]);
-  if (!self || !refs.length) return null;
+  if (!self || !self.orgId) return null;
+  // (4.41) sin backlinks solo sale «Menciones sin enlazar» (plegado)
+  if (!refs.length)
+    return (
+      <div className="eli-narrow-refs eli-narrow-refs--mentions" data-testid="eli-narrow-mentions">
+        <UnlinkedMentions index={index} self={self} onGo={(e) => go(e)} />
+      </div>
+    );
   return (
     <div className="eli-narrow-refs" data-testid="eli-narrow-refs">
       <BacklinksPanel
@@ -791,6 +897,7 @@ export const EliNarrowRefs = ({ path, headerId }) => {
         collapsible
         publish
       />
+      <UnlinkedMentions index={index} self={self} onGo={(e) => go(e)} />
     </div>
   );
 };
@@ -846,7 +953,9 @@ export default function EliHeadingViews() {
       const m = /^id:\s*(.+)$/i.exec(uri.trim());
       if (!m) return;
       const index = headingIndex(store.getState().org.present.get('files'));
-      const target = index.find((x) => x.orgId && x.orgId.toLowerCase() === m[1].toLowerCase());
+      const target =
+        index.find((x) => x.orgId && x.orgId.toLowerCase() === m[1].toLowerCase()) ||
+        findFileNodeById(store.getState().org.present.get('files'), m[1]);
       if (!target) return;
       const notes = target.notes.trim().replace(/\s+/g, ' ');
       link.title =

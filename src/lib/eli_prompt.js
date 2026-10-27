@@ -332,7 +332,9 @@ export const askPick = ({
       const q = plainText(input.value.trim());
       const test = (it) => {
         if (!q) return true;
-        if (it.__plain === undefined) it.__plain = plainText(`${it.label} ${it.hint || ''}`);
+        // (4.41) `keywords`: más texto por el que se encuentra (p. ej. los alias de una nota)
+        if (it.__plain === undefined)
+          it.__plain = plainText(`${it.label} ${it.hint || ''} ${it.keywords || ''}`);
         return q.split(/\s+/).every((w) => it.__plain.includes(w));
       };
       shown = items.filter(test);
@@ -360,7 +362,15 @@ export const askPick = ({
       if (limit && shown.length > limit) shown = shown.slice(0, limit);
       const raw = input.value.trim();
       if (newItem && raw && !items.some((it) => plainText(it.label) === plainText(raw))) {
-        shown = shown.concat([{ ...newItem(raw), id: { new: raw }, isNew: true }]);
+        // (4.41) newItem puede devolver varias opciones: [{ label, hint, kind }] → { new, kind }
+        const made = newItem(raw);
+        shown = shown.concat(
+          (Array.isArray(made) ? made : [made]).map((x) => ({
+            ...x,
+            id: x.kind ? { new: raw, kind: x.kind } : { new: raw },
+            isNew: true,
+          }))
+        );
       }
       if (active >= shown.length) active = Math.max(0, shown.length - 1);
       listEl.innerHTML = '';

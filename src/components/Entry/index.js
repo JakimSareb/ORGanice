@@ -20,6 +20,7 @@ import OrgFile from '../OrgFile';
 import Settings from '../Settings';
 import EncryptionSettings from '../EncryptionSettings';
 import EliTools from '../EliTools';
+import EliBrokenLinks from '../EliBrokenLinks';
 import KeyboardShortcutsEditor from '../KeyboardShortcutsEditor';
 import CaptureTemplatesEditor from '../CaptureTemplatesEditor';
 import FileSettingsEditor from '../FileSettingsEditor';
@@ -356,6 +357,7 @@ class Entry extends PureComponent {
         {isAuthenticated && <EliDiary />}
         {isAuthenticated && <EliSyncLog />}
         {isAuthenticated && <EliHeadingViews />}
+        {isAuthenticated && <EliBrokenLinks />}
 
         {isAuthenticated &&
           ([

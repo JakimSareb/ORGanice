@@ -38,6 +38,7 @@ import {
   setLastViewedFile,
 } from '../../actions/base';
 import { openFavorites, openMoonPhases, openRawEditor, openPrintPreview } from '../EliTools';
+import { openBrokenLinks } from '../../lib/eli_broken_links';
 import { openTagView } from '../../lib/eli_heading_events';
 import { openAcomodadores } from '../EliAcomodadores';
 import { isNotesMode, toolOn } from '../../lib/eli_notes_mode';
@@ -502,6 +503,7 @@ export default function EliCommandPalette() {
       'changelog versión'
     );
     act('moon', 'Fases de la Luna', 'fas fa-moon', openMoonPhases);
+    act('links', 'Enlaces rotos', 'fas fa-unlink', openBrokenLinks);
     act('acomodadores', 'Turnos de acomodadores', 'fas fa-users', openAcomodadores);
     act(
       'calculator',
@@ -652,7 +654,13 @@ export default function EliCommandPalette() {
         })
       );
     // (4.0) Herramientas apagadas en Ajustes y, en el Modo Notas, nada de GTD ni de tareas
-    const toolOf = { calendar: 'cal', calculator: 'calc', moon: 'moon', acomodadores: 'acom' };
+    const toolOf = {
+      calendar: 'cal',
+      calculator: 'calc',
+      moon: 'moon',
+      acomodadores: 'acom',
+      links: 'links',
+    };
     const notesHidden = new Set([
       'inbox-new',
       'agenda',
