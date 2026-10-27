@@ -41,7 +41,7 @@ export const zkTimestamp = (d = new Date()) =>
   )}${pad(d.getSeconds())}`;
 
 // Una sola línea: sin saltos y con los espacios recortados
-const oneLine = (s) =>
+export const oneLine = (s) =>
   String(s == null ? '' : s)
     .replace(/\s*\r?\n\s*/g, ' ')
     .trim();
@@ -135,7 +135,7 @@ const firstWords = (text, n = 6) => {
 };
 
 // Rango de una cabecera de nivel 1 por su título: { start, end } (end = siguiente `* ` o fin)
-const sectionRange = (lines, title) => {
+export const sectionRange = (lines, title) => {
   const re = new RegExp(`^\\*\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
   const start = lines.findIndex((l) => re.test(l));
   if (start < 0) return null;
@@ -150,7 +150,7 @@ const sectionRange = (lines, title) => {
 };
 
 // Fin de la sección sin sus líneas vacías de cola
-const trimmedEnd = (lines, { start, end }) => {
+export const trimmedEnd = (lines, { start, end }) => {
   let e = end;
   while (e > start + 1 && !lines[e - 1].trim()) e--;
   return e;

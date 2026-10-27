@@ -31,6 +31,9 @@ export default function EliOrgTable({
   testId = 'eli-org-table',
   // (3.02) guardar ya al empezar a tocar fuera (si fuera se cierra el editor que la contiene)
   commitOnPointerDown = false,
+  // (4.47) algo más en la última celda de cada fila de datos: rowExtra(celdas) → nodo o null
+  // (p. ej. «→ Permanente» en «Puntos destacados» de una ficha de fuente)
+  rowExtra = null,
 }) {
   const table = useMemo(() => parseTableLines(lines || []), [lines]);
   const ncols = columnCount(table);
@@ -319,6 +322,10 @@ export default function EliOrgTable({
                 {Array.from({ length: ncols }).map((_, c) => {
                   const v = row.cells[c] || '';
                   const here = editing && editing.r === r && editing.c === c;
+                  const extra =
+                    rowExtra && !here && r >= headerRows && c === ncols - 1
+                      ? rowExtra(row.cells)
+                      : null;
                   return (
                     <td
                       key={c}
@@ -339,6 +346,11 @@ export default function EliOrgTable({
                           onClick={(e) => e.stopPropagation()}
                           data-testid="eli-table-cell-input"
                         />
+                      ) : extra ? (
+                        <React.Fragment>
+                          {v ? show(v) : null}
+                          {extra}
+                        </React.Fragment>
                       ) : v ? (
                         show(v)
                       ) : (

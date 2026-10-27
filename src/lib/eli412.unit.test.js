@@ -21,7 +21,7 @@ describe('4.12 Menú ☰', () => {
     const l = normalizeLayout({ order: ['help', 'x', 'help'], hidden: ['agenda', 'zz'] });
     // (4.17) «Buscar (B)», nueva, va la primera (no tiene ninguna delante)
     expect(l.order[0]).toBe('find');
-    expect(l.order).toHaveLength(15); // (4.46) + «zk» y «fugaz»
+    expect(l.order).toHaveLength(16); // (4.46) + «zk» y «fugaz»; (4.47) + «zkprocs»
     expect(l.hidden).toEqual(['agenda']);
   });
 

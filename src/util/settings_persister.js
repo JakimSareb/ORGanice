@@ -260,6 +260,12 @@ export const persistableFields = [
     name: 'eliZkFolder',
     type: 'string',
   },
+  // (4.47) Revisión ZK como último paso de la Revisión semanal (apagado por defecto)
+  {
+    category: 'base',
+    name: 'eliZkWeeklyReview',
+    type: 'boolean',
+  },
   {
     category: 'base',
     name: 'eliNoHashTagTitle',

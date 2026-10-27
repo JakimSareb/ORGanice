@@ -171,7 +171,7 @@ import {
   getHzLastReview,
   markHzReviewed,
 } from '../../lib/gtd/gtd_horizons';
-import { weeklyReview, reviewSteps } from '../../lib/gtd/gtd_review';
+import { weeklyReview, reviewSteps, zkReviewOn } from '../../lib/gtd/gtd_review';
 import { strictOn, NOT_ALLEN_DAILY } from '../../lib/gtd/gtd_strict';
 import GtdTagManager from './GtdTagManager';
 import { describeRepeat } from './ScheduleField';
@@ -3443,7 +3443,7 @@ export default function GtdView() {
     writeLS('eliGtdReview', step);
   };
   // (4.15) pasos según el ajuste «Allen estricto»
-  const REVIEW_STEPS = reviewSteps(strictOn());
+  const REVIEW_STEPS = reviewSteps(strictOn(), { zk: zkReviewOn() });
   const startReview = () => {
     setSideOpen(false);
     setReview(0);

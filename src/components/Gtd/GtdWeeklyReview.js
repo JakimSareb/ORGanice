@@ -5,9 +5,11 @@
 import React, { useState } from 'react';
 import { REVIEW_STEPS, REVIEW_PHASES, reviewCount } from '../../lib/gtd/gtd_review';
 import { objectiveRefOf } from '../../lib/gtd/gtd_horizons';
+import { zkCommand } from '../../lib/eli_zk_actions';
 
 // (4.15) pasos sin lista: solo pista y cuadro para apuntar (no «Nada que revisar aquí»)
-const NO_LIST = ['loose', 'mind', 'checklists', 'creative'];
+// (4.47) 'zk': la Revisión ZK, con su botón
+const NO_LIST = ['loose', 'mind', 'checklists', 'creative', 'zk'];
 
 const MAX = 12;
 const fmt = (d) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -159,6 +161,18 @@ export default function GtdWeeklyReview({
           </button>
         );
     }
+    if (s.id === 'zk')
+      b.push(
+        <button
+          key="zk"
+          type="button"
+          className="gtd-review__open"
+          onClick={() => zkCommand({ action: 'review' })}
+          data-testid="gtd-review-zk"
+        >
+          <i className="far fa-lightbulb" /> Abrir la Revisión ZK
+        </button>
+      );
     if (s.id === 'mind' && onSweep)
       b.push(
         <button

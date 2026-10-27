@@ -228,9 +228,11 @@ const selectOrgPaths = (s) =>
     .join('\n');
 // (4.46) Zettelkasten: carpeta de las notas (literatura/, permanentes/, indices/ e inbox.org)
 const selectZkFolder = (s) => s.base.get('eliZkFolder') || '';
+const selectZkWeekly = (s) => s.base.get('eliZkWeeklyReview') === true;
 const EliZkSettings = () => {
   const dispatch = useDispatch();
   const folder = useSelector(selectZkFolder);
+  const weekly = useSelector(selectZkWeekly);
   const set = (name, value) => dispatch(baseActions.setEliSetting(name, value));
   const choose = async () => {
     const v = await askText({
@@ -263,6 +265,17 @@ const EliZkSettings = () => {
         <button type="button" className="btn" onClick={choose} data-testid="eli-zk-folder-btn">
           {folder || ZK_DEFAULT_FOLDER}
         </button>
+      </div>
+      {/* (4.47) la Revisión ZK como último paso de la Revisión semanal */}
+      <div className="setting-container" data-testid="eli-setting-zk-weekly">
+        <div className="setting-label">
+          Añadir la Revisión ZK como paso de la Revisión semanal
+          <div className="setting-label__description">
+            Un paso más al final, con el botón para abrirla. Apagado, la Revisión semanal es la de
+            Allen tal cual. La Revisión ZK siempre está en ☰ › Procesos ZK.
+          </div>
+        </div>
+        <Switch isEnabled={weekly} onToggle={() => set('eliZkWeeklyReview', !weekly)} />
       </div>
     </details>
   );

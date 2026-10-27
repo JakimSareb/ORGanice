@@ -960,6 +960,33 @@ class HeaderBar extends PureComponent {
               testId: 'eli-zk-fugaz-menu',
               menuId: 'fugaz',
             },
+            // (4.47) Procesos ZK, aparte de los procesos GTD
+            {
+              icon: 'fas fa-stream',
+              label: 'Procesos ZK',
+              testId: 'eli-menu-zk-processes',
+              menuId: 'zkprocs',
+              items: [
+                {
+                  icon: 'fas fa-bolt',
+                  label: 'Procesar fugaces',
+                  onClick: () => zkCommand({ action: 'fugaces' }),
+                  testId: 'eli-zk-proc-fugaces',
+                },
+                {
+                  icon: 'fas fa-clipboard-check',
+                  label: 'Revisión ZK',
+                  onClick: () => zkCommand({ action: 'review' }),
+                  testId: 'eli-zk-proc-review',
+                },
+                {
+                  icon: 'fas fa-book',
+                  label: 'Biblioteca',
+                  onClick: () => zkCommand({ action: 'library' }),
+                  testId: 'eli-zk-proc-library',
+                },
+              ],
+            },
             // (4.09) con algún reloj en marcha: la lista de esas tareas (al tocar una, va a ella)
             this.props.activeClocks > 0 && {
               icon: 'far fa-clock',

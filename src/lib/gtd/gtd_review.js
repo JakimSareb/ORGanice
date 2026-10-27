@@ -207,8 +207,28 @@ export const STRICT_REVIEW_STEPS = [
   },
 ];
 
-// Pasos según el ajuste «Allen estricto»
-export const reviewSteps = (strict) => (strict ? STRICT_REVIEW_STEPS : REVIEW_STEPS);
+// (4.47) Paso opcional al final: la Revisión ZK (ajuste «Añadir la Revisión ZK como paso de la
+// Revisión semanal», apagado por defecto: sin él, los pasos de Allen no cambian)
+export const ZK_REVIEW_STEP = {
+  id: 'zk',
+  phase: 'creative',
+  label: 'Revisión ZK',
+  icon: 'far fa-lightbulb',
+  hint: 'Repasa el Zettelkasten: fugaces, notas huérfanas, índices y fichas sin procesar.',
+};
+export const zkReviewOn = () => {
+  try {
+    return window.localStorage.getItem('eliZkWeeklyReview') === 'true';
+  } catch (e) {
+    return false;
+  }
+};
+
+// Pasos según el ajuste «Allen estricto» (y el de la Revisión ZK)
+export const reviewSteps = (strict, { zk = false } = {}) => {
+  const base = strict ? STRICT_REVIEW_STEPS : REVIEW_STEPS;
+  return zk ? [...base, ZK_REVIEW_STEP] : base;
+};
 
 // Índice de un paso por su id (−1 si no existe)
 export const reviewStepIndex = (id, steps = REVIEW_STEPS) => steps.findIndex((s) => s.id === id);

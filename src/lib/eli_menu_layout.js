@@ -16,6 +16,8 @@ export const MENU_ENTRIES = [
   // (4.46) Zettelkasten: nota nueva y captura fugaz
   { id: 'zk', label: 'Nueva nota ZK' },
   { id: 'fugaz', label: 'Fugaz ZK' },
+  // (4.47) Procesos ZK (procesar fugaces, Revisión ZK, Biblioteca), aparte de los de GTD
+  { id: 'zkprocs', label: 'Procesos ZK' },
   // (4.37) orden por defecto = el del usuario (lib/eli_defaults.js › MENU_ORDER)
   { id: 'split', label: 'Dos columnas' },
   { id: 'processes', label: 'Procesos' },

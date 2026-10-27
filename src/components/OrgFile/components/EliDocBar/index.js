@@ -465,6 +465,17 @@ export default function EliDocBar({
     });
   };
   const editAliases = () => zkCommand({ action: 'aliases', path, headerId: id });
+  // (4.47) la cabecera → asistente de nota permanente (título y notas; la fuente, un enlace a ella)
+  const toPermanent = () => {
+    const orgId = ensureOrgId();
+    const rawTitle = header.getIn(['titleLine', 'rawTitle']);
+    zkCommand({
+      action: 'permanent',
+      title: plainHeadingTitle(rawTitle),
+      idea: String(header.get('rawDescription') || '').trim(),
+      origin: storeHeadingLink(orgId, rawTitle),
+    });
+  };
   const copyLink = async () => {
     const orgId = ensureOrgId();
     const text = storeHeadingLink(orgId, header.getIn(['titleLine', 'rawTitle']));
@@ -1296,6 +1307,14 @@ export default function EliDocBar({
                   label: 'Enviar a ZK',
                   hint: 'como fugaz',
                   onClick: sendToZk,
+                },
+                {
+                  id: 'zk-permanent',
+                  testId: 'eli-zk-make-permanent',
+                  icon: 'far fa-lightbulb',
+                  label: 'Convertir en permanente',
+                  hint: 'asistente de nota ZK',
+                  onClick: toPermanent,
                 },
                 ...(isSourceCard(fileRoamInfo(file).filetags)
                   ? [

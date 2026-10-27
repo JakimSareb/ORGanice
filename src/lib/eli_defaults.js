@@ -88,6 +88,7 @@ export const MENU_ORDER = [
   'diary',
   'zk',
   'fugaz',
+  'zkprocs',
   'split',
   'processes',
   'files',
