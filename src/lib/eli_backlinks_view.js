@@ -50,20 +50,32 @@ export const useBacklinksOrder = () => {
 };
 
 // --- Filtros compartidos con la vista por etiqueta (en memoria) ---
-let hv = { hideArchived: false, hideTasks: false };
+// (4.39) `null` = el usuario aún no los ha tocado: Backlinks arranca con «Ocultar archivadas» y
+// «Ocultar tareas» ENCENDIDOS (`blDefault`); la vista por etiqueta, apagados (como siempre). En
+// cuanto se toca uno, el valor es el mismo en las dos vistas.
+export const BACKLINKS_FILTER_DEFAULT = true;
+let hv = { hideArchived: null, hideTasks: null };
 const hvListeners = new Set();
-export const getHvFilters = () => hv;
+export const resolveHvFilters = (state, blDefault = false) => ({
+  hideArchived: state.hideArchived == null ? blDefault : state.hideArchived,
+  hideTasks: state.hideTasks == null ? blDefault : state.hideTasks,
+});
+export const getHvFilters = (blDefault = false) => resolveHvFilters(hv, blDefault);
 export const setHvFilters = (patch) => {
   hv = { ...hv, ...patch };
   hvListeners.forEach((l) => l(hv));
 };
-export const useHvFilters = () => {
+export const resetHvFilters = () => {
+  hv = { hideArchived: null, hideTasks: null };
+  hvListeners.forEach((l) => l(hv));
+};
+export const useHvFilters = (blDefault = false) => {
   const [v, setV] = useState(hv);
   useEffect(() => {
     hvListeners.add(setV);
     return () => hvListeners.delete(setV);
   }, []);
-  return v;
+  return resolveHvFilters(v, blDefault);
 };
 
 // --- Lo que se ve, para imprimir ---

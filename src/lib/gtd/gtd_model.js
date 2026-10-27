@@ -230,6 +230,45 @@ export const newOrgId = () => {
       .slice(1);
   return `${h()}${h()}-${h()}-4${h().slice(1)}-${h()}-${h()}${h()}${h()}`.toUpperCase();
 };
+// (4.39) Proyecto paralelo / secuencial: `:ORDERED: t` en el proyecto (como org-mode). Por defecto
+// PARALELO (sin la propiedad no cambia nada). En secuencial solo la primera tarea abierta del
+// proyecto puede ser siguiente acción: las demás (`seqBlocked`) quedan fuera de las listas (Next…)
+// pero se ven en el proyecto.
+export const ORDERED_PROPERTY = 'ORDERED';
+export const isOrderedValue = (v) => /^(t|true|yes)$/i.test(String(v || '').trim());
+const projectKeyOfTask = (t) => (t.project ? `${t.project.path}::${t.project.id}` : null);
+// Devuelve la MISMA lista si no hay proyectos secuenciales; si no, copias solo de las bloqueadas
+// (las tareas de buildTasks se comparten: no se mutan)
+export const markOrdered = (tasks) => {
+  const ordered = new Set();
+  tasks.forEach((t) => t.ordered && !t.isTrashed && ordered.add(`${t.path}::${t.id}`));
+  if (!ordered.size) return tasks;
+  const groups = new Map();
+  tasks.forEach((t) => {
+    const k = projectKeyOfTask(t);
+    if (!k || !ordered.has(k) || t.isProject || t.isDone || t.isTrashed || t.isHabit) return;
+    if (!t.keyword) return;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(t);
+  });
+  const blocked = new Set();
+  groups.forEach((list) => {
+    // el orden del proyecto: primero las de su fichero, luego las asignadas desde otros ficheros
+    list
+      .slice()
+      .sort(
+        (a, b) =>
+          (a.projectExternal ? 1 : 0) - (b.projectExternal ? 1 : 0) ||
+          (a.projectExternal ? (a.path < b.path ? -1 : a.path > b.path ? 1 : 0) : 0) ||
+          a.index - b.index
+      )
+      .slice(1)
+      .forEach((t) => blocked.add(t.key));
+  });
+  if (!blocked.size) return tasks;
+  return tasks.map((t) => (blocked.has(t.key) ? { ...t, seqBlocked: true } : t));
+};
+
 const resolveProjectLinks = (tasks) => {
   if (!tasks.some((t) => t.projRef)) return tasks;
   const byOrgId = new Map();
@@ -283,7 +322,7 @@ export const buildTasks = (files, inboxPaths = []) => {
   if (hit) return hit.result;
   const tasks = [];
   for (const part of parts) for (const t of part) tasks.push(t);
-  const result = resolveProjectLinks(tasks);
+  const result = markOrdered(resolveProjectLinks(tasks));
   lastBuilds.unshift({ parts, result });
   if (lastBuilds.length > MAX_BUILDS) lastBuilds.pop();
   return result;
@@ -351,6 +390,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         // Fecha de inicio del proyecto que la contiene (SCHEDULED del PROJECT o de uno de fuera)
         projectStart: parent ? parent.projectStart : null,
         isProject,
+        // (4.39) proyecto secuencial: propiedad nativa de org `:ORDERED: t`
+        ordered: isProject && isOrderedValue(propertyValue(header, ORDERED_PROPERTY)),
         // (3.01) :ID: (org-id) del encabezado y proyecto asignado con :PROYECTO:
         orgId: propertyValue(header, 'ID'),
         projRef,
@@ -482,7 +523,9 @@ export const listOf = (task, today = new Date()) => {
   for (const id of exclusiveOrder(cfg)) {
     const s = cfg.sections[id];
     if (s.show === false || !matchesList(task, s)) continue;
-    return hiddenBy(task, s, today) || id;
+    const res = hiddenBy(task, s, today) || id;
+    // (4.39) proyecto secuencial: solo su primera tarea abierta es siguiente acción
+    return res === 'next' && task.seqBlocked ? null : res;
   }
   return isParked(task, today) ? 'parked' : null;
 };

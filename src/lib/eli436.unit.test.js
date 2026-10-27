@@ -35,7 +35,7 @@ import { parseDays, daysWithEntries, dayHasData } from './eli_diary';
 import { exportOrg } from './export_org';
 import { OrgText, OrgTitle } from '../components/EliHeadingViews/OrgRender';
 import { EliNarrowRefs } from '../components/EliHeadingViews';
-import { getBacklinksSnapshot, backlinksKey } from './eli_backlinks_view';
+import { getBacklinksSnapshot, backlinksKey, setHvFilters } from './eli_backlinks_view';
 
 const makeStore = (files) => {
   const store = createStore(
@@ -280,6 +280,8 @@ test('diario: las subcabeceras del usuario salen aparte y el día sigue contando
 });
 
 test('bloque Backlinks: desplegado, filtros, etiquetas, orden y plegar con su título', () => {
+  // (4.39) por defecto ahora van ocultas las archivadas y las tareas; este test parte de «todo visible»
+  setHvFilters({ hideArchived: false, hideTasks: false });
   const store = makeStore(BACK);
   const destId = idOf(store, '/dest.org', 'Destino');
   const { container, getByTestId, queryAllByTestId } = render(

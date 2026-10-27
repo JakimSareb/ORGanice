@@ -1122,7 +1122,14 @@ export default function EliDocBar({
                 hint: 'se vuelve con Atrás',
                 onClick: () => org('narrowHeader', id),
               },
-          // (4.28) Etiquetas y Estado: en la fila de la barra (ya no en ⋯)
+          // (4.39) Etiquetas vuelven al menú ⋯ (4.28 las había sacado a la fila)
+          {
+            id: 'tags',
+            icon: 'eli-glyph-hash',
+            label: 'Etiquetas',
+            hint: 'tecla #',
+            onClick: () => base('activatePopup', 'tags-editor'),
+          },
           { id: 'share', icon: 'fas fa-share-alt', label: 'Compartir o PDF', openSub: 'share' },
           {
             id: 'dup',
@@ -1266,19 +1273,13 @@ export default function EliDocBar({
                 sub: 'todo',
               },
             ]),
-        {
-          id: 'tags',
-          icon: 'eli-glyph-hash',
-          label: 'Etiquetas',
-          title: 'Etiquetas (tecla #)',
-          onClick: () => base('activatePopup', 'tags-editor'),
-        },
+        // (4.39) Etiquetas vuelven al menú ⋯ (ya no en la fila)
         // (4.37) «[[» al escribir: el mismo selector jerárquico que al teclear «[[»
         ...(editing
           ? [
               {
                 id: 'link-hdr',
-                label: '[[',
+                label: '[[ ]]', // (4.39) texto compacto en monoespaciada (CSS)
                 title: 'Enlace a una cabecera (también al teclear [[)',
                 onClick: insertHeadingLinkHere,
               },
@@ -1841,4 +1842,4 @@ export default function EliDocBar({
 }
 
 // Para pruebas: lo que tiene que estar en la barra, en orden
-export const DOCBAR_ORDER = ['edit', 'todo', 'tags', 'new', 'insert', 'move', 'more'];
+export const DOCBAR_ORDER = ['edit', 'todo', 'new', 'insert', 'move', 'more'];

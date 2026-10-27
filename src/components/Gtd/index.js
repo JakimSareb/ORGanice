@@ -51,6 +51,7 @@ import {
   projectLinkFor,
   newOrgId,
   STATUS_PROPERTY,
+  ORDERED_PROPERTY,
   SLEEP_STATUS,
   inProject,
   nestProjects,
@@ -6882,6 +6883,32 @@ export default function GtdView() {
               )}
             </div>
           )}
+        {/* (4.39) proyecto paralelo (⇉, por defecto) o secuencial (↓, `:ORDERED: t`): un toque cambia */}
+        {projectTask && (
+          <div className="gtd-project-order">
+            <button
+              type="button"
+              className={'gtd-project-order__btn' + (projectTask.ordered ? ' is-ordered' : '')}
+              data-testid="gtd-project-order-toggle"
+              aria-pressed={!!projectTask.ordered}
+              title={
+                projectTask.ordered
+                  ? 'Proyecto secuencial: solo la primera tarea abierta es siguiente acción (un toque: paralelo)'
+                  : 'Proyecto paralelo: todas sus tareas pueden ser siguiente acción (un toque: secuencial)'
+              }
+              onClick={() =>
+                dispatch(
+                  gtdSaveTask(projectTask, {
+                    props: { [ORDERED_PROPERTY]: projectTask.ordered ? null : 't' },
+                  })
+                )
+              }
+            >
+              <span aria-hidden="true">{projectTask.ordered ? '↓' : '⇉'}</span>{' '}
+              {projectTask.ordered ? 'Secuencial' : 'Paralelo'}
+            </button>
+          </div>
+        )}
         {projectTask &&
           projectTask.description.trim() &&
           openKey !== projectTask.key &&

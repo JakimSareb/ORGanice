@@ -39,6 +39,7 @@ import {
   useBacklinksOrder,
   setBacklinksOrder,
   useHvFilters,
+  BACKLINKS_FILTER_DEFAULT,
   setHvFilters,
 } from '../../lib/eli_backlinks_view';
 import { OrgText, OrgTitle } from './OrgRender';
@@ -442,7 +443,7 @@ const TagView = ({ tag, onClose }) => {
 // para el PDF / imprimir (`publish`).
 const BacklinksPanel = ({ index, self, refs, onGo, collapsible = false, publish = false }) => {
   const { order, dir } = useBacklinksOrder();
-  const { hideArchived, hideTasks } = useHvFilters();
+  const { hideArchived, hideTasks } = useHvFilters(BACKLINKS_FILTER_DEFAULT);
   const [inherited, setInherited] = useState(true);
   const [tags, setTags] = useState([]);
   const [collapsed, setCollapsed] = useState(false);

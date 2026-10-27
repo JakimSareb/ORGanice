@@ -10,6 +10,9 @@ html[data-eli-font='mono'] {
 html[data-eli-font='rounded'] {
   --eli-font: 'Avenir Next Rounded', 'Avenir Next', 'Nunito', 'Trebuchet MS', Verdana, sans-serif;
 }
+html[data-eli-font='iosevka'] {
+  --eli-font: 'Iosevka', Menlo, 'SF Mono', Consolas, monospace; /* (4.39) */
+}
 html[data-eli-font] body,
 html[data-eli-font] button,
 html[data-eli-font] input,

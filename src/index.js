@@ -7,12 +7,15 @@ import './fontawesome.css';
 // (3.06) fuente «Atkinson Hyperlegible» para Legibilidad › Fuente legible (va con la app)
 import '@fontsource/atkinson-hyperlegible/400.css';
 import '@fontsource/atkinson-hyperlegible/700.css';
+// (4.39) fuente «Iosevka» (Ajustes › Apariencia › Tipo de letra; va con la app)
+import '@fontsource/iosevka/400.css';
+import '@fontsource/iosevka/700.css';
 import './eli_readability.css';
 import { applyReadability } from './lib/eli_readability';
 import './eli_font.css';
 import './eli_theme_logseq.css';
 import { applyFont } from './lib/eli_font';
-import { applyDocMargin } from './lib/eli_menu_layout';
+import { applyDocMargin, applyEdgePad } from './lib/eli_menu_layout';
 import App from './App';
 import EliSplitView from './components/EliSplitView';
 import { BASE_PATH } from './lib/base_path';
@@ -23,6 +26,7 @@ import { flushLocalSaves } from './util/file_persister';
 applyReadability();
 applyFont();
 applyDocMargin();
+applyEdgePad();
 
 const rootElement = document.getElementById('root');
 

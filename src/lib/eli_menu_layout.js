@@ -118,3 +118,37 @@ export const setDocMargin = (px) => {
   } catch (e) {}
   applyDocMargin(px);
 };
+
+// (4.39) Margen DERECHO al editar y previsualizar (como el izquierdo, pero en todos los
+// dispositivos). localStorage `eliEdgePad` (propio de cada dispositivo); se aplica como variable
+// CSS --eli-edge-pad en <html> (la 4.37 la fijaba en 14 px).
+const EDGE_KEY = 'eliEdgePad';
+export const EDGE_PAD_DEFAULT = 14;
+export const EDGE_PAD_MAX = 60;
+
+export const clampEdgePad = (v) => {
+  const n = Math.round(Number(v));
+  if (!Number.isFinite(n)) return EDGE_PAD_DEFAULT;
+  return Math.min(EDGE_PAD_MAX, Math.max(0, n));
+};
+
+export const getEdgePad = () => {
+  try {
+    const v = localStorage.getItem(EDGE_KEY);
+    return v == null || v === '' ? EDGE_PAD_DEFAULT : clampEdgePad(v);
+  } catch (e) {
+    return EDGE_PAD_DEFAULT;
+  }
+};
+
+export const applyEdgePad = (px = getEdgePad()) => {
+  if (typeof document === 'undefined') return;
+  document.documentElement.style.setProperty('--eli-edge-pad', clampEdgePad(px) + 'px');
+};
+
+export const setEdgePad = (px) => {
+  try {
+    localStorage.setItem(EDGE_KEY, String(clampEdgePad(px)));
+  } catch (e) {}
+  applyEdgePad(px);
+};
