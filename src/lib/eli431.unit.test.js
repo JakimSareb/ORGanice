@@ -11,6 +11,7 @@ import { exportOrg } from './export_org';
 import {
   headingIndex,
   entriesWithTags,
+  nestEntries,
   backlinkEntries,
   childrenOf,
   searchHeadings,
@@ -68,10 +69,14 @@ test('índice: ruta de madres, etiquetas propias y heredadas', () => {
   ).toEqual(['Pintar la cocina', 'Jardín']);
 });
 
-test('vista por etiqueta: con heredadas solo las de más arriba; sin diario', () => {
+test('vista por etiqueta: con heredadas todas (4.44: también las hijas); sin diario', () => {
   const idx = headingIndex(files, { skipDiary: true });
   const withInh = entriesWithTags(idx, 'hogar', { inherited: true }).map((e) => e.title);
-  expect(withInh).toEqual(['Casa', 'Informe', 'Otra']);
+  expect(withInh).toEqual(['Casa', 'Pintar la cocina', 'Rodillo', 'Jardín', 'Informe', 'Otra']);
+  // (4.44) en la vista salen anidadas bajo su madre
+  const roots = nestEntries(entriesWithTags(idx, 'hogar').filter((e) => e.path === '/a.org'));
+  expect(roots.map((n) => n.entry.title)).toEqual(['Casa', 'Informe']);
+  expect(roots[0].children.map((n) => n.entry.title)).toEqual(['Pintar la cocina', 'Jardín']);
   const own = entriesWithTags(idx, 'HOGAR', { inherited: false }).map((e) => e.title);
   expect(own).toEqual(['Casa', 'Informe', 'Otra']);
   // dos etiquetas: Jardín tiene «fuera» y hereda «hogar»

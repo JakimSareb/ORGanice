@@ -34,7 +34,13 @@ import EliEditSheet from './components/EliEditSheet';
 import { mergeTitleTags } from '../../lib/eli_heading_index';
 import { EliInlineEditContext, NOT_EDITING } from './components/EliInlineEdit';
 import { subscribeDocLock, isDocLocked, setCaptureActive } from '../../lib/eli_doc_lock';
-import { listKeyAction, setListFolded } from '../../lib/eli_list_fold';
+import {
+  listKeyAction,
+  setListFolded,
+  firstListItemId,
+  lastListItemId,
+} from '../../lib/eli_list_fold';
+import { isNotesPlain } from '../../lib/eli_notes_plain';
 import { isMultiActive, getMulti, clearMulti, topIds } from '../../lib/eli_multi_select';
 
 import * as baseActions from '../../actions/base';
@@ -45,7 +51,13 @@ import { ActionCreators as undoActions } from 'redux-undo';
 
 import sampleCaptureTemplates from '../../lib/sample_capture_templates';
 import { calculateActionedKeybindings } from '../../lib/keybindings';
-import { extractAllOrgProperties, changelogHash, STATIC_FILE_PREFIX } from '../../lib/org_utils';
+import {
+  extractAllOrgProperties,
+  changelogHash,
+  STATIC_FILE_PREFIX,
+  indexOfHeaderWithId,
+  previousVisibleHeaderAfterIndex,
+} from '../../lib/org_utils';
 import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import {
   parseTitleLine,
@@ -421,13 +433,43 @@ class OrgFile extends PureComponent {
     return true;
   }
 
+  // (4.44) ¿Se ven las notas de la cabecera? (abierta y sin «solo cabeceras»)
+  eliNotesShown(header) {
+    return !!header && header.get('opened') && !header.get('eliHideBody');
+  }
+
   handleSelectNextVisibleHeaderHotKey() {
     if (this.handleListKey('down')) return;
+    // (4.44) ↓ en una cabecera con una lista en las notas: entra en su primer elemento
+    const { selectedHeader, selectedListItemId } = this.props;
+    if (!selectedListItemId && this.eliNotesShown(selectedHeader) && !isNotesPlain()) {
+      const first = firstListItemId(selectedHeader.get('description'));
+      if (first != null) {
+        this.props.org.setSelectedListItemId(first);
+        return;
+      }
+    }
     this.props.org.selectNextVisibleHeader();
   }
 
   handleSelectPreviousVisibleHeaderHotKey() {
     if (this.handleListKey('up')) return;
+    // (4.44) ↑ desde una cabecera: si la de encima tiene una lista en las notas (se ve justo
+    // encima), se entra en su último elemento visible
+    const { headers, selectedHeaderId, selectedListItemId } = this.props;
+    if (!selectedListItemId && selectedHeaderId && headers && !isNotesPlain()) {
+      const prev = previousVisibleHeaderAfterIndex(
+        headers,
+        indexOfHeaderWithId(headers, selectedHeaderId)
+      );
+      if (this.eliNotesShown(prev)) {
+        const last = lastListItemId(prev.get('description'));
+        if (last != null) {
+          this.props.org.setSelectedListItemId(last);
+          return;
+        }
+      }
+    }
     this.props.org.selectPreviousVisibleHeader();
   }
 

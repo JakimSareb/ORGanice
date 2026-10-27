@@ -180,8 +180,10 @@ const hasTag = (list, tag) => {
 };
 
 /**
- * Cabeceras con TODAS las etiquetas `tags` (con heredadas si `inherited`). Con heredadas solo
- * se devuelven las de más arriba (la hija de una que ya sale se ve dentro de ella).
+ * Cabeceras con TODAS las etiquetas `tags` (con heredadas si `inherited`).
+ * (4.44) Con heredadas salen TODAS (también las hijas que la heredan): la vista las anida bajo su
+ * madre (nestEntries), sangradas y plegables. Antes solo salían las de más arriba y la casilla
+ * «Incluir heredadas» no parecía hacer nada.
  */
 export const entriesWithTags = (index, tags, { inherited = true } = {}) => {
   const want = (Array.isArray(tags) ? tags : [tags]).filter(Boolean);
@@ -189,14 +191,8 @@ export const entriesWithTags = (index, tags, { inherited = true } = {}) => {
   const matches = (e) => want.every((t) => hasTag(inherited ? e.tags : e.ownTags, t));
   const out = [];
   (index.byPath || new Map()).forEach((list) => {
-    let coverLevel = null;
     list.forEach((e) => {
-      if (coverLevel !== null && e.level > coverLevel) return;
-      coverLevel = null;
-      if (matches(e)) {
-        out.push(e);
-        if (inherited) coverLevel = e.level;
-      }
+      if (matches(e)) out.push(e);
     });
   });
   return out;

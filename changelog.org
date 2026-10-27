@@ -3,6 +3,23 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.44 (octubre de 2026)
+** Notas: no se pierde nada al seleccionar con el ratón
+- Seleccionar texto con el ratón dentro del cuadro de una *sección* (un elemento con guion de las notas) y soltar *fuera* del cuadro ya no abre las notas enteras ni salta el cursor al final: lo escrito en la sección se guarda. Antes, sobre todo con la *Edición estilo Logseq*, se perdía.
+- En general, soltar una selección fuera de cualquier cuadro de texto ya no cuenta como un clic donde se suelta.
+- Editando una sección, un clic en el resto de las notas solo termina esa edición (guardando).
+** Notas en texto plano o secciones editables
+- Nuevo ajuste *Notas* en Ajustes › Documentos › Toques y edición: *Secciones editables* (lo de siempre: cada elemento con guion se selecciona y se edita por separado, con su barra) o *Notas en texto plano* (las notas se editan siempre enteras, en un solo cuadro).
+** Secciones con el teclado y plegables
+- Una sección con *texto debajo* ya se puede plegar (antes solo las que tenían sub-elementos): ←/→ con el teclado o un toque en su viñeta. Plegada lleva «…».
+- ↓ en una cabecera entra en la primera sección de sus notas; ↑ desde la cabecera de debajo entra en la última. En el borde de la lista se vuelve a la cabecera.
+- Tocar la viñeta de una sección ya no abre las notas.
+** Etiquetas: las subcabeceras que las heredan, en árbol
+- *GTD*, vista de una etiqueta: las subcabeceras que la heredan van dentro de su cabecera, sangradas, y se despliegan con ▸ (como en Reference). Las tareas siguen en su sitio.
+- *Documentos*, vista por etiqueta: con *Incluir heredadas* salen también las subcabeceras que la heredan, anidadas bajo su madre (▾ con el número para plegarlas). Antes la casilla no parecía hacer nada.
+** Áreas de responsabilidad
+- Un *área nueva* escrita en el editor de una tarea se añade también a =horizons.org= (bajo «Áreas de responsabilidad»). El buscador de áreas enseña las de =horizons.org= y las que ya usan las tareas.
+
 * 4.43 (octubre de 2026)
 ** GTD: letra y cabecera del proyecto
 - *Tipo de letra también en GTD*: nuevo interruptor *Aplicar también a GTD (tareas y cabeceras)* en Ajustes › Apariencia, junto al tipo de letra. Apagado (por defecto) GTD conserva su letra de siempre; encendido, las tareas, los proyectos y las cabeceras de GTD usan la misma letra que el resto de la app (la que elijas, o la del tema Logseq).

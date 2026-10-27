@@ -170,6 +170,21 @@ export const missingAreas = (h, tasks) => {
   return areasOf(tasks.filter((t) => !t.isTrashed && !t.isDone)).filter((a) => !names.has(norm(a)));
 };
 
+// (4.44) Áreas para elegir en el editor de una tarea: las de horizons.org y las que ya usan las
+// tareas (sin repetir, sin distinguir mayúsculas), por orden alfabético
+export const areaChoices = (h, tasks) => {
+  const seen = new Map();
+  [...((h && h.areaList) || []).map((a) => a.name), ...areasOf(tasks || [])].forEach((a) => {
+    const k = norm(a);
+    if (k && !seen.has(k)) seen.set(k, String(a).trim());
+  });
+  return Array.from(seen.values()).sort((a, b) => a.localeCompare(b, 'es'));
+};
+
+// (4.44) ¿Ya está el área en horizons.org?
+export const horizonsHasArea = (h, name) =>
+  !!h && (h.areaList || []).some((a) => norm(a.name) === norm(name));
+
 // Objetivos para elegir en el editor de un proyecto
 export const objectivePickItems = (h) =>
   h.objectives

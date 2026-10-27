@@ -159,6 +159,8 @@ import {
   parseHorizons,
   horizonsView,
   missingAreas,
+  areaChoices,
+  horizonsHasArea,
   objectivePickItems,
   objectiveRefOf,
   TERM_PROPERTY,
@@ -1429,6 +1431,8 @@ export default function GtdView() {
     return g;
   }, [projects, today]);
   const areas = useMemo(() => areasOf(tasks), [tasks]);
+  // (4.44) en el editor de tarea: también las áreas de horizons.org
+  const areaPick = useMemo(() => areaChoices(horizons, tasks), [horizons, tasks]);
   // (4.20) tiempo registrado por tarea (con subtareas y acciones de proyecto)
   const clockTotals = useMemo(() => clockTotalsOf(tasks), [tasks]);
 
@@ -1672,8 +1676,13 @@ export default function GtdView() {
       ? nestSubtasks(buildItems(), byDate ? () => true : null)
       : buildItems();
     // (4.32) lista Referencia: ▸ despliega subcabeceras y notas
+    // (4.44) vista de una etiqueta: las cabeceras que la heredan van dentro de su madre (▸)
     const withRefKids =
-      view.id === 'reference' ? nestRefKids(nested, tasks, refOpen, foldIdOf) : nested;
+      view.id === 'reference'
+        ? nestRefKids(nested, tasks, refOpen, foldIdOf)
+        : view.id === 'tag'
+        ? nestRefKids(nested, tasks, refOpen, foldIdOf, { headingsOnly: true })
+        : nested;
     // (3.02) subtareas plegadas (▸): se ocultan los descendientes de las tareas plegadas
     const out = [];
     let hideBelow = null;
@@ -2685,7 +2694,8 @@ export default function GtdView() {
         isNew
         task={draftTask(draft)}
         projects={allProjects}
-        areas={areas}
+        areas={areaPick}
+        onNewArea={addAreaFromTask}
         allTags={allTags}
         contextTags={contextTags}
         onSave={createFromDraft}
@@ -3798,6 +3808,18 @@ export default function GtdView() {
     if (!dispatch(gtdAddTask({ path: horizonsPath, parentId }, { title: name }))) return false;
     toast('Área añadida');
     return true;
+  };
+  // (4.44) área nueva escrita en el editor de una tarea: se añade a horizons.org (sin repetir)
+  const addAreaFromTask = async (name) => {
+    const n = String(name || '').trim();
+    if (!n) return;
+    // sin horizons.org no se pregunta nada en mitad de la edición: se avisa
+    if (!(await ensureHorizons(false))) {
+      toast(`Área solo en la tarea: no se encuentra ${fileDisplayName(horizonsPath)}`);
+      return;
+    }
+    if (horizonsHasArea(freshHorizons(), n)) return;
+    horizonsAddArea(n);
   };
   const horizonsAddObjective = (title, area, term) => {
     const parentId = horizonSection('goals');
@@ -5415,7 +5437,8 @@ export default function GtdView() {
       key={task.key + task.header.hashCode() + ':' + editorRev}
       task={task}
       projects={allProjects.filter((p) => p.key !== task.key)}
-      areas={areas}
+      areas={areaPick}
+      onNewArea={addAreaFromTask}
       allTags={allTags}
       contextTags={contextTags}
       onOpenLink={(target) => openLink(task, target)}
@@ -5545,7 +5568,8 @@ export default function GtdView() {
           description: '',
         }}
         projects={allProjects}
-        areas={areas}
+        areas={areaPick}
+        onNewArea={addAreaFromTask}
         allTags={allTags}
         contextTags={contextTags}
         onSave={createProject}

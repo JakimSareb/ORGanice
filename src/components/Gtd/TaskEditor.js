@@ -171,6 +171,7 @@ export default function TaskEditor({
   onBacklinks = null, // (4.35) «Backlinks»: quién enlaza a esta tarea
   onSendTo = null, // (4.35) «Enviar a»: mover la cabecera dentro de otra
   onSaveProperties = null, // (3.11) ver y editar PROPERTIES
+  onNewArea = null, // (4.44) área nueva escrita en el buscador → a horizons.org
   onAddSubtask = null, // (3.38) «＋ Subtarea»: guarda esta y abre el editor de una hija nueva
   objective = null, // (4.07) objetivo del proyecto (nombre) y elegirlo (fichero de horizontes)
   onPickObjective = null,
@@ -624,8 +625,11 @@ export default function TaskEditor({
     });
     if (r == null) return;
     if (r === '__none') setArea('');
-    else if (typeof r === 'object') setArea(r.new);
-    else setArea(r);
+    else if (typeof r === 'object') {
+      setArea(r.new);
+      // (4.44) un área nueva va también a horizons.org (si no, solo salía en este desplegable)
+      if (onNewArea) onNewArea(r.new);
+    } else setArea(r);
   };
   const withCommit = (fn) => () => {
     commit();

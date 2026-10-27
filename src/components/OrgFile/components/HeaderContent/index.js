@@ -1,4 +1,5 @@
 import { isLogseqEdit } from '../../../../lib/eli_logseq_edit';
+import { isNotesPlain } from '../../../../lib/eli_notes_plain';
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -157,6 +158,8 @@ class HeaderContent extends PureComponent {
   }
 
   handleListItemSelect(listItemId) {
+    // (4.44) «Notas en texto plano»: los elementos de la lista no se seleccionan uno a uno
+    if (isNotesPlain()) return;
     this.props.org.setSelectedListItemId(listItemId);
   }
 
@@ -284,8 +287,28 @@ class HeaderContent extends PureComponent {
 
   // (3.04) Doble clic (o doble toque) en las notas: editarlas en su sitio
   eliNotesClick = (event) => {
-    const { header, shouldDisableActions } = this.props;
+    const {
+      header,
+      shouldDisableActions,
+      inListTitleEditMode,
+      inListContentsEditMode,
+    } = this.props;
     const t = event.target;
+    // (4.44) editando una sección (elemento de lista), un clic en las notas solo termina esa
+    // edición (guardando): antes abría a la vez las notas enteras con el texto de ANTES y, al
+    // cerrarlas, lo escrito en la sección se perdía
+    if (
+      (inListTitleEditMode || inListContentsEditMode) &&
+      !(
+        t &&
+        t.closest &&
+        t.closest('.list-title-line__edit-container, .list-contents__edit-container')
+      )
+    ) {
+      event.stopPropagation();
+      this.props.org.exitEditMode();
+      return;
+    }
     const onInner =
       t &&
       t.closest &&
@@ -295,7 +318,8 @@ class HeaderContent extends PureComponent {
       );
     // (3.10) en un elemento de lista NO: selectHeader borraba la selección del elemento
     // (modo `list` de 3.04: seleccionarlo con sus notas y moverlo arriba/abajo)
-    const onListItem = !!(t && t.closest && t.closest('.attributed-string__list-part li'));
+    const onListItem =
+      !isNotesPlain() && !!(t && t.closest && t.closest('.attributed-string__list-part li'));
     // (3.05) un clic / toque en las notas selecciona su encabezado (el bloque), como en el título
     if (!onInner && !onListItem && !shouldDisableActions) {
       this.props.org.selectHeader(header.get('id'));

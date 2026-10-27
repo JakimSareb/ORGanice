@@ -1160,10 +1160,13 @@ export const nestSubtasks = (items, skip = null) => {
 // (4.32) Lista Referencia con ▸: cada referencia despliega sus subcabeceras (con estado si lo
 // tienen) y sus notas, a varios niveles. Las filas de la lista que cuelgan de otra fila de la lista
 // no salen sueltas: van dentro de su madre. `openSet` = ids (idOf) de las desplegadas.
-export const nestRefKids = (items, allTasks, openSet, idOf) => {
+// (4.44) `headingsOnly` (vista de una etiqueta en GTD): solo se anidan las cabeceras SIN estado
+// (las que heredan la etiqueta de su madre); las tareas siguen sueltas en su sitio, como antes.
+export const nestRefKids = (items, allTasks, openSet, idOf, { headingsOnly = false } = {}) => {
   const kidsOf = new Map();
   allTasks.forEach((t) => {
     if (!t.parentId || t.isTrashed) return;
+    if (headingsOnly && t.keyword) return;
     const k = `${t.path}::${t.parentId}`;
     if (!kidsOf.has(k)) kidsOf.set(k, []);
     kidsOf.get(k).push(t);
@@ -1175,6 +1178,8 @@ export const nestRefKids = (items, allTasks, openSet, idOf) => {
     let guard = 0;
     while (p && guard++ < 50) {
       if (inList.has(p.key)) return true;
+      // (4.44) solo por cabeceras sin estado: si no, la madre no la enseñaría al desplegar
+      if (headingsOnly && p.keyword) return false;
       p = p.parentId ? byKey.get(`${p.path}::${p.parentId}`) : null;
     }
     return false;
@@ -1203,7 +1208,7 @@ export const nestRefKids = (items, allTasks, openSet, idOf) => {
       out.push(i);
       return;
     }
-    if (hasListAncestor(i.task)) return;
+    if (hasListAncestor(i.task) && !(headingsOnly && i.task.keyword)) return;
     const n = (kidsOf.get(i.task.key) || []).length;
     const open = n > 0 && openSet.has(idOf(i.task));
     out.push(n ? { ...i, refKids: true, hasKids: true, folded: !open } : i);
