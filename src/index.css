@@ -422,3 +422,9 @@ div.eli-viewer__none {
 .eli-pick__item.is-dim {
   opacity: 0.55;
 }
+
+/* (4.39) Documentos: reservar siempre el hueco de la barra de scroll, para que los botones de la
+   barra de arriba no se muevan al aparecer o desaparecer (solo afecta a barras clásicas) */
+html {
+  scrollbar-gutter: stable;
+}

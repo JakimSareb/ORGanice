@@ -41,6 +41,9 @@ import {
   getDocMargin,
   setDocMargin,
   DOC_MARGIN_MAX,
+  getEdgePad,
+  setEdgePad,
+  EDGE_PAD_MAX,
 } from '../../lib/eli_menu_layout';
 import { getPomodoroCfg, setPomodoroCfg } from '../../lib/eli_pomodoro';
 import {
@@ -687,6 +690,37 @@ const EliDocMarginSetting = () => {
   );
 };
 
+// (4.39) Margen derecho al editar y previsualizar (en este dispositivo; por defecto 14 px)
+const EliEdgePadSetting = () => {
+  const [px, setPx] = React.useState(getEdgePad());
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-edge-pad"
+    >
+      <div className="setting-label">
+        Margen derecho al editar y previsualizar: {px} px
+        <div className="setting-label__description">
+          Espacio libre a la derecha del texto de las cabeceras, para que no quede pegado al borde.
+        </div>
+      </div>
+      <input
+        type="range"
+        min="0"
+        max={EDGE_PAD_MAX}
+        step="1"
+        value={px}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          setPx(v);
+          setEdgePad(v);
+        }}
+        data-testid="eli-edge-pad"
+      />
+    </div>
+  );
+};
+
 // ORG Mode para Eli: campo de texto que se guarda al salir de él (o con Intro)
 
 // (3.06) Legibilidad del texto en Documentos (en este dispositivo)
@@ -1137,6 +1171,7 @@ const Settings = ({
           </div>
 
           <EliDocMarginSetting />
+          <EliEdgePadSetting />
         </div>
 
         <EliSub>Menú ☰</EliSub>

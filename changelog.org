@@ -3,6 +3,18 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.39 (octubre de 2026)
+** Ajustes pequeños
+- *Barra flotante del editor*: *Etiquetas* vuelve al menú *⋯*; el botón de enlace a una cabecera queda fuera, con el texto compacto =[[ ]]=.
+- *Backlinks*: «Ocultar archivadas» y «Ocultar tareas» vienen *activados* (la vista por etiqueta sigue como antes). En cuanto cambias uno, vale igual en las dos vistas.
+- *Documentos*: los botones de la barra de arriba *ya no se mueven* cuando aparece o desaparece la barra de scroll.
+- *Ficheros*: una línea discreta con la sesión activa («Dropbox · cuenta», «Carpeta local · nombre», «WebDAV · servidor»).
+- *Margen derecho al editar y previsualizar* (Ajustes › Apariencia, junto al izquierdo), por dispositivo, igual que el izquierdo (por defecto 14 px, como hasta ahora).
+- *Tipo de letra Iosevka* (Ajustes › Apariencia), va con la app.
+** Proyecto paralelo o secuencial
+- En la vista de un proyecto, un botón discreto alterna *⇉ Paralelo* (como siempre: todas sus tareas pueden ser siguiente acción) y *↓ Secuencial*. Se guarda como la propiedad nativa de org =:ORDERED: t= en el proyecto, así que Emacs la entiende.
+- En un proyecto *secuencial* solo la *primera tarea abierta* sale en Next; las demás siguen visibles en el proyecto y pasan a Next al terminar la anterior. Sin la propiedad no cambia nada.
+
 * 4.38 (octubre de 2026)
 ** Diario compatible con org-journal
 - El diario se guarda en el *formato de org-journal* (lo abre Emacs con =M-x org-journal=): por defecto un fichero por año, =journal/2026.org=. Cada día es una cabecera (=* sábado, 24 octubre 2026=) con =:CREATED: 20261024= (y su =:ID:= y contadores) y *cada apunte es una cabecera* =** 13:23 o texto= (lo que sigue, su texto). Las respuestas de las preguntas van bajo =** Plantilla del día=.

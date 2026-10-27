@@ -1340,6 +1340,11 @@
   resolved "https://registry.yarnpkg.com/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-5.3.0.tgz#a40a38bb7f43ff19a4d2e495acef039b02faf66c"
   integrity sha512-Sp8Ve8+rQmENY2Lv02VH7sLpntzTTvnncnJMTbRE7DX6TLxGraN4ykZfzaUWIoCFmaomwkvNiqmlPkrKBuDoSA==
 
+"@fontsource/iosevka@5":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@fontsource/iosevka/-/iosevka-5.3.0.tgz#ac75fb0c54e0109af970571c618c0814906cdcab"
+  integrity sha512-RcG0v/65e4PTuThR/d7n9jj6PLlex7YUGaLa4ZpL+NnqArWQmD8Z+6gYBTxPMVWxYMRcEw6OF4rdt8XisnC5zA==
+
 "@fortawesome/fontawesome-free@5.1.1":
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-free/-/fontawesome-free-5.1.1.tgz#b2c8d73675e349062112c2795a6e9e146bf47e1e"

@@ -6,6 +6,7 @@ export const FONTS = [
   { id: 'serif', label: 'Serif' },
   { id: 'mono', label: 'Monoespaciada' },
   { id: 'rounded', label: 'Redondeada' },
+  { id: 'iosevka', label: 'Iosevka' }, // (4.39)
 ];
 const KEY = 'eliFont';
 

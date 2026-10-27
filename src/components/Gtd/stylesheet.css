@@ -4854,3 +4854,22 @@ input.gtd-proc__input:not([type]) {
   cursor: pointer;
   user-select: none;
 }
+
+/* (4.39) proyecto paralelo (⇉) / secuencial (↓): botón pequeño y discreto bajo el título */
+.gtd-project-order {
+  margin: 0 0 6px;
+}
+.gtd-project-order__btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 0.75em;
+  color: var(--base1);
+  opacity: 0.8;
+  cursor: pointer;
+}
+.gtd-project-order__btn.is-ordered {
+  color: var(--blue, var(--base01));
+  opacity: 1;
+}

@@ -394,9 +394,18 @@ export default () => {
       }
     );
 
+  // (4.39) nombre de la cuenta para la línea de sesión de la página de ficheros (si el permiso
+  // `account_info.read` no está, falla y se queda en «Dropbox»)
+  const getAccountLabel = () =>
+    withDbx((dbx) => dbx.usersGetCurrentAccount()).then((r) => {
+      const a = (r && r.result) || {};
+      return a.email || (a.name && a.name.display_name) || '';
+    });
+
   return {
     type: 'Dropbox',
     supportsOnStart: true,
+    getAccountLabel,
     pathExists,
     getFileBlob,
     getThumbnailBlob,

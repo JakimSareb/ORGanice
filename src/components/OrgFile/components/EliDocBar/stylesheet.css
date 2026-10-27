@@ -336,3 +336,11 @@ body.eli-docbar-on .action-drawer-container {
 .eli-glyph-hash::before {
   content: '#';
 }
+
+/* (4.39) botón «[[ ]]» (enlace a una cabecera): texto compacto en monoespaciada */
+.eli-docbar__btn[data-bid='link-hdr'] .eli-docbar__label {
+  font-family: Menlo, 'SF Mono', Consolas, monospace;
+  font-size: 0.85em;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}

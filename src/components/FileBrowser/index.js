@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -14,6 +14,7 @@ import * as syncBackendActions from '../../actions/sync_backend';
 import { toggleEliFavoriteFile } from '../../actions/org';
 import { favoritePaths } from '../EliTools';
 import { shortDate } from '../../lib/eli_layout';
+import { formatSessionLabel, sessionDetail } from '../../lib/eli_session_label';
 
 const FileBrowser = ({
   path,
@@ -21,6 +22,7 @@ const FileBrowser = ({
   hasMore,
   isLoadingMore,
   syncBackendType,
+  syncClient,
   syncBackend,
   favorites,
   toggleFavorite,
@@ -29,6 +31,16 @@ const FileBrowser = ({
   // additionalSyncBackendState,
 }) => {
   useEffect(() => syncBackend.getDirectoryListing(path), [syncBackend, path]);
+
+  // (4.39) sesión activa: «Dropbox · cuenta» / «Carpeta local · nombre» / «WebDAV · servidor»
+  const [sessionDetailText, setSessionDetailText] = useState('');
+  useEffect(() => {
+    let alive = true;
+    sessionDetail(syncClient).then((d) => alive && setSessionDetailText(d || ''));
+    return () => {
+      alive = false;
+    };
+  }, [syncClient]);
 
   const handleLoadMoreClick = () => syncBackend.loadMoreDirectoryListing();
 
@@ -56,6 +68,10 @@ const FileBrowser = ({
       {(syncBackendType === 'Dropbox' || syncBackendType === 'LocalFolder') && (
         <h3 className="file-browser__header">Carpeta: {isTopLevelDirectory ? '/' : path}</h3>
       )}
+
+      <div className="eli-fb__session" data-testid="eli-fb-session">
+        {formatSessionLabel(syncBackendType, sessionDetailText)}
+      </div>
 
       <ActionDrawer />
 
@@ -158,6 +174,7 @@ const mapStateToProps = (state) => {
   );
   return {
     syncBackendType: state.syncBackend.get('client').type,
+    syncClient: state.syncBackend.get('client'),
     favorites: favoritePaths(state.org.present.get('fileSettings')),
     listing: !!currentFileBrowserDirectoryListing
       ? currentFileBrowserDirectoryListing.get('listing')

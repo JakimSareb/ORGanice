@@ -17,6 +17,7 @@ export const LOCAL_KEYS = [
   { key: 'eliGtdTagGroupsFolded', label: 'Grupos de etiquetas plegados' },
   { key: 'eliWidth:', label: 'Anchos de los paneles', prefix: true },
   { key: 'eliDocMargin', label: 'Margen izquierdo de Documentos' },
+  { key: 'eliEdgePad', label: 'Margen derecho al editar' },
   { key: 'eliTagsPos', label: 'Etiquetas al lado o debajo' },
   { key: 'eliLogseqEdit', label: 'Edición tipo Logseq' },
   { key: 'eliFont', label: 'Tipo de letra' },

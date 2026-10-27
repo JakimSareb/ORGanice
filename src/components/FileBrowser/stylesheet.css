@@ -139,3 +139,14 @@
 .file-browser__file-list__element.eli-fb__file {
   font-family: inherit;
 }
+
+/* (4.39) sesión activa (servicio · cuenta): discreta */
+.eli-fb__session {
+  margin: -4px 0 8px;
+  font-size: 0.75em;
+  color: var(--base1);
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
