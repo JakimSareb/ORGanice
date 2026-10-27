@@ -13,8 +13,8 @@ export const TOOLS = [
   { id: 'moon', label: 'Fases de la luna' },
   { id: 'acom', label: 'Acomodadores' },
   { id: 'cal', label: 'Calendario' },
-  // (4.13) apagado de inicio en los dos modos: se enciende en Ajustes → Herramientas
-  { id: 'pomo', label: 'Pomodoro', defaultOff: true },
+  // (4.13) apagado de inicio; (4.37) encendido de serie (la herramienta del usuario): en los dos modos
+  { id: 'pomo', label: 'Pomodoro', defaultOn: true },
   // (4.18) apagado: no se ofrece «Nuevo guion Fountain» (los guiones que haya se siguen abriendo).
   // Encendido de inicio en los dos modos
   { id: 'fountain', label: 'Guiones Fountain', defaultOn: true },

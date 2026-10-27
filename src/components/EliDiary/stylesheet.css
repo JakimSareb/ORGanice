@@ -383,3 +383,9 @@
   cursor: pointer;
   font-weight: 600;
 }
+
+/* (4.37) en el PDF mensual, los días empiezan en página nueva (las filas del resumen enlazan a ellos) */
+.eli-diary-monthly + .eli-diary-print__day {
+  break-before: page;
+  page-break-before: always;
+}

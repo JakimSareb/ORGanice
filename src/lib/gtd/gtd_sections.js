@@ -1,3 +1,4 @@
+import { GTD_SECTIONS_DEFAULT_RAW, isEmptyStored } from '../eli_defaults';
 // ORG Mode para Eli: secciones de la vista GTD configurables en Ajustes (qué se ve en cada una,
 // si se muestra y en qué orden). Sin tocar nada, todo funciona como antes (DEFAULT_SECTIONS).
 //
@@ -193,6 +194,13 @@ export const normalizeGtdSections = (stored) => {
 };
 
 export const DEFAULT_GTD_CONFIG = normalizeGtdSections(null);
+
+// (4.37) Lo guardado, o —si no hay nada guardado— las secciones predefinidas de la app (los valores
+// del usuario: ver lib/eli_defaults.js). Lo que ya está guardado no se toca. `normalizeGtdSections(null)`
+// sigue siendo la configuración «de siempre» (para las pruebas y para «Restablecer»).
+export const effectiveStored = (stored) =>
+  isEmptyStored(stored) ? GTD_SECTIONS_DEFAULT_RAW : stored;
+export const effectiveGtdSections = (stored) => normalizeGtdSections(effectiveStored(stored));
 
 // Configuración activa (la pone la vista GTD desde los ajustes; por defecto, la de siempre)
 let current = DEFAULT_GTD_CONFIG;

@@ -154,7 +154,9 @@ h6.eli-print__heading {
   @page {
     margin: 16mm 14mm;
   }
-  html.eli-printing body > *:not(#eli-print-portal) {
+  /* (4.37) el Diario imprime desde su propio portal (#eli-diary-print-portal): antes se ocultaba
+     con el resto de la página y el PDF salía en blanco */
+  html.eli-printing body > *:not(#eli-print-portal):not(#eli-diary-print-portal) {
     display: none !important;
   }
   html.eli-printing,

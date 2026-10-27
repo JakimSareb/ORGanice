@@ -28,12 +28,12 @@ const openTask = async (app, title) => {
   await app.page.waitForTimeout(600);
 };
 
-test('4.11: Ajustes › Apariencia: el toque en el título se elige y sale también en Modo Notas', async ({
+test('4.11: Ajustes › Documentos: el toque en el título se elige y sale también en Modo Notas', async ({
   app,
 }) => {
   const { page } = app;
   await app.open(BASE, '/settings');
-  await page.locator('[data-testid=eli-settings-appearance] > summary').click();
+  await page.locator('[data-testid=eli-settings-docs] > summary').click();
   const setting = page.locator('[data-testid=eli-setting-tap-header]');
   await expect(setting).toBeVisible({ timeout: 20000 });
   await expect(page.locator('[data-testid=eli-setting-tap-task-mobile]')).toHaveCount(1);
@@ -44,7 +44,7 @@ test('4.11: Ajustes › Apariencia: el toque en el título se elige y sale tambi
   // Modo Notas: solo el de las cabeceras
   await page.evaluate(() => localStorage.setItem('eliNotesMode', 'true'));
   await page.goto('/settings');
-  await page.locator('[data-testid=eli-settings-appearance] > summary').click();
+  await page.locator('[data-testid=eli-settings-docs] > summary').click();
   await expect(page.locator('[data-testid=eli-setting-tap-header]')).toBeVisible({
     timeout: 20000,
   });

@@ -495,6 +495,14 @@
   font-size: 16px !important;
   font-weight: 600;
   width: 100%;
+  /* (4.37) cuadro que crece con el texto (textarea de una línea que se ajusta) */
+  display: block;
+  resize: none;
+  overflow: hidden;
+  font-family: inherit;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .gtd-editor__notes {
   width: 100%;

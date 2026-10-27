@@ -60,11 +60,17 @@ export const OrgText = ({ text, markId = null, className = '' }) => {
 };
 
 // Título de una cabecera (con sus enlaces y marcas), sin prioridad ni contadores de más
-export const OrgTitle = ({ rawTitle, fallback = '(sin título)' }) => {
+export const OrgTitle = ({ rawTitle, fallback = '(sin título)', markId = null }) => {
+  const ref = useRef(null);
   const parts = useMemo(() => {
     const clean = cleanHeadingText(rawTitle || '').trim();
     return clean ? fromJS(parseMarkupAndCookies(clean, { excludeCookies: true })) : null;
   }, [rawTitle]);
+  useMarkLinks(ref, markId, [parts, markId]);
   if (!parts) return <span>{fallback}</span>;
-  return <AttributedString parts={parts} subPartDataAndHandlers={READ_ONLY_HANDLERS} />;
+  return (
+    <span ref={ref}>
+      <AttributedString parts={parts} subPartDataAndHandlers={READ_ONLY_HANDLERS} />
+    </span>
+  );
 };

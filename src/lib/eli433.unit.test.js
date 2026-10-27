@@ -163,8 +163,10 @@ describe('4.33 contador mensual', () => {
     expect(out).toContain('| Día | Lo más importante | B |');
   });
 
-  test('ajuste «Al abrir la app» (por defecto, el Diario) y título tipo Logseq', () => {
+  test('ajuste «Al abrir la app» (por defecto, la última vista) y título tipo Logseq', () => {
     localStorage.clear();
+    expect(getDiaryCfg().startView).toBe('last'); // (4.37) defecto del usuario
+    localStorage.setItem('eliDiary', JSON.stringify({ startView: 'diary' }));
     expect(getDiaryCfg().startView).toBe('diary');
     localStorage.setItem('eliDiary', JSON.stringify({ startView: 'last' }));
     expect(getDiaryCfg().startView).toBe('last');

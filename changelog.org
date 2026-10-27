@@ -3,6 +3,29 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.37 (octubre de 2026)
+** Documentos
+- *Margen derecho de 14 px* al escribir notas y títulos: el texto ya no queda pegado al borde.
+- *Tablas alineadas con espacios* al editar las notas (como =org-table-align=): el =.org= en texto plano se lee ordenado. Solo se tocan las tablas que has editado.
+- *Indicador de backlinks* en la cabecera (=↩ 3=, pequeño y gris; no sale si es 0). Pulsarlo abre «Quién enlaza aquí».
+- *Botón «[[»* en la barra de edición y en el editor de tareas de GTD: el mismo selector de cabeceras que al teclear «[[».
+** Backlinks
+- Una cabecera que enlaza *desde el título* sale una sola vez (con el enlace resaltado), sin repetir el título como párrafo.
+- «Ver el resto» / «Ocultar» pasan a unos *tres puntitos* (⋯).
+- *Atrás / adelante* al seguir enlaces dentro de un mismo fichero (y al abrir una cabecera desde Backlinks) vuelven a la cabecera reducida anterior.
+** GTD
+- El *cuadro del título* en el editor de tarea crece con el texto (sin tope de líneas).
+- Las tareas que *se repiten* muestran solo la marca de repetición (ya no el calendario de «programada» además).
+- Los *enlaces del título* de una tarea (=[[id:…][texto]]=, =[[url][texto]]= y URLs) se pueden pulsar sin abrir la fila.
+** Diario
+- *Imprimir el diario* ya no sale en blanco.
+- El *PDF del registro mensual* lleva los días debajo y cada fila del resumen *enlaza a su día*.
+- Carpeta del diario por defecto: =journal/= (lo que ya tengas guardado en Ajustes › Diario se respeta; no se mueve ningún fichero).
+- Defensa para el móvil: si un menú o una vista se cierra a medias, sus bloqueos se sueltan al tocar la pantalla; las vistas de cabeceras (Backlinks, etiquetas) quedan por encima del Diario y del calendario.
+** Ajustes
+- *Reagrupados por herramienta*: Apariencia (tema, letra, viñetas, espacio tras cabeceras, menú), Documentos (toques y edición, plegado, exportación), GTD (procesos, estados y etiquetas, gestos y secciones), Diario, Agenda y hábitos… Cada ajuste vive en una sola sección.
+- *Valores por defecto* de la app = los de la configuración del autor (tema Nirvana claro, viñetas triangulares, menú «/» encendido, todos los ficheros .org, archivo en subcarpeta, secciones de GTD con contextos…). Solo se aplican en una instalación nueva: lo que ya tienes guardado no cambia.
+
 * 4.36 (octubre de 2026)
 ** Backlinks y enlaces
 - *Tocar un enlace a otra cabecera* (en Documentos) la abre *en narrow*, con sus subcabeceras plegadas y, al final, el bloque *Backlinks*. La flechita *←* vuelve al documento entero.

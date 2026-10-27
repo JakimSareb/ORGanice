@@ -8,6 +8,7 @@
 let entries = []; // { key, area }
 let index = -1;
 let installed = null;
+let restorer = null; // (4.37) restaura la vista (fichero + cabecera reducida) de una entrada
 const SS_KEY = 'eliNavHistory';
 
 const save = () => {
@@ -58,7 +59,7 @@ export const installNavHistory = (history) => {
       entries = [...entries.slice(0, index + 1), entry];
       index = entries.length - 1;
     } else if (action === 'REPLACE') {
-      entries[index] = entry;
+      entries[index] = { ...entry, view: entries[index] && entries[index].view };
     } else {
       // Se busca primero cerca de la posición actual (la clave 'inicio' puede repetirse)
       let i = -1;
@@ -71,7 +72,12 @@ export const installNavHistory = (history) => {
       });
       if (i >= 0) {
         index = i;
-        entries[i] = entry;
+        entries[i] = { ...entry, view: entries[i].view };
+        // (4.37) atrás/adelante entre saltos por enlace: se restaura la cabecera reducida
+        if (entries[i].view && restorer) {
+          const v = entries[i].view;
+          setTimeout(() => restorer(v), 0);
+        }
       } else {
         entries = [entry];
         index = 0;
@@ -105,3 +111,31 @@ export const goForward = (history) => {
   const d = targetDelta(1);
   if (d) history.go(d);
 };
+
+// --- (4.37) Saltos por enlace dentro de un mismo fichero ---
+// El historial del navegador solo conoce la ruta; seguir un enlace a otra cabecera del MISMO
+// fichero (o abrirla desde Backlinks) no cambiaba la ruta y «atrás» no volvía. Ahora cada salto
+// guarda en su entrada la vista { path, narrowId } y atrás/adelante la restauran.
+export const setViewRestorer = (fn) => {
+  restorer = fn;
+};
+
+// Guarda la vista actual en la entrada de historial en curso
+export const markView = (view) => {
+  if (entries[index] && view) {
+    entries[index].view = view;
+    save();
+  }
+};
+
+// Empuja una entrada nueva (aunque la ruta sea la misma) con la vista de destino.
+// Devuelve false si el historial aún no está instalado (pruebas): el llamador navega como antes.
+export const pushView = (pathname, view) => {
+  if (!installed) return false;
+  installed.push(pathname);
+  markView(view);
+  return true;
+};
+
+export const sameView = (a, b) =>
+  !!a && !!b && a.path === b.path && (a.narrowId || null) === (b.narrowId || null);

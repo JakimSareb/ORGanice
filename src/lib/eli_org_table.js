@@ -13,8 +13,21 @@ const isSepLine = (line) => /^\s*\|-/.test(line);
 export const splitRow = (line) => {
   let s = line.trim();
   if (s.startsWith('|')) s = s.slice(1);
-  if (s.endsWith('|')) s = s.slice(0, -1);
-  return s.split('|').map((c) => c.trim());
+  // (4.37) un «\|» escapado es texto de la celda, no una columna; la última «|» cierra la fila
+  if (s.endsWith('|') && !s.endsWith('\\|')) s = s.slice(0, -1);
+  const cells = [];
+  let cur = '';
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '\\' && s[i + 1] === '|') {
+      cur += '\\|';
+      i++;
+    } else if (s[i] === '|') {
+      cells.push(cur);
+      cur = '';
+    } else cur += s[i];
+  }
+  cells.push(cur);
+  return cells.map((c) => c.trim());
 };
 
 // Líneas de una tabla → { indent, rows: [{ sep: true } | { cells: [...] }] }
@@ -173,7 +186,7 @@ const numericColumns = (table, ncols) => {
   return out;
 };
 
-export const formatTable = (table) => {
+export const formatTable = (table, { numbersRight = true } = {}) => {
   const ncols = columnCount(table);
   const widths = [];
   for (let c = 0; c < ncols; c++) {
@@ -181,7 +194,7 @@ export const formatTable = (table) => {
       Math.max(1, ...table.rows.filter((r) => !r.sep).map((r) => width(r.cells[c] || '')))
     );
   }
-  const right = numericColumns(table, ncols);
+  const right = numbersRight ? numericColumns(table, ncols) : [];
   const pad = (s, w, alignRight) => {
     const gap = ' '.repeat(Math.max(0, w - width(s)));
     return alignRight ? gap + s : s + gap;
@@ -290,4 +303,38 @@ export const isAligned = (lines) => {
   const t = parseTableLines(lines);
   const f = formatTable(t);
   return f.length === lines.length && f.every((l, i) => l === lines[i]);
+};
+
+// --- (4.37) Alinear con espacios al editar las notas ----------------------------------------
+
+// Líneas de una tabla → las mismas alineadas con espacios (como org-table-align): cada celda al
+// ancho de la columna más ancha, los |---+---| rehechos, las filas cortas completadas. Las cifras
+// van a la izquierda, como el resto del texto. Si no hay ninguna fila con celdas, tal cual.
+export const alignOrgTable = (lines) => {
+  const t = parseTableLines(lines);
+  if (!t.rows.some((r) => !r.sep)) return lines.slice();
+  return formatTable(t, { numbersRight: false });
+};
+
+// Texto de notas editado → lo mismo con las tablas CAMBIADAS alineadas. Una tabla que ya estaba
+// tal cual en el texto anterior (`oldText`) no se toca, ni lo que rodea a las tablas.
+const key = (lines) => lines.map((l) => l.trim()).join('\n');
+export const alignChangedTables = (newText, oldText) => {
+  const text = String(newText || '');
+  if (!text.includes('|')) return text;
+  const before = new Set();
+  const oldLines = String(oldText || '').split('\n');
+  [...tableBlocks(oldText), ...nestedTableBlocks(oldText)].forEach((b) =>
+    before.add(key(oldLines.slice(b.start, b.end + 1)))
+  );
+  const lines = text.split('\n');
+  const blocks = [...tableBlocks(text), ...nestedTableBlocks(text)].sort(
+    (a, b) => b.start - a.start
+  );
+  blocks.forEach((b) => {
+    const cur = lines.slice(b.start, b.end + 1);
+    if (before.has(key(cur))) return;
+    lines.splice(b.start, cur.length, ...alignOrgTable(cur));
+  });
+  return lines.join('\n');
 };

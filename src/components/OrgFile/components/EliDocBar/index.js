@@ -1039,13 +1039,18 @@ export default function EliDocBar({
             onClick: insertLink,
             text: true,
           },
-          {
-            id: 'link-heading',
-            icon: 'fas fa-sitemap',
-            label: 'Enlace a cabecera…',
-            onClick: insertHeadingLinkHere,
-            text: true,
-          },
+          // (4.37) al editar, «[[» tiene su botón en la barra (no se repite aquí)
+          ...(editing
+            ? []
+            : [
+                {
+                  id: 'link-heading',
+                  icon: 'fas fa-sitemap',
+                  label: 'Enlace a cabecera…',
+                  onClick: insertHeadingLinkHere,
+                  text: true,
+                },
+              ]),
           {
             id: 'date-today',
             icon: 'far fa-calendar-plus',
@@ -1268,6 +1273,17 @@ export default function EliDocBar({
           title: 'Etiquetas (tecla #)',
           onClick: () => base('activatePopup', 'tags-editor'),
         },
+        // (4.37) «[[» al escribir: el mismo selector jerárquico que al teclear «[[»
+        ...(editing
+          ? [
+              {
+                id: 'link-hdr',
+                label: '[[',
+                title: 'Enlace a una cabecera (también al teclear [[)',
+                onClick: insertHeadingLinkHere,
+              },
+            ]
+          : []),
         { id: 'new', icon: 'fas fa-plus', label: 'Nueva', title: 'Cabecera nueva', sub: 'new' },
         { id: 'insert', icon: 'fas fa-paperclip', label: 'Añadir', title: 'Añadir', sub: 'insert' },
         { id: 'move', icon: 'fas fa-arrows-alt', label: 'Mover', title: 'Mover', sub: 'move' },

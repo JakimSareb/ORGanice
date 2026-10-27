@@ -1,5 +1,6 @@
 // ORG Mode para Eli: acciones de la vista GTD. Cada cambio se aplica al fichero de la tarea
 // (aunque no sea el abierto) con ELI_IN_FILE y después se sincroniza ese fichero.
+import { PREF_DEFAULTS } from '../eli_defaults';
 import Immutable, { fromJS, List } from 'immutable';
 import formatDate from 'date-fns/format';
 import { ActionTypes } from 'redux-undo';
@@ -597,9 +598,10 @@ export const gtdMoveNextTo = (task, targetId, position) => (dispatch) =>
 export const LS_AUTO_COLLECT = 'eliGtdAutoCollect';
 export const autoCollect = () => {
   try {
-    return window.localStorage.getItem(LS_AUTO_COLLECT) === 'true';
+    const v = window.localStorage.getItem(LS_AUTO_COLLECT);
+    return v === null ? PREF_DEFAULTS.eliGtdAutoCollect : v === 'true';
   } catch (e) {
-    return false;
+    return PREF_DEFAULTS.eliGtdAutoCollect;
   }
 };
 export const doneChangesFor = (task, opts = {}) => {

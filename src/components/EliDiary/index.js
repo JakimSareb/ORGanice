@@ -1,6 +1,7 @@
 // ORG Mode para Eli (4.26): diario. Hoja que se abre desde el Menú ☰ › «Diario de hoy» (evento
 // `eli:diary`, con `{ date: 'AAAA-MM-DD' }` para ir a un día). Lee y escribe directamente
 // `pages/diari-AAAA.org` (lib/eli_diary): no pasa por el analizador ni entra en GTD.
+import { dayAnchorId, dayAnchorHref } from '../../lib/eli_diary_print';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useSelector, useStore } from 'react-redux';
@@ -148,9 +149,9 @@ const DiaryPrint = ({ title, days, path, onClose, monthly }) => {
           data-testid="eli-diary-print"
         >
           <h1 className="eli-print__doctitle">{title}</h1>
-          {monthly && <MonthlyTables data={monthly} />}
+          {monthly && <MonthlyTables data={monthly} hasDays={(days || []).length > 0} />}
           {(days || []).map((d) => (
-            <section key={d.key} className="eli-diary-print__day">
+            <section key={d.key} id={dayAnchorId(d.key)} className="eli-diary-print__day">
               <h2>{longDate(parseDayKey(d.key))}</h2>
               {d.answers
                 .filter((a) => a.answer)
@@ -178,7 +179,7 @@ const DiaryPrint = ({ title, days, path, onClose, monthly }) => {
 };
 
 // (4.27) Registro mensual en el PDF: una tabla por mes (y los totales del año si hay varios)
-const MonthlyTables = ({ data }) => (
+const MonthlyTables = ({ data, hasDays = false }) => (
   <div className="eli-diary-monthly" data-testid="eli-diary-monthly-print">
     {data.months.map((m) => (
       <section key={m.key} className="eli-diary-print__day">
@@ -206,7 +207,24 @@ const MonthlyTables = ({ data }) => (
             {m.rows.map((r, i) =>
               r.type === 'day' ? (
                 <tr key={i}>
-                  <td className="eli-diary-monthly__d">{r.label}</td>
+                  <td className="eli-diary-monthly__d">
+                    {r.link && hasDays ? (
+                      <a
+                        href={dayAnchorHref(r.key)}
+                        data-testid="eli-diary-monthly-daylink"
+                        onClick={(ev) => {
+                          // en la vista previa no se navega: se baja hasta el día
+                          ev.preventDefault();
+                          const el = document.getElementById(dayAnchorId(r.key));
+                          if (el && el.scrollIntoView) el.scrollIntoView();
+                        }}
+                      >
+                        {r.label}
+                      </a>
+                    ) : (
+                      r.label
+                    )}
+                  </td>
                   <td>
                     {r.lines.map((l, j) => (
                       <div key={j}>{l}</div>
@@ -709,9 +727,11 @@ export default function EliDiary() {
     const data = monthlyData(t, y, cfg.counters);
     const mk = `${y}-${String(cal.m + 1).padStart(2, '0')}`;
     if (kind === 'month') data.months = data.months.filter((m) => m.key === mk);
+    // (4.37) los días van después del resumen y cada fila del mensual enlaza a su día
+    const days = parseDays(t).filter((d) => kind === 'year' || d.key.startsWith(mk));
     setPrint({
       title: kind === 'year' ? `Mensual ${y}` : `Mensual ${MONTHS[cal.m]} ${y}`,
-      days: [],
+      days,
       monthly: data,
       path: pathFor(y),
     });

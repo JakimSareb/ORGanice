@@ -22,6 +22,7 @@ import {
   canonical,
 } from '../lib/eli_synced_prefs';
 import { logSyncEvent } from '../lib/eli_sync_log';
+import { BASE_DEFAULTS, ORG_DEFAULTS } from '../lib/eli_defaults';
 
 export const localStorageAvailable = (() => {
   try {
@@ -348,6 +349,12 @@ export const persistableFields = [
   },
 ];
 
+// (4.37) Valores por defecto = los de lib/eli_defaults.js (única fuente de verdad)
+persistableFields.forEach((field) => {
+  const d = (field.category === 'org' ? ORG_DEFAULTS : BASE_DEFAULTS)[field.name];
+  if (d !== undefined) field.default = d;
+});
+
 export const readOpennessState = () => {
   const opennessStateJSONString = localStorage.getItem('headerOpenness');
   return !!opennessStateJSONString ? JSON.parse(opennessStateJSONString) : null;
@@ -371,9 +378,15 @@ const getFieldsToPersist = (state, fields) => {
                 field.name,
                 JSON.stringify(state[field.category].get(field.name) || field.default || {}),
               ]
-            : field.type === 'boolean' && field.default === undefined
-            ? // ORG Mode para Eli: sin valor por defecto, «false» también se guarda
-              [field.name, !!state[field.category].get(field.name)]
+            : field.type === 'boolean'
+            ? // ORG Mode para Eli: «false» también se guarda (4.37: con defecto encendido, un
+              // «false» guardado NO vuelve a «true»)
+              [
+                field.name,
+                state[field.category].get(field.name) === undefined
+                  ? !!field.default
+                  : !!state[field.category].get(field.name),
+              ]
             : [field.name, state[field.category].get(field.name) || field.default];
         })
     );
@@ -497,6 +510,8 @@ const getInitialStateWithDefaultValues = () => {
 const loadContentFromLocalStorage = (initialState) => {
   persistableFields.forEach((field) => {
     let value = localStorage.getItem(field.name);
+    // (4.37) clave nunca guardada: se queda el valor por defecto (y un «false» guardado se respeta)
+    const neverStored = value === null || value === undefined;
 
     if (field.type === 'nullable') {
       if (value === 'null') {
@@ -516,7 +531,11 @@ const loadContentFromLocalStorage = (initialState) => {
       }
     }
     // When nothing has been saved to localStorage before, keep the default.
-    value = value || field.default;
+    if (field.type === 'boolean') {
+      if (neverStored && field.default !== undefined) value = field.default;
+    } else {
+      value = value || field.default;
+    }
 
     if (field.category === 'org') {
       initialState[field.category].present = initialState[field.category].present.set(

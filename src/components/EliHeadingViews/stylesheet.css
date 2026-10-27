@@ -2,7 +2,7 @@
 .eli-hv__overlay {
   position: fixed;
   inset: 0;
-  z-index: 2400;
+  z-index: 2950; /* (4.37) por encima del Diario, el calendario y el bloc (2900); por debajo de los menús */
   background: rgba(0, 0, 0, 0.35);
   display: flex;
   justify-content: center;

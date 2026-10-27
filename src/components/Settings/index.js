@@ -61,6 +61,7 @@ import {
   setNotesAgendaOn,
 } from '../../lib/eli_notes_mode';
 import { LOCAL_KEYS } from '../../lib/eli_synced_prefs';
+import { BASE_DEFAULTS } from '../../lib/eli_defaults';
 import { SyncLogPanel } from '../EliSyncLog';
 import {
   getReminderSettings,
@@ -215,13 +216,12 @@ const selectOrgPaths = (s) =>
     .filter((p) => p && p.startsWith('/') && /\.org$/i.test(p))
     .sort()
     .join('\n');
-const EliDocsSettings = () => {
+const EliDocsSettings = ({ children }) => {
   const dispatch = useDispatch();
   const pagesFile = useSelector(selectPagesFile);
   const auto = useSelector(selectPagesAuto);
   const hashOn = useSelector(selectHashOn);
   const slashOn = useSelector(selectSlashOn);
-  const gapOn = useGapHeaders();
   const paths = useSelector(selectOrgPaths);
   const set = (name, value) => dispatch(baseActions.setEliSetting(name, value));
   const choose = async () => {
@@ -242,7 +242,9 @@ const EliDocsSettings = () => {
     <details className="eli-settings-section" data-testid="eli-settings-docs">
       <summary>
         <span className="eli-settings-section__title">Documentos</span>
-        <span className="eli-settings-section__hint">Páginas nuevas, etiquetas y ancho</span>
+        <span className="eli-settings-section__hint">
+          Páginas nuevas, «#» y «/», toques y edición, plegado y exportación
+        </span>
       </summary>
       <div className="setting-container" data-testid="eli-setting-pages-file">
         <div className="setting-label">
@@ -270,23 +272,31 @@ const EliDocsSettings = () => {
         <div className="setting-label">
           Menú al escribir «/»
           <div className="setting-label__description">
-            Al escribir «/» al principio de una palabra se abre el buscador de acciones. Apagado
-            (por defecto): «/» se escribe tal cual.
+            Al escribir «/» al principio de una palabra se abre el buscador de acciones. Apagado:
+            «/» se escribe tal cual.
           </div>
         </div>
         <Switch isEnabled={slashOn} onToggle={() => set('eliSlashMenu', !slashOn)} />
       </div>
-      <div className="setting-container" data-testid="eli-setting-gap-headers">
-        <div className="setting-label">
-          Espacio tras cada cabecera
-          <div className="setting-label__description">
-            Deja un hueco de una línea al final de cada cabecera (tras su nota y sus subcabeceras),
-            como el que queda tras una lista. Solo se ve; el fichero no cambia.
-          </div>
-        </div>
-        <Switch isEnabled={gapOn} onToggle={() => setGapHeaders(!gapOn)} />
-      </div>
+      {children}
     </details>
+  );
+};
+
+// (4.37) «Espacio tras cada cabecera» es un ajuste de ASPECTO: vive en Apariencia
+const EliGapHeadersSetting = () => {
+  const gapOn = useGapHeaders();
+  return (
+    <div className="setting-container" data-testid="eli-setting-gap-headers">
+      <div className="setting-label">
+        Espacio tras cada cabecera
+        <div className="setting-label__description">
+          Deja un hueco de una línea al final de cada cabecera (tras su nota y sus subcabeceras),
+          como el que queda tras una lista. Solo se ve; el fichero no cambia.
+        </div>
+      </div>
+      <Switch isEnabled={gapOn} onToggle={() => setGapHeaders(!gapOn)} />
+    </div>
   );
 };
 
@@ -351,15 +361,16 @@ const EliDiarySettings = () => {
           <div className="setting-label">
             Carpeta
             <div className="setting-label__description">
-              Un fichero por año (diari-AAAA.org). Vacío = «pages/» junto al fichero de entrada; una
-              ruta sin «/» delante es relativa a esa carpeta.
+              Un fichero por año (diari-AAAA.org). Por defecto «journal/» junto al fichero de
+              entrada (si ya tenías el diario en «pages/», se respeta lo que hay aquí guardado);
+              vacío = «pages/». Una ruta sin «/» delante es relativa a esa carpeta.
             </div>
           </div>
           <input
             type="text"
             className="eli-diary-dir"
             value={cfg.dir}
-            placeholder="pages/"
+            placeholder="journal/"
             onChange={(e) => save({ dir: e.target.value })}
             data-testid="eli-diary-dir"
           />
@@ -965,7 +976,7 @@ const Settings = ({
         <summary>
           <span className="eli-settings-section__title">Apariencia</span>
           <span className="eli-settings-section__hint">
-            {notes ? 'Tema, colores y letra' : 'Tema, colores, letra y viñetas'}
+            {notes ? 'Tema, colores, letra y viñetas' : 'Tema, colores, letra, viñetas y menú'}
           </span>
         </summary>
         <EliSub>Letra y colores</EliSub>
@@ -997,33 +1008,17 @@ const Settings = ({
           {!notes && <EliReadabilitySetting />}
         </div>
 
-        <EliSub>Toques y edición</EliSub>
-        <div className="eli-settings-group">
-          {notes ? <EliTapModeSettings onlyHeader /> : <EliTapModeSettings />}
-          <EliLogseqEditSetting />
-        </div>
-
-        {!notes && (
-          <>
-            <EliSub>GTD</EliSub>
-            <div className="eli-settings-group">
-              <EliProcessModeSettings />
-              <EliStrictSetting />
-              <EliRemindersSettings />
-            </div>
-          </>
-        )}
-
-        <EliSub>Documentos</EliSub>
+        <EliSub>Cabeceras y viñetas</EliSub>
         <div className="eli-settings-group">
           <EliTagsPosSetting />
+          <EliGapHeadersSetting />
 
           {/* (4.04) más estilos (cambian el icono según el nivel); también en el Modo Notas */}
           <div className="setting-container" data-testid="eli-setting-bullets">
             <div className="setting-label">Estilo de viñetas</div>
             <select
               className="eli-bullet-select"
-              value={bulletStyle || 'Fancy'}
+              value={bulletStyle || BASE_DEFAULTS.bulletStyle}
               onChange={(e) => handleBulletStyleChange(e.target.value)}
               data-testid="eli-bullet-style"
             >
@@ -1054,63 +1049,165 @@ const Settings = ({
 
       <EliToolsSettings />
 
-      <EliDocsSettings />
+      <EliDocsSettings>
+        <EliSub>Toques y edición</EliSub>
+        <div className="eli-settings-group">
+          {notes ? <EliTapModeSettings onlyHeader /> : <EliTapModeSettings />}
+          <EliLogseqEditSetting />
+        </div>
+        {!notes && (
+          <>
+            <EliSub>Editor</EliSub>
+            <div className="eli-settings-group">
+              <div className="setting-container">
+                <div className="setting-label">Tocar el estado TODO para avanzarlo</div>
+                <Switch
+                  isEnabled={shouldTapTodoToAdvance}
+                  onToggle={handleShouldTapTodoToAdvanceChange}
+                />
+              </div>
+
+              <div className="setting-container">
+                <div className="setting-label">
+                  Mostrar el nombre del fichero Org como título
+                  <div className="setting-label__description">
+                    Al ver un fichero Org, muestra su nombre en la barra superior.
+                  </div>
+                </div>
+                <Switch
+                  isEnabled={shouldShowTitleInOrgFile}
+                  onToggle={handleShouldShowTitleInOrgFile}
+                />
+              </div>
+
+              {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
+              <div className="setting-container">
+                <div className="setting-label">
+                  Al plegar un encabezado, plegar también sus subencabezados
+                  <div className="setting-label__description">
+                    Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de
+                    modo que al volver a abrirlo aparecen todos plegados, sea cual sea su estado
+                    anterior. Es el comportamiento por defecto de Org mode en Emacs. Si está
+                    desactivado, se conserva el estado de plegado de los subencabezados al desplegar
+                    el encabezado.
+                  </div>
+                </div>
+                <Switch
+                  isEnabled={closeSubheadersRecursively}
+                  onToggle={handleCloseSubheadersRecursively}
+                />
+              </div>
+
+              <div className="setting-container">
+                <div className="setting-label">
+                  Sangrar como el Emacs antiguo
+                  <div className="setting-label__description">
+                    Desactivado (recomendado): SCHEDULED, DEADLINE, CLOSED y los cajones
+                    (:PROPERTIES:, :LOGBOOK:) se escriben pegados al margen, como Emacs con{' '}
+                    <ExternalLink href="https://orgmode.org/manual/Hard-indentation.html">
+                      <code>org-adapt-indentation nil</code>
+                    </ExternalLink>{' '}
+                    (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
+                    <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
+                    encabezado. El texto de las notas no se toca.
+                  </div>
+                </div>
+                <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
+              </div>
+
+              <div className="setting-container">
+                <div className="setting-label">
+                  Preferir el texto sin procesar
+                  <div className="setting-label__description">
+                    Al editar el título o la descripción de un encabezado, puedes alternar entre
+                    editar solo el texto o el contenido completo (con la representación en texto de
+                    los estados TODO, etiquetas, fechas, propiedades, etc.) pulsando el icono
+                    «editar título» o «editar descripción» de la ventana. Esta opción muestra
+                    primero el contenido completo en lugar de hacerlo con un segundo clic.
+                  </div>
+                </div>
+                <Switch isEnabled={preferEditRawValues} onToggle={handlePreferEditRawValues} />
+              </div>
+
+              <div className="setting-container setting-container--vertical">
+                <div className="setting-label">Altura del editor de descripción</div>
+                <div className="setting-label__description">
+                  Controla la altura del editor de descripción solo en ordenadores. La altura se
+                  limita para que todos los botones queden siempre visibles. En móviles este ajuste
+                  se ignora y el editor tiene siempre 8 líneas de alto.
+                </div>
+
+                <div className="default-deadline-warning-container">
+                  <input
+                    type="number"
+                    min="2"
+                    className="textfield default-deadline-value-textfield"
+                    value={editorDescriptionHeightValue}
+                    onChange={handleEditorDescriptionHeightValueChange}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </EliDocsSettings>
 
       <EliDiarySettings />
 
       {!notes && (
-        <details className="eli-settings-section" data-testid="eli-settings-tasks">
-          <summary>
-            <span className="eli-settings-section__title">Tareas y etiquetas</span>
-            <span className="eli-settings-section__hint">Estados y etiquetas por defecto</span>
-          </summary>
-          <EliLineSetting
-            label="Estados de las tareas"
-            description="Para los ficheros sin línea #+TODO (como la configuración global de Emacs). Antes de | los activos y después los terminados. Se aplica al volver a abrir los ficheros."
-            value={eliTodoKeywordsLine}
-            fallback={DEFAULT_TODO_LINE}
-            isValid={(l) => /^#\+(SEQ_|TYP_)?TODO:\s*\S/i.test(l) && !!parseTodoLine(l)}
-            onSave={(l) => base.setEliSetting('eliTodoKeywordsLine', l)}
-            testId="eli-setting-todo"
-          />
-          <EliLineSetting
-            label="Etiquetas por defecto (contextos)"
-            description="Se ofrecen al editar etiquetas (además de las #+TAGS de cada fichero) y se escriben en los ficheros nuevos."
-            value={eliDefaultTagsLine}
-            fallback={DEFAULT_TAGS_LINE}
-            isValid={(l) => /^#\+TAGS:\s*\S/i.test(l) && parseTagsLine(l).length > 0}
-            onSave={(l) => base.setEliSetting('eliDefaultTagsLine', l)}
-            testId="eli-setting-tags"
-          />
-          <div className="setting-container">
-            <div className="setting-label">
-              Archivar en
-              <div className="setting-label__description">
-                Dónde van las tareas archivadas (si el fichero o la tarea no dicen otra cosa con
-                #+ARCHIVE:). «Subcarpeta archive»: en la carpeta archive de la carpeta de cada
-                fichero, p. ej. proyectos/archive/tareas.org_archive (se crea si no existe).
-              </div>
-            </div>
-            <div data-testid="eli-setting-archive">
-              <TabButtons
-                buttons={['Junto al fichero', 'Subcarpeta archive']}
-                values={['same', 'subfolder']}
-                selectedButton={eliArchiveInSubfolder ? 'subfolder' : 'same'}
-                onSelect={(v) => base.setEliSetting('eliArchiveInSubfolder', v === 'subfolder')}
-              />
-            </div>
-          </div>
-        </details>
-      )}
-
-      {!notes && (
         <details className="eli-settings-section" data-testid="eli-settings-gtd">
           <summary>
-            <span className="eli-settings-section__title">Vista GTD y gestos</span>
+            <span className="eli-settings-section__title">GTD</span>
             <span className="eli-settings-section__hint">
-              Deslizar, y qué se ve en cada sección de la vista GTD
+              Procesos, avisos, estados y etiquetas, gestos y secciones de la vista GTD
             </span>
           </summary>
+          <EliSub>Procesos y avisos</EliSub>
+          <div className="eli-settings-group">
+            <EliProcessModeSettings />
+            <EliStrictSetting />
+            <EliRemindersSettings />
+          </div>
+          <EliSub>Estados, etiquetas y archivo</EliSub>
+          <div className="eli-settings-group" data-testid="eli-settings-tasks">
+            <EliLineSetting
+              label="Estados de las tareas"
+              description="Para los ficheros sin línea #+TODO (como la configuración global de Emacs). Antes de | los activos y después los terminados. Se aplica al volver a abrir los ficheros."
+              value={eliTodoKeywordsLine}
+              fallback={DEFAULT_TODO_LINE}
+              isValid={(l) => /^#\+(SEQ_|TYP_)?TODO:\s*\S/i.test(l) && !!parseTodoLine(l)}
+              onSave={(l) => base.setEliSetting('eliTodoKeywordsLine', l)}
+              testId="eli-setting-todo"
+            />
+            <EliLineSetting
+              label="Etiquetas por defecto (contextos)"
+              description="Se ofrecen al editar etiquetas (además de las #+TAGS de cada fichero) y se escriben en los ficheros nuevos."
+              value={eliDefaultTagsLine}
+              fallback={DEFAULT_TAGS_LINE}
+              isValid={(l) => /^#\+TAGS:\s*\S/i.test(l) && parseTagsLine(l).length > 0}
+              onSave={(l) => base.setEliSetting('eliDefaultTagsLine', l)}
+              testId="eli-setting-tags"
+            />
+            <div className="setting-container">
+              <div className="setting-label">
+                Archivar en
+                <div className="setting-label__description">
+                  Dónde van las tareas archivadas (si el fichero o la tarea no dicen otra cosa con
+                  #+ARCHIVE:). «Subcarpeta archive»: en la carpeta archive de la carpeta de cada
+                  fichero, p. ej. proyectos/archive/tareas.org_archive (se crea si no existe).
+                </div>
+              </div>
+              <div data-testid="eli-setting-archive">
+                <TabButtons
+                  buttons={['Junto al fichero', 'Subcarpeta archive']}
+                  values={['same', 'subfolder']}
+                  selectedButton={eliArchiveInSubfolder ? 'subfolder' : 'same'}
+                  onSelect={(v) => base.setEliSetting('eliArchiveInSubfolder', v === 'subfolder')}
+                />
+              </div>
+            </div>
+          </div>
+          <EliSub>Gestos y secciones</EliSub>
           <GtdSectionsSettings />
         </details>
       )}
@@ -1191,122 +1288,12 @@ const Settings = ({
       {!notes && (
         <details className="eli-settings-section" data-testid="eli-settings-advanced">
           <summary>
-            <span className="eli-settings-section__title">Opciones avanzadas</span>
+            <span className="eli-settings-section__title">Agenda y hábitos</span>
             <span className="eli-settings-section__hint">
-              Sincronización, agenda, hábitos, editor…
+              Aviso de DEADLINE, primer día de la semana, hábitos y tiempos
             </span>
           </summary>
-          <EliSub>Editor</EliSub>
-          <div className="eli-settings-group">
-            <div className="setting-container">
-              <div className="setting-label">Tocar el estado TODO para avanzarlo</div>
-              <Switch
-                isEnabled={shouldTapTodoToAdvance}
-                onToggle={handleShouldTapTodoToAdvanceChange}
-              />
-            </div>
-
-            <div className="setting-container">
-              <div className="setting-label">
-                Mostrar el nombre del fichero Org como título
-                <div className="setting-label__description">
-                  Al ver un fichero Org, muestra su nombre en la barra superior.
-                </div>
-              </div>
-              <Switch
-                isEnabled={shouldShowTitleInOrgFile}
-                onToggle={handleShouldShowTitleInOrgFile}
-              />
-            </div>
-
-            {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
-            <div className="setting-container">
-              <div className="setting-label">
-                Al plegar un encabezado, plegar también sus subencabezados
-                <div className="setting-label__description">
-                  Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de
-                  modo que al volver a abrirlo aparecen todos plegados, sea cual sea su estado
-                  anterior. Es el comportamiento por defecto de Org mode en Emacs. Si está
-                  desactivado, se conserva el estado de plegado de los subencabezados al desplegar
-                  el encabezado.
-                </div>
-              </div>
-              <Switch
-                isEnabled={closeSubheadersRecursively}
-                onToggle={handleCloseSubheadersRecursively}
-              />
-            </div>
-
-            {/* (3.05) los cambios de estado van siempre al cajón LOGBOOK (ya no es opción) */}
-            <div className="setting-container">
-              <div className="setting-label">
-                Al plegar un encabezado, plegar también sus subencabezados
-                <div className="setting-label__description">
-                  Al plegar un encabezado, se pliegan recursivamente todos sus subencabezados, de
-                  modo que al volver a abrirlo aparecen todos plegados, sea cual sea su estado
-                  anterior. Es el comportamiento por defecto de Org mode en Emacs. Si está
-                  desactivado, se conserva el estado de plegado de los subencabezados al desplegar
-                  el encabezado.
-                </div>
-              </div>
-              <Switch
-                isEnabled={closeSubheadersRecursively}
-                onToggle={handleCloseSubheadersRecursively}
-              />
-            </div>
-
-            <div className="setting-container">
-              <div className="setting-label">
-                Sangrar como el Emacs antiguo
-                <div className="setting-label__description">
-                  Desactivado (recomendado): SCHEDULED, DEADLINE, CLOSED y los cajones
-                  (:PROPERTIES:, :LOGBOOK:) se escriben pegados al margen, como Emacs con{' '}
-                  <ExternalLink href="https://orgmode.org/manual/Hard-indentation.html">
-                    <code>org-adapt-indentation nil</code>
-                  </ExternalLink>{' '}
-                  (lo normal desde Emacs 29). Actívalo solo si tu Emacs usa{' '}
-                  <code>org-adapt-indentation t</code>: entonces se sangran según el nivel del
-                  encabezado. El texto de las notas no se toca.
-                </div>
-              </div>
-              <Switch isEnabled={eliIndentOnExport} onToggle={handleEliIndentOnExport} />
-            </div>
-
-            <div className="setting-container">
-              <div className="setting-label">
-                Preferir el texto sin procesar
-                <div className="setting-label__description">
-                  Al editar el título o la descripción de un encabezado, puedes alternar entre
-                  editar solo el texto o el contenido completo (con la representación en texto de
-                  los estados TODO, etiquetas, fechas, propiedades, etc.) pulsando el icono «editar
-                  título» o «editar descripción» de la ventana. Esta opción muestra primero el
-                  contenido completo en lugar de hacerlo con un segundo clic.
-                </div>
-              </div>
-              <Switch isEnabled={preferEditRawValues} onToggle={handlePreferEditRawValues} />
-            </div>
-
-            <div className="setting-container setting-container--vertical">
-              <div className="setting-label">Altura del editor de descripción</div>
-              <div className="setting-label__description">
-                Controla la altura del editor de descripción solo en ordenadores. La altura se
-                limita para que todos los botones queden siempre visibles. En móviles este ajuste se
-                ignora y el editor tiene siempre 8 líneas de alto.
-              </div>
-
-              <div className="default-deadline-warning-container">
-                <input
-                  type="number"
-                  min="2"
-                  className="textfield default-deadline-value-textfield"
-                  value={editorDescriptionHeightValue}
-                  onChange={handleEditorDescriptionHeightValueChange}
-                />
-              </div>
-            </div>
-          </div>
-
-          <EliSub>Agenda y hábitos</EliSub>
+          <EliSub>Agenda</EliSub>
           <div className="eli-settings-group">
             <div className="setting-container setting-container--vertical">
               <div className="setting-label">Antelación de aviso por defecto para DEADLINE</div>
@@ -1507,7 +1494,8 @@ const mapStateToProps = (state) => {
     fontSize: state.base.get('fontSize') || 'Regular',
     bulletStyle: state.base.get('bulletStyle'),
     shouldTapTodoToAdvance: state.base.get('shouldTapTodoToAdvance'),
-    editorDescriptionHeightValue: state.base.get('editorDescriptionHeightValue') || 8,
+    editorDescriptionHeightValue:
+      state.base.get('editorDescriptionHeightValue') || BASE_DEFAULTS.editorDescriptionHeightValue,
     agendaDefaultDeadlineDelayValue: state.base.get('agendaDefaultDeadlineDelayValue') || 5,
     agendaDefaultDeadlineDelayUnit: state.base.get('agendaDefaultDeadlineDelayUnit') || 'd',
     agendaStartOnWeekday: agendaStartOnWeekday == null ? 1 : +agendaStartOnWeekday,
@@ -1527,7 +1515,8 @@ const mapStateToProps = (state) => {
     preferEditRawValues: state.base.get('preferEditRawValues'),
     orgHabitShowAllToday: state.base.get('orgHabitShowAllToday'),
     orgHabitPrecedingDays: state.base.get('orgHabitPrecedingDays') || 21,
-    orgHabitFollowingDays: state.base.get('orgHabitFollowingDays') || 7,
+    orgHabitFollowingDays:
+      state.base.get('orgHabitFollowingDays') || BASE_DEFAULTS.orgHabitFollowingDays,
     colorScheme: state.base.get('colorScheme'),
     theme: state.base.get('theme'),
   };

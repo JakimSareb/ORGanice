@@ -125,3 +125,47 @@ describe('eli_org_table (3.02)', () => {
     expect(formatTable(t)).toEqual(['| x¦y |']);
   });
 });
+
+// --- (4.37) alignOrgTable / alignChangedTables ---
+import { alignOrgTable, alignChangedTables } from './eli_org_table';
+
+describe('4.37 alignOrgTable', () => {
+  test('rellena las celdas al ancho de la columna y rehace los separadores', () => {
+    expect(alignOrgTable(['| a | bbbb |', '|-', '| ccc | d |'])).toEqual([
+      '| a   | bbbb |',
+      '|-----+------|',
+      '| ccc | d    |',
+    ]);
+  });
+  test('las cifras van a la izquierda y las filas cortas se completan', () => {
+    expect(alignOrgTable(['| n | v |', '| 1 | 100 |', '| 22 |'])).toEqual([
+      '| n  | v   |',
+      '| 1  | 100 |',
+      '| 22 |     |',
+    ]);
+  });
+  test('acentos y barra escapada cuentan como un carácter', () => {
+    const out = alignOrgTable(['| año | a\\|b |', '| x | y |']);
+    expect(out[0]).toBe('| año | a\\|b |');
+    expect(out[1]).toBe('| x   | y    |');
+  });
+  test('conserva la sangría y es idempotente', () => {
+    const once = alignOrgTable(['  | a | b |', '  | cc | d |']);
+    expect(once[0].startsWith('  |')).toBe(true);
+    expect(alignOrgTable(once)).toEqual(once);
+  });
+});
+
+describe('4.37 alignChangedTables', () => {
+  test('solo alinea la tabla cambiada', () => {
+    const old = 'texto\n| a | b |\n| c | d |\n\n| x | y |\n| z | w |';
+    const nuevo = 'texto\n| a | b |\n| c | d |\n\n| xxxx | y |\n| z | w |';
+    const out = alignChangedTables(nuevo, old).split('\n');
+    expect(out[1]).toBe('| a | b |'); // intacta
+    expect(out[4]).toBe('| xxxx | y |');
+    expect(out[5]).toBe('| z    | w |');
+  });
+  test('sin tablas no toca nada', () => {
+    expect(alignChangedTables('hola\nmundo', '')).toBe('hola\nmundo');
+  });
+});
