@@ -7,7 +7,7 @@ import { Map as IMap } from 'immutable';
 import { calculateNamedKeybindings, keybindingLabel } from '../../lib/keybindings';
 import { isNotesMode } from '../../lib/eli_notes_mode';
 
-const GROUPS = ['Crear', 'Tareas', 'Navegación', 'Áreas', 'Más'];
+const GROUPS = ['Crear', 'Tareas', 'Navegación', 'Áreas', 'Más', 'Editor'];
 const selectCustomKeybindings = (s) => s.base.get('customKeybindings');
 
 // «shift+n» → «Mayús N», «ctrl+k» → «Ctrl K»
@@ -155,8 +155,8 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
                       <span>guardar (en el título)</span>
                     </div>
                     <div className="gtd-keys__row">
-                      <kbd>Mayús Intro</kbd>
-                      <span>guardar desde cualquier campo</span>
+                      <kbd>Ctrl Intro</kbd>
+                      <span>guardar desde cualquier campo (configurable en Ajustes › Atajos)</span>
                     </div>
                     <div className="gtd-keys__row">
                       <kbd>Esc</kbd>

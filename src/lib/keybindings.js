@@ -82,7 +82,10 @@ export const GTD_BINDINGS = [
   ['GTD: manual', 'gtdManual', 'h', 'Más'],
   ['GTD: ventana de atajos', 'gtdShortcuts', 'k', 'Más'],
   ['GTD: ventana de atajos (otra tecla)', 'gtdShortcuts2', '?', 'Más'],
+  // (4.40) en el editor de una tarea: guardar y cerrar desde cualquier campo (antes, Mayús+Intro)
+  ['GTD: guardar desde cualquier campo del editor', 'gtdEditorSave', 'ctrl+enter', 'Editor'],
 ];
+export const GTD_EDITOR_SAVE_NAME = 'GTD: guardar desde cualquier campo del editor';
 
 export const calculateGtdKeybindings = (customKeybindings) =>
   GTD_BINDINGS.map(([name, action, binding, group]) => ({
