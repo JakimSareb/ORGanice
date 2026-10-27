@@ -1,0 +1,53 @@
+/* (4.42) «Citar»: bloque de solo lectura con el contenido del origen */
+.eli-transclusion {
+  display: block;
+  margin: 4px 0;
+  padding: 2px 0 2px 10px;
+  border-left: 3px solid var(--blue, #268bd2);
+  white-space: normal;
+  text-align: left;
+}
+.eli-transclusion--notice {
+  color: var(--base1, #999);
+  border-left-color: var(--base1, #999);
+  font-style: italic;
+}
+.eli-transclusion__cap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85em;
+  color: var(--base1, #999);
+}
+.eli-transclusion__title {
+  font-weight: bold;
+  cursor: pointer;
+}
+.eli-transclusion__edit {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--blue, #268bd2);
+  cursor: pointer;
+  font-size: inherit;
+}
+.eli-transclusion__body {
+  opacity: 0.95;
+}
+.eli-transclusion__h {
+  font-weight: bold;
+}
+.eli-transclusion__h--1 {
+  font-size: 1.15em;
+}
+.eli-transclusion__h--2 {
+  font-size: 1.08em;
+}
+.eli-transclusion__kw {
+  font-size: 0.8em;
+  color: var(--base1, #999);
+}
+.eli-transclusion__text {
+  white-space: pre-wrap;
+}

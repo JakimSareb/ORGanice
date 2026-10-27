@@ -383,6 +383,8 @@ const parseTable = (tableLines) => {
   return table;
 };
 
+const TRANSCLUDE_LINE_REGEX = /^\s*#\+transclude:/i;
+
 export const parseRawText = (rawText, { excludeContentElements = false } = {}) => {
   const lines = rawText.split('\n');
 
@@ -420,6 +422,16 @@ export const parseRawText = (rawText, { excludeContentElements = false } = {}) =
             {
               type: 'raw-table',
               line,
+            },
+          ];
+        } else if (!excludeContentElements && TRANSCLUDE_LINE_REGEX.test(line)) {
+          // (4.42) «Citar»: la línea `#+transclude:` se queda tal cual (parte de texto marcada,
+          // sin partir el enlace); la vista la pinta como bloque de solo lectura
+          return [
+            {
+              type: 'text',
+              contents: line + (lineIndex !== lines.length - 1 ? '\n' : ''),
+              transclude: true,
             },
           ];
         } else {

@@ -29,7 +29,8 @@ import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task
 import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 import { insertLinkInto } from '../../../../lib/eli_links';
-import { insertHeadingLink } from '../../../../lib/eli_heading_links';
+import { insertHeadingLink, insertTransclusion } from '../../../../lib/eli_heading_links';
+import { buildTransclusionLine } from '../../../../lib/eli_transclude';
 import { openBacklinks } from '../../../../lib/eli_heading_events';
 import { showMessage, askPick, askText, askDate, askConfirm } from '../../../../lib/eli_prompt';
 import { getPriority } from '../../../../lib/eli_priority';
@@ -373,6 +374,17 @@ export default function EliDocBar({
     base('activatePopup', 'description-editor');
     setTimeout(() => dispatch(insertHeadingLink(activeField(), insertIntoField)), 120);
   };
+  // (4.42) «Citar…»: trae el contenido de otra cabecera o nota (línea `#+transclude:` en las notas)
+  const insertQuote = () => {
+    const field = activeField();
+    if (field && isListField(field)) {
+      dispatch(insertTransclusion(field, insertIntoField));
+      return;
+    }
+    org('openHeader', id);
+    base('activatePopup', 'description-editor');
+    setTimeout(() => dispatch(insertTransclusion(activeField(), insertIntoField)), 120);
+  };
   // (3.04) Agenda y plantillas de captura (antes, botones redondos grandes)
   // (3.29) Abrir el encabezado seleccionado en la vista GTD (si es una tarea, es decir, tiene
   // estado); GTD lo selecciona y abre su editor (orden `openTask`, ver Gtd/index.js)
@@ -393,8 +405,8 @@ export default function EliDocBar({
     org('openHeader', id);
     base('activatePopup', 'description-editor');
   };
-  const copyLink = async () => {
-    // (4.24) Siempre por ID: si la cabecera no tiene :ID:, se le pone
+  // (4.24) Siempre por ID: si la cabecera no tiene :ID:, se le pone
+  const ensureOrgId = () => {
     let orgId = headerOrgId(header);
     if (!orgId) {
       orgId = newOrgId();
@@ -404,6 +416,26 @@ export default function EliDocBar({
         withOrgIdProperty(header.get('propertyListItems'), orgId, generateId())
       );
     }
+    return orgId;
+  };
+  // (4.42) «Copiar como cita»: la línea `#+transclude:` de esta cabecera, para pegarla en otras notas
+  const copyAsQuote = async () => {
+    const text = buildTransclusionLine(ensureOrgId(), header.getIn(['titleLine', 'rawTitle']));
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch (e) {}
+    showMessage(
+      copied ? 'Cita copiada' : 'Cita',
+      (copied
+        ? 'Pégala en las notas de otra cabecera: ahí se verá el contenido de esta, siempre al día. '
+        : 'No se ha podido copiar; cópiala a mano:\n\n') +
+        `${text}\n\nEn el fichero solo se guarda esa línea (como org-transclusion de Emacs).`
+    );
+  };
+  const copyLink = async () => {
+    const orgId = ensureOrgId();
     const text = storeHeadingLink(orgId, header.getIn(['titleLine', 'rawTitle']));
     let copied = false;
     try {
@@ -1116,7 +1148,15 @@ export default function EliDocBar({
             onClick: () => openPrintPreview(id),
           },
           ...(path && !path.startsWith('/__')
-            ? [{ id: 'link-copy', icon: 'far fa-copy', label: 'Copiar enlace', onClick: copyLink }]
+            ? [
+                { id: 'link-copy', icon: 'far fa-copy', label: 'Copiar enlace', onClick: copyLink },
+                {
+                  id: 'quote-copy',
+                  icon: 'fas fa-quote-right',
+                  label: 'Copiar como cita',
+                  onClick: copyAsQuote,
+                },
+              ]
             : []),
           { id: 'sep-share', sep: true },
           {
@@ -1166,6 +1206,15 @@ export default function EliDocBar({
             label: 'Etiquetas',
             hint: 'tecla #',
             onClick: () => base('activatePopup', 'tags-editor'),
+          },
+          // (4.42) trae el contenido de otra nota (también desde «/» al escribir)
+          {
+            id: 'quote-insert',
+            icon: 'fas fa-quote-right',
+            label: 'Citar…',
+            hint: 'contenido de otra nota',
+            onClick: insertQuote,
+            text: true,
           },
           { id: 'share', icon: 'fas fa-share-alt', label: 'Compartir o PDF', openSub: 'share' },
           {

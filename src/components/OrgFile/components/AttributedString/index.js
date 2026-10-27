@@ -1,5 +1,6 @@
 import EliYouTube, { youTubeId } from '../EliYouTube';
 import EliMedia from '../EliMedia';
+import EliTransclusion from '../EliTransclusion';
 import { fileLinkTarget } from '../../../../lib/eli_media';
 import { parseOrgLink } from '../../../../lib/eli_org_links';
 import React from 'react';
@@ -126,6 +127,9 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
       {parts.map((part, index) => {
         switch (part.get('type')) {
           case 'text':
+            // (4.42) «Citar»: la línea `#+transclude:` se pinta como bloque de solo lectura
+            if (part.get('transclude'))
+              return <EliTransclusion key={`transclude-${index}`} line={part.get('contents')} />;
             return part.get('contents');
           case 'link':
             return renderLink(part);

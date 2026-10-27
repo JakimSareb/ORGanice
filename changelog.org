@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.42 (octubre de 2026)
+** Citar
+- *Citar* trae el contenido de otra nota o cabecera dentro de la tuya, siempre al día (como =org-transclusion= de Emacs). En el fichero solo se guarda una línea =#+transclude: [[id:…][Título]]=; el contenido no se copia.
+- Se ve como un bloque de *solo lectura* con una barra a la izquierda. Tocar el título te lleva al origen y *Editar origen* lo abre para escribir.
+- *Cómo se inserta*: en las notas, *⋯ › Citar…* (o escribe «/» y elige *Citar…*): el mismo buscador de «[[». En el menú de una cabecera, *Compartir o PDF › Copiar como cita* copia la línea para pegarla donde quieras.
+- Opciones como en Emacs: =:only-contents= (sin el título), =:level N= (nivel del título citado) y =:exclude-elements "drawer keyword"=.
+- Una cita no puede citarse a sí misma (aviso de cita circular) y se admiten hasta 3 niveles de citas dentro de citas. Si el origen ya no existe se avisa en el propio bloque y sale en *Enlaces rotos*.
+- Al *imprimir o sacar el PDF* se imprime el contenido citado.
+
 * 4.41 (octubre de 2026)
 ** Compatible con org-roam
 - *Notas-fichero*: un fichero con =:ID:= al principio y =#+title:= es una nota (como en org-roam): los enlaces [[id:…]] lo abren, sale en el buscador de «[[» y al final del fichero tiene sus *Backlinks*.
