@@ -4,6 +4,13 @@
 // la plantilla van en el cuerpo del día como lista de descripción (`- Pregunta :: respuesta`).
 // El diario se lee y se escribe directamente (como scratch.org): no entra en GTD, la agenda ni
 // los avisos. Aquí solo hay funciones puras (y el ajuste en localStorage).
+// (4.38) Formato org-journal (https://github.com/bastibe/org-journal): por defecto un fichero por
+// año `journal/AAAA.org`; cada día `* sábado, 24 octubre 2026` con `:CREATED: 20261024` (y su
+// `:ID:` y contadores) y cada apunte `** 13:23 o texto` (cuerpo = continuación). Las respuestas de la
+// plantilla, bajo `** Plantilla del día`. Se siguen LEYENDO (y escribiendo, si el fichero lo es) los
+// ficheros del formato anterior (`* AAAA-MM mes` › `** AAAA-MM-DD día`): no se mezclan formatos
+// dentro de un fichero. Las funciones de lectura aceptan un texto o un «paquete» de ficheros del año
+// (`{ year, files: [{ path, text, fileDay }] }`).
 import { DIARY_DEFAULTS } from './eli_defaults';
 
 export const MARKS = [
@@ -82,6 +89,28 @@ export const cleanCounters = (list) => {
     .map((c) => ({ ...c, name: c.name || c.key }));
 };
 
+// ---- (4.38) org-journal: ajustes ----
+export const JOURNAL_TYPES = [
+  { id: 'daily', label: 'Día' },
+  { id: 'weekly', label: 'Semana' },
+  { id: 'monthly', label: 'Mes' },
+  { id: 'yearly', label: 'Año' },
+];
+export const PLANTILLA = 'Plantilla del día';
+export const cleanJournal = (j) => {
+  const r = j && typeof j === 'object' ? j : {};
+  const D = DIARY_DEFAULTS.journal;
+  const str = (v, d) => (typeof v === 'string' && v.trim() ? v.trim() : d);
+  const ws = parseInt(r.weekStart, 10);
+  return {
+    type: JOURNAL_TYPES.some((t) => t.id === r.type) ? r.type : D.type,
+    fileFormat: str(r.fileFormat, D.fileFormat).replace(/\.org$/i, '') || D.fileFormat,
+    header: typeof r.header === 'string' ? r.header : D.header,
+    dateFormat: str(r.dateFormat, D.dateFormat),
+    weekStart: ws >= 1 && ws <= 7 ? ws : D.weekStart,
+  };
+};
+
 const DEFAULT_CFG = {
   dir: DIARY_DEFAULTS.dir, // (4.37) `journal/` (solo el valor por DEFECTO: lo guardado se respeta)
   templateOn: true,
@@ -110,6 +139,9 @@ export const getDiaryCfg = () => {
     // (4.33) al abrir la app (desde el icono): 'diary' = Diario de hoy | 'last' = última vista
     startView:
       r.startView === 'last' || r.startView === 'diary' ? r.startView : DIARY_DEFAULTS.startView,
+    // (4.38) formato org-journal y franja «Hábitos de hoy»
+    journal: cleanJournal(r.journal),
+    habitsOn: typeof r.habitsOn === 'boolean' ? r.habitsOn : DIARY_DEFAULTS.habitsOn,
   };
 };
 export const setDiaryCfg = (patch) => {
@@ -148,9 +180,161 @@ export const diaryDir = (chosenDir, inboxPath) => {
   if (!d.endsWith('/')) d += '/';
   return d.replace(/\/{2,}/g, '/');
 };
+// Fichero del formato anterior (4.26–4.37): `diari-AAAA.org`. (4.38) Se sigue leyendo.
 export const diaryPath = (year, dir) => `${dir}diari-${year}.org`;
+export const legacyDiaryPath = diaryPath;
+
+// ---- (4.38) org-journal: nombres de fichero, fechas ----
+const WEEKDAYS_SHORT = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const isoWeek = (d) => {
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const y = t.getFullYear();
+  const first = new Date(y, 0, 4);
+  const thu1 = new Date(y, 0, 4 + 3 - ((first.getDay() + 6) % 7));
+  return { y, w: 1 + Math.round((t - thu1) / (7 * 86400000)) };
+};
+// `format-time-string` reducido (nombres en español): %Y %y %m %d %e %H %M %R %A %a %B %b %F %V %G %j
+export const strftime = (fmt, d) =>
+  String(fmt || '').replace(/%([a-zA-Z%])/g, (all, c) => {
+    const Y = d.getFullYear();
+    switch (c) {
+      case 'Y':
+        return String(Y);
+      case 'y':
+        return pad(Y % 100);
+      case 'm':
+        return pad(d.getMonth() + 1);
+      case 'd':
+        return pad(d.getDate());
+      case 'e':
+        return String(d.getDate());
+      case 'H':
+        return pad(d.getHours());
+      case 'M':
+        return pad(d.getMinutes());
+      case 'R':
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      case 'A':
+        return WEEKDAYS[d.getDay()];
+      case 'a':
+        return WEEKDAYS_SHORT[d.getDay()];
+      case 'B':
+        return MONTHS[d.getMonth()];
+      case 'b':
+        return MONTHS_SHORT[d.getMonth()];
+      case 'F':
+        return `${Y}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      case 'V':
+        return pad(isoWeek(d).w);
+      case 'G':
+        return String(isoWeek(d).y);
+      case 'j':
+        return String(
+          Math.round((new Date(Y, d.getMonth(), d.getDate()) - new Date(Y, 0, 1)) / 86400000) + 1
+        ).padStart(3, '0');
+      case '%':
+        return '%';
+      default:
+        return all;
+    }
+  });
+
+// Inicio del periodo del fichero (como `org-journal--convert-time-to-file-type-time`)
+export const periodStart = (date, j) => {
+  const jc = cleanJournal(j);
+  const y = date.getFullYear();
+  const m = date.getMonth();
+  if (jc.type === 'yearly') return new Date(y, 0, 1);
+  if (jc.type === 'monthly') return new Date(y, m, 1);
+  if (jc.type === 'weekly') {
+    const back = (date.getDay() - (jc.weekStart % 7) + 7) % 7;
+    return new Date(y, m, date.getDate() - back);
+  }
+  return new Date(y, m, date.getDate());
+};
+export const journalFileName = (date, j) =>
+  `${strftime(cleanJournal(j).fileFormat, periodStart(date, j))}.org`;
+export const journalFilePath = (date, j, dir) => `${dir}${journalFileName(date, j)}`;
+
+// Patrón de nombre (como `org-journal--format->regex`) → fecha del fichero
+const fileRe = (fmt) => {
+  const groups = [];
+  let src = '';
+  String(fmt || '')
+    .replace(/%F/g, '%Y-%m-%d')
+    .split(/(%[a-zA-Z%])/)
+    .forEach((part) => {
+      if (!part) return;
+      if (part === '%Y' || part === '%G') {
+        groups.push('y');
+        src += '(\\d{4})';
+      } else if (part === '%m') {
+        groups.push('m');
+        src += '(\\d{2})';
+      } else if (part === '%d') {
+        groups.push('d');
+        src += '(\\d{2})';
+      } else if (part === '%V') src += '\\d{2}';
+      else if (/^%[aAbB]$/.test(part)) src += '[^\\d\\s/._-]{3,}';
+      else if (part === '%%') src += '%';
+      else if (part.startsWith('%')) src += '.+?';
+      else src += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    });
+  return { re: new RegExp(`^${src}\\.org$`, 'i'), groups };
+};
+const baseName = (p) => String(p || '').replace(/^.*\//, '');
+export const journalFileDate = (path, fmt) => {
+  const { re, groups } = fileRe(fmt);
+  const m = re.exec(baseName(path));
+  if (!m) return null;
+  const v = { y: null, m: 1, d: 1 };
+  groups.forEach((g, i) => (v[g] = +m[i + 1]));
+  if (!v.y) return null;
+  const date = new Date(v.y, v.m - 1, v.d);
+  return date.getMonth() === v.m - 1 ? date : null;
+};
+// Patrones que se reconocen al leer: el del ajuste y los habituales de org-journal
+export const journalPatterns = (j) =>
+  Array.from(new Set([cleanJournal(j).fileFormat, '%Y%m%d', '%Y']));
+// Fecha de un fichero del diario con cualquiera de los patrones (o null)
+export const journalFileDateAny = (path, j) => {
+  for (const f of journalPatterns(j)) {
+    const d = journalFileDate(path, f);
+    if (d) return { date: d, daily: /%d|%F/.test(f) };
+  }
+  return null;
+};
+
 // (4.27) también el registro mensual (`mensual-AAAA.org`): fuera de GTD, agenda y avisos
-export const isDiaryPath = (p) => /(^|\/)(diari|mensual)-\d{4}\.org$/i.test(String(p || ''));
+// (4.38) y los ficheros org-journal (`AAAA.org`…) que estén en la carpeta del diario
+let diaryFolderCache = { raw: undefined, name: '' };
+const diaryFolderName = () => {
+  let raw = null;
+  try {
+    raw = window.localStorage.getItem(KEY);
+  } catch (e) {
+    raw = null;
+  }
+  if (raw !== diaryFolderCache.raw) {
+    const c = getDiaryCfg();
+    const dir = String(c.dir || '').trim() || 'pages/';
+    diaryFolderCache = {
+      raw,
+      name: dir.replace(/\/+$/, '').replace(/^.*\//, '').toLowerCase(),
+      journal: c.journal,
+    };
+  }
+  return diaryFolderCache;
+};
+export const isDiaryPath = (p) => {
+  const s = String(p || '');
+  if (/(^|\/)(diari|mensual)-\d{4}\.org$/i.test(s)) return true;
+  const parts = s.split('/');
+  if (parts.length < 2) return false;
+  const folder = diaryFolderName();
+  if (!folder.name || String(parts[parts.length - 2]).toLowerCase() !== folder.name) return false;
+  return !!journalFileDateAny(s, folder.journal);
+};
 // Inbox junto al que va el diario: el elegido en Ajustes o el inbox.org cargado de ruta más corta
 export const inboxNear = (chosenInbox, loadedPaths) =>
   chosenInbox ||
@@ -179,12 +363,65 @@ export const openDiary = (detail = {}) =>
 
 // ---- Fichero → árbol ----
 const HEADING = /^(\*+)\s+(.*)$/;
-export const parseTree = (text) => {
+// (4.38) ¿Fichero del formato anterior? Hay `* AAAA-MM mes` y ningún `:CREATED: AAAAMMDD`.
+const LEGACY_MONTH = /^\* \d{4}-\d{2}(\s|$)/m;
+const CREATED8 = /^\s*:CREATED:\s+\d{8}\s*$/m;
+export const isLegacyText = (text) => {
+  const t = String(text || '');
+  return LEGACY_MONTH.test(t) && !CREATED8.test(t);
+};
+const createdOf = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+const keyOf = (y, m, d) => {
+  const date = new Date(+y, +m - 1, +d);
+  return date.getMonth() === +m - 1 && date.getDate() === +d ? dayKey(date) : null;
+};
+// Meses por las 3 primeras letras (español, catalán, inglés)
+const MONTH3 = {
+  ene: 1, gen: 1, jan: 1, feb: 2, mar: 3, abr: 4, apr: 4, may: 5, mai: 5, jun: 6, jul: 7,
+  ago: 8, aug: 8, sep: 9, set: 9, oct: 10, nov: 11, dic: 12, des: 12, dec: 12,
+}; // prettier-ignore
+const monthOfName = (s) =>
+  MONTH3[
+    String(s || '')
+      .toLowerCase()
+      .slice(0, 3)
+  ] || null;
+// Fecha del día por su título: «2026-10-24 sábado», «sábado, 24 octubre 2026», «24 de octubre de
+// 2026», «Saturday, October 24, 2026»
+export const titleDayKey = (title) => {
+  const t = String(title || '');
+  let m = /(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return keyOf(m[1], m[2], m[3]);
+  m = /(\d{1,2})\.?\s+(?:de\s+|d')?([A-Za-zÀ-ÿ]{3,})\.?,?\s+(?:de\s+)?(\d{4})/.exec(t);
+  if (m && monthOfName(m[2])) return keyOf(m[3], monthOfName(m[2]), m[1]);
+  m = /([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})/.exec(t);
+  if (m && monthOfName(m[1])) return keyOf(m[3], monthOfName(m[1]), m[2]);
+  return null;
+};
+const drawerProp = (body, key) => {
+  if (!/^\s*:PROPERTIES:\s*$/i.test(body[0] || '')) return null;
+  const re = new RegExp(`^\\s*:${key}:\\s*(.*)$`, 'i');
+  for (let i = 1; i < body.length; i++) {
+    if (/^\s*:END:\s*$/i.test(body[i])) break;
+    const p = re.exec(body[i]);
+    if (p) return p[1].trim();
+  }
+  return null;
+};
+const journalDayKey = (d) => {
+  const c = /^(\d{4})(\d{2})(\d{2})$/.exec(drawerProp(d.body, 'CREATED') || '');
+  if (c) return keyOf(c[1], c[2], c[3]);
+  return titleDayKey(d.line.replace(/^\*+\s*/, ''));
+};
+
+// `opts.fileDay` (AAAA-MM-DD): fecha del fichero (diarios de org-journal, sin `:CREATED:`)
+export const parseTree = (text, opts = {}) => {
   const lines = String(text || '')
     .replace(/\r\n/g, '\n')
     .split('\n');
   while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
-  const tree = { head: [], months: [] };
+  if (!isLegacyText(text)) return parseJournalTree(lines, opts);
+  const tree = { head: [], months: [], fmt: 'legacy' };
   let m = null;
   let d = null;
   let e = null;
@@ -209,10 +446,35 @@ export const parseTree = (text) => {
   });
   return tree;
 };
+// (4.38) org-journal: `* día` › `** apunte`; todo lo de nivel 3 o más va en el cuerpo del apunte.
+// Para no cambiar el resto del código, los días van en un «mes» sin línea (`line: null`).
+const parseJournalTree = (lines, opts) => {
+  const all = { line: null, key: null, body: [], days: [] };
+  const tree = { head: [], months: [all], fmt: 'journal' };
+  let d = null;
+  let e = null;
+  lines.forEach((line) => {
+    const h = HEADING.exec(line);
+    const level = h ? h[1].length : 0;
+    if (level === 1) {
+      d = { line, key: null, body: [], entries: [] };
+      all.days.push(d);
+      e = null;
+    } else if (level === 2 && d) {
+      e = { line, body: [] };
+      d.entries.push(e);
+    } else (e ? e.body : d ? d.body : tree.head).push(line);
+  });
+  all.days.forEach((x) => (x.key = journalDayKey(x)));
+  // ficheros diarios: la fecha sale del nombre (solo si ningún día lleva fecha propia)
+  if (opts && opts.fileDay && !all.days.some((x) => x.key))
+    all.days.forEach((x) => (x.key = opts.fileDay));
+  return tree;
+};
 export const serializeTree = (tree) => {
   const out = [...tree.head];
   tree.months.forEach((m) => {
-    out.push(m.line, ...m.body);
+    if (m.line != null) out.push(m.line, ...m.body);
     m.days.forEach((d) => {
       out.push(d.line, ...d.body);
       d.entries.forEach((e) => out.push(e.line, ...e.body));
@@ -222,10 +484,18 @@ export const serializeTree = (tree) => {
   return out.join('\n') + '\n';
 };
 
-export const newFileText = (year) => `#+TITLE: Diari ${year}\n#+STARTUP: overview\n\n`;
+// Texto de un fichero nuevo. (4.38) Cabecera del ajuste (org-journal), con las fechas del inicio del
+// periodo. `when` = fecha o año.
+export const newFileText = (when, j) => {
+  const date = typeof when === 'number' ? new Date(when, 0, 1) : when || new Date();
+  const jc = cleanJournal(j);
+  const head = strftime(jc.header, periodStart(date, jc)).replace(/\s+$/, '');
+  return head ? `${head}\n\n` : '';
+};
 const monthLine = (d) => `* ${monthKey(d)} ${MONTHS[d.getMonth()]}`;
 const dayLine = (d) => `** ${dayKey(d)} ${WEEKDAYS[d.getDay()]}`;
 export const answerLine = (q, a = '') => `- ${q} ::${a ? ' ' + a : ''}`;
+const isPlantilla = (e) => !!e && e.line.replace(/^\*+\s*/, '').trim() === PLANTILLA;
 
 const findDay = (tree, key) => {
   for (const m of tree.months) {
@@ -243,10 +513,25 @@ const insertSorted = (list, item) => {
 };
 
 // Asegura el mes y el día (con la plantilla si se crea). Devuelve { tree, day, created }.
-export const ensureDayIn = (tree, date, template = []) => {
+// (4.38) En org-journal: `* <fecha>` con `:CREATED:` (salvo ficheros diarios) y la plantilla bajo
+// `** Plantilla del día`.
+export const ensureDayIn = (tree, date, template = [], j) => {
   const key = dayKey(date);
   const found = findDay(tree, key);
   if (found) return { tree, day: found, created: false };
+  if (tree.fmt === 'journal') {
+    const jc = cleanJournal(j);
+    const day = {
+      line: `* ${strftime(jc.dateFormat, date)}`,
+      key,
+      body: jc.type === 'daily' ? [] : [':PROPERTIES:', `:CREATED:  ${createdOf(date)}`, ':END:'],
+      entries: (template || []).length
+        ? [{ line: `** ${PLANTILLA}`, body: template.map((q) => answerLine(q)) }]
+        : [],
+    };
+    insertSorted(tree.months[0].days, day);
+    return { tree, day, created: true };
+  }
   let m = tree.months.find((x) => x.key === monthKey(date));
   if (!m) {
     m = { line: monthLine(date), key: monthKey(date), body: [], days: [] };
@@ -262,21 +547,27 @@ export const ensureDayIn = (tree, date, template = []) => {
   return { tree, day, created: true };
 };
 
-export const ensureDay = (text, date, template = []) => {
-  const tree = parseTree(text || newFileText(date.getFullYear()));
-  const { created } = ensureDayIn(tree, date, template);
+// Árbol del texto para escribir en el día `date` (fichero nuevo = cabecera del ajuste)
+const treeFor = (text, date, j) =>
+  parseTree(text || newFileText(date, j), {
+    fileDay: cleanJournal(j).type === 'daily' ? dayKey(date) : null,
+  });
+
+export const ensureDay = (text, date, template = [], j) => {
+  const tree = treeFor(text, date, j);
+  const { created } = ensureDayIn(tree, date, template, j);
   return { text: serializeTree(tree), created };
 };
 
-// Apunte: `*** HH:MM <marca> primera línea` y el resto de líneas como cuerpo. En orden por hora.
-const ENTRY = /^\*{3}\s+(\d{1,2}:\d{2})(?:\s+([-ox!])(?=\s|$))?\s*(.*)$/;
+// Apunte: `*** HH:MM <marca> primera línea` (formato anterior) o `** HH:MM …` (org-journal)
+const ENTRY = /^\*+\s+(\d{1,2}:\d{2})(?:\s+([-ox!])(?=\s|$))?\s*(.*)$/;
 export const entryTime = (line) => {
   const m = ENTRY.exec(line || '');
   return m ? m[1].padStart(5, '0') : null;
 };
-// (4.27, usuario) Los apuntes nuevos van como NOTAS del día (líneas de lista en el cuerpo:
-// `- 13:23 o texto`, el resto de líneas con dos espacios), no como cabeceras. Los `*** 13:23 …`
-// de la 4.26 se siguen leyendo.
+// (4.27, usuario) En el formato anterior los apuntes nuevos van como NOTAS del día (líneas de lista
+// en el cuerpo: `- 13:23 o texto`, el resto de líneas con dos espacios). (4.38) En org-journal son
+// cabeceras `** 13:23 o texto` con la continuación como cuerpo.
 const ENTRY_LINE = /^- (\d{1,2}:\d{2})(?:\s+([-ox!])(?=\s|$))?\s*(.*)$/;
 const isEntryLine = (l) => ENTRY_LINE.test(l || '') && !/ ::(\s|$)/.test(l || '');
 // Bloques de apuntes del cuerpo: [{ start, end (excl.), time }]
@@ -290,7 +581,7 @@ const entryBlocks = (body) => {
   });
   return out;
 };
-export const addEntry = (text, date, entry, template = []) => {
+export const addEntry = (text, date, entry, template = [], j) => {
   const mark = MARK_IDS.includes(entry.mark) ? entry.mark : '-';
   const time = entry.time || timeOf(date);
   const lines = String(entry.text || '')
@@ -298,8 +589,22 @@ export const addEntry = (text, date, entry, template = []) => {
     .split('\n');
   const first = lines.shift().trim();
   while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
-  const tree = parseTree(text || newFileText(date.getFullYear()));
-  const { day } = ensureDayIn(tree, date, template);
+  const tree = treeFor(text, date, j);
+  const { day } = ensureDayIn(tree, date, template, j);
+  if (tree.fmt === 'journal') {
+    const item = {
+      line: `** ${time} ${mark}${first ? ' ' + first : ''}`,
+      // (una línea que empiece por «* » sería una cabecera: se separa con un espacio)
+      body: lines.map((l) => {
+        const t = l.replace(/\s+$/, '');
+        return /^\*+\s/.test(t) ? ' ' + t : t;
+      }),
+    };
+    const at = day.entries.findIndex((e) => (entryTime(e.line) || '') > time);
+    if (at < 0) day.entries.push(item);
+    else day.entries.splice(at, 0, item);
+    return serializeTree(tree);
+  }
   const item = [
     `- ${time} ${mark}${first ? ' ' + first : ''}`,
     ...lines.map((l) => '  ' + l.trim()),
@@ -318,12 +623,33 @@ export const addEntry = (text, date, entry, template = []) => {
 };
 
 // Respuesta de la plantilla: cambia (o añade) `- Pregunta :: respuesta` en el cuerpo del día
-export const setAnswer = (text, date, question, answer) => {
-  const tree = parseTree(text || newFileText(date.getFullYear()));
-  const { day } = ensureDayIn(tree, date, []);
+// (4.38: en org-journal, en el de `** Plantilla del día`)
+export const setAnswer = (text, date, question, answer, j) => {
+  const tree = treeFor(text, date, j);
+  const { day } = ensureDayIn(tree, date, [], j);
   const clean = String(answer || '')
     .replace(/\s*\n\s*/g, ' ')
     .trim();
+  if (tree.fmt === 'journal') {
+    const inBody = day.body.findIndex((l) => l.startsWith(`- ${question} ::`));
+    if (inBody >= 0) {
+      day.body[inBody] = answerLine(question, clean);
+      return serializeTree(tree);
+    }
+    let p = day.entries.find(isPlantilla);
+    if (!p) {
+      p = { line: `** ${PLANTILLA}`, body: [] };
+      day.entries.unshift(p);
+    }
+    const i = p.body.findIndex((l) => l.startsWith(`- ${question} ::`));
+    if (i >= 0) p.body[i] = answerLine(question, clean);
+    else {
+      let at = p.body.length;
+      while (at > 0 && !p.body[at - 1].trim()) at--;
+      p.body.splice(at, 0, answerLine(question, clean));
+    }
+    return serializeTree(tree);
+  }
   const i = day.body.findIndex((l) => l.startsWith(`- ${question} ::`));
   if (i >= 0) day.body[i] = answerLine(question, clean);
   else {
@@ -336,22 +662,24 @@ export const setAnswer = (text, date, question, answer) => {
 };
 
 // :ID: del día (para enlazar desde una tarea). Devuelve { text, id }.
-export const ensureDayId = (text, date) => {
-  const tree = parseTree(text || newFileText(date.getFullYear()));
-  const { day } = ensureDayIn(tree, date, []);
+export const ensureDayId = (text, date, j) => {
+  const tree = treeFor(text, date, j);
+  const { day } = ensureDayIn(tree, date, [], j);
   const idLine = day.body.find((l) => /^\s*:ID:\s*\S/i.test(l));
   if (idLine) return { text: serializeTree(tree), id: idLine.replace(/^\s*:ID:\s*/i, '').trim() };
   const id = dayOrgId(day.key);
   const start = day.body.findIndex((l) => /^\s*:PROPERTIES:\s*$/i.test(l));
-  if (start === 0) day.body.splice(1, 0, `:ID: ${id}`);
+  // (4.38) tras `:CREATED:` (org-journal la quiere la primera)
+  if (start === 0)
+    day.body.splice(/^\s*:CREATED:/i.test(day.body[1] || '') ? 2 : 1, 0, `:ID: ${id}`);
   else day.body.unshift(':PROPERTIES:', `:ID: ${id}`, ':END:');
   return { text: serializeTree(tree), id };
 };
 
 // ---- Lectura ----
 const ANSWER = /^- (.+?) ::\s?(.*)$/;
-export const parseDays = (text) => {
-  const tree = parseTree(text);
+const parseDaysText = (text, fileDay) => {
+  const tree = parseTree(text, { fileDay });
   const days = [];
   tree.months.forEach((m) =>
     m.days.forEach((d) => {
@@ -390,9 +718,18 @@ export const parseDays = (text) => {
       });
       // (4.36) Las subcabeceras del usuario bajo el día (`*** Título`, sin hora) ya no son apuntes:
       // salen aparte (`heads`, plegadas y con su título) y siguen contando como «algo del día»
+      // (4.38) `** Plantilla del día`: sus `- Pregunta :: respuesta` son las respuestas
       const heads = [];
       const fromHeads = [];
       d.entries.forEach((e) => {
+        if (isPlantilla(e)) {
+          e.body.forEach((l) => {
+            const a = ANSWER.exec(l);
+            if (a) answers.push({ question: a[1], answer: a[2].trim() });
+            else if (l.trim()) notes.push(l);
+          });
+          return;
+        }
         const x = ENTRY.exec(e.line);
         const body = e.body.join('\n').replace(/\s+$/, '');
         if (!x) heads.push({ title: e.line.replace(/^\*+\s*/, ''), body });
@@ -406,6 +743,31 @@ export const parseDays = (text) => {
     })
   );
   return days;
+};
+// (4.38) Varios ficheros del año (`{ year, files }`): los días se juntan (si un día está en dos
+// ficheros, p. ej. durante la migración a mano, se suman sus cosas) y cada día sabe su `path`.
+const isBundle = (src) => !!src && typeof src === 'object' && Array.isArray(src.files);
+const mergeDay = (a, b) => ({
+  ...a,
+  answers: a.answers.concat(
+    b.answers.filter((x) => !a.answers.some((y) => y.question === x.question && y.answer))
+  ),
+  notes: a.notes.concat(b.notes),
+  entries: a.entries.concat(b.entries).sort((x, y) => (x.time || '').localeCompare(y.time || '')),
+  heads: a.heads.concat(b.heads),
+  props: { ...b.props, ...a.props },
+});
+export const parseDays = (src, fileDay) => {
+  if (!isBundle(src)) return parseDaysText(src, fileDay);
+  const byKey = new Map();
+  src.files.forEach((f) =>
+    parseDaysText(f.text, f.fileDay).forEach((d) => {
+      if (src.year && !d.key.startsWith(`${src.year}-`)) return;
+      const prev = byKey.get(d.key);
+      byKey.set(d.key, prev ? mergeDay(prev, d) : { ...d, path: f.path });
+    })
+  );
+  return Array.from(byKey.values()).sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 };
 
 // Días con algo apuntado (apuntes, respuestas o notas)
@@ -471,14 +833,16 @@ export const templateFromText = (s) =>
     .filter(Boolean);
 
 // ---- (4.27) Contadores y :ID: ----
-// ¿El día tiene algo? (apuntes, notas, respuestas o contadores; el :ID: no cuenta)
+// ¿El día tiene algo? (apuntes, notas, respuestas o contadores; el :ID: y el :CREATED: no cuentan)
 export const dayHasData = (d) =>
   !!d &&
   (d.entries.length > 0 ||
     (d.heads || []).length > 0 ||
     d.notes.length > 0 ||
     d.answers.some((a) => a.answer.trim()) ||
-    Object.keys(d.props || {}).some((k) => k !== 'ID' && String(d.props[k]).trim()));
+    Object.keys(d.props || {}).some(
+      (k) => k !== 'ID' && k !== 'CREATED' && String(d.props[k]).trim()
+    ));
 
 // Cajón PROPERTIES al principio del cuerpo (lo crea si falta). Devuelve el índice de :END:.
 const drawerEnd = (body) => {
@@ -498,10 +862,10 @@ const ensureIdIn = (body, id) => {
 };
 
 // Contador del día: `:KEY: valor` en el cajón del día (vacío = se quita)
-export const setDayProp = (text, date, key, value, template = []) => {
+export const setDayProp = (text, date, key, value, template = [], j) => {
   const k = counterKey(key);
-  const tree = parseTree(text || newFileText(date.getFullYear()));
-  const { day } = ensureDayIn(tree, date, template);
+  const tree = treeFor(text, date, j);
+  const { day } = ensureDayIn(tree, date, template, j);
   const v = String(value == null ? '' : value)
     .replace(/\s+/g, ' ')
     .trim();
@@ -518,13 +882,23 @@ export const setDayProp = (text, date, key, value, template = []) => {
   if (/^\s*:END:\s*$/i.test(day.body[1] || '')) day.body.splice(0, 2);
   return serializeTree(tree);
 };
+const setDrawerProp = (body, k, v) => {
+  const end = drawerEnd(body);
+  const re = new RegExp(`^\\s*:${k}:(\\s|$)`, 'i');
+  const i = body.findIndex((l, j) => j > 0 && j < end && re.test(l));
+  if (i >= 0) {
+    if (v) body[i] = `:${k}: ${v}`;
+    else body.splice(i, 1);
+  } else if (v) body.splice(end, 0, `:${k}: ${v}`);
+  if (/^\s*:END:\s*$/i.test(body[1] || '')) body.splice(0, 2);
+};
 
 // Pone :ID: a los días con algo y a sus meses (para que los enlaces del registro mensual también
 // valgan en Emacs). Si no cambia nada devuelve el mismo texto.
-export const withDiaryIds = (text) => {
+export const withDiaryIds = (text, fileDay) => {
   if (!text) return text;
-  const tree = parseTree(text);
-  const data = new Map(parseDays(text).map((d) => [d.key, d]));
+  const tree = parseTree(text, { fileDay });
+  const data = new Map(parseDays(text, fileDay).map((d) => [d.key, d]));
   let changed = false;
   tree.months.forEach((m) => {
     let any = false;
@@ -540,10 +914,23 @@ export const withDiaryIds = (text) => {
 };
 
 // ---- (4.33) Contadores mensuales: propiedades del MES en el diari (`* 2026-10 octubre` › `:CINTURA: 82`) ----
+// (4.38) En org-journal no hay mes: el contador mensual es una propiedad del DÍA en que se anota y
+// el valor del mes es el último registrado en ese mes.
 // Propiedades de cada mes: { 'AAAA-MM': { CLAVE: valor } }
-export const parseMonthProps = (text) => {
+const monthPropsOfText = (text) => {
   const out = {};
-  parseTree(text).months.forEach((m) => {
+  const tree = parseTree(text);
+  if (tree.fmt === 'journal') {
+    parseDaysText(text).forEach((d) => {
+      const mk = d.key.slice(0, 7);
+      const props = out[mk] || (out[mk] = {});
+      Object.keys(d.props).forEach((k) => {
+        if (k !== 'ID' && k !== 'CREATED' && String(d.props[k]).trim()) props[k] = d.props[k];
+      });
+    });
+    return out;
+  }
+  tree.months.forEach((m) => {
     if (!m.key) return;
     const props = {};
     if (/^\s*:PROPERTIES:\s*$/i.test(m.body[0] || '')) {
@@ -557,30 +944,60 @@ export const parseMonthProps = (text) => {
   });
   return out;
 };
+export const parseMonthProps = (src) => {
+  if (!isBundle(src)) return monthPropsOfText(src);
+  const out = {};
+  const put = (mk, props) => (out[mk] = { ...(out[mk] || {}), ...props });
+  // formato anterior: los cajones de los meses; org-journal: los días, por fecha (el último manda)
+  const days = [];
+  src.files.forEach((f) => {
+    if (isLegacyText(f.text)) {
+      const mp = monthPropsOfText(f.text);
+      Object.keys(mp).forEach((mk) => put(mk, mp[mk]));
+    } else days.push(...parseDaysText(f.text, f.fileDay));
+  });
+  days
+    .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+    .forEach((d) => {
+      const props = {};
+      Object.keys(d.props).forEach((k) => {
+        if (k !== 'ID' && k !== 'CREATED' && String(d.props[k]).trim()) props[k] = d.props[k];
+      });
+      put(d.key.slice(0, 7), props);
+    });
+  return out;
+};
 
 // Contador del mes: `:KEY: valor` en el cajón del mes (vacío = se quita). Crea el mes si falta.
-export const setMonthProp = (text, date, key, value) => {
+// (4.38) org-journal: en el día del mes que ya lo tiene (el último); si no, en el día `date`.
+export const setMonthProp = (text, date, key, value, j) => {
   const k = counterKey(key);
-  const tree = parseTree(text || newFileText(date.getFullYear()));
+  const tree = treeFor(text, date, j);
   const mk = monthKey(date);
+  const v = String(value == null ? '' : value)
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (tree.fmt === 'journal') {
+    const has = tree.months[0].days.filter(
+      (d) => d.key && d.key.startsWith(mk) && drawerProp(d.body, k) != null
+    );
+    if (has.length) {
+      setDrawerProp(has[has.length - 1].body, k, v);
+      return serializeTree(tree);
+    }
+    if (!v) return serializeTree(tree);
+    const { day } = ensureDayIn(tree, date, [], j);
+    setDrawerProp(day.body, k, v);
+    return serializeTree(tree);
+  }
   let m = tree.months.find((x) => x.key === mk);
   if (!m) {
     m = { line: monthLine(date), key: mk, body: [], days: [] };
     insertSorted(tree.months, m);
   }
-  const v = String(value == null ? '' : value)
-    .replace(/\s+/g, ' ')
-    .trim();
   const hadDrawer = /^\s*:PROPERTIES:\s*$/i.test(m.body[0] || '');
   if (!hadDrawer && !v) return serializeTree(tree);
-  const end = drawerEnd(m.body);
-  const re = new RegExp(`^\\s*:${k}:(\\s|$)`, 'i');
-  const i = m.body.findIndex((l, j) => j > 0 && j < end && re.test(l));
-  if (i >= 0) {
-    if (v) m.body[i] = `:${k}: ${v}`;
-    else m.body.splice(i, 1);
-  } else if (v) m.body.splice(end, 0, `:${k}: ${v}`);
-  if (/^\s*:END:\s*$/i.test(m.body[1] || '')) m.body.splice(0, 2);
+  setDrawerProp(m.body, k, v);
   return serializeTree(tree);
 };
 
@@ -604,4 +1021,28 @@ export const journalTitle = (d) => {
   return `${w.charAt(0).toUpperCase()}${w.slice(1)}, ${d.getDate()} ${
     MONTHS_SHORT[d.getMonth()]
   } ${d.getFullYear()}`;
+};
+
+// ---- (4.38) Franja «Hábitos de hoy» ----
+// Hábitos (`:STYLE: habit`) que tocan hoy (programados para hoy o antes) y los ya hechos hoy (con
+// su `- State "DONE" … [hoy` en las notas). `tasks` = las de buildTasks. Devuelve
+// [{ task, done }] por título.
+export const habitsToday = (tasks, today = new Date()) => {
+  const k = dayKey(today);
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const doneRe = new RegExp(`- State "[^"]+"\\s+from[^\\n]*\\[${k}`);
+  return (
+    (tasks || [])
+      // (fuera el manual —sample.org— y otros ficheros internos, como en los avisos, y el diario)
+      .filter((t) => t && t.isHabit && t.keyword && !t.isTrashed)
+      .filter((t) => !/^\/?(__|organice_internal_)/.test(t.path || '') && !isDiaryPath(t.path))
+      .map((t) => ({
+        task: t,
+        done: doneRe.test(t.description || ''),
+        due: !t.isDone && !!t.scheduled && new Date(t.scheduled) < end,
+      }))
+      .filter((x) => x.done || x.due)
+      .map((x) => ({ task: x.task, done: x.done && !x.due }))
+      .sort((a, b) => String(a.task.title).localeCompare(String(b.task.title)))
+  );
 };

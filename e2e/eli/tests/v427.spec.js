@@ -27,10 +27,10 @@ test('4.27: el registro del día crea y rellena mensual-AAAA.org', async ({ app 
   await page.locator('[data-testid=eli-diary-input]').fill('Paseo');
   await app.press(page.locator('[data-testid=eli-diary-add]'));
   await expect
-    .poll(async () => (await app.fileAfterSync(`/pages/diari-${y}.org`, 500)) || '', {
+    .poll(async () => (await app.fileAfterSync(`/pages/${y}.org`, 500)) || '', {
       timeout: 15000,
     })
-    .toMatch(/:KM: 4,5[\s\S]*- \d\d:\d\d - Paseo/);
+    .toMatch(/:KM: 4,5[\s\S]*\*\* \d\d:\d\d - Paseo/);
   await expect
     .poll(async () => (await app.fileAfterSync(`/pages/mensual-${y}.org`, 500)) || '', {
       timeout: 15000,

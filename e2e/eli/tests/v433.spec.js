@@ -12,7 +12,7 @@ test('4.33: la app abre en el Diario de hoy', async ({ app }) => {
   // las preguntas de la plantilla, ya puestas para rellenar en línea
   await expect(page.locator('[data-testid=eli-diary-answer]').first()).toBeVisible();
   await expect
-    .poll(async () => (await app.fileAfterSync(`/pages/diari-${y}.org`, 500)) || '', {
+    .poll(async () => (await app.fileAfterSync(`/pages/${y}.org`, 500)) || '', {
       timeout: 15000,
     })
     .toContain('- Lo más importante de hoy ::');

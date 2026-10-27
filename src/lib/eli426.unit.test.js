@@ -20,6 +20,9 @@ import {
 } from './eli_diary';
 import { MENU_ENTRIES } from './eli_menu_layout';
 
+// (4.38) Estas pruebas son del formato ANTERIOR (`* AAAA-MM mes` › `** AAAA-MM-DD día`): se parte
+// de un fichero que ya está en ese formato (uno vacío se crea ya en formato org-journal).
+const OLD = '#+TITLE: Diari 2026\n#+STARTUP: overview\n\n* 2026-01 enero\n';
 const d = (y, m, day, h = 10, min = 0) => new Date(y, m - 1, day, h, min);
 
 describe('4.26 rutas', () => {
@@ -43,7 +46,7 @@ describe('4.26 rutas', () => {
 describe('4.26 fichero', () => {
   const tpl = ['¿Cómo me siento hoy?', 'Agradecido por…'];
   test('crea mes y día con la plantilla, en orden cronológico', () => {
-    let t = ensureDay('', d(2026, 10, 24), tpl).text;
+    let t = ensureDay(OLD, d(2026, 10, 24), tpl).text;
     expect(t).toContain('#+TITLE: Diari 2026');
     expect(t).toContain('* 2026-10 octubre\n** 2026-10-24 sábado\n- ¿Cómo me siento hoy? ::\n');
     t = ensureDay(t, d(2026, 10, 2), tpl).text;
@@ -55,7 +58,7 @@ describe('4.26 fichero', () => {
     expect(ensureDay(t, d(2026, 10, 24), tpl).created).toBe(false);
   });
   test('apuntes por hora, con marca y en orden', () => {
-    let t = addEntry('', d(2026, 10, 24), { text: 'café', time: '13:23' }, []);
+    let t = addEntry(OLD, d(2026, 10, 24), { text: 'café', time: '13:23' }, []);
     t = addEntry(t, d(2026, 10, 24), { text: 'cita\nen el centro', mark: 'o', time: '09:05' }, []);
     t = addEntry(t, d(2026, 10, 24), { text: 'ojo', mark: '!', time: '20:00' }, []);
     // (4.27) como notas del día, no como cabeceras
@@ -67,7 +70,7 @@ describe('4.26 fichero', () => {
     expect(daysWithEntries(t).has('2026-10-24')).toBe(true);
   });
   test('respuestas de la plantilla', () => {
-    let t = ensureDay('', d(2026, 10, 24), ['Lo más importante']).text;
+    let t = ensureDay(OLD, d(2026, 10, 24), ['Lo más importante']).text;
     expect(daysWithEntries(t).size).toBe(0);
     t = setAnswer(t, d(2026, 10, 24), 'Lo más importante', 'terminar la 4.26');
     expect(t).toContain('- Lo más importante :: terminar la 4.26');
@@ -77,7 +80,7 @@ describe('4.26 fichero', () => {
     expect(daysWithEntries(t).has('2026-10-24')).toBe(true);
   });
   test(':ID: del día legible y estable', () => {
-    const t0 = addEntry('', d(2026, 10, 24), { text: 'x', time: '10:00' }, ['P']);
+    const t0 = addEntry(OLD, d(2026, 10, 24), { text: 'x', time: '10:00' }, ['P']);
     const r = ensureDayId(t0, d(2026, 10, 24));
     expect(r.id).toBe('diari-2026-10-24');
     expect(r.text).toContain(
@@ -91,8 +94,8 @@ describe('4.26 fichero', () => {
 
 describe('4.26 lectura', () => {
   test('tal día como hoy entre ficheros', () => {
-    const t25 = addEntry('', d(2025, 10, 24), { text: 'hace un año', time: '08:00' }, []);
-    const t24 = addEntry('', d(2024, 10, 23), { text: 'otro día', time: '08:00' }, []);
+    const t25 = addEntry(OLD, d(2025, 10, 24), { text: 'hace un año', time: '08:00' }, []);
+    const t24 = addEntry(OLD, d(2024, 10, 23), { text: 'otro día', time: '08:00' }, []);
     const r = onThisDay({ 2025: t25, 2024: t24, 2026: '' }, d(2026, 10, 24));
     expect(r.map((x) => x.year)).toEqual([2025]);
     expect(r[0].day.entries[0].text).toBe('hace un año');

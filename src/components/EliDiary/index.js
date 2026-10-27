@@ -1,6 +1,7 @@
 // ORG Mode para Eli (4.26): diario. Hoja que se abre desde el Menú ☰ › «Diario de hoy» (evento
 // `eli:diary`, con `{ date: 'AAAA-MM-DD' }` para ir a un día). Lee y escribe directamente
-// `pages/diari-AAAA.org` (lib/eli_diary): no pasa por el analizador ni entra en GTD.
+// `journal/AAAA.org` (4.38: formato org-journal; también el `diari-AAAA.org` anterior) (lib/eli_diary):
+// no pasa por el analizador ni entra en GTD.
 import { dayAnchorId, dayAnchorHref } from '../../lib/eli_diary_print';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -14,14 +15,16 @@ import {
   markSign,
   getDiaryCfg,
   diaryDir,
-  diaryPath,
+  legacyDiaryPath,
+  journalFilePath,
+  journalFileDateAny,
+  isLegacyText,
   inboxNear,
   dayKey,
   parseDayKey,
   timeOf,
   longDate,
   MONTHS,
-  newFileText,
   ensureDay,
   addEntry,
   setAnswer,
@@ -39,6 +42,7 @@ import {
   monthKey,
   dayHasData,
   journalTitle,
+  habitsToday,
   openDiary,
 } from '../../lib/eli_diary';
 import { startedAtRoot, takeStartAtRoot } from '../../lib/eli_mode';
@@ -51,7 +55,7 @@ import {
 } from '../../lib/eli_monthly';
 import { getGtdFiles } from '../../lib/gtd/gtd_sections';
 import { buildTasks } from '../../lib/gtd/gtd_model';
-import { gtdAddTask, createdStamp } from '../../lib/gtd/gtd_actions';
+import { gtdAddTask, createdStamp, gtdToggleDone } from '../../lib/gtd/gtd_actions';
 import { fileLinkTarget } from '../../lib/eli_media';
 import { showMessage } from '../../lib/eli_prompt';
 import EliMedia, { MediaPathContext } from '../OrgFile/components/EliMedia';
@@ -403,15 +407,18 @@ export default function EliDiary() {
   const [date, setDate] = useState(() => new Date());
   const [view, setView] = useState('day'); // 'day' | 'cal'
   const [cal, setCal] = useState(() => ({ y: new Date().getFullYear(), m: new Date().getMonth() }));
-  const [texts, setTexts] = useState({}); // { año: texto } ('' = no existe)
+  const [texts, setTexts] = useState({}); // (4.38) { año: { year, files: [{ path, text, fileDay }] } }
   const [status, setStatus] = useState('');
   const [input, setInput] = useState('');
   const [mark, setMark] = useState('-');
   const [print, setPrint] = useState(null);
   const [cfg, setCfg] = useState(getDiaryCfg());
   const [streamN, setStreamN] = useState(STREAM_STEP);
+  const [habitsJustDone, setHabitsJustDone] = useState([]); // (4.38) marcados ahora
   const textsRef = useRef({});
-  const existsRef = useRef({});
+  const existsRef = useRef({}); // { ruta: ¿existe? }
+  const listRef = useRef(undefined); // ficheros de la carpeta (undefined = sin mirar; null = no se pudo)
+  const jcRef = useRef(getDiaryCfg().journal);
   const dirRef = useRef('');
   const queue = useRef(Promise.resolve());
   const inputRef = useRef(null);
@@ -421,27 +428,118 @@ export default function EliDiary() {
     const f = store.getState().org.present.get('files');
     return f && f.keySeq ? f.keySeq().toArray() : [];
   };
-  const pathFor = (year) => diaryPath(year, dirRef.current);
+  // (4.38) org-journal: fichero del periodo de una fecha (`journal/2026.org` por defecto)
+  const journalFor = (d) => journalFilePath(d, jcRef.current, dirRef.current);
+  const pathFor = (year) => {
+    const b = textsRef.current[year];
+    return (b && b.files[0] && b.files[0].path) || journalFor(new Date(year, 0, 1));
+  };
+  const samePath = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase();
 
-  const setText = (year, text) => {
-    textsRef.current = { ...textsRef.current, [year]: text };
+  const setBundle = (year, bundle) => {
+    textsRef.current = { ...textsRef.current, [year]: bundle };
     setTexts(textsRef.current);
   };
 
-  // Carga el fichero de un año (una vez). Devuelve su texto ('' si no existe).
-  const load = async (year) => {
-    if (textsRef.current[year] !== undefined) return textsRef.current[year];
+  // (4.38) Ficheros de la carpeta del diario (una vez cada vez que se abre)
+  const listJournal = async () => {
+    if (listRef.current !== undefined) return listRef.current;
     const c = client();
-    let body = '';
+    const out = [];
+    const take = (res) => {
+      const l = res && res.listing;
+      const arr = l && typeof l.toJS === 'function' ? l.toJS() : Array.isArray(l) ? l : [];
+      arr.forEach((e) => e && !e.isDirectory && e.name && out.push(e.name));
+    };
     try {
-      const exists = c.pathExists ? await c.pathExists(pathFor(year)) : true;
-      existsRef.current[year] = exists;
-      if (exists) body = (await c.getFileContents(pathFor(year))) || '';
+      if (!c.getDirectoryListing) throw new Error('sin lista');
+      let r = await c.getDirectoryListing(dirRef.current.replace(/\/+$/, ''));
+      take(r);
+      for (let n = 0; r && r.hasMore && c.getMoreDirectoryListing && n < 50; n++) {
+        r = await c.getMoreDirectoryListing(r.additionalSyncBackendState);
+        take(r);
+      }
+      listRef.current = out;
     } catch (e) {
-      existsRef.current[year] = false;
+      listRef.current = null;
     }
-    setText(year, body);
-    return body;
+    return listRef.current;
+  };
+
+  // Carga los ficheros de un año (una vez): los org-journal de la carpeta (de cualquier tipo) y el
+  // `diari-AAAA.org` del formato anterior. Devuelve el «paquete» del año.
+  const load = async (year) => {
+    if (textsRef.current[year]) return textsRef.current[year];
+    const c = client();
+    const jc = jcRef.current;
+    const dir = dirRef.current;
+    const list = await listJournal();
+    const cands = [];
+    const add = (path, fileDay = null, rank = 0) => {
+      if (!cands.some((x) => samePath(x.path, path))) cands.push({ path, fileDay, rank });
+    };
+    if (list) {
+      list.forEach((name) => {
+        if (samePath(name, `diari-${year}.org`)) return add(dir + name, null, 2);
+        const fd = journalFileDateAny(name, jc);
+        if (!fd) return;
+        const fy = fd.date.getFullYear();
+        // (una semana que empieza a finales de diciembre también tiene días del año siguiente)
+        if (fy === year || (fy === year - 1 && fd.date.getMonth() === 11 && fd.date.getDate() > 24))
+          add(dir + name, fd.daily ? dayKey(fd.date) : null, 1);
+      });
+    } else {
+      add(journalFor(new Date(year, 0, 1)), null, 1);
+      add(legacyDiaryPath(year, dir), null, 2);
+    }
+    cands.sort((a, b) => a.rank - b.rank || (a.path < b.path ? -1 : 1));
+    const files = [];
+    for (const f of cands) {
+      try {
+        const exists = list ? true : c.pathExists ? await c.pathExists(f.path) : true;
+        existsRef.current[f.path] = exists;
+        if (!exists) continue;
+        const text = (await c.getFileContents(f.path)) || '';
+        files.push({ path: f.path, fileDay: f.fileDay, text });
+      } catch (e) {
+        existsRef.current[f.path] = false;
+      }
+    }
+    const bundle = { year, files };
+    setBundle(year, bundle);
+    return bundle;
+  };
+
+  // (4.38) Fichero en el que se escribe el día `d`: el que ya lo tiene; si no, el del periodo; si
+  // no existe y el del año está en el formato ANTERIOR, ese (no se mezclan formatos en un fichero);
+  // si no, uno nuevo en formato org-journal.
+  const fileFor = async (d) => {
+    const year = d.getFullYear();
+    const b = await load(year);
+    const k = dayKey(d);
+    let f = b.files.find((x) => parseDays(x.text, x.fileDay).some((y) => y.key === k));
+    if (f) return f;
+    const P = journalFor(d);
+    f = b.files.find((x) => samePath(x.path, P));
+    if (f) return f;
+    f = b.files.find(
+      (x) => samePath(x.path, legacyDiaryPath(year, dirRef.current)) && isLegacyText(x.text)
+    );
+    if (f) return f;
+    let text = '';
+    if (existsRef.current[P] === undefined) {
+      const c = client();
+      try {
+        const exists = c.pathExists ? await c.pathExists(P) : false;
+        existsRef.current[P] = exists;
+        if (exists) text = (await c.getFileContents(P)) || '';
+      } catch (e) {
+        existsRef.current[P] = false;
+      }
+    }
+    f = { path: P, fileDay: jcRef.current.type === 'daily' ? k : null, text };
+    setBundle(year, { ...b, files: [f, ...b.files] });
+    return f;
   };
 
   // Escribe (en cola, para que no se crucen dos guardados)
@@ -469,19 +567,31 @@ export default function EliDiary() {
     }
   };
 
-  const write = (year, text0) => {
+  // (4.38) `f` = fichero de fileFor; `year` = año del día (para el registro mensual)
+  const write = (f, year, text0) => {
     const monthly = getDiaryCfg().monthlyOn;
-    const text = monthly ? withDiaryIds(text0) : text0;
-    setText(year, text);
+    const text = monthly ? withDiaryIds(text0, f.fileDay) : text0;
+    const path = f.path;
+    const next = { ...textsRef.current };
+    Object.keys(next).forEach((y) => {
+      const b = next[y];
+      if (b && b.files.some((x) => samePath(x.path, path)))
+        next[y] = {
+          ...b,
+          files: b.files.map((x) => (samePath(x.path, path) ? { ...x, text } : x)),
+        };
+    });
+    textsRef.current = next;
+    setTexts(next);
     setStatus('Guardando…');
     queue.current = queue.current.then(async () => {
       try {
         const c = client();
-        if (existsRef.current[year]) await c.updateFile(pathFor(year), text);
-        else await c.createFile(pathFor(year), text);
-        existsRef.current[year] = true;
+        if (existsRef.current[path]) await c.updateFile(path, text);
+        else await c.createFile(path, text);
+        existsRef.current[path] = true;
         setStatus('Guardado');
-        if (monthly) await regenMonthly(year, text);
+        if (monthly) await regenMonthly(year, textsRef.current[year] || text);
       } catch (e) {
         setStatus('');
         showMessage('Diario', 'No se ha podido guardar: ' + ((e && e.message) || e));
@@ -494,10 +604,9 @@ export default function EliDiary() {
 
   // Asegura el día (con la plantilla) y lo escribe si se ha creado
   const ensure = async (d, c = cfg) => {
-    const year = d.getFullYear();
-    const text = await load(year);
-    const r = ensureDay(text || newFileText(year), d, c.templateOn ? c.template : []);
-    if (r.created || !text) await write(year, r.text);
+    const f = await fileFor(d);
+    const r = ensureDay(f.text, d, c.templateOn ? c.template : [], jcRef.current);
+    if (r.created || !f.text) await write(f, d.getFullYear(), r.text);
   };
 
   const loadPast = async (year) => {
@@ -510,6 +619,8 @@ export default function EliDiary() {
       const c = getDiaryCfg();
       setCfg(c);
       dirRef.current = diaryDir(c.dir, inboxNear(getGtdFiles().inbox, loadedPaths()));
+      jcRef.current = c.journal;
+      listRef.current = undefined;
       textsRef.current = {};
       existsRef.current = {};
       setTexts({});
@@ -586,7 +697,7 @@ export default function EliDiary() {
   const key = dayKey(date);
   const text = texts[year] || '';
   const day = parseDays(text).find((d) => d.key === key) || null;
-  const path = pathFor(year);
+  const path = (day && day.path) || journalFor(date);
   const isToday = key === dayKey(new Date());
 
   const goTo = async (d) => {
@@ -603,42 +714,48 @@ export default function EliDiary() {
     const t = input.trim();
     if (!t) return;
     const now = new Date();
-    const base = await load(year);
-    const next = addEntry(base, date, { text: t, mark, time: timeOf(now) }, template());
+    const f = await fileFor(date);
+    const next = addEntry(
+      f.text,
+      date,
+      { text: t, mark, time: timeOf(now) },
+      template(),
+      jcRef.current
+    );
     setInput('');
     setMark('-');
-    await write(year, next);
+    await write(f, year, next);
     inputRef.current && inputRef.current.focus();
   };
 
   const answer = async (q, value) => {
-    const base = await load(year);
     const cur = ((day && day.answers.find((a) => a.question === q)) || {}).answer || '';
     if (cur === value.trim()) return;
-    await write(year, setAnswer(base, date, q, value));
+    const f = await fileFor(date);
+    await write(f, year, setAnswer(f.text, date, q, value, jcRef.current));
   };
 
   // (4.27) contador del día (propiedad del día en el diari)
   const setCounter = async (c, value) => {
-    const base = await load(year);
-    // (4.33) los mensuales, en el mes
-    if (isMonthlyCounter(c)) await write(year, setMonthProp(base, date, c.key, value));
-    else await write(year, setDayProp(base, date, c.key, value, template()));
+    const f = await fileFor(date);
+    const jc = jcRef.current;
+    // (4.33) los mensuales, en el mes (4.38: en org-journal, propiedad del día en que se anotan)
+    if (isMonthlyCounter(c)) await write(f, year, setMonthProp(f.text, date, c.key, value, jc));
+    else await write(f, year, setDayProp(f.text, date, c.key, value, template(), jc));
   };
 
   // (4.33) respuesta de otro día (diario continuo)
   const answerOn = async (d, q, value, cur) => {
     if ((cur || '') === String(value || '').trim()) return;
-    const y = d.getFullYear();
-    const base = await load(y);
-    await write(y, setAnswer(base, d, q, value));
+    const f = await fileFor(d);
+    await write(f, d.getFullYear(), setAnswer(f.text, d, q, value, jcRef.current));
   };
 
   // (integración) apunte → tarea en el Inbox con enlace al día
   const toInbox = async (e) => {
-    const base = await load(year);
-    const r = ensureDayId(base, date);
-    if (r.text !== base) await write(year, r.text);
+    const f = await fileFor(date);
+    const r = ensureDayId(f.text, date, jcRef.current);
+    if (r.text !== f.text) await write(f, year, r.text);
     const title = e.text.trim() || `Del diario ${key}`;
     const notes = `Del diario: [[id:${r.id}][${key} ${e.time}]]`;
     const inbox = inboxNear(getGtdFiles().inbox, loadedPaths());
@@ -677,14 +794,15 @@ export default function EliDiary() {
     try {
       setStatus('Abriendo el día…');
       await queue.current;
-      await store.dispatch(eliSyncFile(pathFor(year)));
+      const f0 = await fileFor(d);
+      await store.dispatch(eliSyncFile(f0.path));
       delete textsRef.current[year];
-      const base = await load(year);
-      const r = ensureDayId(base || newFileText(year), d);
-      if (r.text !== base) await write(year, r.text);
+      const f = await fileFor(d);
+      const r = ensureDayId(f.text, d, jcRef.current);
+      if (r.text !== f.text) await write(f, year, r.text);
       await queue.current;
       setOpen(false);
-      await store.dispatch(eliOpenDiaryDayNarrow(pathFor(year), r.id));
+      await store.dispatch(eliOpenDiaryDayNarrow(f.path, r.id));
       setStatus('');
     } catch (e) {
       setStatus('');
@@ -698,7 +816,24 @@ export default function EliDiary() {
     history.push(`/file${path}`);
   };
 
-  const done = cfg.inSystem ? doneOn(buildTasks(files), date) : [];
+  const allTasks = cfg.inSystem || cfg.habitsOn ? buildTasks(files) : [];
+  const done = cfg.inSystem ? doneOn(allTasks, date) : [];
+  // (4.38) Hábitos de hoy: los que tocan (y los ya marcados), solo en el día de hoy
+  const habits = [];
+  if (cfg.habitsOn && isToday) {
+    habitsToday(allTasks, date).forEach((h) =>
+      habits.push(habitsJustDone.some((x) => x.key === h.task.key) ? { ...h, done: true } : h)
+    );
+    habitsJustDone.forEach((x) => {
+      if (x.day === key && !habits.some((h) => h.task.key === x.key))
+        habits.push({ task: x.task, done: true });
+    });
+  }
+  const markHabit = (h) => {
+    if (h.done) return;
+    setHabitsJustDone((l) => [...l, { key: h.task.key, task: h.task, day: key }]);
+    store.dispatch(gtdToggleDone(h.task));
+  };
   const past = onThisDay(texts, date);
   const answers = (template().length ? template() : []).map((q) => ({
     question: q,
@@ -901,6 +1036,25 @@ export default function EliDiary() {
         </button>
       </h1>
 
+      {habits.length > 0 && (
+        <div className="eli-diary__habits" data-testid="eli-diary-habits">
+          <span className="eli-diary__habits-label">Hábitos de hoy</span>
+          {habits.map((h) => (
+            <button
+              type="button"
+              key={h.task.key}
+              className={`eli-diary__habit${h.done ? ' is-done' : ''}`}
+              onClick={() => markHabit(h)}
+              disabled={h.done}
+              title={h.done ? 'Hecho hoy' : 'Marcar como hecho'}
+              data-testid="eli-diary-habit"
+            >
+              <i className={h.done ? 'far fa-check-square' : 'far fa-square'} /> {h.task.title}
+            </button>
+          ))}
+        </div>
+      )}
+
       {cfg.counters.length > 0 && (
         <Counters
           counters={cfg.counters}
@@ -1023,7 +1177,7 @@ export default function EliDiary() {
                 {y}
               </button>
               {d.entries.map((e, i) => (
-                <Entry key={i} e={e} path={pathFor(y)} />
+                <Entry key={i} e={e} path={d.path || pathFor(y)} />
               ))}
               {d.answers
                 .filter((a) => a.answer)
@@ -1043,7 +1197,7 @@ export default function EliDiary() {
             <PastDay
               key={d.key}
               d={d}
-              path={pathFor(d.year)}
+              path={d.path || pathFor(d.year)}
               counters={cfg.counters}
               onOpen={goTo}
               onAnswer={answerOn}

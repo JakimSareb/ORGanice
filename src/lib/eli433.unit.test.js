@@ -30,6 +30,9 @@ import {
 import { addEvent, MAX_EVENTS, errorText, syncLogText } from './eli_sync_log';
 import { isArchiveFile } from './eli_attachments';
 
+// (4.38) Estas pruebas son del formato ANTERIOR (`* AAAA-MM mes` › `** AAAA-MM-DD día`): se parte
+// de un fichero que ya está en ese formato (uno vacío se crea ya en formato org-journal).
+const OLD = '#+TITLE: Diari 2026\n#+STARTUP: overview\n\n* 2026-01 enero\n';
 const d = (y, m, day) => new Date(y, m - 1, day);
 
 describe('4.33 ajustes entre dispositivos', () => {
@@ -130,7 +133,7 @@ describe('4.33 contador mensual', () => {
   test('se guarda como propiedad del mes y se cambia o se quita', () => {
     expect(C[1]).toEqual({ key: 'CINTURA', name: 'Cintura', type: 'num', freq: 'month' });
     expect(C[0].freq).toBeUndefined();
-    let t = setDayProp('', d(2026, 10, 3), 'B', 'X', []);
+    let t = setDayProp(OLD, d(2026, 10, 3), 'B', 'X', []);
     t = setMonthProp(t, d(2026, 10, 25), 'CINTURA', '82');
     expect(t).toContain('* 2026-10 octubre\n:PROPERTIES:\n:CINTURA: 82\n:END:\n** 2026-10-03');
     expect(parseMonthProps(t)['2026-10']).toEqual({ CINTURA: '82' });
@@ -144,7 +147,7 @@ describe('4.33 contador mensual', () => {
   });
 
   test('sale en la cabecera del mes del mensual y en «Totales del año»', () => {
-    let t = setDayProp('', d(2026, 10, 3), 'B', 'X', []);
+    let t = setDayProp(OLD, d(2026, 10, 3), 'B', 'X', []);
     t = setMonthProp(t, d(2026, 10, 25), 'CINTURA', '82');
     t = setMonthProp(t, d(2026, 9, 1), 'CINTURA', '84');
     const data = monthlyData(t, 2026, C);

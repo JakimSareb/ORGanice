@@ -20,6 +20,9 @@ import {
   END,
 } from './eli_monthly';
 
+// (4.38) Estas pruebas son del formato ANTERIOR (`* AAAA-MM mes` › `** AAAA-MM-DD día`): se parte
+// de un fichero que ya está en ese formato (uno vacío se crea ya en formato org-journal).
+const OLD = '#+TITLE: Diari 2026\n#+STARTUP: overview\n\n* 2026-01 enero\n';
 const d = (y, m, day) => new Date(y, m - 1, day);
 const C = [
   { key: 'B', name: 'Biblia', type: 'bool' },
@@ -38,13 +41,13 @@ describe('4.27 diario', () => {
     expect(parseDays(t)[0].entries.map((e) => e.text)).toEqual(['antes', 'viejo', 'nuevo']);
   });
   test('respuesta nueva va antes de los apuntes', () => {
-    let t = addEntry('', d(2026, 10, 24), { text: 'a', time: '09:00' }, ['P']);
+    let t = addEntry(OLD, d(2026, 10, 24), { text: 'a', time: '09:00' }, ['P']);
     t = setAnswer(t, d(2026, 10, 24), 'Q', 'r');
     expect(t).toContain('- P ::\n- Q :: r\n- 09:00 - a');
     expect(parseDays(t)[0].answers.length).toBe(2);
   });
   test('contadores = propiedades del día', () => {
-    let t = setDayProp('', d(2026, 10, 24), 'km', '4,5', []);
+    let t = setDayProp(OLD, d(2026, 10, 24), 'km', '4,5', []);
     t = setDayProp(t, d(2026, 10, 24), 'B', 'X', []);
     expect(t).toContain(':PROPERTIES:\n:KM: 4,5\n:B: X\n:END:');
     expect(parseDays(t)[0].props).toEqual({ KM: '4,5', B: 'X' });
@@ -53,7 +56,7 @@ describe('4.27 diario', () => {
     expect(t).not.toContain(':PROPERTIES:');
   });
   test(':ID: en días con algo y en su mes; enlaces de mes', () => {
-    let t = ensureDay('', d(2026, 10, 23), ['P']).text;
+    let t = ensureDay(OLD, d(2026, 10, 23), ['P']).text;
     t = addEntry(t, d(2026, 10, 24), { text: 'a', time: '09:00' }, ['P']);
     const w = withDiaryIds(t);
     expect(w).toContain('* 2026-10 octubre\n:PROPERTIES:\n:ID: diari-2026-10\n:END:');
@@ -73,7 +76,7 @@ describe('4.27 diario', () => {
 
 describe('4.27 registro mensual', () => {
   const diary = () => {
-    let t = setAnswer('', d(2026, 10, 1), 'Lo más importante de hoy', 'empezar | bien');
+    let t = setAnswer(OLD, d(2026, 10, 1), 'Lo más importante de hoy', 'empezar | bien');
     t = setDayProp(t, d(2026, 10, 1), 'B', 'X', []);
     t = setDayProp(t, d(2026, 10, 1), 'KM', '4,5', []);
     t = setDayProp(t, d(2026, 10, 2), 'KM', '3.5', []);

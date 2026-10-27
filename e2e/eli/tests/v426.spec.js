@@ -1,4 +1,5 @@
-// 4.26: Diario de hoy (Menú ☰) crea pages/diari-AAAA.org con el mes, el día y el apunte.
+// 4.26: Diario de hoy (Menú ☰) crea el fichero del año con el día y el apunte.
+// (4.38) Formato org-journal: pages/AAAA.org, día con :CREATED: y apunte `** HH:MM`.
 const { test, expect } = require('../harness');
 
 const BASE = { '/tasks.org': '', '/inbox.org': '' };
@@ -23,10 +24,17 @@ test('4.26: Diario de hoy crea el fichero del año con el día y el apunte', asy
   await page.locator('[data-testid=eli-diary-input]').fill('Paseo por el puerto');
   await app.press(page.locator('[data-testid=eli-diary-add]'));
   await expect
-    .poll(async () => (await app.fileAfterSync(`/pages/diari-${y}.org`, 500)) || '', {
+    .poll(async () => (await app.fileAfterSync(`/pages/${y}.org`, 500)) || '', {
       timeout: 15000,
     })
-    .toMatch(new RegExp(`\\*\\* ${day} [\\s\\S]*\\n- \\d\\d:\\d\\d - Paseo por el puerto`));
+    .toMatch(
+      new RegExp(
+        `:CREATED:  ${day.replace(
+          /-/g,
+          ''
+        )}\\n[\\s\\S]*\\n\\*\\* \\d\\d:\\d\\d - Paseo por el puerto`
+      )
+    );
   await app.press(page.locator('[data-testid=eli-diary-close]'));
   await expect(page.locator('[data-testid=eli-diary]')).toHaveCount(0);
   expect(app.errors).toEqual([]);
