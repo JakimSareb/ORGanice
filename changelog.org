@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.43 (octubre de 2026)
+** GTD: letra y cabecera del proyecto
+- *Tipo de letra también en GTD*: nuevo interruptor *Aplicar también a GTD (tareas y cabeceras)* en Ajustes › Apariencia, junto al tipo de letra. Apagado (por defecto) GTD conserva su letra de siempre; encendido, las tareas, los proyectos y las cabeceras de GTD usan la misma letra que el resto de la app (la que elijas, o la del tema Logseq).
+- *Vista del proyecto según su tipo*: un proyecto *secuencial* (↓) se abre con *Acciones siguientes secuenciales* y uno *paralelo* (⇉), con *Lista única*. Al pulsar ⇉/↓ la vista cambia en el acto. Si eliges otra a mano en ⋯ › Opciones de vista, vale solo para ese proyecto hasta que salgas de él. *Next no cambia*: el ajuste global sigue igual.
+- *Cabecera del proyecto*: ya no muestra el número de tareas; el botón ⇉/↓ queda dentro de la cabecera, a la derecha; los botones (filtrar, nuevo, deshacer y ⋯) bajan a una línea propia justo debajo (con desplazamiento lateral si no caben); y un título largo sigue alineado con su propio texto en las líneas siguientes, no debajo de la ★.
+
 * 4.42 (octubre de 2026)
 ** Citar
 - *Citar* trae el contenido de otra nota o cabecera dentro de la tuya, siempre al día (como =org-transclusion= de Emacs). En el fichero solo se guarda una línea =#+transclude: [[id:…][Título]]=; el contenido no se copia.

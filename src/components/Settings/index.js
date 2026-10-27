@@ -16,7 +16,7 @@ import './stylesheet.css';
 
 import TabButtons from '../UI/TabButtons';
 import { READABILITY, getReadability, setReadability } from '../../lib/eli_readability';
-import { FONTS, getFont, setFont } from '../../lib/eli_font';
+import { FONTS, getFont, setFont, getFontGtd, setFontGtd } from '../../lib/eli_font';
 import Switch from '../UI/Switch';
 import ExternalLink from '../UI/ExternalLink';
 import { APP_NAME, APP_VERSION } from '../../lib/eli_app_name';
@@ -767,6 +767,28 @@ const EliFontSetting = () => {
   );
 };
 
+// (4.43) El tipo de letra también en GTD (en este dispositivo; apagado = GTD con su letra de siempre)
+const EliFontGtdSetting = () => {
+  const [on, setOn] = React.useState(getFontGtd());
+  return (
+    <div className="setting-container" data-testid="eli-setting-font-gtd">
+      <div className="setting-label">
+        Aplicar también a GTD (tareas y cabeceras)
+        <div className="setting-label__description">
+          Con «Normal» o con el tema Logseq, GTD toma la misma letra que el resto de la app.
+        </div>
+      </div>
+      <Switch
+        isEnabled={on}
+        onToggle={() => {
+          setOn(!on);
+          setFontGtd(!on);
+        }}
+      />
+    </div>
+  );
+};
+
 // (3.07) qué hace un toque/clic en tareas y cabeceras, en el móvil y en el ordenador
 const EliTapModeSettings = ({ onlyHeader }) => {
   const [, force] = React.useState(0);
@@ -1136,6 +1158,8 @@ const Settings = ({
           <EliThemeSetting theme={theme} onSelect={handleThemeClick} />
 
           <EliFontSetting />
+
+          {!notes && <EliFontGtdSetting />}
 
           {!notes && <EliReadabilitySetting />}
         </div>

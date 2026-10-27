@@ -23,3 +23,11 @@ html[data-eli-font] .gtd,
 html[data-eli-font] .eli-prompt__box {
   font-family: var(--eli-font);
 }
+
+/* (4.43) «Aplicar también a GTD (tareas y cabeceras)»: GTD fija su propia letra del sistema
+   (`html[data-eli-theme] .gtd`, misma especificidad y se carga después); con el interruptor
+   encendido GTD hereda la letra del resto de la app (la del <body>: Normal, la elegida o la del
+   tema Logseq). Apagado = como siempre. */
+html[data-eli-font-gtd] body .gtd {
+  font-family: inherit;
+}

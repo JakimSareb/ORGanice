@@ -768,6 +768,16 @@ export const isSeqBlocker = (t, today = new Date()) => {
 // de proyectos secuenciales); null si no es ninguna de las dos o está hecha
 export const seqMarkOf = (t, today = new Date()) =>
   isSeqBlocker(t, today) ? (isFutureScheduled(t, today) ? 'S' : 'W') : null;
+// (4.43) Vista dentro de un proyecto: «Acciones siguientes secuenciales» (true) o «Lista única»
+// (false). Por defecto la manda el proyecto (`:ORDERED: t` = secuencial; sin eso, paralelo = lista
+// única). Si el usuario elige otra a mano (`override` 'sequential' | 'none') vale hasta salir del
+// proyecto. NO toca el ajuste global (`eliGtdGroup`, que es el de Next).
+export const projectViewSequential = (projectTask, override = null) =>
+  override === 'sequential'
+    ? true
+    : override === 'none'
+    ? false
+    : !!(projectTask && projectTask.ordered);
 // Sección de una tarea en su proyecto, con el modo secuencial (bloqueantes → 'next')
 export const projectSectionOfSeq = (task, today = new Date(), sequential = false) =>
   sequential && isSeqBlocker(task, today) ? 'next' : projectSectionOf(task, today);

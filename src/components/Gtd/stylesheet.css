@@ -4874,6 +4874,42 @@ input.gtd-proc__input:not([type]) {
   opacity: 1;
 }
 
+/* (4.43) cabecera del proyecto: sin contador; ⇉/↓ dentro de la cabecera, a la derecha; el título
+   largo va en su bloque (sangría colgante: la 2.ª línea empieza donde el texto del título, no
+   bajo la estrella) y los botones de la cabecera bajan a una línea propia justo debajo. */
+.gtd-main__head--project .gtd-main__title {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+.gtd-main__head--project .gtd-main__star {
+  flex: none;
+}
+.gtd-main__title-body {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.gtd-main__head .gtd-project-order {
+  flex: none;
+  margin: 0;
+}
+html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
+  margin-bottom: 8px;
+}
+.gtd-project-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin: 0 0 18px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.gtd-project-tools > * {
+  flex: none;
+}
+
 /* 4.40: recuadro de selección (arrastrar en un hueco de la lista) */
 .gtd-marquee {
   position: fixed;
