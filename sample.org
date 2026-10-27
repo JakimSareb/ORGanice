@@ -402,6 +402,18 @@ Formato › *Lista ›* pone Casilla, Guion, Más, Numerada o lo quita en la lí
 - *Diario*: con org-journal cada día ya tiene su =:ID:=, así que es una nota más; no hace falta org-roam-dailies.
 - *Emacs*: pon =org-roam-directory= en tu carpeta de Dropbox y activa =(org-roam-db-autosync-mode)=; verá las mismas notas y enlaces.
 
+** Citar: el contenido de otra nota dentro de la tuya (4.42)
+- *Citar* (transclusión, como =org-transclusion= de Emacs) muestra dentro de tus notas el contenido de otra cabecera o nota-fichero, siempre al día: si cambias el origen, cambia en todos los sitios donde se cita. En el fichero solo se guarda *una línea*: =#+transclude: [[id:…][Título]]=. El contenido citado no se copia.
+- *Insertar*: editando las notas, *⋯ › Citar…* (o escribe «/» y busca *Citar*). Sale el mismo buscador que al teclear «[[»: elige la cabecera o nota. La línea se pone sola en su propia línea.
+- *Copiar como cita*: en el menú *⋯ › Compartir o PDF* de una cabecera (si no tiene =:ID:=, se le pone). Pega la línea en las notas de cualquier otra cabecera.
+- Se ve como un bloque de *solo lectura* con una barra azul a la izquierda, con el título del origen (tócalo para ir allí) y el botón *Editar origen*. Para quitar la cita, borra su línea en las notas.
+- *Opciones* detrás del enlace, como en Emacs: =:only-contents= (sin el título de la cabecera citada), =:level 2= (el título citado pasa a ese nivel) y =:exclude-elements "drawer keyword"= (sin cajones ni líneas =#+…=).
+- Una cabecera citada trae sus subcabeceras. Una nota-fichero trae su texto y todas sus cabeceras.
+- *Límites*: una cita que se cita a sí misma se corta con un aviso («cita circular») y se admiten 3 niveles de citas dentro de citas. Solo se pueden citar enlaces por ID.
+- Si el origen se borra, el bloque lo avisa y la cita aparece en *Menú › Herramientas › Enlaces rotos*.
+- Al *imprimir o sacar el PDF* se imprime el contenido citado.
+- *Emacs*: activa =org-transclusion-mode= para ver las mismas citas allí.
+
 * Buscar, mover y archivar
 - *b*: buscar en tareas, encabezados o texto, con fragmentos; «Solo esta hoja» limita la búsqueda al fichero abierto y «Archivadas» busca también en los ficheros _archive (se recuerda; en la paleta, «Archivadas: mostrar lo archivado»).
 - *m*: mover el encabezado seleccionado con las flechas.

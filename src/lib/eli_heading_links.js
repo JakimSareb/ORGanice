@@ -17,6 +17,7 @@ import {
   orderHierarchical,
 } from './eli_heading_index';
 import { idHeadingLink, withOrgIdProperty } from './eli_id_links';
+import { buildTransclusionLine, lineInsertion } from './eli_transclude';
 import { newOrgId } from './gtd/gtd_model';
 import { getGtdFiles } from './gtd/gtd_sections';
 import { gtdAddTask } from './gtd/gtd_actions';
@@ -235,6 +236,33 @@ export const insertHeadingLink = (el, insert, replace = null) => async (dispatch
     return false;
   }
   insert(el, idHeadingLink(target.orgId, target.title), start, end);
+  return true;
+};
+
+/**
+ * (4.42) «Citar»: elegir el origen con el mismo selector de «[[» e insertar, en su propia línea de
+ * `el` (las notas), `#+transclude: [[id:X][Título]]`. El fichero solo guarda esa línea.
+ */
+export const insertTransclusion = (el, insert) => async (dispatch) => {
+  if (!el) return false;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const target = await dispatch(pickHeadingTarget({ title: 'Citar' }));
+  if (!target) {
+    refocus(el, end);
+    return false;
+  }
+  if (!el.isConnected) {
+    showMessage('Citar', 'El campo que se editaba ya no está abierto.');
+    return false;
+  }
+  const { text } = lineInsertion(
+    el.value,
+    start,
+    end,
+    buildTransclusionLine(target.orgId, target.title)
+  );
+  insert(el, text, start, end);
   return true;
 };
 
