@@ -142,3 +142,24 @@ body.eli-tags-below .header-tag {
   font-weight: normal;
   opacity: 0.6;
 }
+
+/* (4.37) margen derecho de 14px también al mostrar (para que el texto no salte al editar); con las
+   etiquetas al lado ya llevan su propio margen de 14px, así que no se suman */
+.title-line-text:not(:has(.header-tags)) > span:first-child,
+body.eli-tags-below .title-line-text > span:first-child {
+  padding-right: var(--eli-edge-pad, 14px);
+}
+
+/* (4.37) indicador de backlinks: pequeño, gris, sin ruido (no sale si es 0) */
+.eli-backlinks-indicator {
+  margin-left: 6px;
+  font-size: 0.75em;
+  color: var(--base1);
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.eli-backlinks-indicator:hover {
+  color: var(--blue);
+  opacity: 1;
+}

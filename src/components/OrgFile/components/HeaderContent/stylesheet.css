@@ -1,6 +1,7 @@
 @import '../../../../colors.css';
 
 .header-content-container {
+  padding-right: var(--eli-edge-pad, 14px); /* (4.37) */
   white-space: pre-wrap;
   overflow-x: auto;
 }

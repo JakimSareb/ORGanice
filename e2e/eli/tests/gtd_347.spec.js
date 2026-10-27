@@ -18,13 +18,17 @@ const editNotes = async (app, title) => {
   return ta;
 };
 
-test('Ajustes (3.47): «Apariencia» empieza plegada y se despliega', async ({ app }) => {
+test('Ajustes (3.47): «Apariencia» empieza plegada y se despliega (el toque en tareas, en Documentos)', async ({
+  app,
+}) => {
   await app.open(BASE, '/settings');
   const sec = app.page.locator('[data-testid=eli-settings-appearance]');
   await sec.waitFor({ timeout: 20000 });
   expect(await sec.evaluate((d) => d.open)).toBe(false);
   await sec.locator('> summary').click();
   expect(await sec.evaluate((d) => d.open)).toBe(true);
+  // (4.37) los toques viven en «Documentos» (ya no en Apariencia)
+  await app.page.locator('[data-testid=eli-settings-docs] > summary').click();
   // (4.04) ya no hay ajuste para las cabeceras (sí para las tareas)
   await expect(app.page.locator('[data-testid=eli-setting-tap-task-mobile]')).toBeVisible();
   await expect(app.page.locator('[data-testid=eli-setting-tap-header-mobile]')).toHaveCount(0);

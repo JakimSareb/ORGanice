@@ -18,7 +18,8 @@ import AttributedString from '../AttributedString';
 import { attachmentCountOfHeader } from '../../../../lib/eli_attachments';
 import { legacyHeaderTapOpen, headerTapMode } from '../../../../lib/eli_tap_mode';
 import { isDocLocked } from '../../../../lib/eli_doc_lock';
-import { openTagView } from '../../../../lib/eli_heading_events';
+import { openTagView, openBacklinks } from '../../../../lib/eli_heading_events';
+import { idOf, backlinkCountOf } from '../../../../lib/eli_heading_index';
 
 class TitleLine extends PureComponent {
   constructor(props) {
@@ -232,6 +233,23 @@ class TitleLine extends PureComponent {
                     {attachmentCount > 1 ? ` ${attachmentCount}` : ''}
                   </span>
                 )}
+                {this.props.eliBacklinks > 0 && (
+                  <span
+                    className="eli-backlinks-indicator"
+                    role="button"
+                    title={`${this.props.eliBacklinks} ${
+                      this.props.eliBacklinks === 1 ? 'cabecera enlaza' : 'cabeceras enlazan'
+                    } aquí (Quién enlaza aquí)`}
+                    aria-label="Quién enlaza aquí"
+                    data-testid="eli-backlinks-indicator"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openBacklinks(this.props.eliHeaderPath, header.get('id'));
+                    }}
+                  >
+                    ↩ {this.props.eliBacklinks}
+                  </span>
+                )}
               </span>
               {addition ? <span style={additionStyle}>{addition}</span> : null}
               {showDeadlineDisplay && headerDeadlineMap && (
@@ -294,6 +312,9 @@ const mapStateToProps = (state, ownProps) => {
     closeSubheadersRecursively: state.base.get('closeSubheadersRecursively'),
     isSelected: selectedHeaderId === ownProps.header.get('id'),
     todoKeywordSets: sets || null,
+    // (4.37) cabeceras que enlazan a esta (indicador discreto «↩ n»)
+    eliBacklinks: backlinkCountOf(state.org.present.get('files'), idOf(ownProps.header)),
+    eliHeaderPath: ownPath || path,
   };
 };
 

@@ -103,22 +103,54 @@ const test = base.test.extend({
       store: {},
       errors,
       // Abre la app con estos ficheros ({ '/tasks.org': '…' }) en la ruta indicada
-      async open(files = {}, path = '/gtd', { localStorage = {} } = {}) {
+      async open(files = {}, path = '/gtd', { localStorage = {}, fresh = false } = {}) {
         Object.assign(app.store, files);
         await mockWebDav(context, app.store);
-        await context.addInitScript((extra) => {
-          if (sessionStorage.getItem('__e2e')) return;
-          sessionStorage.setItem('__e2e', '1');
-          localStorage.setItem('authenticatedSyncService', 'WebDAV');
-          localStorage.setItem('webdavEndpoint', 'https://dav.test');
-          localStorage.setItem('webdavUsername', 'e2e');
-          localStorage.setItem('webdavPassword', 'e2e');
-          // (3.46) las subtareas vienen apagadas; las pruebas anteriores las usan encendidas
-          localStorage.setItem('eliGtdSubtasks', 'true');
-          // (4.15) «Allen estricto» viene encendido; las pruebas anteriores usan los procesos de antes
-          localStorage.setItem('eliGtdStrict', 'false');
-          Object.keys(extra).forEach((k) => localStorage.setItem(k, extra[k]));
-        }, localStorage);
+        await context.addInitScript(
+          ({ extra, fresh }) => {
+            if (sessionStorage.getItem('__e2e')) return;
+            sessionStorage.setItem('__e2e', '1');
+            localStorage.setItem('authenticatedSyncService', 'WebDAV');
+            localStorage.setItem('webdavEndpoint', 'https://dav.test');
+            localStorage.setItem('webdavUsername', 'e2e');
+            localStorage.setItem('webdavPassword', 'e2e');
+            // (3.46) las subtareas vienen apagadas; las pruebas anteriores las usan encendidas
+            localStorage.setItem('eliGtdSubtasks', 'true');
+            // (4.15) «Allen estricto» viene encendido; las pruebas anteriores usan los procesos de antes
+            localStorage.setItem('eliGtdStrict', 'false');
+            // (4.37) Valores por defecto nuevos (los del usuario): las pruebas anteriores asumen los de
+            // antes, así que se fijan aquí. `fresh: true` los deja sin tocar (instalación nueva).
+            if (!fresh) {
+              const legacy = {
+                theme: 'Solarized',
+                colorScheme: 'OS',
+                bulletStyle: 'Fancy',
+                editorDescriptionHeightValue: '8',
+                orgHabitFollowingDays: '7',
+                preferEditRawValues: 'false',
+                shouldShowTitleInOrgFile: 'false',
+                shouldLogIntoDrawer: 'false',
+                closeSubheadersRecursively: 'false',
+                eliAllOrgFiles: 'false',
+                eliArchiveInSubfolder: 'false',
+                eliSlashMenu: 'false',
+                eliNoSwipeDocs: 'false',
+                eliNoSwipeGtd: 'false',
+                showClockDisplay: 'false',
+                eliGtdProjNotes: 'true',
+                eliGtdAutoCollect: 'false',
+                eliCalWeeks: 'true',
+                eliCalMoon: 'true',
+                eliTools: JSON.stringify({ pomo: false }),
+                eliDiary: JSON.stringify({ dir: '', startView: 'diary' }),
+                eliGtdSections: JSON.stringify({ files: {} }),
+              };
+              Object.keys(legacy).forEach((k) => localStorage.setItem(k, legacy[k]));
+            }
+            Object.keys(extra).forEach((k) => localStorage.setItem(k, extra[k]));
+          },
+          { extra: localStorage, fresh }
+        );
         await page.goto(path);
         return app;
       },

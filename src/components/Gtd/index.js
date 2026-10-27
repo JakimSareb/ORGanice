@@ -101,6 +101,8 @@ import { clockSummary, taskLinkText, isClockRunning } from '../../lib/gtd/gtd_to
 import { gtdSendTo } from '../../lib/gtd/gtd_sendto';
 import { pickRefileTarget } from '../../lib/eli_heading_links';
 import { openBacklinks } from '../../lib/eli_heading_events';
+import { PREF_DEFAULTS } from '../../lib/eli_defaults';
+import { OrgTitle } from '../EliHeadingViews/OrgRender';
 import { ROW_FN_PROPS, rowPropsEqual } from '../../lib/gtd/gtd_rowmemo';
 import { clockTotalsOf, clockTotalLabel } from '../../lib/gtd/gtd_clock';
 import {
@@ -221,6 +223,7 @@ import { linkTargetFor } from '../../lib/eli_org_attach';
 import EliMedia from '../OrgFile/components/EliMedia';
 import {
   setGtdConfig,
+  effectiveStored,
   isSectionShown,
   isActionSection,
   sectionLabel,
@@ -265,7 +268,7 @@ const LS_AUTO_A = 'eliGtdAutoA';
 
 const selectFiles = (s) => s.org.present.get('files');
 const selectFileSettings = (s) => s.org.present.get('fileSettings');
-const selectGtdSections = (s) => s.base.get('eliGtdSections');
+const selectGtdSections = (s) => effectiveStored(s.base.get('eliGtdSections'));
 const selectNoSwipeGtd = (s) => s.base.get('eliNoSwipeGtd') === true;
 const selectArchiveInSubfolder = (s) => s.base.get('eliArchiveInSubfolder') === true;
 const selectTemplates = (s) => s.capture.get('captureTemplates') || List();
@@ -366,6 +369,12 @@ export const tasksFileOf = (templates, loadedPaths, inboxPaths) => {
   return loadedPaths.find((x) => !inboxPaths.includes(x)) || inboxPaths[0] || loadedPaths[0];
 };
 
+// (4.37) ¿El título lleva enlaces [[…]] o una URL? Entonces se pinta con enlaces clicables
+const hasTitleLink = (raw) => /\[\[[^\]]+\]|https?:\/\/\S/i.test(raw || '');
+// tocar un enlace del título no abre, selecciona ni arrastra la fila
+const stopOnLink = (e) => {
+  if (e.target && e.target.closest && e.target.closest('a, .eli-org-link')) e.stopPropagation();
+};
 const fmtDate = (d) => (d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '');
 
 // (3.0) Notas bajo la fila (como Nirvana: completas, parciales u ocultas). Sin la línea :Created:
@@ -758,7 +767,22 @@ function TaskRow({
               onClick={onTitleClick || undefined}
               data-testid="gtd-task-title"
             >
-              {task.title || '(sin título)'}
+              {/* (4.37) título con enlaces: clicables sin abrir ni seleccionar la fila */}
+              {hasTitleLink(task.rawTitle) ? (
+                <span
+                  className="gtd-task__title-links"
+                  onClick={stopOnLink}
+                  onDoubleClick={stopOnLink}
+                  onPointerDown={stopOnLink}
+                  onPointerUp={stopOnLink}
+                  onMouseDown={stopOnLink}
+                  onContextMenu={stopOnLink}
+                >
+                  <OrgTitle rawTitle={task.rawTitle} fallback={task.title || '(sin título)'} />
+                </span>
+              ) : (
+                task.title || '(sin título)'
+              )}
             </span>
             {/* (3.01) icono de notas solo en esta fila; (3.34) alterna Ocultas ⇄ Completas;
                 (3.11) pegado al final del título; (3.43) también en los proyectos */}
@@ -904,6 +928,8 @@ function TaskRow({
             </span>
           )}
           {/* (4.32) tarea con repetición: calendario con flechita en círculo */}
+          {/* (4.37) la marca de repetición SUSTITUYE al calendario de «programada» (una sola marca;
+              si empieza más adelante, solo se añade la fecha) */}
           {(task.scheduledRepeat || task.deadlineRepeat) && !task.isDone && (
             <span
               className="gtd-meta gtd-meta--repeat"
@@ -914,13 +940,16 @@ function TaskRow({
                 <i className="far fa-calendar-alt" />
                 <i className="fas fa-redo-alt" />
               </span>
+              {task.scheduled && task.scheduled > today ? ` ${fmtDate(task.scheduled)}` : ''}
             </span>
           )}
-          {task.scheduled && task.scheduled > today && (
-            <span className="gtd-date" title="Empieza">
-              <i className="far fa-calendar-alt" /> {fmtDate(task.scheduled)}
-            </span>
-          )}
+          {task.scheduled &&
+            task.scheduled > today &&
+            !((task.scheduledRepeat || task.deadlineRepeat) && !task.isDone) && (
+              <span className="gtd-date" title="Empieza">
+                <i className="far fa-calendar-alt" /> {fmtDate(task.scheduled)}
+              </span>
+            )}
           {due && !task.isDone && (
             <span
               className={`gtd-date gtd-date--due is-${due.level}`}
@@ -1075,7 +1104,7 @@ export default function GtdView() {
   const [refsOpen, setRefsOpen] = useState(false);
   // (2.17) notas del proyecto, bajo su cabecera (plegables; se recuerda si se pliegan)
   const [projNotesOpen, setProjNotesOpen] = useState(
-    () => readLS('eliGtdProjNotes', true) !== false
+    () => readLS('eliGtdProjNotes', PREF_DEFAULTS.eliGtdProjNotes) !== false
   );
   // (3.43) «Todos los proyectos»: notas desplegadas con su icono, por proyecto
   const [overviewNotes, setOverviewNotes] = useState(() => new Set());

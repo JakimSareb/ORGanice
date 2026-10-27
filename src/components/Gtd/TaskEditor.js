@@ -1,6 +1,8 @@
 // ORG Mode para Eli: edición de una tarea en la vista GTD (se despliega bajo la fila)
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useDispatch } from 'react-redux';
+import { insertHeadingLink } from '../../lib/eli_heading_links';
 import { focusField } from '../../lib/eli_keyboard_bridge';
 import { askPick } from '../../lib/eli_prompt';
 import EliFormatBar, { insertNowIn } from '../EliFormatBar';
@@ -193,6 +195,7 @@ export default function TaskEditor({
   // para que iOS lo saque)
   // (3.33) el cursor va siempre donde se ha tocado (antes, tras desplazar la hoja, iOS lo dejaba
   // en el 1.er carácter): se calcula el carácter bajo el dedo y se pone a mano
+  const dispatch = useDispatch();
   const pendingCaret = useRef(null);
   // (3.38) un arrastre (p. ej. deslizar la hoja hacia abajo para cerrarla) no empieza a editar:
   // si no, el pointerup del final enfocaba el título o las notas y salía el teclado
@@ -262,7 +265,23 @@ export default function TaskEditor({
   // (los ids de los encabezados son números; el desplegable trabaja con texto)
   const [parent, setParent] = useState(parentTaskId ? String(parentTaskId) : '');
   const titleRef = useRef(null);
+  // (4.37) el cuadro del título CRECE con el texto (sin tope de líneas). Se mide desde cero cada vez
+  // (height auto → scrollHeight) para no acumular píxeles; también al cambiar el ancho.
+  const fitTitle = () => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
+  };
   const notesRef = useRef(null);
+  useLayoutEffect(() => {
+    fitTitle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, editingText]);
+  useEffect(() => {
+    window.addEventListener('resize', fitTitle);
+    return () => window.removeEventListener('resize', fitTitle);
+  }, []);
   const encrypted = /-----BEGIN PGP MESSAGE-----/.test(task.description || '');
 
   // (3.17) tarea o proyecto nuevo (también desde una plantilla): el cursor va directo al título,
@@ -560,6 +579,12 @@ export default function TaskEditor({
   const insertLink = (e) => {
     if (e) e.stopPropagation();
     insertLinkInto(linkField(), insertIntoField);
+  };
+  // (4.37) «[[»: enlace a una cabecera por ID (el mismo selector jerárquico que al teclear «[[»)
+  const insertHeadingLinkHere = (e) => {
+    if (e) e.stopPropagation();
+    const el = linkField();
+    if (el) dispatch(insertHeadingLink(el, insertIntoField));
   };
   // enlace a otra tarea (se le pone :ID: si no lo tiene): para saltar entre tareas
   const insertTaskLink = async (e) => {
@@ -921,14 +946,15 @@ export default function TaskEditor({
           ) : (
             renderStar()
           )}
-          <input
+          <textarea
             ref={titleRef}
+            rows={1}
             className={'gtd-editor__title' + (editingText ? '' : ' is-preview')}
             readOnly={!editingText}
             onPointerDown={markDown}
             onPointerUp={startEditing}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => setTitle(e.target.value.replace(/\r?\n/g, ' '))}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
                 e.preventDefault();
@@ -1152,6 +1178,16 @@ export default function TaskEditor({
                   data-testid="gtd-editor-link"
                 >
                   <i className="fas fa-link" />
+                </button>
+                <button
+                  type="button"
+                  className="eli-format-bar__btn"
+                  onClick={insertHeadingLinkHere}
+                  title="Enlace a una cabecera ([[)"
+                  aria-label="Enlace a una cabecera"
+                  data-testid="gtd-editor-link-heading"
+                >
+                  [[
                 </button>
                 {onPickTaskLink && !isNew && (
                   <button

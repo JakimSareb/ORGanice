@@ -9,7 +9,7 @@ import { setEliSetting } from '../../actions/base';
 import {
   sectionDef,
   sectionLabel,
-  normalizeGtdSections,
+  effectiveGtdSections,
   DEFAULT_SECTIONS,
   CUSTOM_ICONS,
   CUSTOM_PREFIX,
@@ -105,7 +105,7 @@ export default function GtdSectionsSettings() {
   const orgPaths = useSelector(selectOrgPaths, (a, b) => a.join('\n') === b.join('\n'));
   const noSwipeDocs = useSelector(selectNoSwipeDocs);
   const noSwipeGtd = useSelector(selectNoSwipeGtd);
-  const cfg = normalizeGtdSections(stored);
+  const cfg = effectiveGtdSections(stored);
   const [openId, setOpenId] = useState(null);
 
   const save = (next) => dispatch(setEliSetting('eliGtdSections', fromJS(next)));
@@ -373,7 +373,7 @@ export default function GtdSectionsSettings() {
             Borrar esta sección
           </button>
         ) : (
-          JSON.stringify(s) !== JSON.stringify(normalizeGtdSections(null).sections[id]) && (
+          JSON.stringify(s) !== JSON.stringify(effectiveGtdSections(null).sections[id]) && (
             <button
               type="button"
               className="btn eli-gtdsec__reset-one"

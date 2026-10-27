@@ -4,6 +4,7 @@
 // la plantilla van en el cuerpo del día como lista de descripción (`- Pregunta :: respuesta`).
 // El diario se lee y se escribe directamente (como scratch.org): no entra en GTD, la agenda ni
 // los avisos. Aquí solo hay funciones puras (y el ajuste en localStorage).
+import { DIARY_DEFAULTS } from './eli_defaults';
 
 export const MARKS = [
   { id: '-', label: 'Nota', sign: '–' },
@@ -81,7 +82,12 @@ export const cleanCounters = (list) => {
     .map((c) => ({ ...c, name: c.name || c.key }));
 };
 
-const DEFAULT_CFG = { dir: '', templateOn: true, template: DEFAULT_TEMPLATE, inSystem: true };
+const DEFAULT_CFG = {
+  dir: DIARY_DEFAULTS.dir, // (4.37) `journal/` (solo el valor por DEFECTO: lo guardado se respeta)
+  templateOn: true,
+  template: DEFAULT_TEMPLATE,
+  inSystem: true,
+};
 export const getDiaryCfg = () => {
   let raw = null;
   try {
@@ -102,7 +108,8 @@ export const getDiaryCfg = () => {
       ? cleanCounters(r.counters)
       : cleanCounters(DEFAULT_COUNTERS),
     // (4.33) al abrir la app (desde el icono): 'diary' = Diario de hoy | 'last' = última vista
-    startView: r.startView === 'last' ? 'last' : 'diary',
+    startView:
+      r.startView === 'last' || r.startView === 'diary' ? r.startView : DIARY_DEFAULTS.startView,
   };
 };
 export const setDiaryCfg = (patch) => {

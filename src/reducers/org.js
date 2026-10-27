@@ -32,6 +32,7 @@ import {
   _updateHeaderFromDescription,
 } from '../lib/parse_org';
 import { PRIORITY_RE as ELI_PRIORITY_RE } from '../lib/eli_priority';
+import { alignChangedTables } from '../lib/eli_org_table';
 import { attributedStringToRawText, createRawDescriptionText } from '../lib/export_org';
 import { tidyStateLog } from '../lib/eli_state_log';
 import {
@@ -481,8 +482,12 @@ const updateHeaderDescription = (state, action) => {
   // con -1, Immutable cambiaría el ÚLTIMO encabezado
   if (headerIndex < 0) return state;
 
+  // (4.37) las tablas editadas se dejan alineadas con espacios (el .org se lee ordenado)
   return state.updateIn(['headers', headerIndex], (header) =>
-    _updateHeaderFromDescription(header, action.newRawDescription)
+    _updateHeaderFromDescription(
+      header,
+      alignChangedTables(action.newRawDescription, header.get('rawDescription'))
+    )
   );
 };
 

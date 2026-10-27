@@ -33,6 +33,8 @@ import EliScratch from '../EliScratch';
 import EliDiary from '../EliDiary';
 import EliSyncLog from '../EliSyncLog';
 import { installFormatHotkeys } from '../EliFormatBar';
+import { installStuckLocks } from '../../lib/eli_stuck_locks';
+import { setViewRestorer } from '../../lib/eli_nav_history';
 import { lastDocument, modeFade, rememberRoute, takeResumeRoute } from '../../lib/eli_mode';
 import { isNotesMode, subscribeNotesMode } from '../../lib/eli_notes_mode';
 import { captureFromLocation, peekQuickCapture } from '../../lib/eli_quick_capture';
@@ -152,6 +154,8 @@ class Entry extends PureComponent {
 
   componentDidMount() {
     installFormatHotkeys();
+    setViewRestorer((view) => this.props.org.eliRestoreView(view));
+    installStuckLocks();
     this.eliResume();
     this.eliResumeRoute = null; // solo al arrancar
     if (this.props.location)
@@ -206,6 +210,7 @@ class Entry extends PureComponent {
     window.removeEventListener('eli:follow-link', this.eliFollowLink);
     window.removeEventListener('eli:open-task', this.eliOpenTask);
     document.removeEventListener('visibilitychange', this.eliOnVisible);
+    setViewRestorer(null);
     if (this.eliUnsubNotes) this.eliUnsubNotes();
     window.onbeforeunload = undefined;
   }

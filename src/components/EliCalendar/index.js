@@ -6,6 +6,7 @@ import { getISOWeek, getDayOfYear, differenceInCalendarDays } from 'date-fns';
 
 import './stylesheet.css';
 
+import { PREF_DEFAULTS } from '../../lib/eli_defaults';
 import { REGIONS, holidaysForYear, keyOfDate, workingDaysBetween } from '../../lib/eli_holidays';
 import { phasesBetween } from '../../lib/lunar';
 import { askDate } from '../../lib/eli_prompt';
@@ -130,7 +131,9 @@ function Month({
             return (
               <tr key={r}>
                 {weeks && (
-                  <td className="eli-cal__wk" title="Semana">{getISOWeek(new Date(year, month, firstDay))}</td>
+                  <td className="eli-cal__wk" title="Semana">
+                    {getISOWeek(new Date(year, month, firstDay))}
+                  </td>
                 )}
                 {row.map((dNum, i) => {
                   if (dNum === null)
@@ -186,9 +189,15 @@ export default function EliCalendar() {
     month: new Date().getMonth(),
   }));
   const [view, setView] = useState(() => readLS(LS.view, 'three'));
-  const [weeks, setWeeks] = useState(() => readLS(LS.weeks, 'true') !== 'false');
-  const [moonOn, setMoonOn] = useState(() => readLS(LS.moon, 'true') !== 'false');
-  const [holidaysOn, setHolidaysOn] = useState(() => readLS(LS.holidays, 'true') !== 'false');
+  const [weeks, setWeeks] = useState(
+    () => readLS(LS.weeks, String(PREF_DEFAULTS.eliCalWeeks)) !== 'false'
+  );
+  const [moonOn, setMoonOn] = useState(
+    () => readLS(LS.moon, String(PREF_DEFAULTS.eliCalMoon)) !== 'false'
+  );
+  const [holidaysOn, setHolidaysOn] = useState(
+    () => readLS(LS.holidays, String(PREF_DEFAULTS.eliCalHolidays)) !== 'false'
+  );
   const [tapMode, setTapMode] = useState(() => readLS(LS.tap, 'agenda'));
   const dispatch = useDispatch();
   const history = useHistory();
@@ -509,7 +518,9 @@ export default function EliCalendar() {
             type="button"
             className={'eli-cal__tool' + (weeks ? ' is-on' : '')}
             onClick={() => toggle(LS.weeks, !weeks, setWeeks)}
-            title={weeks ? 'Ocultar los números de semana (w)' : 'Mostrar los números de semana (w)'}
+            title={
+              weeks ? 'Ocultar los números de semana (w)' : 'Mostrar los números de semana (w)'
+            }
             aria-pressed={weeks}
             data-testid="eli-cal-weeks"
           >
@@ -664,7 +675,8 @@ export default function EliCalendar() {
           <span className="eli-cal__legend-today">■</span> hoy
           <span className="eli-cal__keys">
             {' '}
-            · ← → meses · Mayús+← → años · . hoy · g ir a · y año · w semanas · h festivos · Esc cerrar
+            · ← → meses · Mayús+← → años · . hoy · g ir a · y año · w semanas · h festivos · Esc
+            cerrar
           </span>
         </div>
       </div>

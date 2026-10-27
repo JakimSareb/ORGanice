@@ -76,13 +76,13 @@ test('Pomodoro: parar guarda lo trabajado si pasó el mínimo; un descanso no se
   expect(stopAll(finishPhase(brk, CFG, t0 + 5 * MIN), t0 + 6 * MIN).pending).toHaveLength(0);
 });
 
-test('Pomodoro: la herramienta está apagada de inicio, también en el Modo Notas', () => {
+test('Pomodoro: la herramienta está encendida de serie (defecto 4.37) y se puede apagar', () => {
   window.localStorage.clear();
   _resetNotesModeForTests();
-  expect(toolOn('pomo')).toBe(false);
-  expect(toolOn('calc')).toBe(true);
-  setToolOn('pomo', true);
   expect(toolOn('pomo')).toBe(true);
-  setNotesMode(true);
+  expect(toolOn('calc')).toBe(true);
+  setToolOn('pomo', false);
   expect(toolOn('pomo')).toBe(false);
+  setNotesMode(true);
+  expect(toolOn('pomo')).toBe(true);
 });

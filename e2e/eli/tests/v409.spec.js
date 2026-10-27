@@ -90,7 +90,8 @@ test('4.09: Menú ☰: Procesos justo debajo de Herramientas', async ({ app }) =
   const items = await menuItems(app);
   const tools = items.indexOf('eli-menu-tools');
   expect(tools).toBeGreaterThan(-1);
-  expect(items[tools + 1]).toBe('eli-menu-processes');
+  // (4.37) el orden por defecto es el del usuario: Procesos está en el menú, en el lugar que marca su orden
+  expect(items.indexOf('eli-menu-processes')).toBeGreaterThan(-1);
   expect(app.errors).toEqual([]);
 });
 

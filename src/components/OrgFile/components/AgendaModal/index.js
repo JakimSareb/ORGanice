@@ -342,7 +342,7 @@ const mapStateToProps = (state) => {
     agendaStartOnWeekday: agendaStartOnWeekday == null ? 1 : +agendaStartOnWeekday,
     orgHabitShowAllToday: state.base.get('orgHabitShowAllToday'),
     orgHabitPrecedingDays: state.base.get('orgHabitPrecedingDays') || 21,
-    orgHabitFollowingDays: state.base.get('orgHabitFollowingDays') || 7,
+    orgHabitFollowingDays: state.base.get('orgHabitFollowingDays') || 3,
   };
 };
 

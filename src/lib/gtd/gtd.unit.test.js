@@ -96,6 +96,13 @@ const textOf = (state, path) =>
     dontIndent: false,
   });
 
+// (4.37) «Terminar» pasa al Logbook por defecto (defecto de la app); aquí se prueba el grupo «Hecho»
+beforeEach(() => {
+  try {
+    window.localStorage.setItem('eliGtdAutoCollect', 'false');
+  } catch (e) {}
+});
+
 describe('modelo GTD', () => {
   const tasks = tasksOf(makeState());
   const list = (id) => tasksForView(tasks, { id }, {}, TODAY).map((t) => t.title);

@@ -28,7 +28,7 @@ const propertyText = (item) => {
     .join('');
 };
 
-const idOf = (header) => {
+export const idOf = (header) => {
   const item = (header.get('propertyListItems') || List()).find(
     (p) => (p.get('property') || '').toUpperCase() === 'ID'
   );
@@ -206,6 +206,49 @@ export const backlinkEntries = (index, orgId) => {
   const re = new RegExp(`\\[\\[id:\\s*${escapeRe(orgId)}\\s*\\]`, 'i');
   return index.filter((e) => e.orgId !== orgId && re.test(e.linkText));
 };
+
+// (4.37) Nº de cabeceras que enlazan a cada ID, para el indicador de la cabecera. Barato: se
+// cuenta UNA vez por lista de entradas de cada fichero (en caché mientras sus cabeceras no cambien)
+// y se suma por `files`; el título de cada cabecera solo consulta el mapa.
+const LINK_ID_RE = /\[\[id:\s*([^\]\s]+)\s*\]/gi;
+const idCountsCache = new WeakMap(); // entradas de un fichero → Map(id → nº de cabeceras)
+const idCountsOf = (entries) => {
+  let hit = idCountsCache.get(entries);
+  if (hit) return hit;
+  hit = new Map();
+  entries.forEach((e) => {
+    const seen = new Set();
+    const text = e.linkText || '';
+    let m;
+    LINK_ID_RE.lastIndex = 0;
+    while ((m = LINK_ID_RE.exec(text))) {
+      const id = m[1].toLowerCase();
+      if (id === (e.orgId || '').toLowerCase() || seen.has(id)) continue;
+      seen.add(id);
+      hit.set(id, (hit.get(id) || 0) + 1);
+    }
+  });
+  idCountsCache.set(entries, hit);
+  return hit;
+};
+const totalsCache = new WeakMap(); // files → Map(id → nº)
+export const backlinkCounts = (files) => {
+  if (!files || typeof files !== 'object') return new Map();
+  const hit = totalsCache.get(files);
+  if (hit) return hit;
+  const total = new Map();
+  const each = (file, path) => {
+    if (!isUserPath(path)) return;
+    const entries = fileHeadings(path, file);
+    if (!entries.length) return;
+    idCountsOf(entries).forEach((n, id) => total.set(id, (total.get(id) || 0) + n));
+  };
+  if (typeof files.forEach === 'function' && files.get) files.forEach(each);
+  totalsCache.set(files, total);
+  return total;
+};
+export const backlinkCountOf = (files, orgId) =>
+  orgId ? backlinkCounts(files).get(String(orgId).trim().toLowerCase()) || 0 : 0;
 
 // Agrupar por fichero, en el orden en que salen → [{ path, entries }]
 export const groupByPath = (entries) => {
@@ -463,12 +506,15 @@ export const linkingParagraph = (entry, orgId) => {
   if (!entry || !orgId) return [];
   const re = linkRe(orgId);
   const out = [];
-  if (re.test(entry.rawTitle || '')) out.push(plainHeadingTitleKeepLink(entry.rawTitle));
+  // (4.37) Si el enlace está en el TÍTULO, la cabecera ya se pinta con el enlace resaltado: no se
+  // repite su texto como párrafo. Solo salen los bloques de las notas que llevan el enlace.
   textBlocks(entry.notes).forEach((b) => re.test(b) && out.push(b));
   return out;
 };
 
-const plainHeadingTitleKeepLink = (raw) => cleanHeadingText(raw);
+// ¿El enlace al ID está en el título de la cabecera? (4.37)
+export const linkInTitle = (entry, orgId) =>
+  !!entry && !!orgId && linkRe(orgId).test(entry.rawTitle || '');
 
 // Trozos de un párrafo con el enlace al ID resaltado → [{ text, link }] (el enlace se enseña con
 // su descripción, o con su ID si no la tiene)

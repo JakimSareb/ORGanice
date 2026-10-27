@@ -108,8 +108,8 @@ test('GTD: avisos de fechas (hora exacta + resumen)', async ({ app }) => {
   )}:${p(d.getMinutes())}`;
   const tasks = `* TODO Llamar al médico\nDEADLINE: <${stamp}>\n* TODO Otra sin fecha\n`;
   await app.open({ '/tasks.org': tasks, '/inbox.org': '' }, '/settings');
-  // (3.47) «Apariencia» empieza plegada, como las demás secciones
-  await app.page.locator('[data-testid=eli-settings-appearance] > summary').click();
+  // (3.47) las secciones empiezan plegadas; (4.37) los avisos de GTD viven en «GTD»
+  await app.page.locator('[data-testid=eli-settings-gtd] > summary').click();
   const row = app.page.locator('[data-testid=eli-setting-reminders]');
   await row.waitFor();
   await row.locator('.switch').click();

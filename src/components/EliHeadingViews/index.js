@@ -43,7 +43,8 @@ import {
 } from '../../lib/eli_backlinks_view';
 import { OrgText, OrgTitle } from './OrgRender';
 import { insertHeadingLink, pickTagForTitle } from '../../lib/eli_heading_links';
-import { selectHeaderAndOpenParents, loadFileQuietly } from '../../actions/org';
+import { selectHeaderAndOpenParents, loadFileQuietly, eliCurrentView } from '../../actions/org';
+import { markView, pushView, sameView } from '../../lib/eli_nav_history';
 import { insertIntoField } from '../EliTools';
 
 export { openTagView, openBacklinks } from '../../lib/eli_heading_events';
@@ -63,7 +64,12 @@ export const useGoToHeading = () => {
   return async (entry, after) => {
     if (!store.getState().org.present.getIn(['files', entry.path, 'headers']))
       await dispatch(loadFileQuietly(entry.path));
-    window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${entry.path}` }));
+    // (4.37) el salto guarda su vista en el historial (atrás/adelante)
+    const origin = eliCurrentView(store.getState());
+    const target = { path: entry.path, narrowId: null };
+    if (!sameView(origin, target)) markView(origin);
+    if (!pushView(`/file${entry.path}`, target))
+      window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${entry.path}` }));
     dispatch(selectHeaderAndOpenParents(entry.path, entry.headerId, { widen: true }));
     if (after) after();
   };
@@ -135,7 +141,7 @@ const Item = ({
           data-testid="eli-hv-title"
         >
           {entry.keyword && <span className="eli-hv__kw">{entry.keyword}</span>}
-          <OrgTitle rawTitle={entry.rawTitle} />
+          <OrgTitle rawTitle={entry.rawTitle} markId={markId} />
           {entry.ownTags.length > 0 && (
             <span className="eli-hv__tags">{entry.ownTags.join(' ')}</span>
           )}
@@ -173,10 +179,12 @@ const Item = ({
             <button
               type="button"
               className="eli-hv__more"
+              aria-label={open ? 'Ocultar' : 'Ver el resto'}
+              title={open ? 'Ocultar' : 'Ver el resto'}
               onClick={() => setOpen(!open)}
               data-testid="eli-hv-more"
             >
-              {open ? 'Ocultar' : 'Ver el resto'}
+              ⋯
             </button>
           )}
         </div>

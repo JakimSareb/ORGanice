@@ -85,6 +85,7 @@ import { localStorageAvailable, readOpennessState } from '../util/settings_persi
 import { parseExcludedFolders, withoutExcluded } from '../lib/eli_excluded_folders';
 import { idLinksToText, isOnlyIdLink } from '../lib/eli_id_links';
 import { diaryLinkDetail, openDiary } from '../lib/eli_diary';
+import { markView, pushView, sameView } from '../lib/eli_nav_history';
 
 export const parseFile = (path, contents) => (dispatch) => {
   if (localStorageAvailable && !path.startsWith(STATIC_FILE_PREFIX)) {
@@ -2233,6 +2234,33 @@ export const eliOpenHeaderByLocator = (path, index, rawTitle) => async (dispatch
 // (2.15) Ruta del fichero abierto (para componentes sin acceso al estado)
 export const eliCurrentPath = () => (dispatch, getState) => getState().org.present.get('path');
 
+// (4.37) Vista actual de Documentos: fichero abierto + cabecera reducida (o null)
+export const eliCurrentView = (state) => {
+  const present = state.org.present;
+  const path = present.get('path');
+  return {
+    path,
+    narrowId: (path && present.getIn(['files', path, 'narrowedHeaderId'])) || null,
+  };
+};
+
+// (4.37) Restaura una vista guardada en el historial (atrás/adelante tras seguir un enlace)
+export const eliRestoreView = (view) => async (dispatch, getState) => {
+  if (!view || !view.path) return false;
+  if (!getState().org.present.getIn(['files', view.path, 'headers']))
+    await dispatch(loadFileQuietly(view.path));
+  if (getState().org.present.get('path') !== view.path) dispatch(setPath(view.path));
+  const headers = getState().org.present.getIn(['files', view.path, 'headers']);
+  if (!headers) return false;
+  if (view.narrowId && headers.some((h) => h.get('id') === view.narrowId)) {
+    dispatch(selectHeaderAndOpenParents(view.path, view.narrowId, { widen: true }));
+    dispatch(eliNarrowAndExpand(view.narrowId, { titlesOnly: true, hideBody: false }));
+  } else {
+    dispatch(widenHeader());
+  }
+  return true;
+};
+
 export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getState) => {
   const link = parseOrgLink(uri);
   if (!link) return false;
@@ -2286,7 +2314,17 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
   }
   // (2.15) también si se está en otra vista (GTD, ficheros…) aunque sea el fichero de antes; la
   // navegación no hace nada si ya se está ahí
-  window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
+  // (4.37) cada salto guarda su vista de origen y de destino en el historial: atrás/adelante
+  // restauran la cabecera reducida (antes, dentro del mismo fichero, la ruta no cambiaba)
+  const originView = eliCurrentView(state);
+  const targetView = { path: targetPath, narrowId: header ? header.get('id') : null };
+  if (header && !sameView(originView, targetView)) {
+    markView(originView);
+    if (!pushView(`/file${targetPath}`, targetView))
+      window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
+  } else {
+    window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));
+  }
   if (header) {
     dispatch(selectHeaderAndOpenParents(targetPath, header.get('id'), { widen: true }));
     // (4.36) el encabezado del enlace se abre en NARROW (con sus notas y las subcabeceras

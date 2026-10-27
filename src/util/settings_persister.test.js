@@ -14,11 +14,12 @@ describe('Settings persister', () => {
   });
 
   test('Do not persist nonsense like like "false" for settings without default', () => {
-    expect(localStorage.getItem('showClockDisplay')).not.toBe('false');
-    expect(localStorage.getItem('showClockDisplay')).toBe(null);
+    // (4.37) showClockDisplay ya tiene defecto (encendido): se prueba con uno que no lo tiene
+    expect(localStorage.getItem('eliPagesFile')).not.toBe('false');
+    expect(localStorage.getItem('eliPagesFile')).toBe(null);
   });
 
   test('Does persist given default values, for example colorScheme', () => {
-    expect(localStorage.getItem('colorScheme')).toBe('OS');
+    expect(localStorage.getItem('colorScheme')).toBe('Light'); // (4.37)
   });
 });

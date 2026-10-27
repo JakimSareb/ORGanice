@@ -37,6 +37,7 @@
   --green-soft: highlight selected table cell
 */
 :root {
+  --eli-edge-pad: 14px; /* (4.37) margen derecho al escribir */
   --base03: #002b36;
   --base02: #073642;
   --base01: #586e75;

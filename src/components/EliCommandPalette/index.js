@@ -13,7 +13,7 @@ import './stylesheet.css';
 import { fuzzyScore, normalize } from '../../lib/eli_fuzzy';
 import { calculateActionedKeybindings } from '../../lib/keybindings';
 import { displayTitle, LISTS, EXTRA_LISTS } from '../../lib/gtd/gtd_model';
-import { normalizeGtdSections, isSectionShown, sectionLabel } from '../../lib/gtd/gtd_sections';
+import { effectiveGtdSections, isSectionShown, sectionLabel } from '../../lib/gtd/gtd_sections';
 import { STATIC_FILE_PREFIX } from '../../lib/org_utils';
 import {
   loadFileQuietly,
@@ -513,7 +513,7 @@ export default function EliCommandPalette() {
     );
 
     // Listas GTD
-    const gtdCfg = normalizeGtdSections(state.base.get('eliGtdSections'));
+    const gtdCfg = effectiveGtdSections(state.base.get('eliGtdSections'));
     [...LISTS, ...EXTRA_LISTS, ...(gtdCfg.custom || [])]
       .filter((l) => isSectionShown(l.id, gtdCfg))
       .forEach((l) =>

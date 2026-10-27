@@ -54,7 +54,7 @@ const titles = (list) => list.map((t) => t.title);
 beforeAll(() => setGtdConfig(null));
 beforeEach(() => {
   try {
-    window.localStorage.removeItem('eliGtdAutoCollect');
+    window.localStorage.setItem('eliGtdAutoCollect', 'false'); // (4.37) el defecto es «true»
   } catch (e) {}
 });
 

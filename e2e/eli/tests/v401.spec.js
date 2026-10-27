@@ -29,12 +29,13 @@ test('4.01: GTD, fecha y hora entre Rehacer y el formato (notas y título)', asy
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
   // (4.09) y luego la tabla
   // (4.11) y los enlaces (a la web / a otra tarea)
-  expect(order.slice(0, 7)).toEqual([
+  expect(order.slice(0, 8)).toEqual([
     'gtd-editor-undo',
     'gtd-editor-redo',
     'gtd-editor-now',
     'gtd-editor-table-btn',
     'gtd-editor-link',
+    'gtd-editor-link-heading',
     'gtd-editor-link-task',
     'eli-format-toggle',
   ]);

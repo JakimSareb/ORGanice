@@ -140,7 +140,7 @@ test('linkingParagraph: solo el párrafo (o ítem de lista) con el enlace', () =
     '- dos con [[id:ABC]]',
   ]);
   const e2 = index.find((e) => e.path === '/t.org');
-  expect(linkingParagraph(e2, 'abc')).toHaveLength(1);
+  expect(linkingParagraph(e2, 'abc')).toHaveLength(0); // (4.37) el título no se repite como párrafo
   expect(linkingParagraph(e1, 'OTRO')).toEqual([]);
   expect(splitLinkParts('Aquí enlaza [[id:ABC][la página]] y sigue.', 'ABC')).toEqual([
     { text: 'Aquí enlaza ', link: false },
