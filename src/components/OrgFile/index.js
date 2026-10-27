@@ -4,6 +4,7 @@ import { shouldIgnoreOrganiceHotkey, blockedWhileTyping } from '../../lib/eli_ho
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import { openFavorites } from '../EliTools';
+import { openDiary } from '../../lib/eli_diary';
 import {
   notWhileTyping,
   notOnButton,
@@ -1369,6 +1370,13 @@ class OrgFile extends PureComponent {
       openSearch: this.checkPopup(
         notWhileTyping(preventDefault(() => this.props.base.activatePopup('search')))
       ),
+      // (4.45) «,» = Ajustes y «j» = diario de hoy, como en GTD
+      openSettings: this.checkPopup(
+        notWhileTyping(
+          preventDefault(() => window.dispatchEvent(new CustomEvent('eli:open-settings')))
+        )
+      ),
+      openDiary: this.checkPopup(notWhileTyping(preventDefault(() => openDiary()))),
       // (4.28) # = etiquetas de la cabecera seleccionada (o de las seleccionadas)
       eliEditTags: this.checkPopupAndHeader(
         notWhileTyping(

@@ -41,7 +41,10 @@ export const normalizeLayout = (raw) => {
   const hidden = (Array.isArray(r.hidden) ? r.hidden : []).filter(
     (id, i, a) => IDS.includes(id) && a.indexOf(id) === i
   );
-  return { order, hidden };
+  // (4.45) `bar`: cuántas de las primeras entradas (de `order`) salen como icono en la barra de
+  // arriba (la línea «Barra superior» de Ajustes); 0 = ninguna (como antes)
+  const bar = Math.min(order.length, Math.max(0, Math.round(Number(r.bar)) || 0));
+  return { order, hidden, bar };
 };
 
 export const getMenuLayout = () => {
@@ -67,6 +70,26 @@ export const moveEntry = (layout, id, dir) => {
   const order = l.order.slice();
   [order[i], order[j]] = [order[j], order[i]];
   return { ...l, order };
+};
+
+// (4.45) La lista de Ajustes lleva una fila fija «Barra superior» entre las entradas: id especial
+export const TOPBAR_LINE = '__topbar__';
+export const layoutRows = (layout) => {
+  const l = normalizeLayout(layout);
+  const rows = l.order.slice();
+  rows.splice(l.bar, 0, TOPBAR_LINE);
+  return rows;
+};
+// Mueve una fila (una entrada o la línea) una posición; cruzar la línea la sube/baja de sitio
+export const moveRow = (layout, id, dir) => {
+  const l = normalizeLayout(layout);
+  const rows = layoutRows(l);
+  const i = rows.indexOf(id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= rows.length) return l;
+  [rows[i], rows[j]] = [rows[j], rows[i]];
+  const bar = rows.indexOf(TOPBAR_LINE);
+  return { ...l, order: rows.filter((x) => x !== TOPBAR_LINE), bar };
 };
 
 export const toggleHidden = (layout, id) => {
@@ -151,4 +174,20 @@ export const setEdgePad = (px) => {
     localStorage.setItem(EDGE_KEY, String(clampEdgePad(px)));
   } catch (e) {}
   applyEdgePad(px);
+};
+
+// (4.45) Reparte las entradas del Menú: las de ARRIBA de la línea «Barra superior» salen como
+// icono en la barra (en ese orden; `maxBar` = cuántas caben, el resto se queda en el ☰), las
+// demás (y las que no tienen menuId, como «Ajustes») se quedan en el ☰.
+export const splitMenuLayout = (items, layout = getMenuLayout(), maxBar = Infinity) => {
+  const l = normalizeLayout(layout);
+  const sorted = applyMenuLayout(items, l);
+  const top = new Set(l.order.slice(0, l.bar));
+  const bar = [];
+  const menu = [];
+  sorted.forEach((it) => {
+    if (it.menuId && top.has(it.menuId) && bar.length < maxBar) bar.push(it);
+    else menu.push(it);
+  });
+  return { bar, menu };
 };

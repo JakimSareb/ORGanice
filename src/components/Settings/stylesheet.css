@@ -477,3 +477,11 @@
     margin-right: 8px;
   }
 }
+
+.eli-menu-layout__row--line {
+  border-top: 1px dashed currentColor;
+  border-bottom: 1px dashed currentColor;
+  padding: 4px 0;
+  font-weight: bold;
+  opacity: 0.85;
+}

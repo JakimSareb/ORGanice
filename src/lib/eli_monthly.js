@@ -177,7 +177,7 @@ export const monthTableLines = (rows, counters) => {
       if (agg) out.push(hline(n), orgRow(['Semana', '', ...r.values]));
       if (!lastWeek) out.push(hline(n));
     } else if (r.type === 'total') {
-      out.push(hline(n), orgRow(['Total', `${r.days} días con algo`, ...r.values]));
+      out.push(hline(n), orgRow(['Total', '', ...r.values]));
     }
   });
   return out;

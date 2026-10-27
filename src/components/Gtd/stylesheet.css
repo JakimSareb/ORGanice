@@ -4897,18 +4897,6 @@ input.gtd-proc__input:not([type]) {
 html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
   margin-bottom: 8px;
 }
-.gtd-project-tools {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 10px;
-  margin: 0 0 18px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.gtd-project-tools > * {
-  flex: none;
-}
 
 /* 4.40: recuadro de selección (arrastrar en un hueco de la lista) */
 .gtd-marquee {
@@ -4917,4 +4905,236 @@ html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
   pointer-events: none;
   border: 1px solid rgba(38, 139, 210, 0.9);
   background: rgba(38, 139, 210, 0.16);
+}
+
+/* (4.45) cabecera del proyecto: TODO dentro de la tarjeta. Fila del título (☰ ★ título nota),
+   bajo un borde fino los datos (área · tipo, fecha, energía, tiempo, etiquetas) que fluyen y
+   pasan a otra línea si no caben, y los botones (⋯ deshacer buscar ＋) a la derecha: en la misma
+   línea si solo hay área y tipo; en la suya, abajo a la derecha, si hay pastillas. */
+.gtd-main__head--project {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.gtd-project-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.gtd-project-card__row .gtd-main__title {
+  flex: 1;
+  min-width: 0;
+}
+.gtd-project-parent {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0 0 0 2px;
+  font: inherit;
+  font-size: 0.8em;
+  color: var(--base1);
+  cursor: pointer;
+  text-align: left;
+}
+.gtd-project-parent:hover {
+  color: var(--blue);
+}
+.gtd-project-card__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  border-top: 1px solid var(--base2);
+  padding-top: 8px;
+  min-width: 0;
+}
+.gtd-project-data {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 0.85em;
+  color: var(--base1);
+}
+.gtd-project-data__line {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.gtd-project-data .gtd-meta--area {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: inherit;
+}
+.gtd-project-data .gtd-meta--area::before {
+  content: '●';
+  color: var(--nv-area, var(--base1));
+  margin-right: 4px;
+  font-size: 9px;
+  vertical-align: 2px;
+}
+.gtd-project-data .gtd-project-order {
+  margin: 0;
+}
+.gtd-project-data .gtd-meta,
+.gtd-project-data .gtd-date,
+.gtd-project-data .gtd-badge {
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--base2);
+  line-height: 18px;
+  white-space: nowrap;
+}
+.gtd-project-data .gtd-meta--area {
+  background: none;
+  padding: 0;
+}
+.gtd-project-data .gtd-date--due.is-overdue,
+.gtd-project-data .gtd-date--due.is-today {
+  background: var(--red);
+}
+.gtd-project-data .gtd-date--due.is-soon {
+  background: var(--base2);
+}
+.gtd-project-tag {
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+.gtd-project-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0 0 0 auto;
+  overflow: visible;
+  flex: none;
+}
+.gtd-project-card__body.has-pills .gtd-project-tools {
+  flex-basis: 100%;
+  justify-content: flex-end;
+}
+.gtd-project-tools .gtd-main__sync,
+.gtd-project-tools .gtd-main__new,
+.gtd-project-tools .gtd-main__filter {
+  min-width: 40px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gtd-main__head--project {
+  position: static;
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+/* (4.45) ventana de Atajos: grupos plegables (como en Ajustes), nombre a la izquierda y la tecla
+   como «chip» a la derecha (tocarla = cambiarla); buscador arriba */
+.gtd-keys__search {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--base3);
+  color: var(--base01);
+  font-family: inherit;
+  font-size: 16px;
+}
+.gtd-keys__hint {
+  font-size: 12px;
+  opacity: 0.7;
+  margin: 6px 2px 0;
+}
+.gtd-keys__msg {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--base2);
+  color: var(--orange);
+  font-size: 13px;
+}
+.gtd-keys__details {
+  margin: 6px 0;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.gtd-keys__details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  color: var(--blue);
+}
+.gtd-keys__details > summary::-webkit-details-marker {
+  display: none;
+}
+.gtd-keys__details > summary::before {
+  content: '▸';
+  margin-right: 6px;
+}
+.gtd-keys__details[open] > summary::before {
+  content: '▾';
+}
+.gtd-keys__details-title {
+  flex: 1;
+}
+.gtd-keys__details-count {
+  font-size: 12px;
+  opacity: 0.6;
+  font-weight: normal;
+}
+.gtd-keys__details-body {
+  padding: 2px 12px 8px;
+}
+.gtd-keys__details .gtd-keys__row {
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--base2);
+}
+.gtd-keys__details .gtd-keys__row:first-child {
+  border-top: none;
+}
+.gtd-keys__name {
+  flex: 1;
+  min-width: 0;
+}
+.gtd-keys__dup {
+  color: var(--orange);
+}
+.gtd-keys__reset {
+  border: none;
+  background: transparent;
+  color: var(--base1);
+  cursor: pointer;
+  padding: 6px;
+  min-width: 32px;
+  min-height: 32px;
+}
+.gtd-keys__chip {
+  cursor: pointer;
+  min-width: 2.6em;
+  min-height: 24px;
+  line-height: 20px;
+  box-sizing: border-box;
+}
+.gtd-keys__chip.is-static {
+  cursor: default;
+}
+.gtd-keys__chip.is-editing {
+  border-color: var(--blue);
+  color: var(--blue);
 }

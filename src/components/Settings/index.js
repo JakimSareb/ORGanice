@@ -37,7 +37,9 @@ import {
   MENU_ENTRIES,
   getMenuLayout,
   setMenuLayout,
-  moveEntry,
+  moveRow,
+  layoutRows,
+  TOPBAR_LINE,
   toggleHidden,
   getDocMargin,
   setDocMargin,
@@ -614,6 +616,7 @@ const EliMenuLayoutSetting = () => {
     setLayout(getMenuLayout());
   };
   const label = (id) => (MENU_ENTRIES.find((e) => e.id === id) || {}).label || id;
+  const rows = layoutRows(layout);
   return (
     <div
       className="setting-container setting-container--vertical eli-theme-setting"
@@ -622,40 +625,52 @@ const EliMenuLayoutSetting = () => {
       <div className="setting-label">
         Menú ☰
         <div className="setting-label__description">
-          Ordena las entradas con las flechas y apaga las que no quieras ver. Algunas solo salen
-          donde tienen sentido (p. ej. Vista, dentro de un fichero). «Ajustes» sale siempre, al
-          final.
+          Ordena las entradas con las flechas y apaga las que no quieras ver. Lo que quede por
+          encima de la línea «Barra superior» sale como icono en la barra de arriba (si cabe); lo de
+          debajo, en el menú. Algunas solo salen donde tienen sentido (p. ej. Vista, dentro de un
+          fichero). «Ajustes» sale siempre, al final.
         </div>
       </div>
-      {layout.order.map((id, i) => (
-        <div key={id} className="eli-menu-layout__row" data-testid={`eli-menu-layout-${id}`}>
-          <span className="eli-menu-layout__label">{label(id)}</span>
-          <button
-            type="button"
-            className="btn-passive eli-menu-layout__btn"
-            disabled={i === 0}
-            onClick={() => save(moveEntry(layout, id, -1))}
-            title="Subir"
-            data-testid={`eli-menu-layout-up-${id}`}
+      {rows.map((id, i) => {
+        const line = id === TOPBAR_LINE;
+        return (
+          <div
+            key={id}
+            className={`eli-menu-layout__row${line ? ' eli-menu-layout__row--line' : ''}`}
+            data-testid={line ? 'eli-tools-topbar-line' : `eli-menu-layout-${id}`}
           >
-            <i className="fas fa-arrow-up" />
-          </button>
-          <button
-            type="button"
-            className="btn-passive eli-menu-layout__btn"
-            disabled={i === layout.order.length - 1}
-            onClick={() => save(moveEntry(layout, id, 1))}
-            title="Bajar"
-            data-testid={`eli-menu-layout-down-${id}`}
-          >
-            <i className="fas fa-arrow-down" />
-          </button>
-          <Switch
-            isEnabled={!layout.hidden.includes(id)}
-            onToggle={() => save(toggleHidden(layout, id))}
-          />
-        </div>
-      ))}
+            <span className="eli-menu-layout__label">
+              {line ? '—— Barra superior ——' : label(id)}
+            </span>
+            <button
+              type="button"
+              className="btn-passive eli-menu-layout__btn"
+              disabled={i === 0}
+              onClick={() => save(moveRow(layout, id, -1))}
+              title="Subir"
+              data-testid={`eli-menu-layout-up-${line ? 'topbar' : id}`}
+            >
+              <i className="fas fa-arrow-up" />
+            </button>
+            <button
+              type="button"
+              className="btn-passive eli-menu-layout__btn"
+              disabled={i === rows.length - 1}
+              onClick={() => save(moveRow(layout, id, 1))}
+              title="Bajar"
+              data-testid={`eli-menu-layout-down-${line ? 'topbar' : id}`}
+            >
+              <i className="fas fa-arrow-down" />
+            </button>
+            {!line && (
+              <Switch
+                isEnabled={!layout.hidden.includes(id)}
+                onToggle={() => save(toggleHidden(layout, id))}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

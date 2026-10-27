@@ -785,7 +785,12 @@ export const projectSectionOfSeq = (task, today = new Date(), sequential = false
 // Tareas del proyecto por secciones: [{ ...sección, tasks }] (también las vacías)
 export const projectSections = (tasks, projectKey, filters = {}, today = new Date(), opts = {}) => {
   const projectTask = tasks.find((t) => t.key === projectKey);
-  const out = PROJECT_SECTIONS.map((s) => ({ ...s, tasks: [] }));
+  // (4.45) en la vista secuencial de un proyecto, el rótulo de Next es «Next Up» (solo el rótulo)
+  const out = PROJECT_SECTIONS.map((s) => ({
+    ...s,
+    label: s.id === 'next' && opts.sequential ? 'Next Up' : s.label,
+    tasks: [],
+  }));
   if (!projectTask) return out;
   const s = getGtdConfig().sections.projects;
   const byId = {};

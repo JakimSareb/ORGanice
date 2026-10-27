@@ -23,10 +23,12 @@ import { registerServiceWorker } from './lib/eli_offline';
 import { initOfflineStore, isOfflineStoreReady } from './lib/eli_offline_store';
 import { flushLocalSaves } from './util/file_persister';
 import { installDragClickGuard } from './lib/eli_drag_click_guard';
+import { installWordCase } from './lib/eli_word_case';
 
 applyReadability();
 // (4.44) soltar una selección de texto fuera del cuadro no es un clic
 installDragClickGuard();
+installWordCase();
 applyFont();
 applyDocMargin();
 applyEdgePad();

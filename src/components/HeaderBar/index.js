@@ -66,7 +66,7 @@ import * as orgActions from '../../actions/org';
 import { ActionCreators as undoActions } from 'redux-undo';
 
 import ExternalLink from '../UI/ExternalLink';
-import { applyMenuLayout } from '../../lib/eli_menu_layout';
+import { splitMenuLayout } from '../../lib/eli_menu_layout';
 
 import { List } from 'immutable';
 import _ from 'lodash';
@@ -223,6 +223,8 @@ class HeaderBar extends PureComponent {
     window.addEventListener('eli:split-open', this.eliOpenSplit);
     window.addEventListener('eli:nav-history', this.eliNavChanged);
     window.addEventListener('keydown', this.eliNavKey);
+    window.addEventListener('resize', this.eliResize);
+    window.addEventListener('eli:open-settings', this.eliOpenSettings);
     installNavHistory(this.props.history);
     // (3.04) el candado está en ⋯ › Fichero; el nombre del fichero lo muestra cuando está puesto
     this.eliUnsubLock = subscribeDocLock(() => this.forceUpdate());
@@ -271,7 +273,22 @@ class HeaderBar extends PureComponent {
     if (dir > 0) goForward(this.props.history);
   };
 
+  // (4.45) los iconos de la barra superior que caben cambian con el ancho de la ventana
+  eliResize = () => {
+    clearTimeout(this.eliResizeTimer);
+    this.eliResizeTimer = setTimeout(() => this.forceUpdate(), 150);
+  };
+
+  // (4.45) la tecla «,» de Documentos
+  eliOpenSettings = () => {
+    this.handleSettingsClick();
+    this.props.history.push('/settings');
+  };
+
   componentWillUnmount() {
+    window.removeEventListener('eli:open-settings', this.eliOpenSettings);
+    window.removeEventListener('resize', this.eliResize);
+    clearTimeout(this.eliResizeTimer);
     window.removeEventListener('eli:split-open', this.eliOpenSplit);
     window.removeEventListener('eli:nav-history', this.eliNavChanged);
     window.removeEventListener('keydown', this.eliNavKey);
@@ -1063,6 +1080,12 @@ class HeaderBar extends PureComponent {
             },
           ]
         : [];
+      // (4.45) cuántos iconos extra caben en la barra (el resto se queda en el ☰)
+      const maxBar =
+        typeof window === 'undefined'
+          ? 99
+          : Math.max(0, Math.floor((window.innerWidth - 300) / 44));
+      const menuSplit = splitMenuLayout(moreItems.filter(Boolean), undefined, maxBar);
 
       return (
         <div className="header-bar__actions">
@@ -1209,9 +1232,34 @@ class HeaderBar extends PureComponent {
 
           {isAuthenticated && toolOn('pomo') && <EliPomodoro />}
 
+          {/* (4.45) herramientas que el usuario ha subido por encima de la línea «Barra superior» */}
+          {isAuthenticated &&
+            menuSplit.bar.map((it) =>
+              it.items ? (
+                <EliMoreMenu
+                  key={it.menuId}
+                  items={it.items}
+                  icon={it.icon}
+                  title={it.label}
+                  buttonClassName="header-bar__actions__item"
+                  testId={`${it.testId}-top`}
+                />
+              ) : (
+                <i
+                  key={it.menuId}
+                  className={`${it.icon} header-bar__actions__item`}
+                  onClick={it.onClick}
+                  title={it.label}
+                  aria-label={it.label}
+                  data-testid={`${it.testId}-top`}
+                  role="button"
+                />
+              )
+            )}
+
           {isAuthenticated && (
             <EliMoreMenu
-              items={applyMenuLayout(moreItems.filter(Boolean))}
+              items={menuSplit.menu}
               icon="fas fa-bars"
               title={'Menú' + (this.props.activeClocks ? ' · hay un reloj en marcha' : '')}
               buttonClassName={

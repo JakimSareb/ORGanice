@@ -3,6 +3,22 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.45 (octubre de 2026)
+** Diario
+- El *resumen mensual* ya no pone «N días con algo» en la fila de total (ni en el PDF).
+- *Hora del apunte*: junto a la caja de apuntar hay un campo de hora con la de ahora; si la cambias, el apunte se guarda con esa hora y queda ordenado entre los demás.
+- *Enviado al INBOX*: al mandar un apunte al Inbox sale «Enviado al INBOX ✓» y el apunte queda marcado con un ✓ mientras dure la sesión; si lo vuelves a pulsar, pregunta antes de enviarlo otra vez.
+** Herramientas en la barra superior
+- En Ajustes › Apariencia › Menú ☰ hay una línea fija *—— Barra superior ——*. Lo que pongas *por encima* de la línea sale como icono en la barra de arriba (en Documentos y en GTD); lo de debajo sigue en el Menú ☰. Por defecto la línea está arriba del todo y nada cambia. Si no caben, los que sobran se quedan en el Menú.
+** Atajos nuevos
+- *«,»* abre los Ajustes también en Documentos; *«j»* abre el Diario de hoy en Documentos y en GTD.
+- *Alt+U* y *Alt+C* en los campos de texto (título, notas, editor de tarea, apunte del diario), como M-u y M-c de Emacs: ponen la palabra siguiente en MAYÚSCULAS o con la inicial en mayúscula. Con texto seleccionado se aplican a la selección. Se pueden deshacer.
+** GTD: cabecera del proyecto
+- Todo dentro de la tarjeta: el proyecto padre (si lo hay) encima del título; bajo un borde fino, área · Paralelo/Secuencial, fecha límite, energía, tiempo y etiquetas, y los botones ⋯, deshacer, buscar y ＋ (＋ a la derecha, pensado para la mano derecha).
+- En un proyecto *secuencial*, la sección *Next* se llama *Next Up*.
+** Ventana de Atajos
+- Grupos plegables como Ajustes, buscador por nombre o tecla, cada tecla como chip que se cambia tocándola, botón ↺ para volver a la de serie y aviso ⚠ si dos acciones comparten tecla.
+
 * 4.44 (octubre de 2026)
 ** Notas: no se pierde nada al seleccionar con el ratón
 - Seleccionar texto con el ratón dentro del cuadro de una *sección* (un elemento con guion de las notas) y soltar *fuera* del cuadro ya no abre las notas enteras ni salta el cursor al final: lo escrito en la sección se guarda. Antes, sobre todo con la *Edición estilo Logseq*, se perdía.

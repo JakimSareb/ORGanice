@@ -417,3 +417,20 @@
   text-decoration: line-through;
   cursor: default;
 }
+
+.eli-diary__time-input {
+  box-sizing: border-box;
+  width: 92px;
+  border: 1px solid var(--base2);
+  border-radius: 8px;
+  padding: 4px;
+  background: var(--base3);
+  color: var(--base01);
+  font-family: inherit;
+  font-size: 16px;
+}
+.eli-diary__sent {
+  font-size: 0.6em;
+  margin-left: 2px;
+  color: var(--green);
+}
