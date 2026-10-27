@@ -168,11 +168,11 @@ describe('4.40 A: elementos de lista', () => {
     const a1 = idOf(hs, 'a1');
     const b = idOf(hs, 'b');
     const c1 = idOf(hs, 'c1');
-    expect(listKeyAction(hs, a, 'down', new Set())).toEqual({ type: 'select', id: String(a1) });
+    expect(listKeyAction(hs, a, 'down', new Set())).toEqual({ type: 'select', id: a1 });
     // con «a» plegado, bajar salta a «b»
     expect(listKeyAction(hs, a, 'down', new Set([String(a)]))).toEqual({
       type: 'select',
-      id: String(b),
+      id: b,
     });
     expect(listKeyAction(hs, a, 'up', new Set())).toEqual({
       type: 'header',
@@ -191,12 +191,12 @@ describe('4.40 A: elementos de lista', () => {
     const a = idOf(hs, 'a');
     const a1 = idOf(hs, 'a1');
     const b = idOf(hs, 'b');
-    expect(listKeyAction(hs, a, 'left', new Set())).toEqual({ type: 'fold', id: String(a) });
+    expect(listKeyAction(hs, a, 'left', new Set())).toEqual({ type: 'fold', id: a });
     expect(listKeyAction(hs, a, 'right', new Set([String(a)]))).toEqual({
       type: 'unfold',
-      id: String(a),
+      id: a,
     });
-    expect(listKeyAction(hs, a1, 'left', new Set())).toEqual({ type: 'select', id: String(a) });
+    expect(listKeyAction(hs, a1, 'left', new Set())).toEqual({ type: 'select', id: a });
     expect(listKeyAction(hs, b, 'left', new Set())).toBeNull(); // sin hijos ni padre
     expect(listKeyAction(hs, b, 'right', new Set())).toBeNull();
   });

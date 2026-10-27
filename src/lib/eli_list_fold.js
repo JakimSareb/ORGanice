@@ -48,9 +48,10 @@ export const visibleListItems = (description, foldedSet = new Set(foldedIds())) 
   const walk = (parts, parentId) => {
     listPartsOf(parts).forEach((lp) => {
       (lp.get('items') || List()).forEach((item) => {
-        const id = String(item.get('id'));
+        // el id se devuelve tal cual (número o texto): la selección compara con ===
+        const id = item.get('id');
         const has = itemHasChildren(item);
-        const isFolded = has && foldedSet.has(id);
+        const isFolded = has && foldedSet.has(String(id));
         out.push({ id, parentId, hasChildren: has, folded: isFolded });
         if (has && !isFolded) walk(item.get('contents'), id);
       });
@@ -86,7 +87,7 @@ export const listKeyAction = (headers, itemId, key, foldedSet = new Set(foldedId
   const header = headerOfItem(headers, itemId);
   if (!header) return null;
   const items = visibleListItems(header.get('description'), foldedSet);
-  const at = items.findIndex((x) => x.id === String(itemId));
+  const at = items.findIndex((x) => String(x.id) === String(itemId));
   if (at < 0) return null;
   const cur = items[at];
   switch (key) {
