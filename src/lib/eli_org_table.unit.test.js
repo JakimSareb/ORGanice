@@ -137,12 +137,25 @@ describe('4.37 alignOrgTable', () => {
       '| ccc | d    |',
     ]);
   });
-  test('las cifras van a la izquierda y las filas cortas se completan', () => {
+  test('las cifras van a la derecha (4.40) y las filas cortas se completan', () => {
     expect(alignOrgTable(['| n | v |', '| 1 | 100 |', '| 22 |'])).toEqual([
-      '| n  | v   |',
-      '| 1  | 100 |',
+      '|  n | v   |',
+      '|  1 | 100 |',
       '| 22 |     |',
     ]);
+  });
+  test('(4.40) CJK y emojis ocupan 2 columnas; los acentos compuestos, 1', () => {
+    const out = alignOrgTable(['| 日本 | a |', '| ab | e\u0301 |']);
+    expect(out.map((l) => l.normalize('NFC'))).toEqual(['| 日本 | a |', '| ab   | é |']);
+    expect(alignOrgTable(['| 😀 | a |', '| ab | b |'])).toEqual(['| 😀 | a |', '| ab | b |']);
+  });
+  test('(4.40) separadores ajustados y misma posición de | en todas las filas', () => {
+    const out = alignOrgTable(['|a|b|', '|-', '|largo|1|', '|x|22|']);
+    const pos = (l) =>
+      [...l].map((c, i) => (c === '|' || c === '+' ? i : -1)).filter((i) => i >= 0);
+    out.forEach((l) => expect(pos(l)).toEqual(pos(out[0])));
+    expect(out[1]).toBe('|-------+----|');
+    expect(out[3]).toBe('| x     | 22 |');
   });
   test('acentos y barra escapada cuentan como un carácter', () => {
     const out = alignOrgTable(['| año | a\\|b |', '| x | y |']);

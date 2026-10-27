@@ -173,6 +173,7 @@ import { strictOn, NOT_ALLEN_DAILY } from '../../lib/gtd/gtd_strict';
 import GtdTagManager from './GtdTagManager';
 import { describeRepeat } from './ScheduleField';
 import useRowDrag, { useLasso } from './useRowDrag';
+import useMarquee from './gtdMarquee';
 import EliOrgTable from '../EliOrgTable';
 import { toggleCheckboxLine } from './TaskEditor';
 import { openDocuments } from '../../lib/eli_mode';
@@ -4570,6 +4571,19 @@ export default function GtdView() {
       if (keys.length) setCursor(keys[keys.length - 1]);
     },
   });
+  // (4.40) recuadro de selección: arrastrar en un hueco de la lista (ratón); con Ctrl/Cmd/Mayús se
+  // añade a lo seleccionado
+  const { startMarquee } = useMarquee({
+    onSelect: (keys, additive) => {
+      lassoAt.current = Date.now();
+      setSel(Array.from(new Set([...(additive ? lassoBase.current : []), ...keys])));
+      if (keys.length) setCursor(keys[keys.length - 1]);
+      else if (!additive) setCursor(null);
+    },
+    onEnd: () => {
+      lassoAt.current = Date.now();
+    },
+  });
   const dotsDown = (task) => (e) => {
     lassoBase.current = sel;
     setOpenKey(null);
@@ -6481,6 +6495,10 @@ export default function GtdView() {
         }
         style={pullMoving ? { '--gtd-pull': `${pullOffset}px` } : undefined}
         ref={gtdMainRef}
+        onPointerDown={(e) => {
+          lassoBase.current = sel;
+          startMarquee(e);
+        }}
       >
         {(pullDist > 0 || pullRefreshing) && (
           <div

@@ -2724,6 +2724,49 @@ const reducer = (state, action) => {
   }
 };
 
+// (4.40) Tablas alineadas en el TEXTO en todos los caminos de edición (celda, fila, columna, notas,
+// capturas, calculadora…): tras cada acción que ensucia el fichero, las cabeceras cuyas notas han
+// cambiado se pasan por alignChangedTables (solo se toca la tabla modificada). Las cabeceras
+// nuevas solo cuentan si la acción las crea a propósito (no al cargar ni al mover).
+const ELI_ALIGN_NEW_HEADER_ACTIONS = [
+  'ELI_ADD_HEADER_AT',
+  'ELI_ADD_HEADER_ABOVE',
+  'ELI_ADD_SUBHEADER',
+  'ADD_HEADER',
+  'INSERT_CAPTURE',
+  'INSERT_CAPTURE_FROM_HEADER',
+];
+export const eliAlignTablesInFile = (state, path, prevHeaders, actionType) => {
+  const headers = state.getIn(['files', path, 'headers']);
+  if (!headers || !prevHeaders || headers === prevHeaders) return state;
+  let prevById = null;
+  let next = headers;
+  headers.forEach((h, i) => {
+    const raw = h.get('rawDescription') || '';
+    if (!raw.includes('|')) return;
+    let prev = prevHeaders.get(i);
+    if (prev === h) return;
+    if (!prev || prev.get('id') !== h.get('id')) {
+      if (!prevById) {
+        prevById = {};
+        prevHeaders.forEach((x) => {
+          prevById[x.get('id')] = x;
+        });
+      }
+      prev = prevById[h.get('id')];
+    }
+    if (!prev && !ELI_ALIGN_NEW_HEADER_ACTIONS.includes(actionType)) return;
+    const old = prev ? prev.get('rawDescription') || '' : '';
+    if (prev && old === raw) return;
+    const aligned = alignChangedTables(raw, old);
+    if (aligned === raw) return;
+    // solo cambia el TEXTO (rawDescription, lo que se guarda); las partes ya leídas (y sus ids, que
+    // usa el editor antiguo de tablas) quedan como estaban: el contenido de las celdas es el mismo
+    next = next.set(i, h.set('rawDescription', aligned));
+  });
+  return next === headers ? state : state.setIn(['files', path, 'headers'], next);
+};
+
 const rootOrgReducer = (state = Map(), action) => {
   // ORG Mode para Eli: aplicar una acción a otro fichero distinto del abierto (vista GTD).
   // Se cambia el fichero activo solo durante la acción y se restaura después.
@@ -2749,7 +2792,20 @@ const rootOrgReducer = (state = Map(), action) => {
     state = state.setIn(['files', path, 'isDirty'], true);
   });
 
+  const prevHeadersByPath = {};
+  if (action.dirtying) {
+    affectedFiles.forEach((path) => {
+      prevHeadersByPath[path] = state.getIn(['files', path, 'headers']);
+    });
+  }
+
   state = reducer(state, action);
+
+  if (action.dirtying) {
+    affectedFiles.forEach((path) => {
+      state = eliAlignTablesInFile(state, path, prevHeadersByPath[path], action.type);
+    });
+  }
 
   if (action.dirtying && state.get('showClockDisplay')) {
     affectedFiles.forEach((path) => {

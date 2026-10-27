@@ -1859,6 +1859,54 @@ export const refileToFileTop = (targetPath) => async (dispatch, getState) => {
   }
 };
 
+// ORG Mode para Eli (4.40): refile de VARIAS cabeceras (selección múltiple) a otro fichero o a otra
+// cabecera, en un solo paso de deshacer. `ids` = solo las de arriba, en el orden del documento.
+// Sin `targetHeaderId`, van al nivel superior del fichero.
+export const eliRefileMany = (sourcePath, ids, targetPath, targetHeaderId = null) => async (
+  dispatch,
+  getState
+) => {
+  if (!sourcePath || !ids || !ids.length || !targetPath) return;
+  const client = getState().syncBackend.get('client');
+  try {
+    if (!getState().org.present.getIn(['files', targetPath, 'headers'])) {
+      dispatch(setLoadingMessage(`Abriendo ${targetPath}…`));
+      const contents = await withTimeout(
+        client.getFileContents(targetPath),
+        30000,
+        'Dropbox no responde'
+      );
+      dispatch(parseFile(targetPath, contents));
+      dispatch(setLastSyncAt(addSeconds(new Date(), 5), targetPath));
+      dispatch(setDirty(false, targetPath));
+      dispatch(hideLoadingMessage());
+    }
+    dispatch(selectHeader(null));
+    const actions = ids.map((id) => ({
+      type: 'REFILE_SUBTREE',
+      sourcePath,
+      sourceHeaderId: id,
+      targetPath,
+      targetHeaderId,
+      dirtying: true,
+    }));
+    dispatch(actions.length === 1 ? actions[0] : { type: 'ELI_BATCH', actions, dirtying: true });
+    if (targetPath !== sourcePath) {
+      dispatch(sync({ path: targetPath, shouldSuppressMessages: true }));
+    }
+    dispatch(sync({ path: sourcePath, shouldSuppressMessages: true }));
+    dispatch(
+      setDisappearingLoadingMessage(
+        `Movidas ${ids.length} cabeceras a ${targetPath.split('/').pop()}`,
+        2500
+      )
+    );
+  } catch (e) {
+    dispatch(hideLoadingMessage());
+    showMessage('No se pudo mover', (e && (e.eliMessage || e.message)) || String(e));
+  }
+};
+
 // ORG Mode para Eli: tras borrar un encabezado, preguntar uno a uno por sus adjuntos.
 // `headers` son los del fichero antes de quitar el encabezado.
 export const eliOfferDeleteAttachments = (headers, headerId, path) => (dispatch, getState) => {

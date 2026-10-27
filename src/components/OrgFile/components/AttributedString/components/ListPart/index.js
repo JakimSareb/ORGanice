@@ -14,6 +14,12 @@ import _ from 'lodash';
 import classNames from 'classnames';
 import EliFormatBar from '../../../../../EliFormatBar';
 import { Map } from 'immutable';
+import {
+  isListFolded,
+  toggleListFold,
+  itemHasChildren,
+  subscribeListFold,
+} from '../../../../../../lib/eli_list_fold';
 
 export default class ListPart extends PureComponent {
   constructor(props) {
@@ -36,6 +42,15 @@ export default class ListPart extends PureComponent {
       listContentsValues: this.generateListContentsValueMap(props.part),
       shouldIgnoreBlur: false,
     };
+  }
+
+  // (4.40) el plegado de los elementos es solo visual: se repinta cuando cambia
+  componentDidMount() {
+    this.unsubscribeFold = subscribeListFold(() => this.forceUpdate());
+  }
+
+  componentWillUnmount() {
+    if (this.unsubscribeFold) this.unsubscribeFold();
   }
 
   componentDidUpdate(prevProps) {
@@ -260,8 +275,22 @@ export default class ListPart extends PureComponent {
         'list-part__item--selected': isItemSelected,
       });
 
+      // (4.40) tocar la viñeta (el propio <li>, no su texto) pliega o despliega los hijos
+      const hasChildren = itemHasChildren(item);
+      const isFolded = hasChildren && isListFolded(item.get('id'));
       return (
-        <li key={item.get('id')} value={item.get('forceNumber')}>
+        <li
+          key={item.get('id')}
+          value={item.get('forceNumber')}
+          data-list-item-id={item.get('id')}
+          className={classNames({
+            'list-part__li--has-children': hasChildren,
+            'list-part__li--folded': isFolded,
+          })}
+          onClick={(e) => {
+            if (hasChildren && e.target === e.currentTarget) toggleListFold(item.get('id'));
+          }}
+        >
           <div className={lineContainerClass} onClick={this.handleListItemSelect(item.get('id'))}>
             {item.get('isCheckbox') && (
               <Checkbox

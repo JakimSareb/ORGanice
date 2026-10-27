@@ -26,6 +26,11 @@ const DEFAULT_BINDINGS = [
   ['Seleccionar el encabezado siguiente (flecha)', 'eliSelectNext', 'down'],
   ['Seleccionar el encabezado anterior (flecha)', 'eliSelectPrev', 'up'],
   ['Abrir/cerrar el encabezado seleccionado (intro)', 'eliToggleOpen', 'enter'],
+  // (4.40) elementos de lista: plegar, ir al padre, bajar/subir de nivel (con sus hijos)
+  ['Elemento de lista: plegar o ir al padre (flecha)', 'eliListLeft', 'left'],
+  ['Elemento de lista: desplegar (flecha)', 'eliListRight', 'right'],
+  ['Elemento de lista: subir de nivel (con sus hijos)', 'eliListOutdent', 'alt+left'],
+  ['Elemento de lista: bajar de nivel (con sus hijos)', 'eliListIndent', 'alt+right'],
 ];
 
 // ORG Mode para Eli (2.15): atajos de la vista GTD (al estilo de Nirvana). Se guardan con los

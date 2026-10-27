@@ -55,3 +55,19 @@
   max-width: 100%;
   overflow-x: auto;
 }
+
+/* 4.40: elemento de lista plegado (solo visual): se esconden sus sub-elementos y queda un «…» */
+.list-part__li--folded > .list-part__item-contents .attributed-string__list-part {
+  display: none;
+}
+.list-part__li--folded > .list-part__not_checkbox-container::after,
+.list-part__li--folded > .list-part__checkbox-container::after {
+  content: '\00a0…';
+  color: gray;
+}
+.list-part__li--has-children {
+  cursor: pointer;
+}
+.list-part__li--has-children > div {
+  cursor: auto;
+}

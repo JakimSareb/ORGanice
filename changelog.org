@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.40 (octubre de 2026)
+** Selección y edición rápida
+- *Elementos de lista con teclado* (Documentos): con un elemento seleccionado, *↑/↓* te mueven entre elementos, *←* pliega (o sube al padre) y *→* despliega; *Alt+↑/↓* lo suben o bajan entre sus hermanos y *Alt+←/→* lo cambian de nivel, siempre con sus hijos. Tocar la viñeta de un elemento con hijos lo pliega o despliega (solo se ve así; el fichero no cambia).
+- *Varias cabeceras a la vez*: el ⋯ de la barra de selección suma *Quitar las fechas*, *A otro fichero…* (las mueve todas de una vez) y *Copiar enlaces* (un enlace por ID por cabecera; si no tienen =:ID:=, se les pone).
+- *GTD*: arrastra en un hueco de la lista (ratón) y un *recuadro* selecciona las tareas que toca. Con Ctrl/⌘ o Mayús se añaden a las ya seleccionadas.
+- *Tablas bien alineadas en el texto*: al guardar cualquier cambio en una tabla (celdas, filas, columnas, notas, capturas) los =|= caen en la misma columna en todas las filas, como con =org-table-align= de Emacs. Las columnas de cifras van a la *derecha* y se cuentan bien acentos, emojis y caracteres anchos. Solo se toca la tabla que has cambiado.
+
 * 4.39 (octubre de 2026)
 ** Ajustes pequeños
 - *Barra flotante del editor*: *Etiquetas* vuelve al menú *⋯*; el botón de enlace a una cabecera queda fuera, con el texto compacto =[[ ]]=.
