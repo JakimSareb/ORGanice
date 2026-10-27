@@ -10,6 +10,9 @@ import { List } from 'immutable';
 
 import { toggledPriorityATitle, getPriority } from './eli_priority';
 import { timestampForDate } from './timestamps';
+import { headerOrgId, withOrgIdProperty, idHeadingLink } from './eli_id_links';
+import { newOrgId } from './gtd/gtd_model';
+import generateId from './id_generator';
 
 // ---------- modelo puro ----------
 
@@ -233,11 +236,53 @@ export const multiActions = (headers, ids, op, args = {}) => {
       });
       return out;
     }
+    case 'unplan': {
+      // (4.40) quita la fecha programada y/o la límite (args.types, por defecto las dos); se
+      // quitan de atrás adelante para que no cambien los índices
+      const types = args.types || ['SCHEDULED', 'DEADLINE'];
+      const out = [];
+      all.forEach((id) => {
+        const items = at(id).get('planningItems') || List();
+        for (let i = items.size - 1; i >= 0; i--) {
+          if (types.includes(items.getIn([i, 'type'])))
+            out.push({
+              type: 'REMOVE_PLANNING_ITEM',
+              headerId: id,
+              planningItemIndex: i,
+              dirtying: true,
+            });
+        }
+      });
+      return out;
+    }
     case 'remove':
       return tops.map((id) => ({ type: 'REMOVE_HEADER', headerId: id, dirtying: true }));
     default:
       return [];
   }
+};
+
+// (4.40) Copiar los enlaces [[id:…][título]] de las cabeceras elegidas (una por línea, en el
+// orden del documento). Siempre por ID: a las que no lo tienen se les pone un :ID: (acciones).
+export const multiLinks = (headers, ids, makeId = newOrgId) => {
+  const actions = [];
+  const lines = [];
+  orderedIds(headers, ids).forEach((id) => {
+    const h = headers.find((x) => sid(x.get('id')) === sid(id));
+    if (!h) return;
+    let orgId = headerOrgId(h);
+    if (!orgId) {
+      orgId = makeId();
+      actions.push({
+        type: 'UPDATE_PROPERTY_LIST_ITEMS',
+        headerId: h.get('id'),
+        newPropertyListItems: withOrgIdProperty(h.get('propertyListItems'), orgId, generateId()),
+        dirtying: true,
+      });
+    }
+    lines.push(idHeadingLink(orgId, h.getIn(['titleLine', 'rawTitle'])));
+  });
+  return { actions, text: lines.join('\n') };
 };
 
 // Varias acciones en un solo paso de deshacer

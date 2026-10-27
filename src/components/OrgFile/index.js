@@ -34,7 +34,8 @@ import EliEditSheet from './components/EliEditSheet';
 import { mergeTitleTags } from '../../lib/eli_heading_index';
 import { EliInlineEditContext, NOT_EDITING } from './components/EliInlineEdit';
 import { subscribeDocLock, isDocLocked, setCaptureActive } from '../../lib/eli_doc_lock';
-import { isMultiActive } from '../../lib/eli_multi_select';
+import { listKeyAction, setListFolded } from '../../lib/eli_list_fold';
+import { isMultiActive, getMulti, clearMulti, topIds } from '../../lib/eli_multi_select';
 
 import * as baseActions from '../../actions/base';
 import * as syncBackendActions from '../../actions/sync_backend';
@@ -379,11 +380,54 @@ class OrgFile extends PureComponent {
     this.setState({ hasUncaughtError: true });
   }
 
+  // (4.40) Con un elemento de lista seleccionado, las flechas se mueven entre elementos (y plegar /
+  // desplegar con ←/→). Devuelve true si la tecla se ha tratado aquí.
+  handleListKey(key) {
+    const { selectedListItemId, headers } = this.props;
+    if (!selectedListItemId) return false;
+    const act = listKeyAction(headers, selectedListItemId, key);
+    if (!act) return key === 'left' || key === 'right' ? false : true;
+    switch (act.type) {
+      case 'select':
+        this.props.org.setSelectedListItemId(act.id);
+        break;
+      case 'fold':
+        setListFolded(act.id, true);
+        break;
+      case 'unfold':
+        setListFolded(act.id, false);
+        break;
+      case 'header':
+        this.props.org.selectHeader(act.headerId);
+        if (act.next) this.props.org.selectNextVisibleHeader();
+        break;
+      default:
+        break;
+    }
+    return true;
+  }
+
+  // (4.40) Alt+flechas con un elemento de lista seleccionado: subir/bajar entre hermanos y cambiar
+  // de nivel (con sus hijos). Devuelve true si había un elemento seleccionado.
+  handleListMove(kind) {
+    if (!this.props.selectedListItemId) return false;
+    const active = document.activeElement;
+    if (isDocLocked() || (active && /^(TEXTAREA|INPUT)$/.test(active.tagName))) return true;
+    const { org } = this.props;
+    if (kind === 'up') org.moveListItemUp();
+    else if (kind === 'down') org.moveListItemDown();
+    else if (kind === 'left') org.moveListSubtreeLeft();
+    else if (kind === 'right') org.moveListSubtreeRight();
+    return true;
+  }
+
   handleSelectNextVisibleHeaderHotKey() {
+    if (this.handleListKey('down')) return;
     this.props.org.selectNextVisibleHeader();
   }
 
   handleSelectPreviousVisibleHeaderHotKey() {
+    if (this.handleListKey('up')) return;
     this.props.org.selectPreviousVisibleHeader();
   }
 
@@ -665,6 +709,21 @@ class OrgFile extends PureComponent {
 
   handleRefilePopupClose(targetPath, targetHeaderId, options) {
     this.props.base.closePopup();
+    // (4.40) con varias cabeceras seleccionadas, se mueven todas (solo las de arriba)
+    const multi = getMulti();
+    if (multi.ids.length > 1 || (multi.touch && multi.ids.length > 0)) {
+      if (targetPath && ((options && options.toFileTop) || targetHeaderId)) {
+        const tops = topIds(this.props.headers, multi.ids);
+        clearMulti();
+        this.props.org.eliRefileMany(
+          this.props.loadedPath,
+          tops,
+          targetPath,
+          options && options.toFileTop ? null : targetHeaderId
+        );
+      }
+      return;
+    }
     // ORG Mode para Eli: al nivel superior de un fichero
     if (targetPath && options && options.toFileTop) {
       this.props.org.refileToFileTop(targetPath);
@@ -1194,8 +1253,37 @@ class OrgFile extends PureComponent {
       exitEditMode: preventDefault(this.handleExitEditModeHotKey),
       addHeader: this.checkPopupAndHeader(preventDefault(this.handleAddHeaderHotKey)),
       removeHeader: this.checkPopupAndHeader(preventDefault(this.handleRemoveHeaderHotKey, true)),
-      moveHeaderUp: this.checkPopupAndHeader(preventDefault(this.handleMoveHeaderUpHotKey)),
-      moveHeaderDown: this.checkPopupAndHeader(preventDefault(this.handleMoveHeaderDownHotKey)),
+      moveHeaderUp: this.checkPopupAndHeaderOrListItem(
+        preventDefault(() =>
+          this.handleListMove('up') || isDocLocked() ? null : this.handleMoveHeaderUpHotKey()
+        )
+      ),
+      moveHeaderDown: this.checkPopupAndHeaderOrListItem(
+        preventDefault(() =>
+          this.handleListMove('down') || isDocLocked() ? null : this.handleMoveHeaderDownHotKey()
+        )
+      ),
+      // (4.40) elementos de lista: ←/→ pliegan y despliegan; Alt+←/→ cambian de nivel
+      eliListLeft: this.checkPopup(
+        notWhileTyping((event) => {
+          if (this.handleListKey('left')) event.preventDefault();
+        })
+      ),
+      eliListRight: this.checkPopup(
+        notWhileTyping((event) => {
+          if (this.handleListKey('right')) event.preventDefault();
+        })
+      ),
+      eliListOutdent: this.checkPopup(
+        notWhileTyping((event) => {
+          if (this.handleListMove('left')) event.preventDefault();
+        })
+      ),
+      eliListIndent: this.checkPopup(
+        notWhileTyping((event) => {
+          if (this.handleListMove('right')) event.preventDefault();
+        })
+      ),
       moveHeaderLeft: this.checkPopupAndHeader(preventDefault(this.handleMoveHeaderLeftHotKey)),
       moveHeaderRight: this.checkPopupAndHeader(preventDefault(this.handleMoveHeaderRightHotKey)),
       undo: this.checkPopupAndHeader(preventDefault(this.handleUndoHotKey)),

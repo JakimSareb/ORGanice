@@ -56,6 +56,7 @@ import {
   clearMulti,
   getMulti,
   multiActions,
+  multiLinks,
   batchOf,
   topIds,
   orderedIds,
@@ -704,6 +705,22 @@ export default function EliDocBar({
     clearMulti();
     dispatch(orgActions.eliArchiveMany(tops.map((hid) => ({ path, id: hid }))));
   };
+  const multiCopyLinks = async () => {
+    const { actions, text } = multiLinks(headers, topIds(headers, multiIds));
+    if (!text) return;
+    const batch = batchOf(actions);
+    if (batch) dispatch(batch);
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch (e) {}
+    showMessage(
+      copied ? 'Enlaces copiados' : 'Enlaces',
+      (copied ? 'Pégalos donde quieras.\n\n' : 'No se ha podido copiar; cópialos a mano:\n\n') +
+        text
+    );
+  };
   const multiRemove = async () => {
     const tops = topIds(headers, multiIds);
     const ok = await askConfirm({
@@ -750,12 +767,32 @@ export default function EliDocBar({
                   onClick: () => multiPlan('DEADLINE'),
                 },
                 {
+                  id: 'm-unplan',
+                  icon: 'far fa-calendar-times',
+                  label: 'Quitar las fechas',
+                  hint: 'programada y límite',
+                  onClick: () => doMulti('unplan'),
+                },
+                {
                   id: 'm-archive',
                   icon: 'fas fa-archive',
                   label: 'Archivar…',
                   onClick: multiArchive,
                 },
               ]),
+          {
+            id: 'm-refile',
+            icon: 'fas fa-file-export',
+            label: 'A otro fichero…',
+            onClick: () => base('activatePopup', 'refile'),
+          },
+          {
+            id: 'm-links',
+            icon: 'far fa-copy',
+            label: 'Copiar enlaces',
+            hint: '[[id:…]]',
+            onClick: multiCopyLinks,
+          },
           { id: 'sep-m', sep: true },
           {
             id: 'm-delete',

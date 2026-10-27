@@ -45,7 +45,7 @@ Los submenús se abren *encima del botón*, en vertical; tocar fuera o Esc los c
 *** Varias cabeceras a la vez (4.28)
 - En el ordenador: *Mayús+clic* selecciona desde la cabecera seleccionada hasta esa; *Cmd+clic* (Ctrl en Windows) añade o quita cabeceras sueltas.
 - En el teléfono: *mantén la viñeta* y suéltala sin moverla; desde ahí, cada toque en una cabecera la añade o la quita.
-- Con varias seleccionadas, la barra de abajo actúa sobre *todas*: ✕ (con el número; quita la selección), hacia fuera y hacia dentro (con sus subcabeceras), subir, bajar, *Estado*, *Etiquetas* (escribe las que se añaden; con «-» delante se quitan, p. ej. =casa -trabajo=) y ⋯ (★, programada, fecha límite, archivar y borrar). Cada acción se deshace de una vez con ↶. Esc o tocar fuera quitan la selección.
+- Con varias seleccionadas, la barra de abajo actúa sobre *todas*: ✕ (con el número; quita la selección), hacia fuera y hacia dentro (con sus subcabeceras), subir, bajar, *Estado*, *Etiquetas* (escribe las que se añaden; con «-» delante se quitan, p. ej. =casa -trabajo=) y ⋯ (★, programada, fecha límite, *quitar las fechas*, archivar, *a otro fichero…*, *copiar enlaces* y borrar). Cada acción se deshace de una vez con ↶. Esc o tocar fuera quitan la selección.
 
 Las ventanas que se abren desde la barra (fechas, etiquetas, propiedades, nota) solo tienen lo suyo y un botón *Listo* arriba (o tocar fuera, o Esc); todo lo demás está en la barra.
 
@@ -176,6 +176,7 @@ Desde la versión 3.0 la vista GTD se maneja como Nirvana (en cada fila: la casi
 - *Arrastra* una tarea (o las seleccionadas) a una lista, a un proyecto, a Focus, al Logbook o a la Papelera del menú lateral. Dentro de la lista, arrastrarla cambia el orden (en los proyectos, también de sección); puede ir junto a una tarea de otro fichero o encabezado si así no cambia de proyecto, tarea madre, área ni etiquetas (si no, avisa y no se mueve). Si la lista estaba ordenada por fecha, pasa a orden manual. En el *móvil*, el menú lateral con las listas solo sale al llevar la tarea al *borde izquierdo* de la pantalla, y se vuelve a ocultar si alejas la tarea (3.35); si no, el arrastre solo cambia el orden. (3.45) Si el menú lateral no cabe, se desplaza solo al llevar la tarea cerca de su parte de arriba o de abajo.
 - *Clic derecho* en una tarea (o, en el ordenador, el ▾ del final de la fila) abre su menú: Editar, Focus ★, Completar, Mover a, *Asignar a proyecto…* (y *Quitar del proyecto*), Convertir en, Etiquetas, Tiempo, Energía, *Programar…*, Fecha límite, Hacer una copia, Copiar como ORG Mode, Abrir en su fichero y Papelera. Con varias seleccionadas, el menú actúa sobre todas y arriba dice cuánto tiempo suman.
 - *Mayús+clic* en una tarea selecciona todas las que hay desde la última elegida hasta ella.
+- (4.40) En el ordenador, *arrastra en un hueco* de la lista (fuera de las tareas): un recuadro selecciona las tareas que toca; con Ctrl/⌘ o Mayús se añaden a las seleccionadas.
 - Un clic fuera de las tareas (en el hueco de abajo, la cabecera o el menú lateral) quita la selección.
 - El *nombre del proyecto* que sale en una tarea es un enlace: abre ese proyecto (*Alt+←* vuelve).
 - El *icono de notas* de una fila muestra u oculta todas sus notas (3.34: sin el paso de «parciales»), solo en esa tarea (el modo general está en ⋯ → Opciones de vista → Mostrar notas, y al cambiarlo se olvida lo de cada fila).
@@ -353,6 +354,7 @@ Las etiquetas van al final del título, entre dos puntos. Las que empiezan por @
 - [ ] Leche
 - [ ] Café
 Toca una casilla para marcarla. El contador del título se actualiza solo.
+(4.40) *Con el teclado*: con un elemento seleccionado, ↑/↓ te mueven entre elementos, ← pliega (o sube al padre) y → despliega; Alt+↑/↓ lo suben o bajan y Alt+←/→ lo cambian de nivel (con sus hijos). Tocar la viñeta de un elemento con hijos lo pliega.
 ** Elementos con texto debajo
 - Primer elemento
   Este texto cuelga del primer elemento: tócalo y queda seleccionado el elemento.
@@ -363,7 +365,7 @@ Toca una casilla para marcarla. El contador del título se actualiza solo.
 |--------+------------|
 | Lunes  |          5 |
 | Martes |          7 |
-Se ve como una tabla. Toca una celda para escribir en ella. *Tab* pasa a la siguiente (en la última, crea una fila, como en Emacs) y Mayús+Tab a la anterior; *Intro* baja (Mayús+Intro sube); *Alt+flechas* mueven la fila o la columna; Esc cancela; tocar fuera guarda. Mientras escribes, la barra de abajo trae *añadir y borrar filas y columnas*, moverlas y terminar. Al guardar, la tabla queda alineada como con org-table-align y no se tocan #+NAME, #+TBLFM ni las rayas |---|. En la vista GTD, las tablas de las notas también se ven como tablas (y se editan en el editor de la tarea).
+Se ve como una tabla. Toca una celda para escribir en ella. *Tab* pasa a la siguiente (en la última, crea una fila, como en Emacs) y Mayús+Tab a la anterior; *Intro* baja (Mayús+Intro sube); *Alt+flechas* mueven la fila o la columna; Esc cancela; tocar fuera guarda. Mientras escribes, la barra de abajo trae *añadir y borrar filas y columnas*, moverlas y terminar. Al guardar, la tabla queda alineada en el texto como con org-table-align (cifras a la derecha) y no se tocan #+NAME, #+TBLFM ni las rayas |---|. En la vista GTD, las tablas de las notas también se ven como tablas (y se editan en el editor de la tarea).
 Para crear una, botón *Formato [Aa›] › Tabla*: la pone donde está el cursor (o al final de las notas) y abre su primera celda. (4.09) En el editor de una tarea de GTD, el botón de tabla de la barra de arriba (junto al reloj) hace lo mismo.
 ** Una tabla dentro de una lista
 - Martes

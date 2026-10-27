@@ -157,7 +157,34 @@ export const replaceTableAt = (rawText, blockIndex, newLines) => {
 // --- Escritura (org-table-align) -------------------------------------------------------------
 
 // Anchura de un texto como la cuenta Emacs (cada carácter, 1; los combinados no suman)
-const width = (s) => Array.from(String(s || '').normalize('NFC')).length;
+// (4.40) Anchura en monoespaciada: los combinados (acentos sueltos, ZWJ, selector de variante)
+// no suman; CJK, emojis y formas anchas ocupan 2 columnas.
+const charWidth = (ch) => {
+  const c = ch.codePointAt(0);
+  if (
+    (c >= 0x300 && c <= 0x36f) ||
+    c === 0x200d ||
+    (c >= 0xfe00 && c <= 0xfe0f) ||
+    (c >= 0x200b && c <= 0x200f)
+  )
+    return 0;
+  if (
+    (c >= 0x1100 && c <= 0x115f) ||
+    (c >= 0x2e80 && c <= 0xa4cf) ||
+    (c >= 0xac00 && c <= 0xd7a3) ||
+    (c >= 0xf900 && c <= 0xfaff) ||
+    (c >= 0xfe30 && c <= 0xfe6f) ||
+    (c >= 0xff00 && c <= 0xff60) ||
+    (c >= 0xffe0 && c <= 0xffe6) ||
+    (c >= 0x1f300 && c <= 0x1f64f) ||
+    (c >= 0x1f900 && c <= 0x1f9ff) ||
+    (c >= 0x20000 && c <= 0x3fffd)
+  )
+    return 2;
+  return 1;
+};
+const width = (s) =>
+  Array.from(String(s || '').normalize('NFC')).reduce((n, ch) => n + charWidth(ch), 0);
 // org-table-number-regexp (valor por defecto de Emacs)
 const NUMBER_RE = /^(?:[<>]?[-+^.0-9]*[0-9][-+^.0-9eEdDx()%]*|[<>]?[-+]?0[xX][0-9a-fA-F.]+|[<>]?[-+]?[0-9]+#[0-9a-zA-Z.]+|nan|[-+u]?inf)$/;
 const isNumber = (s) => !!s && NUMBER_RE.test(s.trim());
@@ -308,12 +335,13 @@ export const isAligned = (lines) => {
 // --- (4.37) Alinear con espacios al editar las notas ----------------------------------------
 
 // Líneas de una tabla → las mismas alineadas con espacios (como org-table-align): cada celda al
-// ancho de la columna más ancha, los |---+---| rehechos, las filas cortas completadas. Las cifras
-// van a la izquierda, como el resto del texto. Si no hay ninguna fila con celdas, tal cual.
+// ancho de la columna más ancha, los |---+---| rehechos, las filas cortas completadas. (4.40) Las
+// columnas de cifras van a la DERECHA, como org-table-align de Emacs (la 4.37 las dejaba a la
+// izquierda). Si no hay ninguna fila con celdas, tal cual.
 export const alignOrgTable = (lines) => {
   const t = parseTableLines(lines);
   if (!t.rows.some((r) => !r.sep)) return lines.slice();
-  return formatTable(t, { numbersRight: false });
+  return formatTable(t);
 };
 
 // Texto de notas editado → lo mismo con las tablas CAMBIADAS alineadas. Una tabla que ya estaba

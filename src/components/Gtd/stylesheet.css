@@ -4873,3 +4873,12 @@ input.gtd-proc__input:not([type]) {
   color: var(--blue, var(--base01));
   opacity: 1;
 }
+
+/* 4.40: recuadro de selección (arrastrar en un hueco de la lista) */
+.gtd-marquee {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  border: 1px solid rgba(38, 139, 210, 0.9);
+  background: rgba(38, 139, 210, 0.16);
+}
