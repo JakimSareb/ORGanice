@@ -22,6 +22,12 @@ const DEFAULT_BINDINGS = [
   ['Sincronizar', 'syncFile', 's'],
   ['Mover encabezados (flechas)', 'openMoveMenu', 'm'],
   ['Buscar', 'openSearch', 'b'],
+  // (4.45) Ajustes y Diario también con el teclado en Documentos (en GTD ya estaban)
+  ['Abrir los ajustes', 'openSettings', ','],
+  ['Abrir el diario de hoy', 'openDiary', 'j'],
+  // (4.45) estilo Emacs (M-u / M-c) en los campos de texto; los gestiona lib/eli_word_case.js
+  ['Palabra siguiente en MAYÚSCULAS (campos de texto)', 'eliWordUpper', 'alt+u'],
+  ['Palabra siguiente con inicial en mayúscula (campos de texto)', 'eliWordCapital', 'alt+c'],
   ['Etiquetas de la cabecera seleccionada', 'eliEditTags', '#'],
   ['Seleccionar el encabezado siguiente (flecha)', 'eliSelectNext', 'down'],
   ['Seleccionar el encabezado anterior (flecha)', 'eliSelectPrev', 'up'],
@@ -79,6 +85,8 @@ export const GTD_BINDINGS = [
   ['GTD: agenda', 'gtdAgenda', 'a', 'Más'],
   ['GTD: ir a Documentos', 'gtdDocs', 'shift+g', 'Más'],
   ['GTD: ajustes', 'gtdSettings', ',', 'Más'],
+  // (4.45) el diario de hoy (j de journal)
+  ['GTD: diario de hoy', 'gtdDiary', 'j', 'Más'],
   ['GTD: manual', 'gtdManual', 'h', 'Más'],
   ['GTD: ventana de atajos', 'gtdShortcuts', 'k', 'Más'],
   ['GTD: ventana de atajos (otra tecla)', 'gtdShortcuts2', '?', 'Más'],
@@ -94,6 +102,43 @@ export const calculateGtdKeybindings = (customKeybindings) =>
     group,
     binding: customKeybindings.get(name, binding),
   }));
+
+// (4.45) Grupos de los atajos de Documentos (para la ventana de Atajos)
+export const DOC_GROUPS = ['Moverse', 'Editar', 'Texto', 'Abrir'];
+const DOC_GROUP_OF = {
+  selectNextVisibleHeader: 'Moverse',
+  selectPreviousVisibleHeader: 'Moverse',
+  eliSelectNext: 'Moverse',
+  eliSelectPrev: 'Moverse',
+  toggleHeaderOpened: 'Moverse',
+  eliToggleOpen: 'Moverse',
+  eliListLeft: 'Moverse',
+  eliListRight: 'Moverse',
+  eliWordUpper: 'Texto',
+  eliWordCapital: 'Texto',
+  openAgenda: 'Abrir',
+  openGtd: 'Abrir',
+  openFavorites: 'Abrir',
+  openCapture: 'Abrir',
+  syncFile: 'Abrir',
+  openSearch: 'Abrir',
+  openSettings: 'Abrir',
+  openDiary: 'Abrir',
+};
+export const calculateDocKeybindings = (customKeybindings) =>
+  DEFAULT_BINDINGS.map(([name, action, def]) => ({
+    name,
+    action,
+    def,
+    group: DOC_GROUP_OF[action] || 'Editar',
+    binding: customKeybindings.get(name, def),
+  }));
+export const defaultBindingOf = (name) => {
+  const d = DEFAULT_BINDINGS.find((b) => b[0] === name);
+  if (d) return d[2];
+  const g = GTD_BINDINGS.find((b) => b[0] === name);
+  return g ? g[2] : '';
+};
 
 export const calculateNamedKeybindings = (customKeybindings) =>
   DEFAULT_BINDINGS.map(([bindingName, _bindingAction, binding]) => [

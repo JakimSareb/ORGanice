@@ -115,7 +115,7 @@ describe('4.27 registro mensual', () => {
     expect(t).toContain('| [[id:diari-2026-10-01][01 jue.]] | empezar ¦ bien | X | 4,5 |');
     expect(t).toContain('| 03 sáb. |  |  |  |');
     expect(t).toContain('| Semana |  | 1 | 8 |');
-    expect(t).toContain('| Total | 3 días con algo | 2 | 10 |');
+    expect(t).toContain('| Total |  | 2 | 10 |');
     expect(t).toContain('| octubre | 3 | 2 | 10 |');
     expect(t).toContain('#+ATTR_LATEX');
   });

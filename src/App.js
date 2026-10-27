@@ -49,6 +49,7 @@ import _ from 'lodash';
 import { Map } from 'immutable';
 import { setDefaultTodoLine, setDefaultTagsLine } from './lib/eli_todo_defaults';
 import { listenForSaves } from './lib/eli_multi';
+import { setWordCaseBindings } from './lib/eli_word_case';
 import { setLastSyncAt, sync } from './actions/org';
 
 import { configure } from 'react-hotkeys';
@@ -178,6 +179,7 @@ export default class App extends PureComponent {
         eliTodoLine = base.get('eliTodoKeywordsLine');
         setDefaultTodoLine(eliTodoLine);
       }
+      setWordCaseBindings(base.get('customKeybindings'));
       if (base.get('eliDefaultTagsLine') !== eliTagsLine) {
         eliTagsLine = base.get('eliDefaultTagsLine');
         setDefaultTagsLine(eliTagsLine);

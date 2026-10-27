@@ -6,6 +6,7 @@ import _ from 'lodash';
 import classNames from 'classnames';
 
 import { keybindingLabel } from '../../../../lib/keybindings';
+import { bindingFromEvent } from '../../../../lib/eli_binding_capture';
 
 export default class ShortcutRow extends PureComponent {
   constructor(props) {
@@ -35,52 +36,8 @@ export default class ShortcutRow extends PureComponent {
     this.setState({ isEditMode: false });
     document.removeEventListener('keydown', this.handleKeyPress);
 
-    let key = null;
-    if (event.code.startsWith('Key')) {
-      key = event.code.substr(3).toLowerCase();
-    } else if (event.code.startsWith('Digit')) {
-      key = event.code.substr(5);
-    } else {
-      key = {
-        Minus: '-',
-        Equal: '=',
-        Backspace: 'backspace',
-        Enter: 'enter',
-        Return: 'return',
-        Tab: 'tab',
-        BracketLeft: '[',
-        BracketRight: ']',
-        Semicolon: ';',
-        Quote: '"',
-        Backslash: '\\',
-        Comma: ',',
-        Period: '.',
-        Slash: '/',
-        Escape: 'escape',
-        Space: 'space',
-        ArrowUp: 'up',
-        ArrowDown: 'down',
-        ArrowLeft: 'left',
-        ArrowRight: 'right',
-      }[event.code];
-    }
-
-    if (!key) {
-      return;
-    }
-
-    const modifiers = [
-      ['ctrlKey', 'ctrl'],
-      ['altKey', 'alt'],
-      ['metaKey', 'meta'],
-      ['shiftKey', 'shift'],
-    ];
-
-    const newModifiers = modifiers
-      .filter(([modifier, _]) => event[modifier])
-      .map(([_, symbol]) => symbol)
-      .join('+');
-    const newBinding = `${newModifiers}${!!newModifiers ? '+' : ''}${key}`;
+    const newBinding = bindingFromEvent(event);
+    if (!newBinding) return;
 
     this.props.onBindingChange(this.props.name, newBinding);
   }

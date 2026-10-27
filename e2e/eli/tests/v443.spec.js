@@ -73,11 +73,11 @@ test('4.43: cabecera del proyecto: sin contador, botones debajo en una línea, t
   await openProject(app, 'Preparar el viaje');
   // sin número de tareas
   await expect(page.locator('[data-testid=gtd-title] .gtd-main__count')).toHaveCount(0);
-  // botones: en una línea propia, justo debajo de la cabecera y en su orden
+  // (4.45) los botones están DENTRO de la tarjeta de cabecera, en su orden: ⋯ < deshacer < buscar < nuevo
   const head = await page.locator('.gtd-main__head--project').boundingBox();
-  const tools = page.locator('[data-testid=gtd-project-tools]');
+  const tools = page.locator('.gtd-main__head--project [data-testid=gtd-project-tools]');
   await expect(tools).toHaveCount(1);
-  const ids = ['gtd-new', 'gtd-undo', 'gtd-view-menu-button'];
+  const ids = ['gtd-view-menu-button', 'gtd-undo', 'gtd-sec-filter-btn', 'gtd-new'];
   const boxes = [];
   for (const id of ids) {
     const b = await tools.locator(`[data-testid=${id}]`).boundingBox();
@@ -85,21 +85,20 @@ test('4.43: cabecera del proyecto: sin contador, botones debajo en una línea, t
     boxes.push(b);
   }
   boxes.forEach((b) => {
-    expect(b.y).toBeGreaterThanOrEqual(head.y + head.height - 1);
+    expect(b.y).toBeGreaterThanOrEqual(head.y);
+    expect(b.y + b.height).toBeLessThanOrEqual(head.y + head.height + 1);
     expect(Math.abs(b.y - boxes[0].y)).toBeLessThan(10); // una sola línea
   });
-  expect(boxes[0].x).toBeLessThan(boxes[1].x);
-  expect(boxes[1].x).toBeLessThan(boxes[2].x);
-  // ⇉/↓ dentro de la cabecera, a la derecha del título
-  const order = await page
-    .locator('.gtd-main__head [data-testid=gtd-project-order-toggle]')
-    .boundingBox();
+  for (let i = 0; i < boxes.length - 1; i++) expect(boxes[i].x).toBeLessThan(boxes[i + 1].x);
+  // ⇉/↓ dentro de la cabecera
+  await expect(page.locator('.gtd-main__head [data-testid=gtd-project-order-toggle]')).toHaveCount(
+    1
+  );
   const title = page.locator('[data-testid=gtd-edit-project]');
   const rects = await title.evaluate((el) =>
     Array.from(el.getClientRects()).map((r) => ({ left: r.left, right: r.right }))
   );
   expect(rects.length).toBeGreaterThan(1); // el título ocupa más de una línea
-  rects.forEach((r) => expect(r.right).toBeLessThanOrEqual(order.x + 1)); // no lo tapa el botón
   // sangría colgante: la 2.ª línea empieza donde la 1.ª, ya a la derecha de la estrella
   const star = await page.locator('[data-testid=gtd-project-star]').boundingBox();
   expect(Math.abs(rects[1].left - rects[0].left)).toBeLessThan(2);

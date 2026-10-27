@@ -57,7 +57,7 @@ import { getGtdFiles } from '../../lib/gtd/gtd_sections';
 import { buildTasks } from '../../lib/gtd/gtd_model';
 import { gtdAddTask, createdStamp, gtdToggleDone } from '../../lib/gtd/gtd_actions';
 import { fileLinkTarget } from '../../lib/eli_media';
-import { showMessage } from '../../lib/eli_prompt';
+import { showMessage, askConfirm } from '../../lib/eli_prompt';
 import EliMedia, { MediaPathContext } from '../OrgFile/components/EliMedia';
 import { PrintButton } from '../EliTools';
 import { eliSyncFile, eliOpenDiaryDayNarrow } from '../../actions/org';
@@ -90,7 +90,7 @@ export const DiaryText = ({ text, path }) => {
   return <>{out}</>;
 };
 
-const Entry = ({ e, path, onInbox }) => (
+const Entry = ({ e, path, onInbox, sent }) => (
   <div className={`eli-diary__entry eli-diary__entry--${e.mark === '!' ? 'imp' : 'n'}`}>
     <span className="eli-diary__time">{e.time}</span>
     <span className="eli-diary__mark" title={(MARKS.find((x) => x.id === e.mark) || {}).label}>
@@ -107,13 +107,14 @@ const Entry = ({ e, path, onInbox }) => (
     {onInbox && (
       <button
         type="button"
-        className="eli-diary__mini"
+        className={`eli-diary__mini${sent ? ' is-sent' : ''}`}
         onClick={() => onInbox(e)}
-        title="Al Inbox"
+        title={sent ? 'Enviado al INBOX' : 'Al Inbox'}
         aria-label="Al Inbox"
         data-testid="eli-diary-entry-inbox"
       >
         <i className="fas fa-inbox" />
+        {sent && <i className="fas fa-check eli-diary__sent" data-testid="eli-diary-sent" />}
       </button>
     )}
   </div>
@@ -255,7 +256,7 @@ const MonthlyTables = ({ data, hasDays = false }) => (
               ) : (
                 <tr key={i} className="eli-diary-monthly__total">
                   <td>Total</td>
-                  <td>{r.days} días con algo</td>
+                  <td />
                   {r.values.map((v, j) => (
                     <td key={j} className="eli-diary-monthly__n">
                       {v}
@@ -411,6 +412,8 @@ export default function EliDiary() {
   const [status, setStatus] = useState('');
   const [input, setInput] = useState('');
   const [mark, setMark] = useState('-');
+  const [timeEdit, setTimeEdit] = useState(''); // (4.45) hora elegida para el apunte ('' = la del momento de guardar)
+  const [sentSet, setSentSet] = useState({}); // (4.45) apuntes ya enviados al INBOX en esta sesión
   const [print, setPrint] = useState(null);
   const [cfg, setCfg] = useState(getDiaryCfg());
   const [streamN, setStreamN] = useState(STREAM_STEP);
@@ -715,15 +718,11 @@ export default function EliDiary() {
     if (!t) return;
     const now = new Date();
     const f = await fileFor(date);
-    const next = addEntry(
-      f.text,
-      date,
-      { text: t, mark, time: timeOf(now) },
-      template(),
-      jcRef.current
-    );
+    const chosen = /^\d{2}:\d{2}$/.test(timeEdit) ? timeEdit : timeOf(now);
+    const next = addEntry(f.text, date, { text: t, mark, time: chosen }, template(), jcRef.current);
     setInput('');
     setMark('-');
+    setTimeEdit('');
     await write(f, year, next);
     inputRef.current && inputRef.current.focus();
   };
@@ -753,6 +752,19 @@ export default function EliDiary() {
 
   // (integración) apunte → tarea en el Inbox con enlace al día
   const toInbox = async (e) => {
+    const sentKey = `${key} ${e.time} ${e.text}`;
+    if (sentSet[sentKey]) {
+      const again = await askConfirm({
+        title: 'Diario',
+        message: 'Ya se envió al INBOX. ¿Enviar otra vez?',
+        okLabel: 'Enviar otra vez',
+      });
+      if (!again) return;
+    }
+    const markSent = () => {
+      setSentSet((p) => ({ ...p, [sentKey]: true }));
+      setStatus('Enviado al INBOX ✓');
+    };
     const f = await fileFor(date);
     const r = ensureDayId(f.text, date, jcRef.current);
     if (r.text !== f.text) await write(f, year, r.text);
@@ -764,7 +776,8 @@ export default function EliDiary() {
       const id = store.dispatch(
         gtdAddTask({ path: inbox }, { title, list: 'inbox', notes, created: true })
       );
-      setStatus(id ? '→ Inbox' : 'No se ha podido añadir al Inbox');
+      if (id) markSent();
+      else setStatus('No se ha podido añadir al Inbox');
       return;
     }
     // el de entrada no está cargado: se añade al final del fichero tal cual
@@ -776,7 +789,7 @@ export default function EliDiary() {
       const body = (old && !old.endsWith('\n') ? old + '\n' : old) + add;
       if (exists) await c.updateFile(inbox, body);
       else await c.createFile(inbox, body);
-      setStatus('→ Inbox');
+      markSent();
     } catch (err) {
       showMessage('Diario', 'No se ha podido añadir al Inbox: ' + ((err && err.message) || err));
     }
@@ -1095,7 +1108,13 @@ export default function EliDiary() {
           ))}
         {day && day.entries.length ? (
           day.entries.map((e, i) => (
-            <Entry key={i} e={e} path={path} onInbox={cfg.inSystem ? toInbox : null} />
+            <Entry
+              key={i}
+              e={e}
+              path={path}
+              onInbox={cfg.inSystem ? toInbox : null}
+              sent={!!sentSet[`${key} ${e.time} ${e.text}`]}
+            />
           ))
         ) : day && day.heads && day.heads.length ? null : (
           <div className="eli-diary__empty">Sin apuntes.</div>
@@ -1136,6 +1155,16 @@ export default function EliDiary() {
             isToday ? `${timeOf(new Date())} — ¿Qué ha pasado?` : 'Apunte para este día…'
           }
           data-testid="eli-diary-input"
+        />
+        <input
+          type="time"
+          className="eli-diary__time-input"
+          value={timeEdit || timeOf(new Date())}
+          onChange={(e) => setTimeEdit(e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()}
+          title="Hora del apunte"
+          aria-label="Hora del apunte"
+          data-testid="eli-diary-time"
         />
         <button
           type="button"

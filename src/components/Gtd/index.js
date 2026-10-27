@@ -4100,6 +4100,7 @@ export default function GtdView() {
     gtdTags: () => setShowTagManager(true),
     gtdDocs: () => openDocuments(),
     gtdSettings: () => history.push('/settings'),
+    gtdDiary: () => openDiary(),
     gtdManual: () => history.push('/sample'),
     gtdShortcuts: () => setShowShortcuts(true),
     gtdShortcuts2: () => setShowShortcuts(true),
@@ -5084,128 +5085,265 @@ export default function GtdView() {
   };
   // (4.43) botones de la cabecera de la vista (filtrar, nuevo, deshacer, ⋯…): en las listas van en
   // la propia cabecera; en un proyecto, en una línea justo debajo
-  const renderHeadTools = () => (
-    <>
-      {/* 3.36 (a): filtrar la sección por texto (título y notas) */}
-      {canFilterSection && (
+  const renderHeadTools = () => {
+    const filterBtn = (
+      <>
+        {/* 3.36 (a): filtrar la sección por texto (título y notas) */}
+        {canFilterSection && (
+          <button
+            className={'gtd-main__sync gtd-main__filter' + (text ? ' is-on' : '')}
+            onClick={() => {
+              if (secFilterOpen && !text) {
+                setSecFilterOpen(false);
+                return;
+              }
+              // 3.39: si el campo ya está, se enfoca en el mismo toque; si no, el puente de
+              // teclado (iOS solo saca el teclado si el foco se pone dentro del toque)
+              const now = document.querySelector('[data-testid="gtd-sec-filter"]');
+              if (now) {
+                focusField(now);
+                return;
+              }
+              primeKeyboard();
+              setSecFilterOpen(true);
+              setTimeout(() => {
+                focusField(document.querySelector('[data-testid="gtd-sec-filter"]'));
+              }, 30);
+            }}
+            title="Filtrar esta sección"
+            aria-label="Filtrar esta sección"
+            data-testid="gtd-sec-filter-btn"
+          >
+            <i className="fas fa-search" />
+          </button>
+        )}
+      </>
+    );
+    const newBtn = (
+      <>
+        {canCreate && (
+          <button
+            className="gtd-main__new"
+            onClick={() => newBelowCursor()}
+            title="Elemento nuevo (n: debajo de la seleccionada; Mayús+n arriba)"
+            data-testid="gtd-new"
+          >
+            <i className="fas fa-plus" /> <span>Nuevo elemento</span>
+          </button>
+        )}
+      </>
+    );
+    const undoBtn = (
+      <>
         <button
-          className={'gtd-main__sync gtd-main__filter' + (text ? ' is-on' : '')}
-          onClick={() => {
-            if (secFilterOpen && !text) {
-              setSecFilterOpen(false);
-              return;
-            }
-            // 3.39: si el campo ya está, se enfoca en el mismo toque; si no, el puente de
-            // teclado (iOS solo saca el teclado si el foco se pone dentro del toque)
-            const now = document.querySelector('[data-testid="gtd-sec-filter"]');
-            if (now) {
-              focusField(now);
-              return;
-            }
-            primeKeyboard();
-            setSecFilterOpen(true);
-            setTimeout(() => {
-              focusField(document.querySelector('[data-testid="gtd-sec-filter"]'));
-            }, 30);
+          className="gtd-main__sync"
+          onClick={() => dispatch(gtdUndo())}
+          disabled={!canUndo}
+          title="Deshacer"
+          data-testid="gtd-undo"
+        >
+          <i className="fas fa-undo" />
+        </button>
+      </>
+    );
+    const moreBtn = (
+      <>
+        <button
+          className="gtd-main__sync"
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setMenu({
+              x: r.right - 260,
+              y: r.bottom + 4,
+              items: viewMenuItems(),
+              testId: 'gtd-view-menu',
+            });
           }}
-          title="Filtrar esta sección"
-          aria-label="Filtrar esta sección"
-          data-testid="gtd-sec-filter-btn"
+          title="Opciones de la vista"
+          aria-label="Opciones de la vista"
+          data-testid="gtd-view-menu-button"
         >
-          <i className="fas fa-search" />
+          <i className="fas fa-ellipsis-h" />
         </button>
-      )}
-      {canCreate && (
-        <button
-          className="gtd-main__new"
-          onClick={() => newBelowCursor()}
-          title="Elemento nuevo (n: debajo de la seleccionada; Mayús+n arriba)"
-          data-testid="gtd-new"
-        >
-          <i className="fas fa-plus" /> <span>Nuevo elemento</span>
-        </button>
-      )}
-      {view.id === 'horizons' && (
-        <button
-          className="gtd-main__new"
-          onClick={() => startDaily('horizons')}
-          title="Revisión de horizontes"
-          data-testid="gtd-horizons-review"
-        >
-          <i className="fas fa-binoculars" /> <span>Revisión</span>
-        </button>
-      )}
-      {view.id === 'projects' && (
-        <button
-          className="gtd-main__new"
-          onClick={addProject}
-          title="Proyecto nuevo (p)"
-          data-testid="gtd-new-project"
-        >
-          <i className="fas fa-plus" /> <span>Nuevo proyecto</span>
-        </button>
-      )}
-      {/* (3.04) arriba, solo en el Logbook; en las demás listas, al final (grupo «Hecho») */}
-      {cleanupCount > 0 && view.id === 'logbook' && (
-        <button
-          className="gtd-main__cleanup"
-          onClick={cleanupNow}
-          title="Limpieza (c): lo hecho pasa al Logbook"
-          data-testid="gtd-cleanup"
-        >
-          <i className="fas fa-broom" /> <span>Limpieza</span>{' '}
-          <span className="gtd-main__badge">{cleanupCount}</span>
-        </button>
-      )}
-      {isTrash && visible.length > 0 && (
-        <button
-          className="gtd-main__cleanup is-danger"
-          onClick={emptyTrash}
-          data-testid="gtd-empty-trash"
-        >
-          <i className="fas fa-trash" /> <span>Vaciar papelera</span>
-        </button>
-      )}
-      {view.id === 'inbox' && pendingRefile.length > 0 && (
-        <button
-          className="gtd-main__sync gtd-main__refile"
-          onClick={doRefile}
-          title={`Pasar ${pendingRefile.length} tarea${
-            pendingRefile.length === 1 ? '' : 's'
-          } con estado del fichero de entrada al de tareas`}
-          data-testid="gtd-refile"
-        >
-          <i className="fas fa-share" /> <span>{pendingRefile.length}</span>
-        </button>
-      )}
-      <button
-        className="gtd-main__sync"
-        onClick={() => dispatch(gtdUndo())}
-        disabled={!canUndo}
-        title="Deshacer"
-        data-testid="gtd-undo"
+      </>
+    );
+    const midBtns = (
+      <>
+        {view.id === 'horizons' && (
+          <button
+            className="gtd-main__new"
+            onClick={() => startDaily('horizons')}
+            title="Revisión de horizontes"
+            data-testid="gtd-horizons-review"
+          >
+            <i className="fas fa-binoculars" /> <span>Revisión</span>
+          </button>
+        )}
+        {view.id === 'projects' && (
+          <button
+            className="gtd-main__new"
+            onClick={addProject}
+            title="Proyecto nuevo (p)"
+            data-testid="gtd-new-project"
+          >
+            <i className="fas fa-plus" /> <span>Nuevo proyecto</span>
+          </button>
+        )}
+        {/* (3.04) arriba, solo en el Logbook; en las demás listas, al final (grupo «Hecho») */}
+        {cleanupCount > 0 && view.id === 'logbook' && (
+          <button
+            className="gtd-main__cleanup"
+            onClick={cleanupNow}
+            title="Limpieza (c): lo hecho pasa al Logbook"
+            data-testid="gtd-cleanup"
+          >
+            <i className="fas fa-broom" /> <span>Limpieza</span>{' '}
+            <span className="gtd-main__badge">{cleanupCount}</span>
+          </button>
+        )}
+        {isTrash && visible.length > 0 && (
+          <button
+            className="gtd-main__cleanup is-danger"
+            onClick={emptyTrash}
+            data-testid="gtd-empty-trash"
+          >
+            <i className="fas fa-trash" /> <span>Vaciar papelera</span>
+          </button>
+        )}
+        {view.id === 'inbox' && pendingRefile.length > 0 && (
+          <button
+            className="gtd-main__sync gtd-main__refile"
+            onClick={doRefile}
+            title={`Pasar ${pendingRefile.length} tarea${
+              pendingRefile.length === 1 ? '' : 's'
+            } con estado del fichero de entrada al de tareas`}
+            data-testid="gtd-refile"
+          >
+            <i className="fas fa-share" /> <span>{pendingRefile.length}</span>
+          </button>
+        )}
+      </>
+    );
+    // (4.45) dentro de la tarjeta del proyecto: ⋯, deshacer, buscar y ＋ (el nuevo, a la derecha)
+    if (projectTask)
+      return (
+        <>
+          {midBtns}
+          {moreBtn}
+          {undoBtn}
+          {filterBtn}
+          {newBtn}
+        </>
+      );
+    return (
+      <>
+        {filterBtn}
+        {newBtn}
+        {midBtns}
+        {undoBtn}
+        {moreBtn}
+      </>
+    );
+  };
+  // (4.45) Cuerpo de la tarjeta de cabecera de un proyecto: datos en un bloque que fluye y,
+  // en el caso sencillo (solo área y tipo), los botones en la MISMA línea; si hay pastillas
+  // (fecha, energía, tiempo, etiquetas, estado), los botones van en su propia línea, a la derecha.
+  const renderProjectCardBody = () => {
+    const pt = projectTask;
+    const state = projectState(pt, today);
+    const dueP = dueInfo(pt.deadline, today);
+    const shownTags = (pt.tags || []).filter((x) => !hasTrashTag([x]));
+    const hasPills = !!(dueP || pt.energy || pt.effort || shownTags.length || state !== 'active');
+    return (
+      <div
+        className={'gtd-project-card__body' + (hasPills ? ' has-pills' : '')}
+        data-testid="gtd-project-body"
       >
-        <i className="fas fa-undo" />
-      </button>
-      <button
-        className="gtd-main__sync"
-        onClick={(e) => {
-          const r = e.currentTarget.getBoundingClientRect();
-          setMenu({
-            x: r.right - 260,
-            y: r.bottom + 4,
-            items: viewMenuItems(),
-            testId: 'gtd-view-menu',
-          });
-        }}
-        title="Opciones de la vista"
-        aria-label="Opciones de la vista"
-        data-testid="gtd-view-menu-button"
-      >
-        <i className="fas fa-ellipsis-h" />
-      </button>
-    </>
-  );
+        <div className="gtd-project-data" data-testid="gtd-project-data">
+          <span className="gtd-project-data__line">
+            {pt.area && (
+              <>
+                <span className="gtd-meta gtd-meta--area">{pt.area}</span>
+                <span className="gtd-project-data__sep"> · </span>
+              </>
+            )}
+            <span className="gtd-project-order">
+              <button
+                type="button"
+                className={'gtd-project-order__btn' + (projectTask.ordered ? ' is-ordered' : '')}
+                data-testid="gtd-project-order-toggle"
+                aria-pressed={!!projectTask.ordered}
+                title={
+                  projectTask.ordered
+                    ? 'Proyecto secuencial: solo la primera tarea abierta es siguiente acción (un toque: paralelo)'
+                    : 'Proyecto paralelo: todas sus tareas pueden ser siguiente acción (un toque: secuencial)'
+                }
+                onClick={() => {
+                  setProjGroup(null);
+                  dispatch(
+                    gtdSaveTask(projectTask, {
+                      props: { [ORDERED_PROPERTY]: projectTask.ordered ? null : 't' },
+                    })
+                  );
+                }}
+              >
+                <span aria-hidden="true">{projectTask.ordered ? '↓' : '⇉'}</span>{' '}
+                {projectTask.ordered ? 'Secuencial' : 'Paralelo'}
+              </button>
+            </span>
+          </span>
+          {dueP && (
+            <span
+              className={`gtd-date gtd-date--due is-${dueP.level}`}
+              title={`Vence el ${fmtDate(pt.deadline)}`}
+              data-testid="gtd-project-due"
+            >
+              <i className="fas fa-flag" /> {fmtDate(pt.deadline)}
+            </span>
+          )}
+          {state === 'sleep' && (
+            <span className="gtd-badge gtd-badge--sleep" data-testid="gtd-project-sleeping">
+              <i className="fas fa-bed" /> Dormido
+            </span>
+          )}
+          {state === 'scheduled' && (
+            <span className="gtd-badge" data-testid="gtd-project-scheduled">
+              <i className="far fa-calendar-alt" /> Empieza el{' '}
+              {fmtDate(pt.scheduled || pt.projectStart)}
+            </span>
+          )}
+          {pt.energy && (
+            <span className="gtd-meta gtd-meta--energy" title="Energía">
+              <i className="fas fa-bolt" /> {pt.energy}
+            </span>
+          )}
+          {pt.effort && (
+            <span className="gtd-meta gtd-meta--effort" title="Tiempo">
+              <i className="far fa-clock" /> {pt.effort}
+            </span>
+          )}
+          {shownTags.map((tg) => (
+            <button
+              type="button"
+              key={tg}
+              className={
+                'gtd-meta gtd-meta--tag gtd-project-tag' +
+                ((pt.ownTags || []).includes(tg) ? '' : ' is-inherited')
+              }
+              onClick={() => selectView({ id: 'tag', tag: tg })}
+              title="Ver las tareas con esta etiqueta"
+              data-testid="gtd-project-tag"
+            >
+              {tg}
+            </button>
+          ))}
+        </div>
+        <div className="gtd-project-tools" data-testid="gtd-project-tools">
+          {renderHeadTools()}
+        </div>
+      </div>
+    );
+  };
   const viewMenuItems = () => {
     const setGroup = (g) => {
       // (4.43) dentro de un proyecto: solo cambia la vista de ESE proyecto (no el ajuste global)
@@ -6694,123 +6832,107 @@ export default function GtdView() {
         )}
         {searchGroups && renderSearchResults()}
         <header className={'gtd-main__head' + (projectTask ? ' gtd-main__head--project' : '')}>
-          <button className="gtd-main__menu" onClick={() => setSideOpen(true)} aria-label="Menú">
-            <i className="fas fa-bars" />
-          </button>
-          <h1 className="gtd-main__title" data-testid="gtd-title">
-            {/* (4.36) estrella de Focus del proyecto, a la izquierda del nombre (misma acción que la de las tareas) */}
-            {projectTask && (
-              <button
-                type="button"
-                className={
-                  'gtd-star gtd-main__star' + (projectTask.priority === 'A' ? ' is-on' : '')
-                }
-                onClick={() => dispatch(gtdToggleStar(projectTask))}
-                title="Focus (★ [#A])"
-                aria-pressed={projectTask.priority === 'A'}
-                data-testid="gtd-project-star"
-              >
-                <i className={projectTask.priority === 'A' ? 'fas fa-star' : 'far fa-star'} />
-              </button>
-            )}
-            {/* (4.43) en un proyecto el título va en su propio bloque: si ocupa varias líneas, la 2.ª y
-                siguientes empiezan alineadas con el texto del título (no bajo la estrella) */}
-            {projectTask ? (
-              <span className="gtd-main__title-body">
-                <span
-                  className="gtd-main__title-text is-link"
-                  onClick={() => setOpenKey(openKey === projectTask.key ? null : projectTask.key)}
-                  title="Editar el proyecto"
-                  data-testid="gtd-edit-project"
+          {/* (4.45) proyecto anidado: el proyecto padre, encima del título (tocarlo = ir a él) */}
+          {projectTask && projectTask.project && (
+            <button
+              type="button"
+              className="gtd-project-parent"
+              onClick={() => goToProject(projectTask.project)}
+              title="Ir al proyecto padre"
+              data-testid="gtd-project-parent"
+            >
+              <i className="fas fa-level-up-alt fa-flip-horizontal" /> {projectTask.project.title}
+            </button>
+          )}
+          {React.createElement(
+            projectTask ? 'div' : React.Fragment,
+            projectTask ? { className: 'gtd-project-card__row' } : {},
+            <button className="gtd-main__menu" onClick={() => setSideOpen(true)} aria-label="Menú">
+              <i className="fas fa-bars" />
+            </button>,
+            <h1 className="gtd-main__title" data-testid="gtd-title">
+              {/* (4.36) estrella de Focus del proyecto, a la izquierda del nombre (misma acción que la de las tareas) */}
+              {projectTask && (
+                <button
+                  type="button"
+                  className={
+                    'gtd-star gtd-main__star' + (projectTask.priority === 'A' ? ' is-on' : '')
+                  }
+                  onClick={() => dispatch(gtdToggleStar(projectTask))}
+                  title="Focus (★ [#A])"
+                  aria-pressed={projectTask.priority === 'A'}
+                  data-testid="gtd-project-star"
                 >
-                  {title}
-                </span>
-                {/* (4.13) icono de notas del proyecto al final del nombre, como en las tareas */}
-                {projectTask && projectTask.description.trim() && openKey !== projectTask.key && (
-                  <button
-                    type="button"
-                    className={'gtd-meta gtd-notes-btn' + (projNotesOpen ? ' is-on' : '')}
-                    aria-expanded={projNotesOpen}
-                    onClick={() => {
-                      const v = !projNotesOpen;
-                      setProjNotesOpen(v);
-                      writeLS('eliGtdProjNotes', v);
-                    }}
-                    title={
-                      projNotesOpen
-                        ? 'Notas visibles (clic: ocultarlas)'
-                        : 'Tiene notas (clic: verlas)'
-                    }
-                    data-testid="gtd-project-notes-toggle"
-                  >
-                    <i className={projNotesOpen ? 'fas fa-sticky-note' : 'far fa-sticky-note'} />
-                  </button>
-                )}
-                {projectTask && clockTotalLabel(clockTotals.get(projectTask.key)) && (
+                  <i className={projectTask.priority === 'A' ? 'fas fa-star' : 'far fa-star'} />
+                </button>
+              )}
+              {/* (4.43) en un proyecto el título va en su propio bloque: si ocupa varias líneas, la 2.ª y
+                siguientes empiezan alineadas con el texto del título (no bajo la estrella) */}
+              {projectTask ? (
+                <span className="gtd-main__title-body">
                   <span
-                    className="gtd-main__clock"
-                    title="Tiempo registrado en el proyecto"
-                    data-testid="gtd-project-clock"
+                    className="gtd-main__title-text is-link"
+                    onClick={() => setOpenKey(openKey === projectTask.key ? null : projectTask.key)}
+                    title="Editar el proyecto"
+                    data-testid="gtd-edit-project"
                   >
-                    {clockTotalLabel(clockTotals.get(projectTask.key))}
+                    {title}
                   </span>
-                )}
-              </span>
-            ) : (
-              title
-            )}
-            {/* (4.43) en la cabecera de un proyecto ya no sale el número de tareas */}
-            {!projectTask && (
-              <span className="gtd-main__count">
-                {view.id === 'projects'
-                  ? overview.active.length + overview.scheduled.length + overview.sleep.length
-                  : view.id === 'horizons'
-                  ? hView
-                    ? hView.objectives.length + hView.areas.length
-                    : 0
-                  : view.id === 'tickler'
-                  ? ticklerShown.length
-                  : visible.length}
-              </span>
-            )}
-          </h1>
-          {/* (4.39) proyecto paralelo (⇉, por defecto) o secuencial (↓, `:ORDERED: t`): un toque cambia.
-              (4.43) Dentro de la cabecera, a la derecha; la vista del proyecto pasa en el acto a la
-              que le toca (secuencial / lista única) */}
-          {projectTask && (
-            <div className="gtd-project-order">
-              <button
-                type="button"
-                className={'gtd-project-order__btn' + (projectTask.ordered ? ' is-ordered' : '')}
-                data-testid="gtd-project-order-toggle"
-                aria-pressed={!!projectTask.ordered}
-                title={
-                  projectTask.ordered
-                    ? 'Proyecto secuencial: solo la primera tarea abierta es siguiente acción (un toque: paralelo)'
-                    : 'Proyecto paralelo: todas sus tareas pueden ser siguiente acción (un toque: secuencial)'
-                }
-                onClick={() => {
-                  setProjGroup(null);
-                  dispatch(
-                    gtdSaveTask(projectTask, {
-                      props: { [ORDERED_PROPERTY]: projectTask.ordered ? null : 't' },
-                    })
-                  );
-                }}
-              >
-                <span aria-hidden="true">{projectTask.ordered ? '↓' : '⇉'}</span>{' '}
-                {projectTask.ordered ? 'Secuencial' : 'Paralelo'}
-              </button>
-            </div>
+                  {/* (4.13) icono de notas del proyecto al final del nombre, como en las tareas */}
+                  {projectTask && projectTask.description.trim() && openKey !== projectTask.key && (
+                    <button
+                      type="button"
+                      className={'gtd-meta gtd-notes-btn' + (projNotesOpen ? ' is-on' : '')}
+                      aria-expanded={projNotesOpen}
+                      onClick={() => {
+                        const v = !projNotesOpen;
+                        setProjNotesOpen(v);
+                        writeLS('eliGtdProjNotes', v);
+                      }}
+                      title={
+                        projNotesOpen
+                          ? 'Notas visibles (clic: ocultarlas)'
+                          : 'Tiene notas (clic: verlas)'
+                      }
+                      data-testid="gtd-project-notes-toggle"
+                    >
+                      <i className={projNotesOpen ? 'fas fa-sticky-note' : 'far fa-sticky-note'} />
+                    </button>
+                  )}
+                  {projectTask && clockTotalLabel(clockTotals.get(projectTask.key)) && (
+                    <span
+                      className="gtd-main__clock"
+                      title="Tiempo registrado en el proyecto"
+                      data-testid="gtd-project-clock"
+                    >
+                      {clockTotalLabel(clockTotals.get(projectTask.key))}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                title
+              )}
+              {/* (4.43) en la cabecera de un proyecto ya no sale el número de tareas */}
+              {!projectTask && (
+                <span className="gtd-main__count">
+                  {view.id === 'projects'
+                    ? overview.active.length + overview.scheduled.length + overview.sleep.length
+                    : view.id === 'horizons'
+                    ? hView
+                      ? hView.objectives.length + hView.areas.length
+                      : 0
+                    : view.id === 'tickler'
+                    ? ticklerShown.length
+                    : visible.length}
+                </span>
+              )}
+            </h1>
           )}
           {!projectTask && renderHeadTools()}
+          {/* (4.45) cabecera del proyecto, todo dentro de la tarjeta: bajo un borde fino, los datos
+              (área · tipo, fecha, energía, tiempo, etiquetas) y los botones (⋯ deshacer buscar ＋) */}
+          {projectTask && renderProjectCardBody()}
         </header>
-        {/* (4.43) en un proyecto, los botones de la cabecera van justo debajo, en una sola línea */}
-        {projectTask && (
-          <div className="gtd-project-tools" data-testid="gtd-project-tools">
-            {renderHeadTools()}
-          </div>
-        )}
         {canFilterSection && (secFilterOpen || text) && (
           <div className="gtd-secfilter" data-testid="gtd-sec-filter-row">
             <i className="fas fa-filter" />
@@ -6975,32 +7097,6 @@ export default function GtdView() {
 
         {/* (3.05) sin «Editar el proyecto» ni «Abrir en su fichero»: se edita con clic en el título
             y desde su editor se abre en su fichero (4.0: ya no están en ⋯) */}
-        {projectTask &&
-          (projectTask.area ||
-            projectTask.deadline ||
-            projectState(projectTask, today) !== 'active') && (
-            <div className="gtd-project-info">
-              {projectTask.area && (
-                <span className="gtd-meta gtd-meta--area">{projectTask.area}</span>
-              )}
-              {projectTask.deadline && (
-                <span className="gtd-date gtd-date--due">
-                  <i className="fas fa-flag" /> {fmtDate(projectTask.deadline)}
-                </span>
-              )}
-              {projectState(projectTask, today) === 'sleep' && (
-                <span className="gtd-badge gtd-badge--sleep" data-testid="gtd-project-sleeping">
-                  <i className="fas fa-bed" /> Dormido
-                </span>
-              )}
-              {projectState(projectTask, today) === 'scheduled' && (
-                <span className="gtd-badge" data-testid="gtd-project-scheduled">
-                  <i className="far fa-calendar-alt" /> Empieza el{' '}
-                  {fmtDate(projectTask.scheduled || projectTask.projectStart)}
-                </span>
-              )}
-            </div>
-          )}
         {projectTask &&
           projectTask.description.trim() &&
           openKey !== projectTask.key &&

@@ -124,6 +124,8 @@ export const ELI_HOTKEY_ACTIONS = [
   'syncFile',
   'openMoveMenu',
   'openSearch',
+  'openSettings',
+  'openDiary',
 ];
 
 // Al perder el foco la ventana (Cmd+Tab…) el navegador no envía el keyup de las teclas
