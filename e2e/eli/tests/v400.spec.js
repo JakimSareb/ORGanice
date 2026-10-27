@@ -26,12 +26,11 @@ test('4.0: barra de abajo con 5 botones (Editar · Nueva · Añadir · Mover · 
   await app.open({ ...BASE, '/notas.org': DOC }, '/file/notas.org');
   await select(app, 'Segunda');
   const row = app.page.locator('[data-testid=eli-docbar-row-main] > button');
-  // (4.28) + Estado y Etiquetas a la vista (fuera de ⋯)
-  await expect(row).toHaveCount(7);
+  // (4.28) + Estado a la vista (4.39: Etiquetas vuelve a ⋯)
+  await expect(row).toHaveCount(6);
   expect(await row.evaluateAll((b) => b.map((x) => x.getAttribute('data-bid')))).toEqual([
     'edit',
     'todo',
-    'tags',
     'new',
     'insert',
     'move',
