@@ -117,6 +117,7 @@ import {
 } from './gtdTaskActions';
 import GtdProcessInbox from './GtdProcessInbox';
 import { AgendasPage, PersonsPage } from './GtdPeople';
+import { PersonChip } from './PersonChip';
 import {
   parseContacts,
   isPersonasPath,
@@ -649,6 +650,8 @@ function TaskRow({
   seqMark = null,
   clockMs = 0,
   onOpenLink = null,
+  showPersons = true, // (4.50) personas (:PERSONA:) en la fila; apagado, solo en Waiting
+  contactNames = null, // (4.50) Map id (minúsculas) → nombre del contacto
 }) {
   const due = dueInfo(task.deadline, today);
   const isProjectRow = !!task.isProject;
@@ -924,6 +927,21 @@ function TaskRow({
           </div>
         </div>
         <div className="gtd-task__right">
+          {/* (4.50) a quién está asignada: un chip por persona (siempre en Waiting) */}
+          {(showPersons || task.keyword === 'WAITING') &&
+            (task.personLinks || []).map((l) => {
+              const name = contactNames && contactNames.get(String(l.id).toLowerCase());
+              return (
+                <PersonChip
+                  key={l.id}
+                  compact
+                  name={name || l.title}
+                  broken={!!contactNames && !name}
+                  onOpen={() => openPersonCard(l.id)}
+                  testId="gtd-task-person"
+                />
+              );
+            })}
           {(showTags ? task.tags : [])
             .filter((t) => !['trash'].includes(t.toLowerCase()))
             .map((t) => {
@@ -1191,6 +1209,7 @@ export default function GtdView() {
     tags: true,
     effort: true,
     area: true,
+    persons: true, // (4.50)
     ...readLS('eliGtdDetails', {}),
   }));
   const setDetail = (k, v) => {
@@ -1381,6 +1400,15 @@ export default function GtdView() {
     contacts,
     agendasPath,
   ]);
+  // (4.50) nombre de cada contacto por id (para los chips de persona de las filas); null mientras
+  // personas.org no está cargado (entonces no se marcan enlaces rotos)
+  const contactNames = useMemo(
+    () =>
+      personasFile && personasFile.get('headers')
+        ? new Map(contacts.filter((c) => c.orgId).map((c) => [c.orgId.toLowerCase(), c.name]))
+        : null,
+    [contacts, personasFile]
+  );
   const personasLoaded = !!(personasFile && personasFile.get('headers'));
   const agendasLoaded = !!(agendasFile && agendasFile.get('headers'));
   useEffect(() => {
@@ -4082,8 +4110,8 @@ export default function GtdView() {
       );
       label = 'Hecha';
     } else if (d.kind === 'agenda') {
-      // (4.48) «Hablar con… (Agenda)»: el título pasa como punto a la agenda y sale del Inbox
-      const name = await dispatch(sendToAgenda(d.title || task.title));
+      // (4.50) «Hablar con… (Agenda)»: la tarea sale del Inbox (Papelera) y se crea la SUBCABECERA con sus notas
+      const name = await dispatch(sendToAgenda(d.title || task.title, task.description));
       if (!name) return;
       dispatch(gtdTrash([task]));
       label = `Agenda de ${name}`;
@@ -4778,7 +4806,7 @@ export default function GtdView() {
   };
   // (4.48) «→ Agenda de…»: el título pasa como punto a la agenda y la tarea va a la Papelera
   const toAgenda = async (task) => {
-    const name = await dispatch(sendToAgenda(task.title));
+    const name = await dispatch(sendToAgenda(task.title, task.description));
     if (!name) return;
     dispatch(gtdTrash([task]));
     toast(`→ Agenda de ${name}`);
@@ -5561,6 +5589,12 @@ export default function GtdView() {
         checked: details.tags,
         onClick: () => setDetail('tags', !details.tags),
         testId: 'gtd-opt-tags',
+      },
+      {
+        label: 'Mostrar personas',
+        checked: details.persons,
+        onClick: () => setDetail('persons', !details.persons),
+        testId: 'gtd-opt-persons',
       },
       {
         label: 'Mostrar esfuerzo',
@@ -6800,6 +6834,8 @@ export default function GtdView() {
         notesMode={notesOverride[item.task.key] || (item.forceNotes ? 'full' : notesMode)}
         badProject={!!item.task.badProject}
         showTags={details.tags}
+        showPersons={details.persons}
+        contactNames={contactNames}
         showEffort={details.effort}
         showArea={details.area}
         wrapTitle={details.wrap}

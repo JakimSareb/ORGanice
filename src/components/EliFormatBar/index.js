@@ -147,6 +147,7 @@ export default ({
   after = null,
   before = null, // (3.04) botones antes del «Aa» (p. ej. deshacer/rehacer en GTD)
   hideNow = false, // (4.01) GTD: el reloj ya está fuera, junto a deshacer/rehacer
+  formatRow = false, // (4.50) GTD: los iconos del formato, en una fila inferior (scroll horizontal)
 }) => {
   const [open, setOpen] = React.useState(!collapsible || readOpen());
   // (4.0) en el Modo Notas no sale el reloj (fecha y hora); la fecha de hoy está en «Añadir»
@@ -160,29 +161,8 @@ export default ({
       localStorage.setItem('eliFormatBarOpen', next ? '1' : '0');
     } catch (err) {}
   };
-  return (
-    <div
-      className={`eli-format-bar ${compact ? 'eli-format-bar--compact' : ''} ${className}`}
-      data-testid="eli-format-bar"
-      onMouseDown={keep}
-      onPointerDown={keep}
-    >
-      {before}
-      {collapsible && (
-        <button
-          type="button"
-          className={'eli-format-bar__btn eli-format-bar__toggle' + (open ? ' is-open' : '')}
-          title={open ? 'Ocultar el formato de texto' : 'Formato de texto'}
-          aria-label="Formato de texto"
-          aria-expanded={open}
-          data-testid="eli-format-toggle"
-          onMouseDown={keep}
-          onClick={toggle}
-        >
-          Aa
-        </button>
-      )}
-      {after}
+  const formatItems = (
+    <>
       {open &&
         ORG_EMPHASIS.map((item) => {
           const { marker, icon, id } = item;
@@ -241,6 +221,51 @@ export default ({
         >
           <i className="far fa-clock" />
         </button>
+      )}
+    </>
+  );
+  const toggleBtn = collapsible && (
+    <button
+      type="button"
+      className={'eli-format-bar__btn eli-format-bar__toggle' + (open ? ' is-open' : '')}
+      title={open ? 'Ocultar el formato de texto' : 'Formato de texto'}
+      aria-label="Formato de texto"
+      aria-expanded={open}
+      data-testid="eli-format-toggle"
+      onMouseDown={keep}
+      onClick={toggle}
+    >
+      Aa
+    </button>
+  );
+  return (
+    <div
+      className={`eli-format-bar ${compact ? 'eli-format-bar--compact' : ''} ${
+        formatRow ? 'eli-format-bar--rows' : ''
+      } ${className}`}
+      data-testid="eli-format-bar"
+      onMouseDown={keep}
+      onPointerDown={keep}
+    >
+      {formatRow ? (
+        <div className="eli-format-bar__main">
+          {before}
+          {toggleBtn}
+          {after}
+        </div>
+      ) : (
+        <>
+          {before}
+          {toggleBtn}
+          {after}
+        </>
+      )}
+      {formatRow && open ? (
+        <div className="eli-format-bar__row" data-testid="eli-format-row">
+          {formatItems}
+        </div>
+      ) : (
+        formatItems
       )}
     </div>
   );

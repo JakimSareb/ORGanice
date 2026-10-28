@@ -33,7 +33,7 @@ test('4.48 A: editor → Persona → contacto nuevo en personas.org y :PERSONA: 
   expect(app.errors).toEqual([]);
 });
 
-test('4.48 A: «[[» ofrece siempre «Nueva cabecera», «Crear página» y «Crear contacto»', async ({
+test('4.48 A: «[[» ofrece siempre «Nueva cabecera» y «Crear contacto» (4.50: ya no «Crear página»)', async ({
   app,
 }) => {
   const { page } = app;
@@ -52,8 +52,9 @@ test('4.48 A: «[[» ofrece siempre «Nueva cabecera», «Crear página» y «Cr
   await expect(
     page.locator('[data-testid=eli-pick-new]', { hasText: 'Nueva cabecera' })
   ).toHaveCount(1);
+  // (4.50) ya no se ofrece crear un fichero al enlazar
   await expect(page.locator('[data-testid=eli-pick-new]', { hasText: 'Crear página' })).toHaveCount(
-    1
+    0
   );
   const contact = page.locator('[data-testid=eli-pick-new]', { hasText: 'Crear contacto' });
   await expect(contact).toHaveCount(1);
@@ -93,7 +94,7 @@ test('4.48 B: Procesar Inbox → Hablar con Mari Carmen → punto en su agenda',
   await page.locator('[data-testid=eli-pick-item]', { hasText: 'Mari Carmen' }).first().click();
   await expect
     .poll(() => app.fileAfterSync('/agendas.org', 500), { timeout: 15000 })
-    .toContain('- [ ] Preguntar por el viaje\n- [ ] Comentar el presupuesto\n');
+    .toMatch(/- \[ \] Preguntar por el viaje\n\n?\*\* Comentar el presupuesto\n/);
   // lo demás, igual
   expect(app.store['/agendas.org']).toContain('* Quan siguem a ...\n** ... Barcelona\n- [ ] Xus');
   // la página Agendas del menú lateral

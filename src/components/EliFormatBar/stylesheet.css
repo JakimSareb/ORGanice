@@ -55,3 +55,38 @@
   cursor: default;
   pointer-events: none;
 }
+
+/* ORG Mode para Eli (4.50): iconos del formato en una SEGUNDA fila, ancho completo; si no caben
+   (móvil), esa fila se desplaza en horizontal sin partirse (el resto de la pantalla, no) */
+.eli-format-bar__row {
+  flex: 0 0 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.eli-format-bar__row::-webkit-scrollbar {
+  display: none;
+}
+.eli-format-bar__row > * {
+  flex: none;
+}
+
+/* (4.50) con filas: la principal (deshacer, enlaces, «Aa»…) y, debajo, la del formato */
+.eli-format-bar--rows {
+  display: block;
+}
+.eli-format-bar--rows > .eli-format-bar__main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.eli-format-bar--rows > .eli-format-bar__row {
+  margin-top: 4px;
+}

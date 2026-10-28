@@ -8,6 +8,7 @@ import {
   PERSON_PROPERTY,
   PERSONAS_NAME,
   AGENDAS_NAME,
+  REUNIONES_NAME,
   PERSONAS_TEMPLATE,
   pathNear,
   parseContacts,
@@ -16,7 +17,13 @@ import {
   personLink,
   contactNamed,
 } from './gtd_persons';
-import { addPointToBody, toggleBodyCheckbox, parseAgendas } from './gtd_agendas';
+import {
+  toggleBodyCheckbox,
+  parseAgendas,
+  agendaChoices,
+  agendaNode,
+  isDoneKeyword,
+} from './gtd_agendas';
 import { askPick, askConfirm, showMessage } from '../eli_prompt';
 import { loadFileQuietly, createPlainFile } from '../../actions/org';
 import { setLoadingMessage, hideLoadingMessage } from '../../actions/base';
@@ -171,27 +178,35 @@ export const pickPersonForHeading = (path, headerId) => async (dispatch, getStat
 export const openPersonCard = (orgId) =>
   window.dispatchEvent(new CustomEvent('eli:person', { detail: { orgId } }));
 
-// ---------------- Agendas ----------------
+// ---------------- Agendas (4.50: árbol de cabeceras) ----------------
 
 export const agendasFromState = (state) => {
   const path = agendasPathFor(state);
   return parseAgendas(filesOf(state).get(path), contactsFromState(state), path);
 };
 
+export const reunionesPathFor = (state) =>
+  getGtdFiles().reuniones || pathNear(basePath(state), REUNIONES_NAME);
+
+const oneLine = (text) =>
+  String(text || '')
+    .replace(/\s*\n\s*/g, ' ')
+    .trim();
+
 /**
- * Punto nuevo en una agenda. target = { headerId } (agenda que ya existe) o { person: { id, title } }
- * (persona sin cabecera: «* Nombre» con :PERSONA: al final del fichero). Devuelve true si se añade.
+ * Punto nuevo en una agenda = SUBCABECERA (nivel de la elegida + 1) al FINAL de sus hijos, sin
+ * estado. target = { headerId } (cualquier cabecera de agendas.org: persona, lugar o punto) o
+ * { person: { id, title } } (persona sin cabecera: «* Nombre» con :PERSONA: al final del fichero y
+ * debajo el punto). `notes` pasa a las notas del punto. → id de la cabecera nueva o false.
  */
-export const agendaAddPoint = (target, text) => async (dispatch, getState) => {
-  const clean = String(text || '').trim();
+export const agendaAddPoint = (target, text, notes = '') => async (dispatch, getState) => {
+  const clean = oneLine(text);
   if (!clean || !target) return false;
   const path = agendasPathFor(getState());
+  const fields = { title: clean, keyword: null, notes: String(notes || '').replace(/\s+$/, '') };
   if (target.headerId) {
-    const h = headerOf(getState, path, target.headerId);
-    if (!h) return false;
-    const body = h.get('rawDescription') || '';
-    dispatch(gtdSaveTask({ path, id: target.headerId }, { notes: addPointToBody(body, clean) }));
-    return true;
+    if (!headerOf(getState, path, target.headerId)) return false;
+    return dispatch(gtdAddTask({ path, parentId: target.headerId }, fields)) || false;
   }
   if (!target.person) return false;
   const ok = await dispatch(
@@ -202,22 +217,22 @@ export const agendaAddPoint = (target, text) => async (dispatch, getState) => {
   const existing = agendasFromState(getState()).persons.find(
     (a) => a.person.id.toLowerCase() === target.person.id.toLowerCase()
   );
-  if (existing) return dispatch(agendaAddPoint({ headerId: existing.headerId }, clean));
-  const id = dispatch(
+  if (existing) return dispatch(agendaAddPoint({ headerId: existing.headerId }, clean, notes));
+  const root = dispatch(
     gtdAddTask(
       { path },
       {
         title: target.person.title,
         keyword: null,
         props: { [PERSON_PROPERTY]: personLink(target.person.id, target.person.title) },
-        notes: addPointToBody('', clean),
       }
     )
   );
-  return !!id;
+  if (!root) return false;
+  return dispatch(gtdAddTask({ path, parentId: root }, fields)) || false;
 };
 
-// Marcar / desmarcar la casilla de una línea del cuerpo de una agenda
+// Marcar / desmarcar la casilla de una línea del cuerpo de una agenda (casillas viejas)
 export const agendaToggle = (headerId, lineIndex) => (dispatch, getState) => {
   const path = agendasPathFor(getState());
   const h = headerOf(getState, path, headerId);
@@ -229,9 +244,21 @@ export const agendaToggle = (headerId, lineIndex) => (dispatch, getState) => {
   return true;
 };
 
+// Punto tratado: pone DONE (o lo quita si ya lo tenía). Solo cambia la palabra de estado.
+export const agendaToggleDone = (headerId) => (dispatch, getState) => {
+  const path = agendasPathFor(getState());
+  const h = headerOf(getState, path, headerId);
+  if (!h) return false;
+  const keyword = h.getIn(['titleLine', 'todoKeyword']) || null;
+  const next = isDoneKeyword(keyword) ? null : 'DONE';
+  dispatch(gtdSaveTask({ path, id: headerId, keyword }, { keyword: next }));
+  return true;
+};
+
 /**
- * Elegir una agenda (personas primero y luego ocasiones) o crear la de un contacto (nuevo o no).
- * → { headerId } | { person } o null
+ * Elegir dónde colgar un punto: personas primero y luego lugares, cada uno con sus puntos debajo
+ * (a cualquier nivel), y los contactos sin agenda («agenda nueva»). → { headerId } | { person } o
+ * null (Cancelar)
  */
 export const pickAgenda = ({ title = 'Hablar con… (Agenda)' } = {}) => async (
   dispatch,
@@ -242,23 +269,25 @@ export const pickAgenda = ({ title = 'Hablar con… (Agenda)' } = {}) => async (
   const ag = agendasFromState(getState());
   const contacts = contactsFromState(getState());
   const rows = [];
-  ag.persons.forEach((a) =>
-    rows.push({ target: { headerId: a.headerId }, label: a.person.name, hint: 'persona' })
+  agendaChoices(ag).forEach(({ node, depth, root }) =>
+    rows.push({
+      target: { headerId: node.headerId },
+      label: depth ? node.title : root.person ? root.person.name : node.title,
+      hint: depth ? '' : root.person ? 'persona' : 'lugar / ocasión',
+      depth,
+    })
   );
   const withAgenda = new Set(ag.persons.map((a) => a.person.id.toLowerCase()));
   contacts
     .filter((c) => !c.orgId || !withAgenda.has(c.orgId.toLowerCase()))
-    .forEach((c) => rows.push({ contact: c, label: c.name, hint: 'contacto (agenda nueva)' }));
-  ag.groups.forEach((g) =>
-    g.items.forEach((a) =>
-      rows.push({ target: { headerId: a.headerId }, label: a.title, hint: g.title || 'ocasión' })
-    )
-  );
+    .forEach((c) =>
+      rows.push({ contact: c, label: c.name, hint: 'contacto (agenda nueva)', depth: 0 })
+    );
   const chosen = await askPick({
     title,
-    placeholder: 'Persona u ocasión…',
+    placeholder: 'Persona, lugar o punto…',
     emptyText: 'No hay agendas ni contactos: escribe un nombre para crear el contacto.',
-    items: rows.map((r, i) => ({ id: String(i), label: r.label, hint: r.hint })),
+    items: rows.map((r, i) => ({ id: String(i), label: r.label, hint: r.hint, depth: r.depth })),
     newItem: (raw) => ({ label: `👤 Nuevo contacto «${raw}»`, hint: 'y su agenda' }),
   });
   if (chosen === null || chosen === undefined) return null;
@@ -273,17 +302,19 @@ export const pickAgenda = ({ title = 'Hablar con… (Agenda)' } = {}) => async (
   return orgId ? { person: { id: orgId, title: r.contact.name } } : null;
 };
 
-// Pasar un texto a una agenda elegida → nombre de la agenda o null
-export const sendToAgenda = (text) => async (dispatch, getState) => {
+// Pasar un texto (y sus notas) a una agenda elegida como SUBCABECERA → nombre de la agenda o null
+export const sendToAgenda = (text, notes = '') => async (dispatch, getState) => {
   const target = await dispatch(pickAgenda());
   if (!target) return null;
-  if (!(await dispatch(agendaAddPoint(target, text)))) {
+  if (!(await dispatch(agendaAddPoint(target, text, notes)))) {
     showMessage('Agenda', 'No se ha podido añadir el punto.');
     return null;
   }
   if (target.person) return target.person.title;
-  const a = agendasFromState(getState()).all.find((x) => x.headerId === target.headerId);
-  return a ? (a.person && a.person.name) || a.title : 'Agenda';
+  const ag = agendasFromState(getState());
+  let n = agendaNode(ag, target.headerId);
+  while (n && n.parentId) n = agendaNode(ag, n.parentId);
+  return n ? (n.person && n.person.name) || n.title : 'Agenda';
 };
 
 // «Convertir en contacto» un ítem de agenda cuyo texto es un nombre («- [ ] Xus»): crea el

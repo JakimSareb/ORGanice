@@ -25,7 +25,7 @@ test('4.01: GTD, fecha y hora entre Rehacer y el formato (notas y título)', asy
   await page.waitForTimeout(600);
 
   const order = await page
-    .locator('.gtd-editor [data-testid=eli-format-bar] > button')
+    .locator('.gtd-editor [data-testid=eli-format-bar] button')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
   // (4.09) y luego la tabla
   // (4.11) y los enlaces (a la web / a otra tarea)

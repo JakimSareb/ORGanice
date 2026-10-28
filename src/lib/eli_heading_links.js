@@ -24,7 +24,7 @@ import { gtdAddTask } from './gtd/gtd_actions';
 import { createContact } from './gtd/gtd_persons_actions';
 import generateId from './id_generator';
 import { askPick, showMessage } from './eli_prompt';
-import { fileNodes, freeNotePath, newNoteFileText, slugify } from './eli_roam';
+import { fileNodes, freeNotePath, newNoteFileText } from './eli_roam';
 import { diaryDir } from './eli_diary';
 import { defaultTags } from './eli_todo_defaults';
 import {
@@ -169,7 +169,6 @@ export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => 
   });
   nodes.forEach((n) => !done.has(n.path) && entries.push({ entry: n, depth: 0 }));
   const pagesName = fileNameOf(pagesPathFor(state));
-  const notesDir = notesDirFor(state);
   const chosen = await askPick({
     title,
     placeholder: 'Buscar o crear nota…',
@@ -188,13 +187,8 @@ export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => 
       depth: o.depth,
     })),
     newItem: (raw) => [
-      {
-        // (4.49) rótulos cambiados: el que crea el FICHERO es «Crear página»; el que crea una
-        // CABECERA en pages.org, «Nueva cabecera» (la acción de cada opción no cambia)
-        label: `➕ Crear página «${raw}»`,
-        hint: `fichero ${notesDir.split('/').slice(-2).join('/')}${slugify(raw)}.org`,
-        kind: 'note',
-      },
+      // (4.50) YA NO se ofrece crear un fichero al enlazar (para eso, «Nueva nota ZK»): solo una
+      // cabecera nueva en el fichero de páginas o un contacto
       {
         label: `➕ Nueva cabecera «${raw}»`,
         hint: `cabecera nueva en ${pagesName}`,
@@ -212,10 +206,7 @@ export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => 
       const p = await dispatch(createContact(chosen.new));
       return p ? { orgId: p.id, title: p.title } : null;
     }
-    const made =
-      chosen.kind === 'note'
-        ? await dispatch(createNoteFile(chosen.new))
-        : await dispatch(createPageHeading(chosen.new));
+    const made = await dispatch(createPageHeading(chosen.new));
     return made ? { orgId: made.orgId, title: chosen.new.trim() } : null;
   }
   const entry = entries[Number(chosen)] && entries[Number(chosen)].entry;
@@ -319,9 +310,15 @@ export const pickTagForTitle = (el, insert, pos) => async (dispatch, getState) =
 
 // (4.35) «Enviar a…»: elegir un fichero (nivel superior) o una cabecera de los ficheros cargados,
 // en orden jerárquico → { path, headerId (null = nivel superior), title } o null (Cancelar)
-export const pickRefileTarget = ({ title = 'Enviar a' } = {}) => async (dispatch, getState) => {
+// (4.50) onlyPath: solo ese fichero (p. ej. reuniones.org al llevar un punto de una agenda)
+export const pickRefileTarget = ({ title = 'Enviar a', onlyPath = null } = {}) => async (
+  dispatch,
+  getState
+) => {
   const index = headingIndex(getState().org.present.get('files'), { skipDiary: true });
-  const ordered = orderHierarchical(searchHeadings(index, '', 100000), index);
+  const ordered = orderHierarchical(searchHeadings(index, '', 100000), index).filter(
+    (o) => !onlyPath || o.entry.path === onlyPath
+  );
   const rows = [];
   const items = [];
   let lastPath = null;
@@ -339,6 +336,15 @@ export const pickRefileTarget = ({ title = 'Enviar a' } = {}) => async (dispatch
     rows.push({ path: o.entry.path, headerId: o.entry.headerId, title: o.entry.title });
     items.push({ id: String(rows.length - 1), label: o.entry.title, hint: '', depth: o.depth + 1 });
   });
+  if (onlyPath && !rows.length) {
+    rows.push({ path: onlyPath, headerId: null, title: fileNameOf(onlyPath) });
+    items.push({
+      id: '0',
+      label: fileNameOf(onlyPath),
+      hint: 'fichero · nivel superior',
+      depth: 0,
+    });
+  }
   const chosen = await askPick({
     title,
     placeholder: 'Buscar fichero o cabecera…',

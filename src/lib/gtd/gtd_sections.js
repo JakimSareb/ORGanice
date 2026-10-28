@@ -186,6 +186,8 @@ export const normalizeGtdSections = (stored) => {
     // (4.48) contactos y agendas ('' = personas.org / agendas.org junto al de tareas)
     personas: normPath(rf.personas),
     agendas: normPath(rf.agendas),
+    // (4.50) fichero de reuniones al que se llevan los puntos de una agenda ('' = reuniones.org)
+    reuniones: normPath(rf.reuniones),
     // al darle estado a una tarea sin estado del fichero de entrada, pasa al de tareas
     moveFromInbox: rf.moveFromInbox !== false,
     // «Archivar todas»: solo las de estos ficheros (vacío: de todos)
