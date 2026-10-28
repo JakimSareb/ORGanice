@@ -2,6 +2,7 @@
 // Se queda abierta al cambiar de vista, para poder ir a cada lista o proyecto y volver al paso
 // siguiente. (3.41) Pasos de la checklist oficial de GTD (Despejar → Al día → Crear), con «Revisar
 // Next» y «Elegir para la semana» (botones → Next / quitar de Next / hecha en cada fila).
+import { personOf } from '../../lib/gtd/gtd_guided';
 import React, { useState } from 'react';
 import { REVIEW_STEPS, REVIEW_PHASES, reviewCount } from '../../lib/gtd/gtd_review';
 import { objectiveRefOf } from '../../lib/gtd/gtd_horizons';
@@ -52,6 +53,7 @@ export default function GtdWeeklyReview({
   onProjectAction,
   onReplan,
   onHorizons,
+  agendas = [], // (4.48) agendas con casillas abiertas: [{ headerId, label, open }]
 }) {
   const REVIEW_STEPS_NOW = stepsProp || REVIEW_STEPS;
   const [expanded, setExpanded] = useState({});
@@ -425,7 +427,33 @@ export default function GtdWeeklyReview({
       content = n ? renderList(review.next, { actions: ACTIONS.strictNext }) : null;
     } else if (s.id === 'someday' && strict) {
       content = n ? renderList(review.someday, { actions: ACTIONS.someday }) : null;
-    } else if (['stalled', 'sleep', 'next', 'waiting'].includes(s.id)) {
+    } else if (s.id === 'waiting') {
+      // (4.48) agrupado por persona (:PERSONA:); sin persona, al final
+      const groups = new Map();
+      review.waiting.forEach((t) => {
+        const p = personOf(t);
+        if (!groups.has(p)) groups.set(p, []);
+        groups.get(p).push(t);
+      });
+      const keys = Array.from(groups.keys()).sort((a, b) =>
+        a === null ? 1 : b === null ? -1 : a.localeCompare(b, 'es', { sensitivity: 'base' })
+      );
+      content = n ? (
+        <React.Fragment>
+          {keys.map((k) => (
+            <React.Fragment key={k || '-'}>
+              {sub(
+                <span data-testid="gtd-review-waiting-person">
+                  <i className="fas fa-user" /> {k || 'Sin persona'}
+                </span>,
+                groups.get(k),
+                { actions: ACTIONS.waiting, id: `waiting-${k || '-'}` }
+              )}
+            </React.Fragment>
+          ))}
+        </React.Fragment>
+      ) : null;
+    } else if (['stalled', 'sleep', 'next'].includes(s.id)) {
       content = n ? renderList(review[s.id], { actions: ACTIONS[s.id] }) : null;
     } else if (s.id === 'projects') {
       content = renderProjects();
@@ -487,6 +515,28 @@ export default function GtdWeeklyReview({
           </p>
         ) : (
           content
+        )}
+        {/* (4.48) Allen cuenta las Agendas como listas de acción: las que tienen algo abierto */}
+        {s.id === 'next' && agendas.length > 0 && (
+          <div data-testid="gtd-review-agendas">
+            <div className="gtd-review__sub">
+              <i className="fas fa-comments" /> Agendas ({agendas.length})
+            </div>
+            <ul className="gtd-review__list">
+              {agendas.map((a) => (
+                <li key={a.headerId} className="gtd-review__row">
+                  <button
+                    type="button"
+                    className="gtd-review__item"
+                    onClick={() => onOpenView('agendas')}
+                  >
+                    <span className="gtd-review__item-title">{a.label}</span>
+                    <span className="gtd-review__date">{a.open}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {extraButtons()}
       </React.Fragment>

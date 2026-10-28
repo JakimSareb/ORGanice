@@ -36,6 +36,7 @@ import { insertLinkInto } from '../../../../lib/eli_links';
 import { insertHeadingLink, insertTransclusion } from '../../../../lib/eli_heading_links';
 import { buildTransclusionLine } from '../../../../lib/eli_transclude';
 import { openBacklinks } from '../../../../lib/eli_heading_events';
+import { pickPersonForHeading } from '../../../../lib/gtd/gtd_persons_actions';
 import { showMessage, askPick, askText, askDate, askConfirm } from '../../../../lib/eli_prompt';
 import { getPriority } from '../../../../lib/eli_priority';
 import { shareContent } from '../../../../lib/share_utils';
@@ -1274,6 +1275,23 @@ export default function EliDocBar({
                   label: 'Enlaces entrantes',
                   hint: 'quién enlaza aquí',
                   onClick: () => openBacklinks(path, id),
+                },
+                // (4.48) enlazar la cabecera (tarea, acta, nota) con una persona (:PERSONA:)
+                {
+                  id: 'person',
+                  testId: 'eli-doc-person',
+                  icon: 'fas fa-user',
+                  label: 'Persona…',
+                  hint: 'enlazar con un contacto',
+                  onClick: async () => {
+                    const r = await dispatch(pickPersonForHeading(path, id));
+                    if (r)
+                      base(
+                        'setDisappearingLoadingMessage',
+                        `${r.removed ? 'Quitada' : 'Persona'}: ${r.title}`,
+                        1500
+                      );
+                  },
                 },
               ]
             : []),

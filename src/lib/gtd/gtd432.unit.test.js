@@ -58,10 +58,15 @@ describe('4.32: Quién al planificar = delegar', () => {
       name: 'P',
       ideas: ['A'],
       first: 'A',
-      firstWho: '@Ana López',
+      // (4.48) «Quién» = contacto: :PERSONA: en vez de etiqueta
+      firstWho: { id: 'A1', title: 'Ana López' },
       nexts: {},
     });
-    expect(out.tasks[0]).toMatchObject({ title: 'A', list: 'waiting', tags: ['Ana_López'] });
+    expect(out.tasks[0]).toMatchObject({
+      title: 'A',
+      list: 'waiting',
+      props: { PERSONA: '[[id:A1][Ana López]]' },
+    });
   });
   test('sin Quién sigue en Next', () => {
     const out = projectPlan({ name: 'P', ideas: ['A'], first: 'A', nexts: {} });

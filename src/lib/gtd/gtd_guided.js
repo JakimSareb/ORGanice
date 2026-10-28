@@ -1,6 +1,7 @@
 // ORG Mode para Eli (4.06): procesos guiados puntuales y periódicos de GTD (Menú ☰ › Procesos):
 // «Volcado mental», «Planificar un proyecto nuevo», «Aclarar un proyecto atascado», «Repaso de
 // Waiting» y «Repaso de Someday/Maybe». Modelo puro; la tarjeta es Gtd/GtdGuidedProcess.
+import { PERSON_PROPERTY, personLinksValue } from './gtd_persons';
 import { listOf, projectsOf, projectState, projectSectionOf, inProject } from './gtd_model';
 
 // Lista de disparadores: (4.14) la «Incompletion Trigger List» OFICIAL de David Allen (19
@@ -319,14 +320,17 @@ const personName = (person) =>
     .replace(/^@/, '')
     .replace(/_/g, ' ');
 
-// Persona de una espera = su (primera) etiqueta, sin las de las listas
+// Persona de una espera = (4.48) la primera de :PERSONA: (su nombre); sin persona, null.
+// (Ya no se miran las etiquetas: un solo método, contactos enlazados por ID.)
+// eslint-disable-next-line no-unused-vars
 export const personOf = (task, skip = []) => {
-  const lower = skip.map((s) => String(s).toLowerCase());
-  return (
-    (task.tags || []).find(
-      (g) => !lower.includes(String(g).toLowerCase()) && String(g).toLowerCase() !== 'trash'
-    ) || null
-  );
+  const l = (task.personLinks || [])[0];
+  return l ? l.title || l.id : null;
+};
+// Id del contacto de esa persona (para abrir su ficha)
+export const personIdOf = (task) => {
+  const l = (task.personLinks || [])[0];
+  return l ? l.id : null;
 };
 
 // Repaso de Waiting: las esperas agrupadas por persona (las sin persona, al final)
@@ -376,11 +380,11 @@ const NOTE_FIELDS = [
   ['outcome', 'Resultado'],
   ['stakeholders', 'Partes interesadas'],
 ];
-const tagOf = (who) =>
-  String(who || '')
-    .trim()
-    .replace(/^@/, '')
-    .replace(/\s+/g, '_');
+// (4.48) «Quién» = contacto de personas.org ({ id, title }); un texto suelto (planes guardados
+// antes de la 4.48) delega igual pero sin persona enlazada. Nunca etiquetas de persona.
+export const whoProps = (who) =>
+  who && typeof who === 'object' && who.id ? { [PERSON_PROPERTY]: personLinksValue([who]) } : null;
+export const hasWho = (who) => !!(who && (typeof who === 'object' ? who.id : String(who).trim()));
 export const ideaOf = (x) =>
   typeof x === 'string'
     ? { title: x, component: false, actions: [], existing: false }
@@ -457,16 +461,17 @@ export const planReady = (plan) => planUnits(plan).some((u) => unitReady(unitNex
 // Tareas de una unidad: la siguiente (Next) primero y el resto (Todo) en orden
 const unitTasks = (titles, n, title) => {
   const f = (n.action || '').trim();
-  const who = tagOf(n.who);
+  const who = hasWho(n.who);
+  const props = whoProps(n.who);
   const head = [];
   if (n.more) head.push({ title: PLAN_MORE(title), list: 'next' });
-  // (4.32) con «Quién» la acción se delega: pasa a Waiting con la persona como etiqueta (igual que
-  // «Delegar» al procesar el Inbox)
+  // (4.32) con «Quién» la acción se delega: pasa a Waiting; (4.48) con la persona en :PERSONA:
+  // (igual que «Delegar» al procesar el Inbox)
   if (f)
     head.push({
       title: f,
       list: who ? 'waiting' : n.more ? 'later' : 'next',
-      ...(who ? { tags: [who] } : {}),
+      ...(props ? { props } : {}),
     });
   const rest = titles
     .map((x) => x.trim())

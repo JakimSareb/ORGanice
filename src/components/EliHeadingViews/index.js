@@ -59,6 +59,17 @@ import {
 } from '../../lib/eli_roam';
 import { markView, pushView, sameView } from '../../lib/eli_nav_history';
 import { insertIntoField } from '../EliTools';
+import { personCard, contactById } from '../../lib/gtd/gtd_persons';
+import {
+  contactsFromState,
+  agendasFromState,
+  personasPathFor,
+  agendasPathFor,
+  ensurePeopleFile,
+  agendaAddPoint,
+} from '../../lib/gtd/gtd_persons_actions';
+import { agendaOfPerson } from '../../lib/gtd/gtd_agendas';
+import { AgendaBody } from '../Gtd/GtdPeople';
 
 export { openTagView, openBacklinks } from '../../lib/eli_heading_events';
 
@@ -902,6 +913,160 @@ export const EliNarrowRefs = ({ path, headerId }) => {
   );
 };
 
+// (4.48) Ficha de una persona: datos del contacto, tareas (por lista), actas y notas (cabeceras
+// sin estado con :PERSONA:), menciones (lo que enlaza [[id:persona]]) y su agenda
+const KW_LABEL = { WAITING: 'Waiting', NEXT: 'Next', TODO: 'Todo', MAYBE: 'Someday' };
+const PersonRows = ({ items, onGo, withFile = false }) => (
+  <ul className="eli-person__rows">
+    {items.map((e) => (
+      <li key={`${e.path}::${e.headerId}`}>
+        <button
+          type="button"
+          className="eli-person__row"
+          onClick={() => onGo(e)}
+          data-testid="eli-person-row"
+        >
+          {e.keyword && <span className="eli-person__kw">{KW_LABEL[e.keyword] || e.keyword}</span>}
+          <span className="eli-person__title">
+            <OrgTitle rawTitle={e.rawTitle} />
+          </span>
+          {withFile && <small className="eli-person__file">{fileNameOf(e.path)}</small>}
+        </button>
+      </li>
+    ))}
+  </ul>
+);
+
+const PersonCardView = ({ orgId, onClose }) => {
+  const dispatch = useDispatch();
+  const store = useStore();
+  const files = useSelector(selectFiles);
+  const go = useGoToHeading();
+  useEffect(() => {
+    const st = store.getState();
+    dispatch(ensurePeopleFile(personasPathFor(st)));
+    dispatch(ensurePeopleFile(agendasPathFor(st)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const index = useMemo(() => headingIndex(files), [files]);
+  const contact = useMemo(() => contactById(contactsFromState(store.getState()), orgId), [
+    files,
+    orgId,
+    store,
+  ]);
+  const agenda = useMemo(() => agendaOfPerson(agendasFromState(store.getState()), orgId), [
+    files,
+    orgId,
+    store,
+  ]);
+  const self = index.find((e) => e.orgId && e.orgId.toLowerCase() === orgId.toLowerCase());
+  // (la cabecera de su agenda en agendas.org no cuenta como acta: ya sale en «Agenda»)
+  const card = useMemo(() => {
+    const ag = agendasPathFor(store.getState());
+    const c = personCard(index, orgId, backlinkEntries(index, orgId));
+    return { ...c, notes: c.notes.filter((e) => e.path !== ag) };
+  }, [index, orgId, store]);
+  const name = (contact && contact.name) || (self && self.title) || '…';
+  const nTasks = card.tasks.reduce((n, g) => n + g.items.length, 0);
+  const [point, setPoint] = useState('');
+  const goClose = (e) => go(e, onClose);
+  return (
+    <Overlay
+      title={
+        <>
+          <i className="fas fa-user" /> {name}
+        </>
+      }
+      count={nTasks}
+      onClose={onClose}
+      testId="eli-person"
+    >
+      <div className="eli-person">
+        {contact && (contact.email || contact.phone || contact.empresa || contact.birthday) && (
+          <div className="eli-person__data" data-testid="eli-person-data">
+            {contact.email && (
+              <a href={`mailto:${contact.email}`}>
+                <i className="fas fa-envelope" /> {contact.email}
+              </a>
+            )}
+            {contact.phone && (
+              <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>
+                <i className="fas fa-phone" /> {contact.phone}
+              </a>
+            )}
+            {contact.empresa && <span>{contact.empresa}</span>}
+            {contact.birthday && <span>🎂 {contact.birthday}</span>}
+          </div>
+        )}
+        {self && (
+          <button
+            type="button"
+            className="eli-person__open"
+            onClick={() => goClose(self)}
+            data-testid="eli-person-open-doc"
+          >
+            <i className="fas fa-external-link-alt" /> Abrir en Documentos
+          </button>
+        )}
+        <h4 className="eli-person__h">Tareas ({nTasks})</h4>
+        {card.tasks.length ? (
+          card.tasks.map((g) => (
+            <div key={g.id} className="eli-person__group" data-testid="eli-person-tasks">
+              <div className="eli-person__sub">{g.label}</div>
+              <PersonRows items={g.items} onGo={goClose} />
+            </div>
+          ))
+        ) : (
+          <div className="eli-hv__empty">Ninguna tarea con esta persona.</div>
+        )}
+        <h4 className="eli-person__h">Actas y notas ({card.notes.length})</h4>
+        {card.notes.length ? (
+          <div data-testid="eli-person-notes">
+            <PersonRows items={card.notes} onGo={goClose} withFile />
+          </div>
+        ) : (
+          <div className="eli-hv__empty">Ninguna.</div>
+        )}
+        <h4 className="eli-person__h">Menciones ({card.mentions.length})</h4>
+        {card.mentions.length ? (
+          <div data-testid="eli-person-mentions">
+            <PersonRows items={card.mentions} onGo={goClose} withFile />
+          </div>
+        ) : (
+          <div className="eli-hv__empty">Ninguna.</div>
+        )}
+        <h4 className="eli-person__h">Agenda</h4>
+        {agenda ? (
+          <AgendaBody agenda={agenda} testId="eli-person-agenda" />
+        ) : (
+          <form
+            className="gtd-tickler__add"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const t = point.trim();
+              if (!t) return;
+              if (await dispatch(agendaAddPoint({ person: { id: orgId, title: name } }, t)))
+                setPoint('');
+            }}
+          >
+            <input
+              type="text"
+              className="gtd-tickler__input gtd-tickler__new"
+              value={point}
+              onChange={(e) => setPoint(e.target.value)}
+              placeholder="Primer punto de su agenda…"
+              data-testid="eli-person-agenda-new"
+            />
+            <button type="submit" className="gtd-review__btn is-primary" disabled={!point.trim()}>
+              <i className="fas fa-plus" /> Añadir
+            </button>
+          </form>
+        )}
+      </div>
+    </Overlay>
+  );
+};
+
 export default function EliHeadingViews() {
   const dispatch = useDispatch();
   const store = useStore();
@@ -910,11 +1075,16 @@ export default function EliHeadingViews() {
   useEffect(() => {
     const onTag = (e) => e.detail && e.detail.tag && setView({ kind: 'tag', tag: e.detail.tag });
     const onRefs = (e) => e.detail && setView({ kind: 'refs', ...e.detail });
+    // (4.48) ficha de una persona
+    const onPerson = (e) =>
+      e.detail && e.detail.orgId && setView({ kind: 'person', orgId: e.detail.orgId });
     window.addEventListener('eli:tag-view', onTag);
     window.addEventListener('eli:backlinks', onRefs);
+    window.addEventListener('eli:person', onPerson);
     return () => {
       window.removeEventListener('eli:tag-view', onTag);
       window.removeEventListener('eli:backlinks', onRefs);
+      window.removeEventListener('eli:person', onPerson);
     };
   }, []);
 
@@ -969,5 +1139,7 @@ export default function EliHeadingViews() {
   if (!view) return null;
   const close = () => setView(null);
   if (view.kind === 'tag') return <TagView key={view.tag} tag={view.tag} onClose={close} />;
+  if (view.kind === 'person')
+    return <PersonCardView key={view.orgId} orgId={view.orgId} onClose={close} />;
   return <BacklinksView path={view.path} headerId={view.headerId} onClose={close} />;
 }

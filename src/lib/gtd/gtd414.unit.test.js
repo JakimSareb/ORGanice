@@ -63,7 +63,8 @@ describe('4.14: Planificación Natural', () => {
       ],
       first: 'Invitaciones',
       nexts: {
-        Banquete: { action: 'Pedir presupuestos', who: 'Ana' },
+        // (4.48) «Quién» = contacto ({ id, title }) → :PERSONA:
+        Banquete: { action: 'Pedir presupuestos', who: { id: 'A1', title: 'Ana' } },
         Viaje: { more: true },
       },
     };
@@ -74,7 +75,11 @@ describe('4.14: Planificación Natural', () => {
         title: 'Banquete',
         list: 'project',
         children: [
-          { title: 'Pedir presupuestos', list: 'waiting', tags: ['Ana'] },
+          {
+            title: 'Pedir presupuestos',
+            list: 'waiting',
+            props: { PERSONA: '[[id:A1][Ana]]' },
+          },
           { title: 'Elegir menú', list: 'later' },
         ],
       },

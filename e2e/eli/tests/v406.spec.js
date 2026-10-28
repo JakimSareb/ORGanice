@@ -122,7 +122,9 @@ test('4.06: Aclarar un proyecto atascado (siguiente paso y Someday)', async ({ a
 test('4.06: Repaso de Waiting (por persona, reclamar con tarea en Next)', async ({ app }) => {
   const { page } = app;
   await app.open({
-    '/tasks.org': '* WAITING Contrato firmado :Ana:\n* WAITING Paquete\n',
+    // (4.48) la persona va en :PERSONA: (contacto), no en una etiqueta
+    '/tasks.org':
+      '* WAITING Contrato firmado\n:PROPERTIES:\n:PERSONA: [[id:A1][Ana]]\n:END:\n* WAITING Paquete\n',
     '/inbox.org': '',
   });
   await gtd.ready(app);
@@ -131,7 +133,11 @@ test('4.06: Repaso de Waiting (por persona, reclamar con tarea en Next)', async 
   await expect(page.locator('[data-testid=gtd-waiting-person]').first()).toContainText('Ana');
   await row(app, 'Contrato firmado').locator('[data-testid=gtd-guided-act-chase]').click();
   await page.locator('[data-testid=gtd-chase-task]').click();
-  await fileHas(app, '/tasks.org', /NEXT Reclamar a Ana: Contrato firmado.*:Ana:/);
+  await fileHas(
+    app,
+    '/tasks.org',
+    /NEXT Reclamar a Ana: Contrato firmado[\s\S]*:PERSONA: \[\[id:A1\]\[Ana\]\]/
+  );
   await row(app, 'Paquete').locator('[data-testid=gtd-guided-act-done]').click();
   await fileHas(app, '/tasks.org', /DONE Paquete/);
   expect(app.errors).toEqual([]);

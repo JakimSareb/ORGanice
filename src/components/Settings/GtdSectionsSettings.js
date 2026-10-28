@@ -238,6 +238,19 @@ export default function GtdSectionsSettings() {
         </div>
       );
     }
+    // (4.48) Agendas y Personas: páginas de agendas.org y personas.org
+    if (def.kind === 'agendas' || def.kind === 'persons') {
+      return (
+        <div className="eli-gtdsec__options">
+          {nameField}
+          <div className="eli-gtdsec__note">
+            {def.kind === 'agendas'
+              ? 'Las agendas de agendas.org (lo que hablar con cada persona o hacer en cada ocasión): marcar casillas y añadir puntos. Solo sale si existe el fichero.'
+              : 'Los contactos de personas.org y la ficha de cada uno (tareas, actas, menciones y agenda). Solo sale si existe el fichero.'}
+          </div>
+        </div>
+      );
+    }
     // (3.44) Procesar Inbox y Revisión semanal: botones del menú lateral (también en el ⋯)
     if (def.kind === 'action') {
       return (
@@ -478,6 +491,29 @@ export default function GtdSectionsSettings() {
             ))}
           </select>
         </label>
+        {/* (4.48) contactos (Personas) y agendas (Allen) */}
+        {[
+          ['personas', 'Fichero de personas (contactos)', 'personas.org'],
+          ['agendas', 'Fichero de agendas', 'agendas.org'],
+        ].map(([key, label, name]) => (
+          <label key={key} className="eli-gtdsec__rule">
+            <span>{label}</span>
+            <select
+              value={cfg.files[key]}
+              onChange={(e) => setFiles({ [key]: e.target.value })}
+              data-testid={`eli-gtdfiles-${key}`}
+            >
+              <option value="">{`Automático (${name}, junto al de tareas)`}</option>
+              {Array.from(new Set([...(cfg.files[key] ? [cfg.files[key]] : []), ...orgPaths])).map(
+                (p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                )
+              )}
+            </select>
+          </label>
+        ))}
         <Tick
           checked={cfg.files.moveFromInbox}
           label="Al dar estado a una tarea del fichero de entrada, pasarla al de tareas"

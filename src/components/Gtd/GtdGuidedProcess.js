@@ -3,12 +3,14 @@
 // Waiting» y «Repaso de Someday/Maybe». Tarjeta por pasos encima de la lista, como la Revisión
 // semanal y los procesos diarios (usa sus estilos). Modelo en lib/gtd/gtd_guided.
 import React, { useState } from 'react';
+import { openPersonCard } from '../../lib/gtd/gtd_persons_actions';
 import {
   GUIDED_PROCESSES,
   stuckProjects,
   waitingByPerson,
   somedayReview,
   personOf,
+  personIdOf,
   projectPlan,
   moveItem,
   nextGroupStep,
@@ -77,6 +79,7 @@ export default function GtdGuidedProcess({
   preset = null, // (4.07) proyecto para un objetivo ({ objective }) o un área ({ area })
   existing = null, // (4.14) relanzar la planificación sobre este proyecto
   onUpdateProject,
+  onPickPerson = null, // (4.48) elegir (o crear) un contacto → Promise<{ id, title } | null>
 }) {
   const proc = GUIDED_PROCESSES[kind];
   const [step, setStep] = useState(0);
@@ -239,15 +242,36 @@ export default function GtdGuidedProcess({
           aria-label={`Siguiente acción: ${u.title}`}
         />
         <div className="gtd-review__tools">
-          <input
-            type="text"
-            className="gtd-guided__who"
-            value={n.who}
-            placeholder="¿Quién? (delegar: pasa a Waiting)"
-            onChange={(e) => setNext(u.key, { who: e.target.value })}
+          {/* (4.48) «Quién» = contacto de personas.org (delegar: pasa a Waiting con :PERSONA:) */}
+          <button
+            type="button"
+            className={'gtd-review__open gtd-guided__who' + (n.who ? ' is-on' : '')}
+            onClick={async () => {
+              if (!onPickPerson) return;
+              const p = await onPickPerson();
+              if (p) setNext(u.key, { who: p });
+            }}
             data-testid={`gtd-plan-who${id}`}
             aria-label={`Quién: ${u.title}`}
-          />
+          >
+            <i className="fas fa-user" />{' '}
+            {n.who
+              ? typeof n.who === 'object'
+                ? n.who.title
+                : String(n.who)
+              : '¿Quién? (delegar: pasa a Waiting)'}
+          </button>
+          {n.who && (
+            <button
+              type="button"
+              className="gtd-review__open"
+              onClick={() => setNext(u.key, { who: '' })}
+              aria-label="Quitar quién"
+              data-testid={`gtd-plan-who-clear${id}`}
+            >
+              ×
+            </button>
+          )}
           <button
             type="button"
             className={'gtd-review__open' + (n.more ? ' is-on' : '')}
@@ -592,6 +616,18 @@ export default function GtdGuidedProcess({
       <React.Fragment key={person || '-'}>
         <div className="gtd-review__sub" data-testid="gtd-waiting-person">
           <i className="fas fa-user" /> {person || 'Sin persona'} ({items.length})
+          {/* (4.48) ficha de la persona */}
+          {person && personIdOf(items[0]) && (
+            <button
+              type="button"
+              className="gtd-review__open"
+              onClick={() => openPersonCard(personIdOf(items[0]))}
+              title="Ficha de la persona"
+              data-testid="gtd-waiting-person-card"
+            >
+              <i className="far fa-address-card" />
+            </button>
+          )}
         </div>
         <ul className="gtd-review__list">
           {items.map((t) =>

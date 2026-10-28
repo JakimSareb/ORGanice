@@ -116,10 +116,27 @@ import {
   exportViewOrg,
 } from './gtdTaskActions';
 import GtdProcessInbox from './GtdProcessInbox';
+import { AgendasPage, PersonsPage } from './GtdPeople';
+import {
+  parseContacts,
+  isPersonasPath,
+  isAgendasPath,
+  personLinksValue,
+  PERSON_PROPERTY,
+} from '../../lib/gtd/gtd_persons';
+import { parseAgendas } from '../../lib/gtd/gtd_agendas';
+import {
+  personasPathFor,
+  agendasPathFor,
+  pickPerson,
+  openPersonCard,
+  sendToAgenda,
+  headingPersonLinks,
+  setHeadingPersons,
+} from '../../lib/gtd/gtd_persons_actions';
 import {
   getProcessMode,
   mergeTags,
-  personTag,
   isTicklerPath,
   ticklerPathNear,
 } from '../../lib/gtd/gtd_process';
@@ -150,6 +167,8 @@ import {
   projectPlan,
   mergePlanNotes,
   planAdditions,
+  hasWho,
+  whoProps,
 } from '../../lib/gtd/gtd_guided';
 import GtdHorizonsReview from './GtdHorizonsReview';
 import {
@@ -294,6 +313,8 @@ const EMPTY_FILTERS = {
   time: null,
   dated: false,
   badProject: false,
+  // (4.48) persona (id de contacto)
+  person: null,
 };
 const LS_TAG_INHERIT = 'eliGtdTagInherit';
 const LS_GROUP = 'eliGtdGroupByProject';
@@ -1092,7 +1113,8 @@ export default function GtdView() {
     (filters.badProject ? 1 : 0) +
     (filters.energy ? 1 : 0) +
     (filters.time ? 1 : 0) +
-    (filters.dated ? 1 : 0);
+    (filters.dated ? 1 : 0) +
+    (filters.person ? 1 : 0);
   // 3.36: `text` = filtro de la sección (lupa de la cabecera; se borra al cambiar de sección);
   // `searchText` = buscador del menú lateral (resultados de todas las secciones)
   const [text, setText] = useState('');
@@ -1284,11 +1306,17 @@ export default function GtdView() {
           (wanted.includes(p) || !wanted.length) &&
           p !== horizonsSet &&
           !/(^|\/)horizons\.org$/i.test(p) &&
+          // (4.48) contactos y agendas no son tareas
+          !isPersonasPath(p) &&
+          !isAgendasPath(p) &&
+          p !== gtdCfg.files.personas &&
+          p !== gtdCfg.files.agendas &&
           !isDiaryPath(p) &&
           // (4.33) lo archivado (también archive-AAAA.org) no son tareas en curso
           !isArchiveFile(p)
       ),
-    [loadedPaths, wanted, horizonsSet]
+    // eslint-disable-next-line
+    [loadedPaths, wanted, horizonsSet, gtdCfg.files.personas, gtdCfg.files.agendas]
   );
   const scopedFiles = useMemo(() => files.filter((_f, p) => scopePaths.includes(p)), [
     files,
@@ -1331,6 +1359,28 @@ export default function GtdView() {
     Promise.resolve(dispatch(loadFileQuietly(horizonsPath))).catch(() => null);
     // eslint-disable-next-line
   }, [horizonsOn, horizonsPath]);
+  // (4.48) Personas (personas.org) y Agendas (agendas.org): se cargan en silencio (sin crearlos)
+  const personasPath = personasPathFor(store.getState());
+  const agendasPath = agendasPathFor(store.getState());
+  const personasFile = files.get(personasPath);
+  const agendasFile = files.get(agendasPath);
+  const contacts = useMemo(() => parseContacts(personasFile, personasPath), [
+    personasFile,
+    personasPath,
+  ]);
+  const agendas = useMemo(() => parseAgendas(agendasFile, contacts, agendasPath), [
+    agendasFile,
+    contacts,
+    agendasPath,
+  ]);
+  const personasLoaded = !!(personasFile && personasFile.get('headers'));
+  const agendasLoaded = !!(agendasFile && agendasFile.get('headers'));
+  useEffect(() => {
+    if (!personasLoaded) Promise.resolve(dispatch(loadFileQuietly(personasPath))).catch(() => null);
+    if (!agendasLoaded) Promise.resolve(dispatch(loadFileQuietly(agendasPath))).catch(() => null);
+    // eslint-disable-next-line
+  }, [personasPath, agendasPath]);
+  const agendasOpen = agendas.all.reduce((n, a) => n + a.open, 0);
   // (4.05) procesos diarios: las entradas de tickler.org (aunque GTD no lo cargue) y lo de cada paso
   const dailyKind = daily ? daily.kind : null;
   const ticklerTasks = useMemo(
@@ -1442,6 +1492,7 @@ export default function GtdView() {
   // aportan sus etiquetas a la barra y responden a ella como las tareas
   const baseList = useMemo(() => {
     if (view.id === 'tickler') return filterTickler(ticklerTasks, { area, text });
+    if (view.id === 'persons' || view.id === 'agendas') return [];
     const base = tasksForView(tasks, view, { area, text }, today);
     const heads = filterHeadings(tasks, view, !headingsOff.includes(view.tag)).filter((t) =>
       matchesFilters(t, { area, text })
@@ -2265,7 +2316,13 @@ export default function GtdView() {
     let list = kind;
     if (kind === 'current') {
       if (isProjectView) list = 'next';
-      else if (view.id === 'projects' || view.id === 'horizons' || view.id === 'tickler')
+      else if (
+        view.id === 'projects' ||
+        view.id === 'horizons' ||
+        view.id === 'tickler' ||
+        view.id === 'persons' ||
+        view.id === 'agendas'
+      )
         return null;
       else list = view.id;
     }
@@ -2700,6 +2757,7 @@ export default function GtdView() {
         allTags={allTags}
         contextTags={contextTags}
         onSave={createFromDraft}
+        onPickPerson={(linked) => dispatch(pickPerson({ linked }))}
         onAttachFiles={(list, target) =>
           openUploadDialog({ files: list, source: 'attach', path: draft.target.path, target })
         }
@@ -3570,6 +3628,8 @@ export default function GtdView() {
             title: x.title,
             list: x.list,
             ...(x.tags && x.tags.length ? { tags: x.tags } : {}),
+            // (4.48) «Quién» = :PERSONA:
+            ...(x.props ? { props: x.props } : {}),
             created: true,
           }
         )
@@ -3622,7 +3682,8 @@ export default function GtdView() {
         title: String(x.action || '')
           .trim()
           .toLowerCase(),
-        who: personTag(String(x.who || '').replace(/^@/, '')),
+        // (4.48) contacto ({ id, title }) o texto suelto (delega sin persona enlazada)
+        who: hasWho(x.who) ? x.who : null,
       }))
       .filter((x) => x.title);
     const chosen = picks.map((x) => x.title);
@@ -3643,8 +3704,13 @@ export default function GtdView() {
       .forEach((t) => {
         const who = whoOf(t);
         if (who) {
+          const props = whoProps(who);
           dispatch(
-            gtdSaveTask(t, { list: 'waiting', tags: mergeTags(tagsForList(t, 'waiting'), [who]) })
+            gtdSaveTask(t, {
+              list: 'waiting',
+              tags: tagsForList(t, 'waiting'),
+              ...(props ? { props } : {}),
+            })
           );
         } else reviewMove(t, 'next');
       });
@@ -3695,7 +3761,10 @@ export default function GtdView() {
           {
             title: chaseTitle(t, person),
             list: 'next',
-            tags: person ? [person] : [],
+            // (4.48) la misma persona (:PERSONA:), no una etiqueta
+            ...((t.personLinks || []).length
+              ? { props: { [PERSON_PROPERTY]: personLinksValue(t.personLinks) } }
+              : {}),
             created: true,
           }
         )
@@ -3985,8 +4054,17 @@ export default function GtdView() {
         ])
       );
       label = 'Hecha';
+    } else if (d.kind === 'agenda') {
+      // (4.48) «Hablar con… (Agenda)»: el título pasa como punto a la agenda y sale del Inbox
+      const name = await dispatch(sendToAgenda(d.title || task.title));
+      if (!name) return;
+      dispatch(gtdTrash([task]));
+      label = `Agenda de ${name}`;
     } else if (['waiting', 'next', 'later'].includes(d.kind)) {
-      const tags = mergeTags(base(d.kind), [...(d.tags || []), ...(d.person ? [d.person] : [])]);
+      const tags = mergeTags(base(d.kind), d.tags || []);
+      // (4.48) delegar: la persona va como :PERSONA: [[id:…][Nombre]] (no como etiqueta)
+      if (d.person && d.person.id)
+        extra.props = { [PERSON_PROPERTY]: personLinksValue([d.person]) };
       dispatch(gtdSaveTask(task, { list: d.kind, tags, ...extra }));
       label = { waiting: 'Waiting', next: 'Next', later: 'Todo (más adelante)' }[d.kind];
     } else if (d.kind === 'project') {
@@ -4664,6 +4742,26 @@ export default function GtdView() {
     });
   };
   // (3.01) «Asignar a proyecto…»: tareas o referencias de cualquier fichero (sin moverlas)
+  // (4.48) Poner una persona (:PERSONA:) a las tareas
+  const addPersonTo = async (list) => {
+    const p = await dispatch(
+      pickPerson({ linked: list.length === 1 ? list[0].persons || [] : [] })
+    );
+    if (!p) return;
+    list.forEach((t) => {
+      const now = headingPersonLinks(store.getState, t.path, t.id);
+      if (!now.some((x) => x.id.toLowerCase() === p.id.toLowerCase()))
+        dispatch(setHeadingPersons(t.path, t.id, [...now, p]));
+    });
+    toast(`Persona: ${p.title}`);
+  };
+  // (4.48) «→ Agenda de…»: el título pasa como punto a la agenda y la tarea va a la Papelera
+  const toAgenda = async (task) => {
+    const name = await dispatch(sendToAgenda(task.title));
+    if (!name) return;
+    dispatch(gtdTrash([task]));
+    toast(`→ Agenda de ${name}`);
+  };
   const assignToProject = async (list) => {
     const one = list.length === 1 ? list[0] : null;
     const project = await pickProject(allProjects, {
@@ -4960,6 +5058,23 @@ export default function GtdView() {
                   },
                 ]
               : []),
+            // (4.48) Personas y Agendas
+            {
+              label: 'Persona…',
+              icon: 'fas fa-user',
+              onClick: () => addPersonTo(list),
+              testId: 'gtd-menu-person',
+            },
+            ...(single
+              ? [
+                  {
+                    label: '→ Agenda de…',
+                    icon: 'fas fa-comments',
+                    onClick: () => toAgenda(single),
+                    testId: 'gtd-menu-agenda',
+                  },
+                ]
+              : []),
           ]),
       { label: 'Convertir en', icon: 'fas fa-exchange-alt', sub: convertSub },
       { label: 'Etiquetas', icon: 'fas fa-tag', sub: tagSub },
@@ -5076,7 +5191,7 @@ export default function GtdView() {
       vTitle = `Búsqueda: ${searchText.trim()}`;
     } else if (view.id === 'projects') {
       list = ['active', 'scheduled', 'sleep'].flatMap((id) => overview[id].map((r) => r.project));
-    } else if (view.id === 'horizons' || view.id === 'tickler') {
+    } else if (['horizons', 'tickler', 'persons', 'agendas'].includes(view.id)) {
       list = [];
     } else {
       list = items.filter((i) => i.kind === 'task' && !i.isRef).map((i) => i.task);
@@ -5585,6 +5700,8 @@ export default function GtdView() {
       onSave={(changes, projectKey) => saveTask(task, changes, projectKey)}
       onSaveProperties={(rows) => dispatch(gtdSetProperties(task, rows))}
       onPickTaskLink={() => pickTaskLink(task)}
+      onPickPerson={(linked) => dispatch(pickPerson({ linked }))}
+      onOpenPerson={openPersonCard}
       onClose={() => {
         setOpenKey(null);
         if (newKey === task.key) setNewKey(null);
@@ -5855,6 +5972,24 @@ export default function GtdView() {
       <span className="gtd-side__label">{sectionLabel('tickler', gtdCfg)}</span>
     </button>
   );
+  // (4.48) Agendas (agendas.org) y Personas (personas.org): solo si existe su fichero
+  const renderPeopleButton = (id) => (
+    <button
+      key={id}
+      className={'gtd-side__item' + (view.id === id && view.type !== 'project' ? ' is-on' : '')}
+      onClick={(e) => {
+        selectView({ id });
+        afterSideClick(e);
+      }}
+      data-testid={`gtd-list-${id}`}
+    >
+      <i className={`${(sectionDef(id, gtdCfg) || {}).icon} gtd-side__icon`} />
+      <span className="gtd-side__label">{sectionLabel(id, gtdCfg)}</span>
+      {id === 'agendas' && agendasOpen > 0 && (
+        <span className="gtd-side__count">{agendasOpen}</span>
+      )}
+    </button>
+  );
   const renderProcessButton = () => (
     <button
       key="process"
@@ -6006,6 +6141,9 @@ export default function GtdView() {
       } else if (id === 'tickler') {
         // (4.17) página del Tickler
         group.push(renderTicklerButton());
+      } else if (id === 'agendas' || id === 'persons') {
+        // (4.48) solo si existe su fichero
+        if (id === 'agendas' ? agendasLoaded : personasLoaded) group.push(renderPeopleButton(id));
       } else if (id === 'projects') {
         flush();
         out.push(<React.Fragment key="projects">{renderProjectsBlock()}</React.Fragment>);
@@ -6360,9 +6498,19 @@ export default function GtdView() {
   const loading = pendingLoads;
   const isTrash = view.id === 'trash';
   // (3.0) «Nuevo elemento» y Entrada rápida: en las listas donde se crean cosas
-  const canCreate = !['logbook', 'trash', 'projects', 'horizons', 'tickler'].includes(view.id);
+  const canCreate = ![
+    'logbook',
+    'trash',
+    'projects',
+    'horizons',
+    'tickler',
+    'persons',
+    'agendas',
+  ].includes(view.id);
   // 3.36: lupa de la cabecera (filtro de la sección); el Logbook tiene su propio buscador
-  const canFilterSection = !['logbook', 'projects', 'horizons'].includes(view.id);
+  const canFilterSection = !['logbook', 'projects', 'horizons', 'persons', 'agendas'].includes(
+    view.id
+  );
   // 3.36 (a): resultados del buscador del menú lateral, agrupados por sección (plegables)
   const openSearchResult = (group, task) => {
     setSearchText('');
@@ -6499,6 +6647,11 @@ export default function GtdView() {
         }
         return add ? { ...f, tags: [...f.tags, value] } : { ...empty, tags: [value] };
       }
+      // (4.48) persona: una sola a la vez (clic = solo esa; otro clic = quitarla)
+      if (kind === 'person') {
+        if (f.person === value) return { ...f, person: null };
+        return add ? { ...f, person: value } : { ...empty, person: value };
+      }
       const isOn =
         kind === 'energy'
           ? f.energy === value
@@ -6513,7 +6666,8 @@ export default function GtdView() {
         (f.energy ? 1 : 0) +
         (f.time ? 1 : 0) +
         (f.dated ? 1 : 0) +
-        (f.badProject ? 1 : 0);
+        (f.badProject ? 1 : 0) +
+        (f.person ? 1 : 0);
       if (!add) {
         if (isOn && count === 1) return empty;
         const base = { ...empty };
@@ -6540,6 +6694,7 @@ export default function GtdView() {
     facets.hasEffort ||
     facets.hasDates ||
     facets.hasBadProject ||
+    (facets.persons || []).length > 0 ||
     activeFilterCount > 0;
 
   // (4.25) funciones de cada fila: se guardan las de este pintado y la fila recibe proxies
@@ -6925,6 +7080,10 @@ export default function GtdView() {
                       : 0
                     : view.id === 'tickler'
                     ? ticklerShown.length
+                    : view.id === 'persons'
+                    ? contacts.length
+                    : view.id === 'agendas'
+                    ? agendas.all.length
                     : visible.length}
                 </span>
               )}
@@ -6994,6 +7153,13 @@ export default function GtdView() {
             onClose={() => setReview(null)}
             onFinish={finishReview}
             onOpenView={goList}
+            agendas={agendas.all
+              .filter((a) => a.open > 0)
+              .map((a) => ({
+                headerId: a.headerId,
+                label: a.person ? a.person.name : a.title,
+                open: a.open,
+              }))}
             onOpenTask={reviewOpenTask}
             onMove={reviewMove}
             onProcess={startProcess}
@@ -7045,6 +7211,7 @@ export default function GtdView() {
             onProjectAction={guidedProjectAction}
             onMove={guidedMove}
             onCopy={guidedCopy}
+            onPickPerson={() => dispatch(pickPerson({ title: '¿Quién? (pasa a Waiting)' }))}
           />
         )}
         {daily && DAILY_PROCESSES[daily.kind] && (
@@ -7085,6 +7252,7 @@ export default function GtdView() {
               .filter((p) => !p.isTrashed)
               .sort((a, b) => (a.title || '').localeCompare(b.title || ''))}
             onDecide={processDecide}
+            onPickPerson={() => dispatch(pickPerson({ title: '¿Quién? (pasa a Waiting)' }))}
             onSkip={() => procMove(1)}
             onBack={() => procMove(-1)}
             onFinish={() => setProc(null)}
@@ -7255,7 +7423,39 @@ export default function GtdView() {
         {view.id === 'horizons' && renderHorizonsPage()}
 
         {/* (3.0) Barra de filtros, como Nirvana: etiquetas y atributos a la vista */}
-        {hasFacets && view.id !== 'projects' && view.id !== 'horizons' && (
+        {/* (4.48) Personas y Agendas */}
+        {view.id === 'persons' && (
+          <PersonsPage
+            contacts={contacts}
+            loaded={personasLoaded}
+            countOf={(c) =>
+              c.orgId
+                ? tasks.filter(
+                    (t) =>
+                      !t.isDone &&
+                      !t.isTrashed &&
+                      !!t.keyword &&
+                      (t.persons || []).some((x) => x.toLowerCase() === c.orgId.toLowerCase())
+                  ).length
+                : 0
+            }
+          />
+        )}
+        {view.id === 'agendas' && (
+          <AgendasPage
+            agendas={agendas}
+            loaded={agendasLoaded}
+            onOpenDoc={(a) =>
+              openInFile({
+                path: agendasPath,
+                id: a.headerId,
+                key: `${agendasPath}::${a.headerId}`,
+              })
+            }
+          />
+        )}
+
+        {hasFacets && !['projects', 'horizons', 'persons', 'agendas'].includes(view.id) && (
           <div className="gtd-filterbar" data-testid="gtd-filters">
             {Array.from(new Set([...facets.tags, ...filters.tags, ...filters.notTags]))
               .filter((t) => t !== NO_TAGS)
@@ -7371,6 +7571,31 @@ export default function GtdView() {
                 <i className="fas fa-unlink" /> Proyecto no encontrado
               </button>
             )}
+            {/* (4.48) grupo «Personas» (:PERSONA:) */}
+            {(facets.persons || [])
+              .concat(
+                filters.person && !(facets.persons || []).some((x) => x.id === filters.person)
+                  ? [{ id: filters.person, name: '?' }]
+                  : []
+              )
+              .map((p) => {
+                const c = contacts.find(
+                  (x) => x.orgId && x.orgId.toLowerCase() === p.id.toLowerCase()
+                );
+                return (
+                  <button
+                    key={'p' + p.id}
+                    className={
+                      'gtd-chip gtd-chip--person' + (filters.person === p.id ? ' is-on' : '')
+                    }
+                    onClick={(e) => filterChip('person', p.id, e)}
+                    title="Persona: solo sus tareas (clic otra vez: quitar)"
+                    data-testid="gtd-chip-person"
+                  >
+                    <i className="fas fa-user" /> {(c && c.name) || p.name}
+                  </button>
+                );
+              })}
             {activeFilterCount > 0 && (
               <button
                 className="gtd-chip gtd-chip--clear"
@@ -7508,7 +7733,7 @@ export default function GtdView() {
         <div
           className={'gtd-list' + (reorderingKey ? ' is-reordering' : '')}
           style={
-            view.id === 'projects' || view.id === 'horizons' || view.id === 'tickler'
+            ['projects', 'horizons', 'tickler', 'persons', 'agendas'].includes(view.id)
               ? { display: 'none' }
               : undefined
           }

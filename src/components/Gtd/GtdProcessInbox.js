@@ -6,7 +6,7 @@
 // waiting | project | next | later, con los datos que haga falta (fechas, persona, área, etiquetas…).
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { toDateInput, fromDateInput } from './TaskEditor';
-import { parseTagsInput, personTag } from '../../lib/gtd/gtd_process';
+import { parseTagsInput } from '../../lib/gtd/gtd_process';
 
 const tomorrow = (today) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
@@ -47,13 +47,44 @@ export default function GtdProcessInbox({
   onBack,
   onFinish,
   onOpenTask,
+  // (4.48) elegir (o crear) un contacto → Promise<{ id, title } | null>
+  onPickPerson = null,
 }) {
   const [step, setStep] = useState('action');
   const [hist, setHist] = useState([]);
   const [base, setBase] = useState(null);
   const [tickDate, setTickDate] = useState(toDateInput(tomorrow(today)));
   const [tickTime, setTickTime] = useState('');
-  const [person, setPerson] = useState('');
+  // (4.48) persona = contacto de personas.org ({ id, title }) o null
+  const [person, setPerson] = useState(null);
+  const pickPersonNow = async () => {
+    if (!onPickPerson) return;
+    const p = await onPickPerson();
+    if (p) setPerson(p);
+  };
+  const renderPerson = (grow = false) => (
+    <>
+      <button
+        type="button"
+        className={'gtd-proc__input gtd-proc__person' + (grow ? ' gtd-proc__input--grow' : '')}
+        onClick={pickPersonNow}
+        data-testid="gtd-proc-person"
+      >
+        <i className="fas fa-user" /> {person ? person.title : 'Elegir persona…'}
+      </button>
+      {person && (
+        <button
+          type="button"
+          className="gtd-proc__opt"
+          onClick={() => setPerson(null)}
+          aria-label="Quitar la persona"
+          data-testid="gtd-proc-person-clear"
+        >
+          ×
+        </button>
+      )}
+    </>
+  );
   const [first, setFirst] = useState('');
   const [area, setArea] = useState('');
   const [tagsText, setTagsText] = useState('');
@@ -174,27 +205,22 @@ export default function GtdProcessInbox({
           icon: 'fas fa-user',
           run: () => toProject({ kind: 'next' }),
         },
+        // (4.48) Allen: lo que hay que hablar con alguien va a su agenda
+        {
+          label: 'Hablar con… (Agenda)',
+          hint: 'punto en una agenda',
+          icon: 'fas fa-comments',
+          run: () => decide({ kind: 'agenda' }),
+        },
       ];
     } else if (step === 'person') {
-      fields = (
-        <input
-          className="gtd-proc__input"
-          value={person}
-          onChange={(e) => setPerson(e.target.value)}
-          placeholder="Persona (opcional)"
-          data-testid="gtd-proc-person"
-          autoFocus
-          onKeyDown={(e) =>
-            e.key === 'Enter' && toProject({ kind: 'waiting', person: personTag(person) })
-          }
-        />
-      );
+      fields = renderPerson();
       options = [
         {
           label: 'Continuar',
           icon: 'fas fa-arrow-right',
           primary: true,
-          run: () => toProject({ kind: 'waiting', person: personTag(person) }),
+          run: () => toProject({ kind: 'waiting', person }),
         },
       ];
     } else if (step === 'isproj') {
@@ -296,27 +322,22 @@ export default function GtdProcessInbox({
           run: () => go('person'),
         },
         { label: 'No, la hago yo', icon: 'fas fa-user', run: () => go('steps') },
+        // (4.48) Allen: lo que hay que hablar con alguien va a su agenda
+        {
+          label: 'Hablar con… (Agenda)',
+          hint: 'punto en una agenda',
+          icon: 'fas fa-comments',
+          run: () => decide({ kind: 'agenda' }),
+        },
       ];
     } else if (step === 'person') {
-      fields = (
-        <input
-          className="gtd-proc__input"
-          value={person}
-          onChange={(e) => setPerson(e.target.value)}
-          placeholder="Persona (opcional)"
-          data-testid="gtd-proc-person"
-          autoFocus
-          onKeyDown={(e) =>
-            e.key === 'Enter' && withWhen({ kind: 'waiting', person: personTag(person) })
-          }
-        />
-      );
+      fields = renderPerson();
       options = [
         {
           label: 'Continuar',
           icon: 'fas fa-arrow-right',
           primary: true,
-          run: () => withWhen({ kind: 'waiting', person: personTag(person) }),
+          run: () => withWhen({ kind: 'waiting', person }),
         },
       ];
     } else if (step === 'steps') {
@@ -609,21 +630,23 @@ export default function GtdProcessInbox({
           <div className="gtd-proc__group-title">Requiere acción</div>
           {renderOptions(opt.slice(3), 3, false)}
           <div className="gtd-proc__row gtd-proc__row--wrap">
-            <input
-              className="gtd-proc__input gtd-proc__input--grow"
-              value={person}
-              onChange={(e) => setPerson(e.target.value)}
-              placeholder="Persona"
-              data-testid="gtd-proc-person"
-            />
+            {renderPerson(true)}
             <button
               type="button"
               className="gtd-proc__opt"
-              onClick={() => decide({ kind: 'waiting', person: personTag(person), ...details() })}
+              onClick={() => decide({ kind: 'waiting', person, ...details() })}
               data-testid="gtd-proc-waiting"
             >
               <i className="fas fa-hourglass-half" />{' '}
               <span className="gtd-proc__opt-label">Waiting</span>
+            </button>
+            <button
+              type="button"
+              className="gtd-proc__opt"
+              onClick={() => decide({ kind: 'agenda' })}
+              data-testid="gtd-proc-agenda"
+            >
+              <i className="fas fa-comments" /> <span className="gtd-proc__opt-label">Agenda</span>
             </button>
           </div>
           <div className="gtd-proc__row gtd-proc__row--wrap">

@@ -22,6 +22,7 @@ import EliMedia from '../OrgFile/components/EliMedia';
 import EliOrgTable from '../EliOrgTable';
 import { tableBlocks, tableLinesAt, replaceTableAt } from '../../lib/eli_org_table';
 import { textareaOffsetAt } from '../../lib/eli_notes_caret';
+import { PERSON_PROPERTY, personLinksValue } from '../../lib/gtd/gtd_persons';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -176,6 +177,8 @@ export default function TaskEditor({
   objective = null, // (4.07) objetivo del proyecto (nombre) y elegirlo (fichero de horizontes)
   onPickObjective = null,
   onPickTaskLink = null, // (4.11) elegir otra tarea y devolver su enlace [[id:…][Título]]
+  onPickPerson = null, // (4.48) elegir (o crear) un contacto → { id, title }
+  onOpenPerson = null, // (4.48) ficha de una persona
 }) {
   const [propsOpen, setPropsOpen] = useState(false);
   const [editingText, setEditingText] = useState(!preview);
@@ -236,6 +239,8 @@ export default function TaskEditor({
   const isProject = !!task.isProject;
   const [sleep, setSleep] = useState(isProject && !!task.ownSleep);
   const [tags, setTags] = useState(task.ownTags);
+  // (4.48) personas (:PERSONA: [[id:…][Nombre]] …)
+  const [persons, setPersons] = useState(task.personLinks || []);
   const [tagInput, setTagInput] = useState('');
   const [energy, setEnergy] = useState(task.energy || '');
   const [effort, setEffort] = useState(task.effort || '');
@@ -359,6 +364,7 @@ export default function TaskEditor({
     dRepeat,
     project,
     parent,
+    persons,
   };
   const latest = useRef(current);
   latest.current = current;
@@ -406,6 +412,13 @@ export default function TaskEditor({
       if (wantSleep !== (b.sleep && b.convert !== 'task'))
         changes.props = { [STATUS_PROPERTY]: wantSleep ? SLEEP_STATUS : null };
     }
+    // (4.48) personas
+    const linksKey = (l) => (l || []).map((x) => x.id).join(' ');
+    if (linksKey(c.persons) !== linksKey(b.persons))
+      changes.props = {
+        ...(changes.props || {}),
+        [PERSON_PROPERTY]: personLinksValue(c.persons) || null,
+      };
     if (c.energy !== b.energy) changes.energy = c.energy || null;
     if (c.effort !== b.effort) changes.effort = c.effort || null;
     if (c.scheduled !== b.scheduled) changes.scheduled = fromDateInput(c.scheduled);
@@ -1030,6 +1043,31 @@ export default function TaskEditor({
               <i className="fas fa-bullseye" aria-hidden="true" /> {objective || 'Objetivo'}
             </button>
           )}
+          {/* (4.48) personas enlazadas (tocar = ficha; × = quitar) */}
+          {persons.map((p) => (
+            <span key={p.id} className="gtd-chip gtd-chip--person" data-testid="gtd-editor-person">
+              <span
+                className="gtd-chip__label"
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (!onOpenPerson) return;
+                  commit();
+                  onOpenPerson(p.id);
+                }}
+                title="Ver la ficha"
+              >
+                <i className="fas fa-user" aria-hidden="true" /> {p.title || '?'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPersons(persons.filter((x) => x.id !== p.id))}
+                aria-label={`Quitar ${p.title}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
           {tags.map((t) => (
             <span key={t} className="gtd-chip is-on">
               {t}
@@ -1618,6 +1656,24 @@ export default function TaskEditor({
               data-testid="gtd-editor-backlinks"
             >
               <i className="fas fa-link" /> Backlinks
+            </button>
+          )}
+          {/* (4.48) enlazar con una persona (contacto de personas.org) */}
+          {onPickPerson && (
+            <button
+              type="button"
+              className="gtd-btn gtd-btn--link"
+              onClick={async () => {
+                const p = await onPickPerson(persons.map((x) => x.id));
+                if (!p) return;
+                setPersons((now) =>
+                  now.some((x) => x.id.toLowerCase() === p.id.toLowerCase()) ? now : [...now, p]
+                );
+              }}
+              title="Enlazar con una persona (contacto)"
+              data-testid="gtd-editor-person-add"
+            >
+              <i className="fas fa-user" /> Persona
             </button>
           )}
           {onSendTo && !isNew && (

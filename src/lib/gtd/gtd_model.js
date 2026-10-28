@@ -217,6 +217,21 @@ export const parseProjectLink = (value) => {
   const bare = /^\s*id:(\S+)\s*$/i.exec(String(value));
   return bare ? { id: bare[1], title: '' } : null;
 };
+// (4.48) Personas de una cabecera: «:PERSONA: [[id:A][Ana]] [[id:B][Luis]]» → [{ id, title }]
+const PERSON_LINK_RE = /\[\[id:([^\]]+)\](?:\[([^\]]*)\])?\]/gi;
+export const parsePersonLinks = (value) => {
+  const out = [];
+  if (!value) return out;
+  const text = String(value);
+  let m;
+  PERSON_LINK_RE.lastIndex = 0;
+  while ((m = PERSON_LINK_RE.exec(text))) {
+    const id = m[1].trim();
+    if (id && !out.some((x) => x.id.toLowerCase() === id.toLowerCase()))
+      out.push({ id, title: (m[2] || '').trim() });
+  }
+  return out;
+};
 export const projectLinkFor = (orgId, title) =>
   `[[id:${orgId}][${String(title || '').replace(/[\[\]]/g, '')}]]`;
 export const newOrgId = () => {
@@ -349,6 +364,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
       const pm = PRIORITY_RE.exec(rawTitle);
       const isProject = keyword === 'PROJECT';
       const ownRef = parseProjectLink(propertyValue(header, PROJECT_LINK_PROPERTY));
+      const personLinks = parsePersonLinks(propertyValue(header, 'PERSONA'));
       const projRef = isProject ? null : ownRef || (parent ? parent.projRef : null);
       const task = {
         key: `${path}::${header.get('id')}`,
@@ -396,6 +412,9 @@ const buildFileTasks = (file, path, isInboxFile) => {
         orgId: propertyValue(header, 'ID'),
         projRef,
         projRefOwn: !!ownRef && !isProject,
+        // (4.48) personas enlazadas con :PERSONA: (ids y enlaces)
+        personLinks,
+        persons: personLinks.map((l) => l.id),
         isInboxFile,
         parentHasKeyword: parent ? parent.hasKeyword : false,
         // (4.22) su madre directa es un proyecto (sus encabezados sin estado = Referencia)
@@ -599,6 +618,11 @@ export const matchesFilters = (task, filters) => {
   if (notTags.length && notTags.some(has)) return false;
   // (3.01) filtro «Proyecto no encontrado»
   if (filters && filters.badProject && !task.badProject) return false;
+  // (4.48) filtro por persona (:PERSONA:)
+  if (filters && filters.person) {
+    const want = String(filters.person).toLowerCase();
+    if (!(task.persons || []).some((p) => p.toLowerCase() === want)) return false;
+  }
   if (energy && (task.energy || '').toLowerCase() !== energy.toLowerCase()) return false;
   if (time) {
     const minutes = effortMinutes(task.effort);
@@ -1001,7 +1025,12 @@ export const facetsFor = (tasks, opts = {}) => {
   let hasBadProject = false;
   let hasUntagged = false;
   let hasInherited = !!opts.ownOnly;
+  const persons = new Map();
   tasks.forEach((t) => {
+    (t.personLinks || []).forEach((l) => {
+      const k = l.id.toLowerCase();
+      if (!persons.has(k)) persons.set(k, { id: l.id, name: l.title || l.id });
+    });
     if (t.badProject) hasBadProject = true;
     if (isUntagged(t)) hasUntagged = true;
     (opts.ownOnly ? t.ownTags || [] : t.tags).forEach((x) => tags.add(x));
@@ -1026,6 +1055,10 @@ export const facetsFor = (tasks, opts = {}) => {
     hasUntagged,
     // 3.36: hay etiquetas heredadas en la lista (o el filtro «Heredadas» está apagado)
     hasInherited,
+    // (4.48) personas de las tareas de la lista (grupo «Personas» de la barra)
+    persons: Array.from(persons.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    ),
   };
 };
 
