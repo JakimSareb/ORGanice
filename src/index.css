@@ -405,6 +405,56 @@ div.eli-viewer__none {
   padding: 10px;
   opacity: 0.6;
 }
+/* (4.52) Selector de destino navegable: migas, fila con «›» para entrar */
+.eli-pick__crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: 4px 0 6px;
+  font-size: 0.85em;
+}
+.eli-pick__crumb {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 2px 4px;
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.75;
+}
+.eli-pick__crumb.is-last {
+  text-decoration: none;
+  font-weight: 600;
+  opacity: 1;
+}
+.eli-pick__row {
+  display: flex;
+  align-items: stretch;
+}
+.eli-pick__row .eli-pick__item {
+  flex: 1;
+  min-width: 0;
+}
+.eli-pick__row.is-active,
+.eli-pick__row:hover {
+  background: var(--base2, #eee8d5);
+}
+.eli-pick__row.is-here {
+  font-weight: 600;
+  border-bottom: 1px solid var(--base2, #eee8d5);
+}
+.eli-pick__enter {
+  border: 0;
+  border-left: 1px solid var(--base2, #eee8d5);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.2em;
+  padding: 0 14px;
+  cursor: pointer;
+}
 .eli-prompt__buttons--column {
   flex-direction: column;
   align-items: stretch;

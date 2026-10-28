@@ -237,6 +237,9 @@ const updateCookiesInAttributedStringWithChildCompletionStates = (parts, complet
 const updateCookiesOfHeaderWithId = (file, headerId) => {
   const headers = file.get('headers');
   const headerIndex = indexOfHeaderWithId(headers, headerId);
+  // (4.52) la cabecera ya no está en este fichero (se movió a otro): nada que recalcular. Antes, si
+  // era la última del fichero (p. ej. la única del Inbox), `headers.get(-1)` fallaba
+  if (headerIndex < 0) return file;
   const subheaders = subheadersOfHeaderWithId(headers, headerId);
 
   const directChildren = [];

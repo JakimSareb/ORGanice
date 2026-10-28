@@ -67,7 +67,12 @@ test('4.50 A/C: Agendas → tratar un punto (DONE) y llevarlo a una reunión', a
   // «Llevar a reunión…» mueve el punto con sus notas, subpuntos y :ID:
   const one = page.locator('[data-testid=gtd-agenda-point]', { hasText: 'Punto uno' }).first();
   await app.press(one.locator('[data-testid=gtd-agenda-point-meeting]').first());
-  await page.locator('[data-testid=eli-pick-item]', { hasText: 'Orden del día' }).first().click();
+  // (4.52) el selector es navegable: «Reunión lunes ›» y luego «Orden del día»
+  await page.locator('[data-testid=eli-refile-enter]').first().click();
+  await page
+    .locator('[data-testid=eli-refile-entry]', { hasText: 'Orden del día' })
+    .first()
+    .click();
   await expect
     .poll(() => app.fileAfterSync('/reuniones.org', 500), { timeout: 15000 })
     .toMatch(

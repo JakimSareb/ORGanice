@@ -181,3 +181,21 @@ export const wikiMarkReviewed = (id) => async (dispatch, getState) => {
   await writeText(dispatch, getState, path, info, next);
   return true;
 };
+
+// (4.52) Atajos de la wiki para el selector de destino de Procesar Inbox → «Wiki › Referencia» y
+// «Wiki › Explicación» (nivel superior de esos ficheros; el selector los quita si no existen)
+export const wikiShortcuts = (state) => {
+  try {
+    return wikiPaths(wikiDirFor(state))
+      .filter((w) => w.kind === 'referencia' || w.kind === 'explicacion')
+      .map((w) => ({
+        label: `Wiki › ${KIND_LABEL[w.kind]}`,
+        hint: 'fichero de la wiki · al final',
+        path: w.path,
+        headerId: null,
+        title: `Wiki › ${KIND_LABEL[w.kind]}`,
+      }));
+  } catch (e) {
+    return [];
+  }
+};

@@ -26,6 +26,14 @@ import generateId from './id_generator';
 import { askPick, showMessage } from './eli_prompt';
 import { fileNodes, freeNotePath, newNoteFileText } from './eli_roam';
 import { diaryDir } from './eli_diary';
+import {
+  askRefileTarget,
+  indexOfState,
+  listAllOrgPaths,
+  orderFilePaths,
+} from './eli_refile_picker';
+import { wikiPaths } from './eli_wiki';
+import { wikiDirFor } from './eli_wiki_actions';
 import { defaultTags } from './eli_todo_defaults';
 import {
   sync,
@@ -308,50 +316,45 @@ export const pickTagForTitle = (el, insert, pos) => async (dispatch, getState) =
   return true;
 };
 
-// (4.35) «Enviar a…»: elegir un fichero (nivel superior) o una cabecera de los ficheros cargados,
-// en orden jerárquico → { path, headerId (null = nivel superior), title } o null (Cancelar)
+// (4.35) «Enviar a…»: elegir un fichero (nivel superior) o una cabecera → { path, headerId (null =
+// nivel superior), title } o null (Cancelar). (4.52) Selector NAVEGABLE: todos los .org de la
+// carpeta (los no abiertos se cargan al entrar), «›» para bajar por las subcabeceras, migas,
+// buscador entre ficheros y «Recientes».
 // (4.50) onlyPath: solo ese fichero (p. ej. reuniones.org al llevar un punto de una agenda)
-export const pickRefileTarget = ({ title = 'Enviar a', onlyPath = null } = {}) => async (
-  dispatch,
-  getState
-) => {
-  const index = headingIndex(getState().org.present.get('files'), { skipDiary: true });
-  const ordered = orderHierarchical(searchHeadings(index, '', 100000), index).filter(
-    (o) => !onlyPath || o.entry.path === onlyPath
-  );
-  const rows = [];
-  const items = [];
-  let lastPath = null;
-  ordered.forEach((o) => {
-    if (o.entry.path !== lastPath) {
-      lastPath = o.entry.path;
-      rows.push({ path: lastPath, headerId: null, title: fileNameOf(lastPath) });
-      items.push({
-        id: String(rows.length - 1),
-        label: fileNameOf(lastPath),
-        hint: 'fichero · nivel superior',
-        depth: 0,
-      });
-    }
-    rows.push({ path: o.entry.path, headerId: o.entry.headerId, title: o.entry.title });
-    items.push({ id: String(rows.length - 1), label: o.entry.title, hint: '', depth: o.depth + 1 });
-  });
-  if (onlyPath && !rows.length) {
-    rows.push({ path: onlyPath, headerId: null, title: fileNameOf(onlyPath) });
-    items.push({
-      id: '0',
-      label: fileNameOf(onlyPath),
-      hint: 'fichero · nivel superior',
-      depth: 0,
-    });
+// (4.52) shortcuts: [{ label, hint, path, headerId, title }] atajos del nivel 1; sessionKey: recuerda
+// el último nivel visitado entre llamadas (varias seguidas al mismo destino)
+const GTD_FILE_NAMES = /(^|\/)(tasks|inbox|reuniones|agendas|personas|horizons|tickler|referencia|reference)\.org$/i;
+export const pickRefileTarget = ({
+  title = 'Enviar a',
+  onlyPath = null,
+  shortcuts = [],
+  sessionKey = null,
+} = {}) => async (dispatch, getState) => {
+  const all = onlyPath ? [onlyPath] : await dispatch(listAllOrgPaths());
+  const cfg = getGtdFiles();
+  const gtdPaths = [cfg.inbox, cfg.tasks, cfg.horizons, cfg.personas, cfg.agendas, cfg.reuniones]
+    .filter(Boolean)
+    .concat(all.filter((p) => GTD_FILE_NAMES.test(p)));
+  let wikiList = [];
+  try {
+    const dir = wikiDirFor(getState());
+    wikiList = wikiPaths(dir).map((w) => w.path);
+  } catch (e) {
+    wikiList = [];
   }
-  const chosen = await askPick({
+  const files = orderFilePaths(all, { gtdPaths, wikiPaths: wikiList });
+  const known = new Set(files.map((f) => f.path));
+  return askRefileTarget({
     title,
-    placeholder: 'Buscar fichero o cabecera…',
-    emptyText: 'No hay ficheros cargados.',
-    limit: 200,
-    items,
+    files,
+    onlyPath,
+    sessionKey,
+    shortcuts: shortcuts.filter((s) => known.has(s.path)),
+    getIndex: () => indexOfState(getState()),
+    ensureLoaded: async (path) => {
+      const loaded = () => !!getState().org.present.getIn(['files', path, 'headers']);
+      if (!loaded()) await Promise.resolve(dispatch(loadFileQuietly(path))).catch(() => null);
+      return loaded();
+    },
   });
-  if (chosen === null || chosen === undefined) return null;
-  return rows[Number(chosen)] || null;
 };

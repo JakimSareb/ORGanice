@@ -26,6 +26,9 @@ const QUESTIONS = {
   isproj: '¿Forma parte de un proyecto (un resultado con más de un paso)?',
   newproj: 'Proyecto nuevo: ¿cómo se llama?',
   pickproj: '¿De qué proyecto?',
+  // (4.52) Someday y Referencia con destino
+  somedayproj: '¿Pertenece a algún proyecto?',
+  refdest: '¿Dónde guardo esta referencia?',
 };
 
 export default function GtdProcessInbox({
@@ -49,14 +52,19 @@ export default function GtdProcessInbox({
   onOpenTask,
   // (4.48) elegir (o crear) un contacto → Promise<{ id, title } | null>
   onPickPerson = null,
+  // (4.52) selector de destino (Promise<{ path, headerId, title } | null>) y «Abrir y terminar de editar»
+  onPickDest = null,
+  onEditFile = null,
+  // estado de la pregunta al volver de editar el fichero: { step, hist, base, nextTitle, person }
+  restore = null,
 }) {
-  const [step, setStep] = useState('action');
-  const [hist, setHist] = useState([]);
-  const [base, setBase] = useState(null);
+  const [step, setStep] = useState((restore && restore.step) || 'action');
+  const [hist, setHist] = useState((restore && restore.hist) || []);
+  const [base, setBase] = useState((restore && restore.base) || null);
   const [tickDate, setTickDate] = useState(toDateInput(tomorrow(today)));
   const [tickTime, setTickTime] = useState('');
   // (4.48) persona = contacto de personas.org ({ id, title }) o null
-  const [person, setPerson] = useState(null);
+  const [person, setPerson] = useState((restore && restore.person) || null);
   const pickPersonNow = async () => {
     if (!onPickPerson) return;
     const p = await onPickPerson();
@@ -95,7 +103,9 @@ export default function GtdProcessInbox({
   const [schedTime, setSchedTime] = useState('');
   const [deadline, setDeadline] = useState('');
   // (4.15) Allen estricto: título de la siguiente acción y proyecto
-  const [nextTitle, setNextTitle] = useState((task && task.title) || '');
+  const [nextTitle, setNextTitle] = useState(
+    (restore && restore.nextTitle) || (task && task.title) || ''
+  );
   const [projName, setProjName] = useState('');
   const [projKey, setProjKey] = useState('');
   const optionsRef = useRef([]);
@@ -127,7 +137,7 @@ export default function GtdProcessInbox({
   };
   // (4.15) tras «¿hay un proyecto?»: hecha → guardar; si no, «¿cuándo?»
   const finishStrict = (b) => {
-    if (b.kind === 'done') decide(b);
+    if (['done', 'someday', 'reference'].includes(b.kind)) decide(b);
     else withWhen(b);
   };
   const toProject = (b) => {
@@ -234,7 +244,11 @@ export default function GtdProcessInbox({
           icon: 'fas fa-project-diagram',
           run: () => go('pickproj'),
         });
-    } else if (step === 'newproj') {
+    }
+  }
+  // (4.15, 4.52) proyecto nuevo / uno que ya existe: lo usan «¿Hay un proyecto?», Someday y Referencia
+  if (mode !== 'all' && task && ['newproj', 'pickproj'].includes(step)) {
+    if (step === 'newproj') {
       const ok = () =>
         projName.trim() && finishStrict({ ...base, project: { name: projName.trim() } });
       fields = (
@@ -249,7 +263,7 @@ export default function GtdProcessInbox({
         />
       );
       options = [{ label: 'Continuar', icon: 'fas fa-arrow-right', primary: true, run: ok }];
-    } else if (step === 'pickproj') {
+    } else {
       const ok = () => projKey && finishStrict({ ...base, project: { key: projKey } });
       fields = (
         <select
@@ -270,7 +284,11 @@ export default function GtdProcessInbox({
       options = [{ label: 'Continuar', icon: 'fas fa-arrow-right', primary: true, run: ok }];
     }
   }
-  if (mode !== 'all' && task && (!strict || ['noaction', 'tickler', 'when'].includes(step))) {
+  if (
+    mode !== 'all' &&
+    task &&
+    (!strict || ['noaction', 'tickler', 'when', 'somedayproj', 'refdest'].includes(step))
+  ) {
     if (step === 'action') {
       options = [
         { label: 'Sí', hint: 'hay algo que hacer', icon: 'fas fa-check', run: () => go('two') },
@@ -284,12 +302,12 @@ export default function GtdProcessInbox({
     } else if (step === 'noaction') {
       options = [
         { label: 'Papelera', icon: 'fas fa-trash', run: () => decide({ kind: 'trash' }) },
-        { label: 'Referencia', icon: 'far fa-file-alt', run: () => decide({ kind: 'reference' }) },
+        { label: 'Referencia', icon: 'far fa-file-alt', run: () => go('refdest') },
         {
           label: 'Someday / Maybe',
           hint: 'incubar',
           icon: 'fas fa-cloud',
-          run: () => decide({ kind: 'someday' }),
+          run: () => go('somedayproj'),
         },
         {
           label: 'Tickler',
@@ -298,6 +316,68 @@ export default function GtdProcessInbox({
           run: () => go('tickler'),
         },
       ];
+    } else if (step === 'somedayproj') {
+      // (4.52) Someday: ¿forma parte de un proyecto? Si sí, queda DENTRO del proyecto (estado Someday)
+      options = [
+        {
+          label: 'No',
+          hint: 'Someday suelto',
+          icon: 'fas fa-times',
+          run: () => decide({ kind: 'someday' }),
+        },
+        {
+          label: 'Sí: proyecto nuevo',
+          icon: 'fas fa-plus',
+          run: () => {
+            setBase({ kind: 'someday' });
+            go('newproj');
+          },
+        },
+      ];
+      if (projects.length)
+        options.push({
+          label: 'Sí: uno que ya existe',
+          icon: 'fas fa-project-diagram',
+          run: () => {
+            setBase({ kind: 'someday' });
+            go('pickproj');
+          },
+        });
+    } else if (step === 'refdest') {
+      // (4.52) Referencia: a un proyecto, a otra cabecera del sistema, o dejarla; y editar el fichero
+      options = [];
+      if (projects.length)
+        options.push({
+          label: 'Proyecto…',
+          hint: 'dentro de un proyecto',
+          icon: 'fas fa-project-diagram',
+          run: () => {
+            setBase({ kind: 'reference' });
+            go('pickproj');
+          },
+        });
+      if (onPickDest)
+        options.push({
+          label: 'Enviar a una cabecera…',
+          hint: 'otro fichero o la wiki',
+          icon: 'fas fa-paper-plane',
+          run: async () => {
+            const dest = await onPickDest();
+            if (dest) decide({ kind: 'reference', dest });
+          },
+        });
+      options.push({
+        label: 'Dejar en Referencia',
+        icon: 'far fa-file-alt',
+        run: () => decide({ kind: 'reference' }),
+      });
+      if (onEditFile)
+        options.push({
+          label: '✎ Abrir y terminar de editar',
+          hint: 'vuelves a esta pregunta',
+          icon: 'fas fa-pen',
+          run: () => onEditFile(task, { step, hist, base, nextTitle, person }),
+        });
     } else if (step === 'tickler') {
       fields = renderTickler();
       options = [
