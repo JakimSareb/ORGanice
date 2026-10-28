@@ -3,6 +3,19 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.48 (octubre de 2026)
+** Personas
+- Contactos en =personas.org= (una cabecera por persona con =:ID:=, =:EMAIL:=, =:PHONE:=, =:ALIAS:=…, formato org-contacts). Se enlazan desde cualquier cabecera (tareas, actas, notas) con =:PERSONA: [[id:…][Nombre]]=. Ya no se usan etiquetas de persona.
+- Botón *Persona* en el editor de tarea (chips: tocar = ficha, × = quitar), ⋯ › *Persona…* en Documentos y *Persona…* en el menú ▾ de las tareas.
+- *Delegar* (Procesar Inbox y «Quién» al planificar un proyecto): eliges o creas un contacto y la tarea pasa a Waiting con =:PERSONA:=.
+- *Ficha de la persona*: datos (email y teléfono tocables), tareas por lista, actas y notas, menciones y su agenda.
+- Menú lateral › *Personas* y filtro por persona en la barra; la Revisión semanal agrupa Waiting por persona.
+- El buscador *[[* ofrece siempre *Crear página* y *Crear contacto*, aunque haya coincidencias.
+** Agendas
+- Menú lateral › *Agendas*: lee tu =agendas.org= sin reescribirlo (personas primero, luego ocasiones agrupadas por su madre, con casillas abiertas). Marcar casillas, *Añadir punto* (una línea tras el último ítem, con el mismo estilo) y *Abrir en Documentos*.
+- Procesar Inbox › *Hablar con… (Agenda)* y ▾ › *→ Agenda de…*: el título pasa como punto a la agenda elegida.
+- La Revisión semanal muestra las agendas con algo abierto en «Revisar Next».
+
 * 4.47 (octubre de 2026)
 ** Procesos ZK
 - *Menú ☰ › Procesos ZK*, aparte de los procesos GTD y con su misma tarjeta (teclas 1, 2, 3…, Atrás / Saltar / Terminar).

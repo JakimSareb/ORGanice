@@ -21,6 +21,7 @@ import { buildTransclusionLine, lineInsertion } from './eli_transclude';
 import { newOrgId } from './gtd/gtd_model';
 import { getGtdFiles } from './gtd/gtd_sections';
 import { gtdAddTask } from './gtd/gtd_actions';
+import { createContact } from './gtd/gtd_persons_actions';
 import generateId from './id_generator';
 import { askPick, showMessage } from './eli_prompt';
 import { fileNodes, freeNotePath, newNoteFileText, slugify } from './eli_roam';
@@ -192,11 +193,23 @@ export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => 
         hint: `fichero ${notesDir.split('/').slice(-2).join('/')}${slugify(raw)}.org`,
         kind: 'note',
       },
-      { label: `➕ Cabecera «${raw}»`, hint: `cabecera nueva en ${pagesName}`, kind: 'heading' },
+      {
+        label: `➕ Crear página «${raw}»`,
+        hint: `cabecera nueva en ${pagesName}`,
+        kind: 'heading',
+      },
+      // (4.48) también un contacto nuevo (personas.org)
+      { label: `👤 Crear contacto «${raw}»`, hint: 'en personas.org', kind: 'contact' },
     ],
+    // (4.48) las opciones de crear salen siempre, aunque haya coincidencias
+    newAlways: true,
   });
   if (chosen === null || chosen === undefined) return null;
   if (typeof chosen === 'object' && chosen.new) {
+    if (chosen.kind === 'contact') {
+      const p = await dispatch(createContact(chosen.new));
+      return p ? { orgId: p.id, title: p.title } : null;
+    }
     const made =
       chosen.kind === 'note'
         ? await dispatch(createNoteFile(chosen.new))

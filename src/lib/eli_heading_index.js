@@ -69,6 +69,15 @@ const propOf = (h, name) => {
   return item ? propertyText(item).trim() : '';
 };
 
+const PERSON_ID_RE = /\[\[id:\s*([^\]\s]+)\s*\]/gi;
+const personIdsOf = (text) => {
+  const out = [];
+  let m;
+  PERSON_ID_RE.lastIndex = 0;
+  while ((m = PERSON_ID_RE.exec(text || ''))) if (!out.includes(m[1])) out.push(m[1]);
+  return out;
+};
+
 export const fileHeadings = (path, file) => {
   const headers = file && file.get && file.get('headers');
   if (!headers || typeof headers.forEach !== 'function') return [];
@@ -130,6 +139,8 @@ export const fileHeadings = (path, file) => {
       // (4.41) org-roam
       aliases: parseAliases(propOf(h, 'ROAM_ALIASES')),
       refs: parseRefs(propOf(h, 'ROAM_REFS')),
+      // (4.48) personas enlazadas con :PERSONA: [[id:…]] (ids)
+      persons: personIdsOf(propOf(h, 'PERSONA')),
       exclude,
       pos: entries.length,
     });

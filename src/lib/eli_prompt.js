@@ -307,6 +307,8 @@ export const askPick = ({
   newItem = null,
   // (4.31) como mucho tantas filas a la vista (listas muy largas: todas las cabeceras)
   limit = 0,
+  // (4.48) las opciones de crear salen SIEMPRE con algo escrito (aunque ya exista uno igual)
+  newAlways = false,
 }) =>
   new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -361,7 +363,11 @@ export const askPick = ({
       }
       if (limit && shown.length > limit) shown = shown.slice(0, limit);
       const raw = input.value.trim();
-      if (newItem && raw && !items.some((it) => plainText(it.label) === plainText(raw))) {
+      if (
+        newItem &&
+        raw &&
+        (newAlways || !items.some((it) => plainText(it.label) === plainText(raw)))
+      ) {
         // (4.41) newItem puede devolver varias opciones: [{ label, hint, kind }] → { new, kind }
         const made = newItem(raw);
         shown = shown.concat(

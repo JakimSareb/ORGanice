@@ -43,12 +43,18 @@ test('GTD (3.40): procesar el Inbox una a una', async ({ app }) => {
   await opt(app, 'Guardar en el Tickler').click();
   await expect(count(app)).toContainText('3 de 4');
 
-  // 3) Delegar → Waiting con persona
+  // 3) Delegar → Waiting con persona (4.48: contacto nuevo en personas.org, :PERSONA:)
   await page.keyboard.press('1');
   await page.keyboard.press('2');
   await page.keyboard.press('1');
-  await page.fill('[data-testid=gtd-proc-person]', 'Ana');
-  await page.keyboard.press('Enter');
+  await page.click('[data-testid=gtd-proc-person]');
+  await page.fill('[data-testid=eli-pick-search]', 'Ana');
+  await page.click('[data-testid=eli-pick-new]');
+  await page.click('.eli-prompt__ok');
+  await expect(page.locator('[data-testid=gtd-proc-person]')).toContainText('Ana', {
+    timeout: 10000,
+  });
+  await opt(app, 'Continuar').click();
   await expect(page.locator('[data-testid=gtd-process-question]')).toContainText('¿Cuándo?');
   await opt(app, 'Guardar sin fecha').click();
   await expect(count(app)).toContainText('4 de 4');
@@ -72,7 +78,8 @@ test('GTD (3.40): procesar el Inbox una a una', async ({ app }) => {
   const all =
     (await app.fileAfterSync('/inbox.org')) + '\n' + (await app.fileAfterSync('/tasks.org'));
   expect(all).toMatch(/Tirar esto.*:trash:/);
-  expect(all).toMatch(/\* WAITING Llamar a Ana\s+:Ana:/);
+  expect(all).toMatch(/\* WAITING Llamar a Ana\n[\s\S]*?:PERSONA: \[\[id:[^\]]+\]\[Ana\]\]/);
+  expect(all).not.toMatch(/Llamar a Ana\s+:Ana:/);
   expect(all).toMatch(/\* NEXT Comprar pan\n\s*DEADLINE: <2027-01-15/);
   expect(all).not.toContain('Recordar algo');
   expect(app.errors).toEqual([]);

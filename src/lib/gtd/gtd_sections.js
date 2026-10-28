@@ -30,6 +30,9 @@ export const SECTION_DEFS = [
   { id: 'someday', kind: 'list', label: 'Someday', icon: 'fas fa-cloud' },
   // (4.17) Tickler: las entradas de tickler.org por fecha (cambiar fecha, liberar, añadir…)
   { id: 'tickler', kind: 'tickler', label: 'Tickler', icon: 'far fa-bell' },
+  // (4.48) Agendas (agendas.org) y Personas (personas.org): solo salen si existe su fichero
+  { id: 'agendas', kind: 'agendas', label: 'Agendas', icon: 'fas fa-comments' },
+  { id: 'persons', kind: 'persons', label: 'Personas', icon: 'fas fa-user-friends' },
   { id: 'projects', kind: 'projects', label: 'Proyectos', icon: 'fas fa-project-diagram' },
   // (4.07) Horizontes (objetivos y áreas con sus proyectos): apagada por defecto
   { id: 'horizons', kind: 'horizons', label: 'Horizontes', icon: 'fas fa-binoculars' },
@@ -44,7 +47,13 @@ export const SECTION_DEFS = [
 export const SECTION_IDS = SECTION_DEFS.map((s) => s.id);
 // (3.44) Las que no son listas de tareas (botones que abren algo): Agenda, Procesar Inbox, Revisión
 export const ACTION_SECTION_IDS = SECTION_DEFS.filter(
-  (s) => s.kind === 'agenda' || s.kind === 'action' || s.kind === 'horizons' || s.kind === 'tickler'
+  (s) =>
+    s.kind === 'agenda' ||
+    s.kind === 'action' ||
+    s.kind === 'horizons' ||
+    s.kind === 'tickler' ||
+    s.kind === 'agendas' ||
+    s.kind === 'persons'
 ).map((s) => s.id);
 export const isActionSection = (id) => ACTION_SECTION_IDS.includes(id);
 
@@ -105,6 +114,8 @@ export const DEFAULT_SECTIONS = {
   deadline: { ...base, ...listTicks },
   someday: { ...base, ...listTicks, states: ['MAYBE'] },
   tickler: { ...base },
+  agendas: { ...base },
+  persons: { ...base },
   projects: {
     ...base,
     allProjects: true,
@@ -172,6 +183,9 @@ export const normalizeGtdSections = (stored) => {
     tasks: normPath(rf.tasks),
     // (4.07) fichero de horizontes ('' = horizons.org junto al de entrada)
     horizons: normPath(rf.horizons),
+    // (4.48) contactos y agendas ('' = personas.org / agendas.org junto al de tareas)
+    personas: normPath(rf.personas),
+    agendas: normPath(rf.agendas),
     // al darle estado a una tarea sin estado del fichero de entrada, pasa al de tareas
     moveFromInbox: rf.moveFromInbox !== false,
     // «Archivar todas»: solo las de estos ficheros (vacío: de todos)

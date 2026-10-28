@@ -338,3 +338,66 @@ body.eli-hv-open {
 .eli-mentions__link {
   font-size: 0.85em;
 }
+
+/* (4.48) Ficha de una persona */
+.eli-person {
+  padding: 4px 2px 16px;
+}
+.eli-person__data {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 4px 0 8px;
+}
+.eli-person__data a {
+  color: inherit;
+}
+.eli-person__open {
+  background: none;
+  border: 1px solid var(--base2, #ddd);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: inherit;
+  cursor: pointer;
+}
+.eli-person__h {
+  margin: 16px 0 4px;
+  font-size: 1em;
+}
+.eli-person__sub {
+  margin: 6px 0 2px;
+  font-size: 0.85em;
+  color: var(--base1, #999);
+  text-transform: uppercase;
+}
+.eli-person__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.eli-person__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--base2, #eee);
+  padding: 8px 4px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.eli-person__kw {
+  font-size: 0.75em;
+  font-weight: 700;
+  color: #2f6fae;
+}
+.eli-person__title {
+  flex: 1;
+  min-width: 0;
+}
+.eli-person__file {
+  color: var(--base1, #999);
+}

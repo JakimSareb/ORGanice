@@ -56,10 +56,20 @@ describe('4.06: proyectos atascados', () => {
 describe('4.06: Repaso de Waiting', () => {
   const tasks = tasksOf(
     [
-      '* WAITING Contrato :Ana:',
+      // (4.48) la persona va en :PERSONA: (contacto), no en una etiqueta
+      '* WAITING Contrato',
+      ':PROPERTIES:',
+      ':PERSONA: [[id:A1][Ana]]',
+      ':END:',
       '* WAITING Factura :Ana:',
+      ':PROPERTIES:',
+      ':PERSONA: [[id:A1][Ana]]',
+      ':END:',
       '* WAITING Paquete',
-      '* WAITING Llaves :Luis:',
+      '* WAITING Llaves',
+      ':PROPERTIES:',
+      ':PERSONA: [[id:L1][Luis]]',
+      ':END:',
     ].join('\n')
   );
   const g = waitingByPerson(tasks, TODAY, ['inbox']);

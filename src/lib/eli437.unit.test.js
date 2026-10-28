@@ -153,6 +153,9 @@ describe('4.37 Valores por defecto', () => {
       'someday',
       'scheduled',
       'tickler',
+      // (4.48) Agendas y Personas (solo salen si existe su fichero)
+      'agendas',
+      'persons',
       'reference',
       'projects',
       'horizons',
