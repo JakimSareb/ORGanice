@@ -28,6 +28,9 @@ import { rememberNotesCaret } from '../../../../lib/eli_notes_caret';
 import { isDocLocked, subscribeDocLock } from '../../../../lib/eli_doc_lock';
 
 import AttributedString from '../AttributedString';
+import { zkCommand } from '../../../../lib/eli_zk_actions';
+import { isSourceCard } from '../../../../lib/eli_zk';
+import { fileRoamInfo } from '../../../../lib/eli_roam';
 
 class HeaderContent extends PureComponent {
   constructor(props) {
@@ -402,6 +405,12 @@ class HeaderContent extends PureComponent {
                   onTableCellEdit: shouldDisableActions ? undefined : this.handleTableCellEdit,
                   eliTableLines: this.eliTableLines,
                   onEliTableChange: shouldDisableActions ? undefined : this.handleEliTableChange,
+                  // (4.47) «→ Permanente» en las filas de «Puntos destacados» de una ficha de fuente
+                  eliZkRowAction:
+                    this.props.eliZkPoints && !shouldDisableActions
+                      ? (cells) =>
+                          zkCommand({ action: 'permanent', path: this.props.eliPath, cells })
+                      : undefined,
                   eliLocked: isDocLocked(),
                   onCheckboxClick: this.handleCheckboxClick,
                   onListItemSelect: this.handleListItemSelect,
@@ -433,7 +442,17 @@ const mapStateToProps = (state, ownProps) => {
   const file = state.org.present.getIn(['files', path]);
   const selectedHeaderId = !!file ? file.get('selectedHeaderId') : null;
   const editMode = !!file ? file.get('editMode') : null;
+  // (4.47) ¿Es «Puntos destacados» (nivel 1) de una ficha de fuente? (el título se mira antes que
+  // el preámbulo, para no leerlo en cada cabecera)
+  const rawTitle = ownProps.header.getIn(['titleLine', 'rawTitle']) || '';
+  const eliZkPoints =
+    !!file &&
+    ownProps.header.get('nestingLevel') === 1 &&
+    /^\s*Puntos destacados\s*$/i.test(rawTitle) &&
+    isSourceCard(fileRoamInfo(file).filetags);
   return {
+    eliZkPoints,
+    eliPath: path,
     isSelected: selectedHeaderId === ownProps.header.get('id'),
     dontIndent: state.base.get('eliIndentOnExport') !== true,
     selectedListItemId: !!file ? file.get('selectedListItemId') : null,

@@ -10,6 +10,7 @@ import classNames from 'classnames';
 import { fromJS } from 'immutable';
 
 import { parseMarkupAndCookies } from '../../../../../../lib/parse_org';
+import { isUnprocessedRow } from '../../../../../../lib/eli_zk_process';
 
 // ORG Mode para Eli (2.15): las celdas se editan en su sitio. Tocar una celda la abre para
 // escribir; Intro guarda y baja a la celda de abajo, Tab / Mayús+Tab pasan a la siguiente /
@@ -403,6 +404,26 @@ export default class TablePart extends PureComponent {
             />
           )}
           className="table-part__eli"
+          rowExtra={
+            handlers.eliZkRowAction
+              ? (cells) =>
+                  isUnprocessedRow(cells) ? (
+                    <button
+                      type="button"
+                      className="eli-zk-row-btn"
+                      title="Crear una nota permanente con este punto"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlers.eliZkRowAction(cells);
+                      }}
+                      data-testid="eli-zk-to-permanent"
+                    >
+                      → Permanente
+                    </button>
+                  ) : null
+              : null
+          }
         />
       );
     }

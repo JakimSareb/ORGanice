@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.47 (octubre de 2026)
+** Procesos ZK
+- *Menú ☰ › Procesos ZK*, aparte de los procesos GTD y con su misma tarjeta (teclas 1, 2, 3…, Atrás / Saltar / Terminar).
+- *Procesar fugaces*: recorre =ZK/inbox.org= de una en una («quedan N»): Descartar · Tarea GTD (al Inbox de GTD) · Nota de literatura (punto en una ficha existente o nueva) · Nota permanente (asistente) · Añadir a nota existente. La fugaz procesada sale del inbox.
+- *Asistente de nota permanente*: título como afirmación → la idea con tus palabras → enlaces (sugeridos por las notas que menciona el texto, y buscador; aviso si no hay ninguno) → índice (elegir, crear o ninguno) → fuente (ficha con Dónde).
+- Se abre también desde ⋯ › *Convertir en permanente* de una cabecera y desde *→ Permanente* en cada fila de «Puntos destacados» sin Nota ZK: la celda «Nota ZK» queda con el enlace y la ficha la apunta en «Notas permanentes creadas».
+- *Revisión ZK*: fugaces de más de 7 días, huérfanas, permanentes sin índice, fichas con puntos sin procesar, enlaces rotos y una nota al azar. Ajuste (apagado de serie): *Añadir la Revisión ZK como paso de la Revisión semanal*.
+- *Biblioteca*: fichas de fuente con autor, tipo, estado, valoración y puntos sin procesar; filtros por tipo y estado, orden por fecha de fin; abrir o imprimir (PDF) cada ficha.
+- Con WebDAV, las fugaces ya no pisan =ZK/inbox.org= cuando no está abierto.
+
 * 4.46 (octubre de 2026)
 ** Zettelkasten (base)
 - *Nueva nota ZK* y *Fugaz ZK* en el Menú ☰. Las notas viven en la carpeta ZK (Ajustes › Zettelkasten; por defecto =ZK/= junto al fichero de entrada) en =literatura/=, =permanentes/= e =indices/=, con nombre estilo org-roam (=AAAAMMDDHHMMSS-titulo.org=) y el tipo en =#+filetags:=. Las carpetas se crean al primer uso.

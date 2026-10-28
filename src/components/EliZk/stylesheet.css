@@ -1,0 +1,96 @@
+/* ORG Mode para Eli (4.47): Procesos ZK. La tarjeta es la de los procesos GTD (gtd-review /
+   gtd-proc); aquí solo la ventana que la contiene y algún detalle. */
+.eli-zk-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 9000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-overflow-scrolling: touch;
+}
+.eli-zk-overlay__box {
+  width: 100%;
+  max-width: 640px;
+  margin: 4vh auto 24px;
+}
+.eli-zk-overlay .gtd-review {
+  margin-bottom: 0;
+  background: var(--base3, #fff);
+  border-left-color: var(--violet, #6c71c4);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+.eli-zk-overlay .gtd-review__icon {
+  color: var(--violet, #6c71c4);
+}
+.eli-zk-overlay .gtd-review__dot.is-on {
+  background: var(--violet, #6c71c4);
+}
+.eli-zk-proc__note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--base2, rgba(0, 0, 0, 0.05));
+}
+.eli-zk-proc__date {
+  font-size: 0.85em;
+  color: var(--base1);
+}
+.eli-zk-proc__wide {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 6px 0;
+}
+.eli-zk-proc__area {
+  min-height: 7em;
+  resize: vertical;
+  font: inherit;
+}
+.eli-zk-proc__dot {
+  min-height: 6px;
+  padding: 3px 0;
+}
+.eli-zk-proc__filters {
+  margin: 8px 0;
+}
+.eli-zk-lib__item .gtd-review__item-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.eli-zk-lib__title {
+  font-weight: 600;
+}
+.eli-zk-lib__meta {
+  font-size: 0.82em;
+  color: var(--base1);
+}
+.eli-zk-lib__pending {
+  color: var(--orange);
+}
+/* «→ Permanente» en las filas de «Puntos destacados» sin nota ZK */
+.eli-zk-row-btn {
+  padding: 1px 6px;
+  border: 1px solid var(--violet, #6c71c4);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.8em;
+  white-space: nowrap;
+  color: var(--violet, #6c71c4);
+  background: transparent;
+  cursor: pointer;
+}
+@media print {
+  .eli-zk-row-btn {
+    display: none;
+  }
+}
