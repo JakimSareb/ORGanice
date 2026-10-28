@@ -32,6 +32,7 @@ import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
 import EliScratch from '../EliScratch';
 import EliZk from '../EliZk';
+import EliWiki from '../EliWiki';
 import EliDiary from '../EliDiary';
 import EliSyncLog from '../EliSyncLog';
 import { installFormatHotkeys } from '../EliFormatBar';
@@ -356,6 +357,7 @@ class Entry extends PureComponent {
         <EliCalculator />
         {isAuthenticated && <EliScratch />}
         {isAuthenticated && <EliZk />}
+        {isAuthenticated && <EliWiki />}
         {isAuthenticated && <EliDiary />}
         {isAuthenticated && <EliSyncLog />}
         {isAuthenticated && <EliHeadingViews />}

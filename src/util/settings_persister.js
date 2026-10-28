@@ -260,6 +260,12 @@ export const persistableFields = [
     name: 'eliZkFolder',
     type: 'string',
   },
+  // (4.51) carpeta de la Wiki Divio (por defecto wiki/ junto al fichero de entrada)
+  {
+    category: 'base',
+    name: 'eliWikiDir',
+    type: 'string',
+  },
   // (4.47) Revisión ZK como último paso de la Revisión semanal (apagado por defecto)
   {
     category: 'base',

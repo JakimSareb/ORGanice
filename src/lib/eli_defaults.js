@@ -89,6 +89,7 @@ export const MENU_ORDER = [
   'zk',
   'fugaz',
   'zkprocs',
+  'wiki',
   'processes',
   'files',
   'view',

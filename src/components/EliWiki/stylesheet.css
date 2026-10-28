@@ -1,0 +1,48 @@
+/* ORG Mode para Eli (4.51): tabla de Procesos de la Wiki (la ventana es la de los procesos ZK). */
+.eli-wiki__box {
+  max-width: 920px;
+}
+.eli-wiki__scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.eli-wiki__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+.eli-wiki__table th,
+.eli-wiki__table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--base2, rgba(0, 0, 0, 0.1));
+  vertical-align: top;
+}
+.eli-wiki__sort,
+.eli-wiki__title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.eli-wiki__sort {
+  font-weight: bold;
+  white-space: nowrap;
+}
+.eli-wiki__title {
+  color: var(--blue, #268bd2);
+}
+.eli-wiki__days {
+  color: var(--base1);
+  font-size: 0.9em;
+}
+.eli-wiki__done {
+  white-space: nowrap;
+}
+.eli-wiki__empty {
+  padding: 12px 4px;
+  color: var(--base1);
+}

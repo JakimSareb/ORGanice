@@ -27,6 +27,7 @@ import EliPomodoro from '../EliPomodoro';
 import { openScratch } from '../../lib/eli_scratch';
 import { openDiary } from '../../lib/eli_diary';
 import { zkCommand } from '../../lib/eli_zk_actions';
+import { wikiCommand } from '../../lib/eli_wiki_actions';
 import { unseenCount, subscribeSyncLog, openSyncLog } from '../../lib/eli_sync_log';
 import {
   getPomodoroState,
@@ -998,6 +999,33 @@ class HeaderBar extends PureComponent {
                   label: 'Biblioteca',
                   onClick: () => zkCommand({ action: 'library' }),
                   testId: 'eli-zk-proc-library',
+                },
+              ],
+            },
+            // (4.51) Wiki Divio en 5 ficheros: estructura, entrada nueva y tabla de Procesos
+            {
+              icon: 'fas fa-sitemap',
+              label: 'Wiki',
+              testId: 'eli-menu-wiki',
+              menuId: 'wiki',
+              items: [
+                {
+                  icon: 'fas fa-plus',
+                  label: 'Nueva entrada…',
+                  onClick: () => wikiCommand({ action: 'new' }),
+                  testId: 'eli-wiki-new',
+                },
+                {
+                  icon: 'fas fa-table',
+                  label: 'Procesos',
+                  onClick: () => wikiCommand({ action: 'processes' }),
+                  testId: 'eli-wiki-processes',
+                },
+                {
+                  icon: 'fas fa-folder',
+                  label: 'Crear estructura de wiki',
+                  onClick: () => wikiCommand({ action: 'structure' }),
+                  testId: 'eli-wiki-structure',
                 },
               ],
             },
