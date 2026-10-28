@@ -22,6 +22,8 @@ import EliFormatBar from '../../../EliFormatBar';
 import { InlineTextarea } from '../EliInlineEdit';
 import { autoIndentEnter, isPlainEnter } from '../../../../lib/eli_autoindent';
 import { isLogseqEdit } from '../../../../lib/eli_logseq_edit';
+import { liveBindingOfAction } from '../../../../lib/keybindings';
+import { matchesBinding } from '../../../../lib/eli_hotkeys';
 
 // Header-editing popup types that use the unified editor
 export const UNIFIED_EDITOR_POPUP_TYPES = [
@@ -415,9 +417,16 @@ class UnifiedHeaderEditor extends PureComponent {
   }
 
   // (3.04) Tab (o Mayús+Tab) al editar en el sitio: salta entre el título y las notas
+  // (4.49) la tecla es la del registro de atajos («Saltar entre el título y las notas», Tab por
+  // defecto; reasignable o desactivable). Con Tab, Mayús+Tab también salta
   eliTabSwitch(e, target) {
-    if (e.key !== 'Tab' || e.ctrlKey || e.altKey || e.metaKey || !this.props.onInlineSwitch)
-      return false;
+    if (!this.props.onInlineSwitch) return false;
+    const binding = liveBindingOfAction('eliTitleNotesJump');
+    const native = e.nativeEvent || e;
+    const hit =
+      matchesBinding(native, binding) ||
+      (binding === 'tab' && e.key === 'Tab' && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey);
+    if (!hit) return false;
     if (e.nativeEvent && e.nativeEvent.isComposing) return false;
     e.preventDefault();
     e.stopPropagation();

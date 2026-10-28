@@ -4,6 +4,7 @@
 // El cursor queda tras la palabra. Con texto seleccionado se aplica a la selección.
 import { matchesBinding } from './eli_hotkeys';
 import { textFieldOf } from './eli_drag_click_guard';
+import { isBindingOff } from './keybindings';
 
 const WORD = /[\p{L}\p{N}_]/u;
 const isWordChar = (c) => !!c && WORD.test(c);
@@ -48,7 +49,9 @@ export const eliWordCase = (text, start, end, mode) => {
 
 let bindings = { upper: 'alt+u', capital: 'alt+c' };
 export const setWordCaseBindings = (custom) => {
-  const get = (name, def) => (custom && custom.get ? custom.get(name, def) : def);
+  // (4.49) desactivado = sin tecla
+  const get = (name, def) =>
+    isBindingOff(custom, name) ? '' : custom && custom.get ? custom.get(name, def) : def;
   bindings = {
     upper: get(WORD_UPPER_NAME, 'alt+u'),
     capital: get(WORD_CAPITAL_NAME, 'alt+c'),

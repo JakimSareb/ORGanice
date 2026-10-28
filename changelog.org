@@ -3,6 +3,21 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.49 (octubre de 2026)
+** Menús y atajos
+- *Menú ☰ › Vista* sale siempre, con *Dos columnas* y *Editar como texto plano* (esta última, antes en Mis ficheros). Lo que no se puede usar en ese momento se ve atenuado en vez de desaparecer.
+- Documentos › ⋯: se quitan *Hecha* y *Enlaces entrantes* (el estado se cambia con la viñeta o el atajo; los enlaces entrantes, con el indicador =↩ n=).
+- *Atrás (←)* tira atrás directamente en el historial, también desde una cabecera vista sola.
+- *Atajos reasignables*: «Historial: atrás / adelante» (Alt+← / Alt+→) y «Saltar entre el título y las notas» (Tab) están ahora en la ventana de Atajos.
+- *Desactivar cada atajo*: botón ⏻ en cada fila de la ventana de Atajos; el atajo deja de funcionar, libera su tecla y conserva la asignada.
+- Al mover una cabecera con las flechas, el scroll la sigue en los bordes de la pantalla.
+** Etiquetas, enlaces y GTD
+- =#+FILETAGS:= se aplica a todo el documento (vista por etiqueta, buscador y filtros de GTD).
+- En el buscador *[[*: *Nueva cabecera* (antes «Crear página») y *Crear página* (antes «Nota nueva»).
+- Referencias de un proyecto como árbol anidado (▾/▸ y número de hijas), como la vista por etiqueta.
+- Revisión semanal: «Checklists relevantes» abre tu sección *Checklist*.
+- Diario: los datos mensuales (Cintura…) van en una tabla =| Dato | Valor |= en el registro mensual y su PDF.
+
 * 4.48 (octubre de 2026)
 ** Personas
 - Contactos en =personas.org= (una cabecera por persona con =:ID:=, =:EMAIL:=, =:PHONE:=, =:ALIAS:=…, formato org-contacts). Se enlazan desde cualquier cabecera (tareas, actas, notas) con =:PERSONA: [[id:…][Nombre]]=. Ya no se usan etiquetas de persona.

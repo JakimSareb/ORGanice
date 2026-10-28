@@ -13,7 +13,9 @@ import {
   goBack,
   goForward,
 } from '../../lib/eli_nav_history';
-import { shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
+import { shouldIgnoreOrganiceHotkey, matchesBinding } from '../../lib/eli_hotkeys';
+import { bindingOfAction } from '../../lib/keybindings';
+import { prettyBinding } from '../Gtd/GtdShortcutsModal';
 import { offlineStatusText } from '../../actions/eli_offline';
 import EliMoreMenu from '../EliMoreMenu';
 import { openShortcuts } from '../Gtd/GtdShortcutsHost';
@@ -260,13 +262,18 @@ class HeaderBar extends PureComponent {
       document.querySelector('.drawer, .eli-cal__overlay, .eli-calc__overlay')
     )
       return;
+    // (4.49) las teclas son las del registro de atajos («Historial: atrás / adelante», Alt+← y
+    // Alt+→ por defecto; reasignables o desactivables). ⌘[ y ⌘] (Mac) siguen valiendo mientras
+    // la acción correspondiente no esté desactivada
+    const custom = this.props.customKeybindings;
+    const backKey = bindingOfAction(custom, 'eliHistoryBack');
+    const fwdKey = bindingOfAction(custom, 'eliHistoryForward');
     let dir = 0;
-    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-      if (e.key === 'ArrowLeft') dir = -1;
-      else if (e.key === 'ArrowRight') dir = 1;
-    } else if (e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey) {
-      if (e.code === 'BracketLeft') dir = -1;
-      else if (e.code === 'BracketRight') dir = 1;
+    if (matchesBinding(e, backKey)) dir = -1;
+    else if (matchesBinding(e, fwdKey)) dir = 1;
+    else if (e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey) {
+      if (e.code === 'BracketLeft' && backKey) dir = -1;
+      else if (e.code === 'BracketRight' && fwdKey) dir = 1;
     }
     if (!dir) return;
     e.preventDefault();
@@ -818,6 +825,13 @@ class HeaderBar extends PureComponent {
 
       const notes = isNotesMode();
       const canBack = canGoBack() || (inRealFile && !!narrowedHeaderId);
+      // (4.49) la tecla de Atrás / Adelante en los rótulos (si no está desactivada)
+      const keyHint = (action) => {
+        const k = bindingOfAction(this.props.customKeybindings, action);
+        return k ? ` (${prettyBinding(k).replace(/ /g, '+')})` : '';
+      };
+      const backHint = keyHint('eliHistoryBack');
+      const fwdHint = keyHint('eliHistoryForward');
 
       // (4.0) Arriba solo: Atrás · Adelante · Deshacer · Rehacer · nube · Menú. Lo de cada
       // cabecera está en la barra de abajo (EliDocBar); el resto, en el Menú.
@@ -1027,16 +1041,12 @@ class HeaderBar extends PureComponent {
                   },
                   testId: 'eli-doc-lock',
                 },
-                !notes &&
-                  inRealFile && {
-                    icon: 'fas fa-align-left',
-                    label: 'Editar como texto plano',
-                    onClick: openRawEditor,
-                    testId: 'eli-raw-edit',
-                  },
               ],
             },
-            inRealFile && {
+            // (4.49) «Vista» siempre está, con «Dos columnas» y «Editar como texto plano»
+            // siempre visibles: si no aplican (sin fichero abierto, Modo Notas, pantalla
+            // estrecha) se ven atenuadas en vez de desaparecer
+            {
               icon: 'far fa-eye',
               label: 'Vista',
               testId: 'eli-menu-view',
@@ -1047,29 +1057,31 @@ class HeaderBar extends PureComponent {
                   label: 'Contraer todas las cabeceras',
                   onClick: () => this.props.org.eliSetAllHeadersOpened(false),
                   testId: 'eli-collapse-all',
+                  disabled: !inRealFile,
                 },
                 {
                   icon: 'fas fa-angle-double-down',
                   label: 'Expandir todas las cabeceras',
                   onClick: () => this.props.org.eliSetAllHeadersOpened(true),
                   testId: 'eli-expand-all',
+                  disabled: !inRealFile,
                 },
-                split && {
+                {
                   icon: 'fas fa-columns',
                   label: 'Dos columnas',
                   onClick: () => this.openSplitView(),
                   testId: 'eli-split-open',
+                  disabled: !split,
+                },
+                {
+                  icon: 'fas fa-align-left',
+                  label: 'Editar como texto plano',
+                  onClick: openRawEditor,
+                  testId: 'eli-raw-edit',
+                  disabled: notes || !inRealFile,
                 },
               ],
             },
-            !inRealFile &&
-              split && {
-                icon: 'fas fa-columns',
-                label: 'Dos columnas',
-                onClick: () => this.openSplitView(),
-                testId: 'eli-split-open',
-                menuId: 'split',
-              },
             tools.length > 0 && {
               icon: 'fas fa-toolbox',
               label: 'Herramientas',
@@ -1158,14 +1170,19 @@ class HeaderBar extends PureComponent {
                   (canBack ? '' : ' header-bar__actions__item--disabled')
                 }
                 onClick={() =>
-                  inRealFile && narrowedHeaderId
+                  // (4.49) Atrás tira atrás en el historial DIRECTAMENTE (restaura la vista de la
+                  // entrada anterior, con su cabecera reducida o sin ella); solo si no hay nada
+                  // atrás y se está en una cabecera reducida, vuelve al fichero entero
+                  canGoBack()
+                    ? goBack(this.props.history)
+                    : inRealFile && narrowedHeaderId
                     ? this.props.org.widenHeaderToTop()
                     : goBack(this.props.history)
                 }
                 title={
-                  inRealFile && narrowedHeaderId
+                  !canGoBack() && inRealFile && narrowedHeaderId
                     ? 'Atrás: volver al fichero entero'
-                    : 'Atrás (Alt+←)'
+                    : `Atrás${backHint}`
                 }
                 aria-label="Atrás"
                 data-testid="eli-nav-back"
@@ -1177,7 +1194,7 @@ class HeaderBar extends PureComponent {
                   (canGoForward() ? '' : ' header-bar__actions__item--disabled')
                 }
                 onClick={() => goForward(this.props.history)}
-                title="Adelante (Alt+→)"
+                title={`Adelante${fwdHint}`}
                 aria-label="Adelante"
                 data-testid="eli-nav-forward"
                 role="button"
@@ -1344,6 +1361,7 @@ class HeaderBar extends PureComponent {
 const mapStateToProps = (state) => {
   return {
     isAuthenticated: state.syncBackend.get('isAuthenticated'),
+    customKeybindings: state.base.get('customKeybindings'),
     hasUnseenChangelog: state.base.get('hasUnseenChangelog'),
     activeModalPage: state.base.get('modalPageStack', List()).last(),
     shouldShowTitleInOrgFile: state.base.get('shouldShowTitleInOrgFile'),

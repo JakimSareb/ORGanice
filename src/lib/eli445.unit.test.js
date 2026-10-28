@@ -9,7 +9,7 @@ import {
 import { addEntry } from './eli_diary';
 import { projectSections } from './gtd/gtd_model';
 import { bindingFromEvent } from './eli_binding_capture';
-import { calculateDocKeybindings } from './keybindings';
+import { calculateDocKeybindings, mayShareKey } from './keybindings';
 import { Map as IMap } from 'immutable';
 
 const apply = (text, start, end, mode) => {
@@ -133,8 +133,11 @@ describe('4.45 E atajos', () => {
     expect(by('eliWordUpper').binding).toBe('alt+u');
     expect(by('eliWordCapital').binding).toBe('alt+c');
     expect(by('eliWordUpper').group).toBe('Texto');
-    // sin teclas repetidas entre los atajos de Documentos
-    const keys = docs.map((d) => d.binding);
-    expect(new Set(keys).size).toBe(keys.length);
+    // sin teclas repetidas entre los atajos de Documentos (salvo las parejas de contextos
+    // distintos: historial / niveles de lista, Tab de plegar / saltar título ↔ notas)
+    const clashes = docs.filter((a) =>
+      docs.some((b) => b !== a && b.binding === a.binding && !mayShareKey(a.action, b.action))
+    );
+    expect(clashes.map((d) => d.action)).toEqual([]);
   });
 });

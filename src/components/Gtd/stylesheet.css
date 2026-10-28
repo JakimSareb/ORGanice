@@ -2452,6 +2452,19 @@
 .gtd-fold:hover {
   color: var(--base00);
 }
+/* (4.49) nº de hijas (referencias de un proyecto), como el de la vista por etiqueta */
+.gtd-fold.has-n {
+  flex-basis: auto;
+  width: auto;
+  min-width: 16px;
+  padding: 0 3px;
+  margin-right: 0;
+}
+.gtd-fold__n {
+  font-size: 10px;
+  margin-left: 2px;
+  vertical-align: 2px;
+}
 .gtd-fold.is-folded {
   color: var(--blue);
 }
@@ -5130,6 +5143,24 @@ html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
   min-height: 24px;
   line-height: 20px;
   box-sizing: border-box;
+}
+/* (4.49) «Desactivar» cada atajo */
+.gtd-keys__off {
+  border: none;
+  background: transparent;
+  color: var(--base1);
+  cursor: pointer;
+  padding: 6px;
+  min-width: 32px;
+  min-height: 32px;
+}
+.gtd-keys__off.is-off {
+  color: var(--orange);
+}
+.gtd-keys__row.is-off .gtd-keys__name,
+.gtd-keys__row.is-off .gtd-keys__chip {
+  opacity: 0.45;
+  text-decoration: line-through;
 }
 .gtd-keys__chip.is-static {
   cursor: default;

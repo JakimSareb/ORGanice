@@ -13,6 +13,7 @@ import {
   dailyCounters,
   monthlyCounters,
 } from './eli_diary';
+import { alignOrgTable } from './eli_org_table';
 
 export const monthlyPath = (year, dir) => `${dir}mensual-${year}.org`;
 
@@ -157,6 +158,19 @@ export const monthValuesLine = (monthCounters, values) => {
 const orgRow = (cells) => `| ${cells.map(cell).join(' | ')} |`;
 const hline = (n) => `|${Array(n).fill('---').join('+')}|`;
 
+// (4.49) Los datos mensuales del mes (Cintura, Peso…) en una tabla `| Cintura | 100 |` con cabecera
+// `| Dato | Valor |` y columnas alineadas, en vez de la línea «CINTURA: 82 · PESO: 70». Solo salen
+// los que tienen valor ese mes; sin ninguno, no hay tabla.
+export const monthValuesRows = (monthCounters, values) =>
+  (monthCounters || [])
+    .map((c, i) => [c.name || c.key, values && values[i] ? values[i] : ''])
+    .filter((r) => r[1]);
+export const monthValuesTableLines = (monthCounters, values) => {
+  const rows = monthValuesRows(monthCounters, values);
+  if (!rows.length) return [];
+  return alignOrgTable([orgRow(['Dato', 'Valor']), hline(2), ...rows.map((r) => orgRow(r))]);
+};
+
 export const monthTableLines = (rows, counters) => {
   const n = 2 + counters.length;
   const agg = aggregates(counters);
@@ -258,8 +272,12 @@ export const regenerateMonthly = (old, year, diaryText, counters) => {
     const mk = `${year}-${pad(m + 1)}`;
     const md = data.months.find((x) => x.key === mk);
     const rows = md ? md.rows : monthRows(new Map(), year, m, data.counters);
-    const mline = md ? monthValuesLine(data.monthCounters, md.monthValues) : '';
-    const content = [...(mline ? [mline, ''] : []), ...monthTableLines(rows, data.counters)];
+    // (4.49) los datos mensuales, en tabla (antes, una línea «CINTURA: 82 · PESO: 70»)
+    const mtable = md ? monthValuesTableLines(data.monthCounters, md.monthValues) : [];
+    const content = [
+      ...(mtable.length ? [...mtable, ''] : []),
+      ...monthTableLines(rows, data.counters),
+    ];
     const hi0 = lines.findIndex((l) => (MONTH_HEAD.exec(l) || [])[1] === mk);
     // (4.38) enlace del mes que ya no existe (diario pasado a org-journal): al primer día del mes
     if (hi0 >= 0 && md && md.link !== monthOrgId(mk))

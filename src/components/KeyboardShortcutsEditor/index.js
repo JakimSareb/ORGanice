@@ -12,8 +12,10 @@ import * as baseActions from '../../actions/base';
 
 import {
   calculateNamedKeybindings,
+  calculateDocKeybindings,
   calculateGtdKeybindings,
   keybindingLabel,
+  OFF_PREFIX,
 } from '../../lib/keybindings';
 
 import { isNotesMode } from '../../lib/eli_notes_mode';
@@ -39,17 +41,25 @@ const KeyboardShortcutsEditor = ({ customKeybindings, base }) => {
     }
 
     base.setCustomKeybinding(bindingName, newBinding);
+    // (4.49) darle una tecla nueva a un atajo desactivado lo vuelve a activar
+    if (customKeybindings.get(OFF_PREFIX + bindingName) === 'true')
+      base.setCustomKeybinding(OFF_PREFIX + bindingName, '');
   };
+  // (4.49) «Desactivar» cada atajo (conserva la tecla asignada)
+  const handleToggleOff = (name, off) =>
+    base.setCustomKeybinding(OFF_PREFIX + name, off ? '' : 'true');
 
   const notes = isNotesMode();
   return (
     <div className="keyboard-shortcuts-editor-container">
       <h3 className="keyboard-shortcuts-editor__section">Documentos</h3>
-      {calculateNamedKeybindings(customKeybindings).map(([name, binding]) => (
+      {calculateDocKeybindings(customKeybindings).map(({ name, assigned, off }) => (
         <ShortcutRow
           key={name}
           name={name}
-          binding={binding}
+          binding={assigned}
+          off={off}
+          onToggleOff={handleToggleOff}
           onBindingChange={handleBindingChange}
         />
       ))}
@@ -60,11 +70,13 @@ const KeyboardShortcutsEditor = ({ customKeybindings, base }) => {
         </h3>
       )}
       {!notes &&
-        gtd.map(({ name, binding }) => (
+        gtd.map(({ name, assigned, off }) => (
           <ShortcutRow
             key={name}
             name={name}
-            binding={binding}
+            binding={assigned}
+            off={off}
+            onToggleOff={handleToggleOff}
             onBindingChange={handleBindingChange}
           />
         ))}

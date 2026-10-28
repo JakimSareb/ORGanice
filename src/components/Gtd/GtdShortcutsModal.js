@@ -9,6 +9,8 @@ import {
   DOC_GROUPS,
   keybindingLabel,
   defaultBindingOf,
+  OFF_PREFIX,
+  mayShareKey,
 } from '../../lib/keybindings';
 import { bindingFromEvent } from '../../lib/eli_binding_capture';
 import { setCustomKeybinding } from '../../actions/base';
@@ -99,24 +101,31 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
 
   const gtdList = notes ? [] : bindings;
   // teclas repetidas dentro de cada vista (Documentos y GTD se comprueban por separado)
-  const dupOf = (list) => {
-    const seen = {};
-    list.forEach((b) => b.binding && (seen[b.binding] = (seen[b.binding] || 0) + 1));
-    return (b) => !!b.binding && seen[b.binding] > 1;
-  };
+  const dupOf = (list) => (b) =>
+    !!b.binding &&
+    list.some((o) => o !== b && o.binding === b.binding && !mayShareKey(o.action, b.action));
   const isDocDup = useMemo(() => dupOf(docs), [docs]);
   const isGtdDup = useMemo(() => dupOf(gtdList), [gtdList]);
   const anyDup = docs.some(isDocDup) || gtdList.some(isGtdDup);
 
   const change = (name, newBinding, pool) => {
-    const clash = pool.find((b) => b.binding === newBinding && b.name !== name);
+    const me = pool.find((b) => b.name === name);
+    const clash = pool.find(
+      (b) =>
+        b.binding === newBinding && b.name !== name && !(me && mayShareKey(me.action, b.action))
+    );
     if (clash) {
       setMsg(`Ese atajo ya se usa para «${keybindingLabel(clash.name)}»`);
       return;
     }
     setMsg('');
     dispatch(setCustomKeybinding(name, newBinding));
+    // (4.49) darle una tecla nueva a un atajo desactivado lo vuelve a activar
+    if (custom.get(OFF_PREFIX + name) === 'true')
+      dispatch(setCustomKeybinding(OFF_PREFIX + name, ''));
   };
+  // (4.49) «Desactivar» cada atajo: queda sin efecto, libera su tecla y conserva la asignada
+  const toggleOff = (b) => dispatch(setCustomKeybinding(OFF_PREFIX + b.name, b.off ? '' : 'true'));
 
   useEffect(() => {
     const onKey = (e) => {
@@ -148,19 +157,19 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
   const matches = (b) =>
     !q ||
     keybindingLabel(b.name).toLowerCase().includes(q) ||
-    String(b.binding || '')
+    String(b.assigned || '')
       .toLowerCase()
       .includes(q) ||
-    prettyBinding(b.binding).toLowerCase().includes(q);
+    prettyBinding(b.assigned).toLowerCase().includes(q);
 
   const renderRow = (b, pool, dup) => {
     const def = defaultBindingOf(b.name);
-    const changed = (b.binding || '') !== (def || '');
+    const changed = (b.assigned || '') !== (def || '') || !!b.off;
     const isEd = editing && editing.name === b.name;
     return (
       <div
         key={b.name}
-        className={'gtd-keys__row' + (dup(b) ? ' is-dup' : '')}
+        className={'gtd-keys__row' + (dup(b) ? ' is-dup' : '') + (b.off ? ' is-off' : '')}
         data-testid={`gtd-keys-row`}
       >
         <span className="gtd-keys__name">{keybindingLabel(b.name)}</span>
@@ -181,6 +190,20 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
             <i className="fas fa-undo" />
           </button>
         )}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={!b.off}
+          className={'gtd-keys__off' + (b.off ? ' is-off' : '')}
+          title={b.off ? 'Activar este atajo' : 'Desactivar este atajo'}
+          aria-label={
+            (b.off ? 'Activar el atajo «' : 'Desactivar el atajo «') + keybindingLabel(b.name) + '»'
+          }
+          onClick={() => toggleOff(b)}
+          data-testid="gtd-keys-off"
+        >
+          <i className={b.off ? 'fas fa-ban' : 'fas fa-power-off'} />
+        </button>
         <kbd
           role="button"
           tabIndex={0}
@@ -196,7 +219,7 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
           }}
           data-testid="gtd-keys-chip"
         >
-          {isEd ? '…' : prettyBinding(b.binding)}
+          {isEd ? '…' : prettyBinding(b.assigned)}
         </kbd>
       </div>
     );
@@ -253,7 +276,8 @@ export default function GtdShortcutsModal({ bindings, onClose, onConfigure }) {
           data-testid="gtd-keys-search"
         />
         <div className="gtd-keys__hint">
-          Toca una tecla para cambiarla (después, pulsa la nueva).
+          Toca una tecla para cambiarla (después, pulsa la nueva). El botón ⏻ de cada fila desactiva
+          ese atajo.
         </div>
         {msg && (
           <div className="gtd-keys__msg" role="alert" data-testid="gtd-keys-msg">

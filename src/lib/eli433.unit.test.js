@@ -161,7 +161,10 @@ describe('4.33 contador mensual', () => {
     expect(out).toContain('| septiembre | 0 |  | 84 |');
     expect(out).toContain('| octubre | 1 | 1 | 82 |');
     expect(out).toContain('| Total | 1 | 1 |  |');
-    expect(out).toMatch(/# BEGIN mensual 2026-10\nCintura: 82\n/);
+    // (4.49) los datos mensuales, en tabla alineada «| Cintura | 82 |»
+    expect(out).toMatch(
+      /# BEGIN mensual 2026-10\n\| Dato +\| Valor \|\n\|-+\+-+\|\n\| Cintura +\| +82 \|\n/
+    );
     // la tabla del mes solo lleva los diarios
     expect(out).toContain('| Día | Lo más importante | B |');
   });

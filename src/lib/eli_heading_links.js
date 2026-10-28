@@ -189,12 +189,14 @@ export const pickHeadingTarget = ({ title = 'Enlazar a una cabecera' } = {}) => 
     })),
     newItem: (raw) => [
       {
-        label: `➕ Nota nueva «${raw}»`,
+        // (4.49) rótulos cambiados: el que crea el FICHERO es «Crear página»; el que crea una
+        // CABECERA en pages.org, «Nueva cabecera» (la acción de cada opción no cambia)
+        label: `➕ Crear página «${raw}»`,
         hint: `fichero ${notesDir.split('/').slice(-2).join('/')}${slugify(raw)}.org`,
         kind: 'note',
       },
       {
-        label: `➕ Crear página «${raw}»`,
+        label: `➕ Nueva cabecera «${raw}»`,
         hint: `cabecera nueva en ${pagesName}`,
         kind: 'heading',
       },

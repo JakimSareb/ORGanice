@@ -15,6 +15,7 @@ import { attributedStringToRawText, createRawDescriptionText } from '../export_o
 import { dateForTimestamp } from '../timestamps';
 import { DEFAULT_ENERGY, DEFAULT_EFFORT } from '../eli_todo_defaults';
 import { fileTargetsInText } from '../eli_attachments';
+import { fileRoamInfo } from '../eli_roam';
 import {
   getGtdConfig,
   exclusiveOrder,
@@ -350,6 +351,9 @@ const buildFileTasks = (file, path, isInboxFile) => {
     const done = completedKeywordsOf(file);
     const stack = []; // antepasados: {level, tags, area, keyword, project, isTaskish}
     const byIndex = [];
+    // (4.49) #+FILETAGS: valen para todo el documento. Van aparte de `tags` (que deciden la lista
+    // de la tarea): solo cuentan en los filtros y en la lista de etiquetas, como las heredadas
+    const fileTags = fileRoamInfo(file).filetags;
     headers.forEach((header, index) => {
       const level = header.get('nestingLevel');
       while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
@@ -380,6 +384,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         cookie: cookieOf(rawTitle),
         priority: pm ? pm[1] : null,
         ownTags,
+        fileTags,
         tags: Array.from(new Set([...inheritedTags, ...ownTags])),
         isTrashed: hasTrashTag(inheritedTags) || hasTrashTag(ownTags),
         ownTrash: hasTrashTag(ownTags),
@@ -605,12 +610,15 @@ export const matchesFilters = (task, filters) => {
   if (area && area !== '*' && (task.area || '') !== (area === '-' ? '' : area)) return false;
   // (3.05) NO_TAGS = «Sin etiquetas» (ninguna, salvo :trash:): filtrar por ella o tacharla
   // 3.36: `ownTagsOnly` = solo las etiquetas asignadas directamente (sin las heredadas)
-  const pool = filters && filters.ownTagsOnly ? task.ownTags || [] : task.tags;
+  // (4.49) las del fichero (#+FILETAGS:) cuentan como heredadas
+  const withFile =
+    task.fileTags && task.fileTags.length ? [...task.tags, ...task.fileTags] : task.tags;
+  const pool = filters && filters.ownTagsOnly ? task.ownTags || [] : withFile;
   const has = (t) => (t === NO_TAGS ? isUntagged(task) : pool.includes(t));
   // 3.39: `noInherited` = fuera las tareas que tengan alguna etiqueta heredada
   if (filters && filters.noInherited) {
     const own = task.ownTags || [];
-    if ((task.tags || []).some((t) => !own.includes(t))) return false;
+    if (withFile.some((t) => !own.includes(t))) return false;
   }
   if (tags.length && !tags.every(has)) return false;
   // (3.01) etiquetas tachadas en la barra de filtros: fuera las que las llevan
@@ -956,6 +964,43 @@ export const collapseRefs = (allTasks, refs) => {
     });
 };
 
+// (4.49) Referencias de un proyecto como ÁRBOL (como la vista por etiqueta de Documentos): cada
+// referencia cuelga de su madre MÁS CERCANA que también esté en la lista (aunque entre medias haya
+// madres que no salen) y lleva su propio contenido. → [{ task, depth, hasKids, kidCount }] en
+// preorden, en el orden de la lista; `kidCount` = hijas directas.
+export const nestProjectRefs = (allTasks, refs) => {
+  const inList = new Set(refs.map((r) => r.key));
+  const byKey = new Map(allTasks.map((t) => [t.key, t]));
+  const nearestInList = (t) => {
+    let p = t.parentId != null ? byKey.get(`${t.path}::${t.parentId}`) : null;
+    let guard = 0;
+    while (p && guard++ < 50) {
+      if (inList.has(p.key)) return p.key;
+      p = p.parentId != null ? byKey.get(`${p.path}::${p.parentId}`) : null;
+    }
+    return null;
+  };
+  const kids = new Map();
+  const roots = [];
+  refs.forEach((r) => {
+    const pk = nearestInList(r);
+    if (pk && pk !== r.key) {
+      if (!kids.has(pk)) kids.set(pk, []);
+      kids.get(pk).push(r);
+    } else {
+      roots.push(r);
+    }
+  });
+  const out = [];
+  const emit = (r, depth) => {
+    const k = kids.get(r.key) || [];
+    out.push({ task: r, depth, hasKids: k.length > 0, kidCount: k.length });
+    k.forEach((c) => emit(c, depth + 1));
+  };
+  roots.forEach((r) => emit(r, 0));
+  return out;
+};
+
 // Agrupar una lista por proyecto: primero las sueltas (sin proyecto), después cada proyecto en el
 // orden en que aparece por primera vez; dentro de cada proyecto, el orden de dueFirstFileOrder
 export const groupByProject = (list, today = new Date()) => {
@@ -1034,7 +1079,13 @@ export const facetsFor = (tasks, opts = {}) => {
     if (t.badProject) hasBadProject = true;
     if (isUntagged(t)) hasUntagged = true;
     (opts.ownOnly ? t.ownTags || [] : t.tags).forEach((x) => tags.add(x));
-    if (!opts.ownOnly && t.tags.length > (t.ownTags || []).length) hasInherited = true;
+    // (4.49) las etiquetas del fichero (#+FILETAGS:) salen como heredadas
+    if (!opts.ownOnly && t.fileTags) t.fileTags.forEach((x) => tags.add(x));
+    if (
+      !opts.ownOnly &&
+      (t.tags.length > (t.ownTags || []).length || (t.fileTags && t.fileTags.length))
+    )
+      hasInherited = true;
     if (t.energy) energy.add(t.energy);
     if (t.effort) hasEffort = true;
     if (t.deadline || t.scheduled) hasDates = true;

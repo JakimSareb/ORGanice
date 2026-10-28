@@ -56,7 +56,7 @@ import {
   SLEEP_STATUS,
   inProject,
   nestProjects,
-  collapseRefs,
+  nestProjectRefs,
   taskByOrgId,
 } from '../../lib/gtd/gtd_model';
 import {
@@ -249,6 +249,7 @@ import {
   setGtdConfig,
   effectiveStored,
   isSectionShown,
+  findChecklistSection,
   isActionSection,
   sectionLabel,
   sectionDef,
@@ -270,8 +271,13 @@ import {
   findCaptureTemplate,
   fillCaptureDraft,
 } from '../../lib/eli_quick_capture';
-import { gtdMatchesBinding, isEditable, shouldIgnoreOrganiceHotkey } from '../../lib/eli_hotkeys';
-import { calculateGtdKeybindings } from '../../lib/keybindings';
+import {
+  gtdMatchesBinding,
+  matchesBinding,
+  isEditable,
+  shouldIgnoreOrganiceHotkey,
+} from '../../lib/eli_hotkeys';
+import { calculateGtdKeybindings, liveBindingOfAction } from '../../lib/keybindings';
 import GtdShortcutsModal from './GtdShortcutsModal';
 import {
   pushModalPage,
@@ -636,6 +642,7 @@ function TaskRow({
   wrapTitle = true,
   badProject = false,
   hasKids = false,
+  kidCount = 0, // (4.49) nº de hijas directas (referencias de un proyecto)
   folded = false,
   onToggleFold = null,
   onTitleClick = null,
@@ -718,7 +725,7 @@ function TaskRow({
         {hasKids && onToggleFold ? (
           <button
             type="button"
-            className={'gtd-fold' + (folded ? ' is-folded' : '')}
+            className={'gtd-fold' + (folded ? ' is-folded' : '') + (kidCount > 0 ? ' has-n' : '')}
             onClick={(e) => {
               e.stopPropagation();
               onToggleFold();
@@ -731,6 +738,7 @@ function TaskRow({
             data-testid="gtd-fold"
           >
             <i className={folded ? 'fas fa-caret-right' : 'fas fa-caret-down'} />
+            {kidCount > 0 ? <span className="gtd-fold__n">{kidCount}</span> : null}
           </button>
         ) : null}
         {!hideActions && (
@@ -1873,9 +1881,10 @@ export default function GtdView() {
       ordered.forEach((sec) => {
         const isDone = sec.id === 'done';
         const isRefs = sec.id === 'refs';
-        // (4.22) cada referencia lleva su contenido (y el de las que cuelgan de ella) tras el botón
-        // de notas; las anidadas no salen aparte
-        const secTasks = isRefs ? collapseRefs(tasks, sec.tasks) : sec.tasks;
+        // (4.49) las referencias salen como ÁRBOL (como la vista por etiqueta): las que cuelgan
+        // de otra van debajo, sangradas, con ▾/▸ y su número de hijas (desplegado por defecto)
+        const refNodes = isRefs ? nestProjectRefs(tasks, sec.tasks) : null;
+        const secTasks = isRefs ? refNodes.map((n) => n.task) : sec.tasks;
         // Mientras se arrastra se ven también las secciones vacías (para poder soltar en ellas)
         if (!secTasks.length && (!reorderingKey || isRefs)) return;
         const open = isRefs ? refsOpen : doneOpen;
@@ -1894,13 +1903,28 @@ export default function GtdView() {
           testId: `gtd-psec-${sec.id}`,
         });
         if ((isDone || isRefs) && !open) return;
+        if (isRefs) {
+          refNodes.forEach((n) =>
+            out.push({
+              kind: 'task',
+              task: n.task,
+              section: sec.id,
+              reorderable: false,
+              isRef: true,
+              depth: n.depth,
+              hasKids: n.hasKids,
+              kidCount: n.kidCount,
+            })
+          );
+          return;
+        }
         secTasks.forEach((t) =>
           out.push({
             kind: 'task',
             task: t,
             section: sec.id,
-            reorderable: !isDone && !isRefs,
-            isRef: isRefs,
+            reorderable: !isDone,
+            isRef: false,
           })
         );
       });
@@ -3493,6 +3517,9 @@ export default function GtdView() {
     selectArea(all[(i + dir + all.length) % all.length]);
   };
   const goList = (id) => {
+    // (4.49) «checklist»: la sección propia que se llame así (si no hay, no hace nada)
+    if (id === 'checklist') id = findChecklistSection(gtdCfg);
+    if (!id) return;
     if (id === 'projects' || isSectionShown(id, gtdCfg)) selectView({ id });
   };
   // (3.24) Revisión semanal
@@ -4531,7 +4558,10 @@ export default function GtdView() {
   // (2.18) va antes (en captura) que el Alt+← de «atrás» de la barra de arriba
   const backKeyRef = useRef(null);
   backKeyRef.current = (e) => {
-    if (e.defaultPrevented || e.repeat || !e.altKey) return;
+    if (e.defaultPrevented || e.repeat) return;
+    // (4.49) la tecla es la de «Historial: atrás» del registro de atajos (Alt+← por defecto)
+    const backKey = liveBindingOfAction('eliHistoryBack');
+    if (!backKey || !matchesBinding(e, backKey)) return;
     if (document.querySelector('.eli-palette__overlay, .eli-prompt__overlay')) return;
     // (2.18) Alt+←: volver de la tarea madre a donde se estaba (también con su editor abierto).
     // En un campo de texto solo si el cursor está al principio (si no, Opción+← en el Mac mueve
@@ -4542,16 +4572,7 @@ export default function GtdView() {
       (typeof field.selectionStart === 'number' &&
         field.selectionStart === 0 &&
         field.selectionEnd === 0);
-    if (
-      e.altKey &&
-      !e.ctrlKey &&
-      !e.metaKey &&
-      !e.shiftKey &&
-      e.key === 'ArrowLeft' &&
-      backRef.current.length &&
-      atStart &&
-      (!field || openKey)
-    ) {
+    if (backRef.current.length && atStart && (!field || openKey)) {
       e.preventDefault();
       e.stopPropagation();
       goBack();
@@ -6772,6 +6793,7 @@ export default function GtdView() {
         isSelected={sel.includes(item.task.key)}
         depth={item.depth || 0}
         hasKids={!!item.hasKids}
+        kidCount={item.kidCount || 0}
         folded={!!item.folded}
         parentTitle={parentTitleOf(item.task)}
         noSubtasks={!subtasksOn}
@@ -7153,6 +7175,7 @@ export default function GtdView() {
             onClose={() => setReview(null)}
             onFinish={finishReview}
             onOpenView={goList}
+            checklistId={findChecklistSection(gtdCfg)}
             agendas={agendas.all
               .filter((a) => a.open > 0)
               .map((a) => ({
