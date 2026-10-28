@@ -1,11 +1,12 @@
-// ORG Mode para Eli (4.48): Agendas (David Allen): listas de lo que hay que hablar con una
-// persona o hacer en una ocasión/lugar, leídas del `agendas.org` del usuario SIN reescribirlo.
-//   - Una agenda = cada cabecera con contenido propio (lista o texto). De persona si su título es
-//     el nombre (o alias) de un contacto o si lleva :PERSONA:; si no, de ocasión/lugar. Las de
-//     nivel 2 o más se agrupan bajo su madre de nivel 1 («Quan siguem a…»).
-//   - El contenido se muestra tal cual; marcar = solo «[ ]»→«[X]» en esa línea; un punto nuevo es
-//     UNA línea tras el último ítem de lista, con su sangría y su estilo («- [ ]», «-» o «+»).
-// Modelo puro (texto del cuerpo y cabeceras Immutable): ver lib/gtd/gtd_persons_actions.js.
+// ORG Mode para Eli (4.48/4.50): Agendas (David Allen): lo que hay que hablar con una persona o
+// hacer en una ocasión/lugar, leído del `agendas.org` del usuario SIN reescribirlo.
+//   - (4.50) ÁRBOL DE CABECERAS: la de nivel 1 es la agenda principal (de persona si su título es
+//     el nombre —o alias— de un contacto o si lleva :PERSONA:; si no, lugar/ocasión) y todas sus
+//     subcabeceras, a cualquier nivel, son puntos a tratar. Notas = detalle (con sus «secciones»,
+//     los elementos «-»/«+» con notas propias). Punto tratado = estado DONE.
+//   - Las casillas viejas («- [ ]», «-», «+») dentro de las notas se respetan: marcar = solo
+//     «[ ]»→«[X]» en esa línea. Lo NUEVO siempre son subcabeceras (ver gtd_persons_actions.js).
+// Modelo puro (cabeceras Immutable).
 import { displayTitle, propertyValue, parsePersonLinks } from './gtd_model';
 import { contactNamed, contactById, PERSON_PROPERTY } from './gtd_persons';
 
@@ -79,53 +80,75 @@ export const addPointToBody = (body, text) => {
   return lines.join('\n');
 };
 
+const DONE_KEYWORDS = ['DONE', 'CANCELLED', 'CANCELED'];
+export const isDoneKeyword = (k) => DONE_KEYWORDS.includes(String(k || '').toUpperCase());
+
 /**
  * Agendas de agendas.org (fichero Immutable) con los contactos de personas.org →
- * { all, persons, groups } · agenda = { headerId, orgId, title, level, body, person ({ id, name }
- * o null), group (título de la madre de nivel 1 o null), open (casillas sin marcar) }
- * groups = [{ title, headerId, items }] (las de ocasión/lugar; las de nivel 1 sin madre van solas).
+ * { roots, all, persons, places, nodes, path }
+ *   nodo = { headerId, orgId, title, level, body, keyword, done, person ({ id, name } o null),
+ *            children, parentId, open (puntos pendientes + casillas sin marcar de todo el
+ *            subárbol), points (puntos pendientes del subárbol, sin contar este) }
+ *   roots = all = las agendas principales (nivel 1, o la primera cabecera si el fichero empieza por
+ *   un nivel más profundo) · persons = las de persona · places = el resto (lugares/ocasiones)
+ *   nodes = todos los nodos en el orden del documento.
  */
 export const parseAgendas = (file, contacts = [], path = '') => {
   const headers = file && file.get && file.get('headers');
-  const out = { all: [], persons: [], groups: [], path };
+  const out = { roots: [], all: [], persons: [], places: [], nodes: [], path };
   if (!headers) return out;
-  let mother = null;
+  const stack = [];
   headers.forEach((h) => {
     const level = h.get('nestingLevel') || 1;
     const title = displayTitle(h.getIn(['titleLine', 'rawTitle']) || '');
-    if (level === 1) mother = { title, headerId: h.get('id') };
+    const keyword = h.getIn(['titleLine', 'todoKeyword']) || null;
     const body = h.get('rawDescription') || '';
-    if (!body.trim()) return;
-    const link = parsePersonLinks(propertyValue(h, PERSON_PROPERTY))[0] || null;
-    const contact = link ? contactById(contacts, link.id) : contactNamed(contacts, title);
-    const person = link
-      ? { id: link.id, name: (contact && contact.name) || link.title || title }
-      : contact && contact.orgId
-      ? { id: contact.orgId, name: contact.name }
-      : null;
-    out.all.push({
+    while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
+    const parent = stack.length ? stack[stack.length - 1] : null;
+    const node = {
       headerId: h.get('id'),
       orgId: propertyValue(h, 'ID'),
       title,
       level,
       body,
-      person,
-      group: level > 1 && mother ? mother.title : null,
-      groupId: level > 1 && mother ? mother.headerId : null,
-      open: openCount(body),
-    });
+      keyword,
+      done: isDoneKeyword(keyword),
+      person: null,
+      children: [],
+      parentId: parent ? parent.headerId : null,
+      open: 0,
+      points: 0,
+    };
+    if (!parent) {
+      const link = parsePersonLinks(propertyValue(h, PERSON_PROPERTY))[0] || null;
+      const contact = link ? contactById(contacts, link.id) : contactNamed(contacts, title);
+      node.person = link
+        ? { id: link.id, name: (contact && contact.name) || link.title || title }
+        : contact && contact.orgId
+        ? { id: contact.orgId, name: contact.name }
+        : null;
+      out.roots.push(node);
+    } else parent.children.push(node);
+    out.nodes.push(node);
+    stack.push(node);
   });
-  out.persons = out.all.filter((a) => a.person);
-  const byGroup = new Map();
-  out.all
-    .filter((a) => !a.person)
-    .forEach((a) => {
-      const k = a.groupId || `self:${a.headerId}`;
-      if (!byGroup.has(k))
-        byGroup.set(k, { title: a.group, headerId: a.groupId || a.headerId, items: [] });
-      byGroup.get(k).items.push(a);
+  // pendientes del subárbol (un punto tratado no cuenta ni él ni sus hijos)
+  const count = (n, isRoot) => {
+    let open = n.done && !isRoot ? 0 : openCount(n.body);
+    let points = 0;
+    n.children.forEach((c) => {
+      count(c, false);
+      if (c.done) return;
+      points += 1 + c.points;
+      open += 1 + c.open;
     });
-  out.groups = Array.from(byGroup.values());
+    n.open = open;
+    n.points = points;
+  };
+  out.roots.forEach((r) => count(r, true));
+  out.all = out.roots;
+  out.persons = out.roots.filter((a) => a.person);
+  out.places = out.roots.filter((a) => !a.person);
   return out;
 };
 
@@ -135,10 +158,22 @@ export const agendaOfPerson = (agendas, orgId) =>
     agendas.persons.find((a) => a.person.id.toLowerCase() === String(orgId).toLowerCase())) ||
   null;
 
-// Lista plana para elegir: personas primero y luego ocasiones (con su madre)
-export const agendaChoices = (agendas) => [
-  ...agendas.persons.map((a) => ({ agenda: a, label: a.person.name, hint: 'persona' })),
-  ...agendas.groups.flatMap((g) =>
-    g.items.map((a) => ({ agenda: a, label: a.title, hint: g.title || 'ocasión' }))
-  ),
-];
+// Nodo por id de cabecera
+export const agendaNode = (agendas, headerId) =>
+  (agendas && agendas.nodes.find((n) => n.headerId === headerId)) || null;
+
+// Lista plana jerárquica para elegir (personas primero y luego lugares; cada una con sus puntos
+// bajo ella, sangrados): [{ node, depth, root }]
+export const agendaChoices = (agendas) => {
+  const out = [];
+  const walk = (n, depth, root) => {
+    out.push({ node: n, depth, root });
+    n.children.forEach((c) => walk(c, depth + 1, root));
+  };
+  [...agendas.persons, ...agendas.places].forEach((r) => walk(r, 0, r));
+  return out;
+};
+
+// Nº de puntos de un nodo que se ven con «Ocultar tratados» (los tratados y su subárbol no)
+export const visibleChildren = (node, hideDone) =>
+  hideDone ? node.children.filter((c) => !c.done) : node.children;

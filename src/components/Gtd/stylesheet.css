@@ -5270,3 +5270,100 @@ html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
   padding: 2px 0 2px 1.6em;
   color: var(--base01, #666);
 }
+
+/* (4.50) Agendas como árbol de cabeceras: puntos con sus subpuntos */
+.gtd-agpoint__list {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+.gtd-agpoint__more > .gtd-agpoint__list {
+  padding-left: 16px;
+  border-left: 1px solid var(--base2, #eee);
+  margin-left: 8px;
+}
+.gtd-agpoint__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.gtd-agpoint__row.is-done .gtd-agpoint__title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.gtd-agpoint__title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.gtd-agpoint__sel {
+  margin: 0 6px;
+}
+.gtd-agpoint__more {
+  padding-left: 22px;
+}
+
+/* (4.50) chip de persona en la fila de tarea (compacto; no desborda en el móvil) */
+.gtd-chip.gtd-chip--person.gtd-chip--row {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  font-size: 0.75em;
+  line-height: 1.6;
+  max-width: 9em;
+  min-width: 0;
+  flex: 0 1 auto;
+  margin: 0 2px;
+}
+.gtd-chip--row .gtd-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gtd-chip.gtd-chip--person.is-broken {
+  opacity: 0.55;
+}
+
+/* (4.50) botón «[[ ]]» del editor de tarea: texto monoespaciado, no más ancho que los iconos */
+.gtd-ed__brackets {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.eli-format-bar--compact .eli-format-bar__btn:has(.gtd-ed__brackets) {
+  width: auto;
+  min-width: 28px;
+  padding: 0 4px;
+}
+
+/* (4.50) hoja móvil: la barra se apila (fila principal que se desliza + fila del formato debajo,
+   que también se desliza sola) en vez de una única fila */
+.gtd-editor--sheet.is-editing-text .eli-format-bar.eli-format-bar--rows {
+  display: block;
+  overflow: visible;
+}
+.gtd-editor--sheet .eli-format-bar--rows > .eli-format-bar__main {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.gtd-editor--sheet .eli-format-bar--rows > .eli-format-bar__main::-webkit-scrollbar {
+  display: none;
+}
+.gtd-editor--sheet .eli-format-bar--rows > .eli-format-bar__main > * {
+  flex: 0 0 auto;
+}
+.gtd-editor--sheet .eli-format-bar--rows > .eli-format-bar__row > * {
+  flex: 0 0 auto;
+}

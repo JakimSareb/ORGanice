@@ -158,16 +158,18 @@ const AGENDAS = [
 describe('4.48 B: agendas', () => {
   const contacts = parseContacts(files().get('/personas.org'), '/personas.org');
   const ag = parseAgendas(parseOrg(AGENDAS), contacts, '/agendas.org');
-  test('persona vs ocasión (agrupadas por su madre) y casillas abiertas', () => {
-    expect(ag.persons.map((a) => a.person.name)).toEqual(['Mari Carmen']);
-    expect(ag.groups.map((g) => [g.title, g.items.map((a) => a.title)])).toEqual([
-      ['Quan siguem a ...', ["... Barcelona veure'ns mb", '... Lleida 🧽 Limipar']],
-      [null, ['Altres']],
+  test('persona vs lugar (4.50: el nivel 1 es la agenda, lo de debajo son puntos) y casillas', () => {
+    expect(ag.persons.map((a) => a.person.name)).toEqual(['Mari Carmen', 'Luis']);
+    expect(ag.places.map((a) => a.title)).toEqual(['Quan siguem a ...', 'Altres']);
+    const quan = ag.places[0];
+    expect(quan.children.map((c) => c.title)).toEqual([
+      "... Barcelona veure'ns mb",
+      '... Lleida 🧽 Limipar',
     ]);
-    const bcn = ag.all.find((a) => a.title.includes('Barcelona'));
-    expect(bcn.open).toBe(2);
-    // «Luis» no tiene contenido propio: no es agenda
-    expect(ag.all.some((a) => a.title === 'Luis')).toBe(false);
+    // las casillas viejas de las notas de un punto se cuentan en el subárbol
+    expect(quan.children[0].open).toBe(2);
+    expect(quan.open).toBe(4);
+    expect(quan.points).toBe(2);
   });
   test('añadir punto: casillas → «- [ ]», tras el último ítem y antes de la línea en blanco', () => {
     const body = '- [ ] Xus\n- [X] Dani Trillo\n- [ ] Marta\n\n';

@@ -23,6 +23,7 @@ import EliOrgTable from '../EliOrgTable';
 import { tableBlocks, tableLinesAt, replaceTableAt } from '../../lib/eli_org_table';
 import { textareaOffsetAt } from '../../lib/eli_notes_caret';
 import { PERSON_PROPERTY, personLinksValue } from '../../lib/gtd/gtd_persons';
+import { PersonChip } from './PersonChip';
 import {
   ENERGY_LEVELS,
   EFFORT_OPTIONS,
@@ -1045,28 +1046,19 @@ export default function TaskEditor({
           )}
           {/* (4.48) personas enlazadas (tocar = ficha; × = quitar) */}
           {persons.map((p) => (
-            <span key={p.id} className="gtd-chip gtd-chip--person" data-testid="gtd-editor-person">
-              <span
-                className="gtd-chip__label"
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  if (!onOpenPerson) return;
-                  commit();
-                  onOpenPerson(p.id);
-                }}
-                title="Ver la ficha"
-              >
-                <i className="fas fa-user" aria-hidden="true" /> {p.title || '?'}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPersons(persons.filter((x) => x.id !== p.id))}
-                aria-label={`Quitar ${p.title}`}
-              >
-                ×
-              </button>
-            </span>
+            <PersonChip
+              key={p.id}
+              name={p.title}
+              onOpen={
+                onOpenPerson
+                  ? () => {
+                      commit();
+                      onOpenPerson(p.id);
+                    }
+                  : null
+              }
+              onRemove={() => setPersons(persons.filter((x) => x.id !== p.id))}
+            />
           ))}
           {tags.map((t) => (
             <span key={t} className="gtd-chip is-on">
@@ -1154,6 +1146,7 @@ export default function TaskEditor({
             }
             getListField={() => notesRef.current}
             hideNow
+            formatRow
             // (3.04) deshacer y rehacer, antes del botón de formato. (4.01) Y luego, el reloj:
             // fecha y hora de ahora en el cursor (título o notas)
             before={
@@ -1222,7 +1215,7 @@ export default function TaskEditor({
                   aria-label="Enlace a una cabecera"
                   data-testid="gtd-editor-link-heading"
                 >
-                  [[
+                  <span className="gtd-ed__brackets">[[ ]]</span>
                 </button>
                 {onPickTaskLink && !isNew && (
                   <button

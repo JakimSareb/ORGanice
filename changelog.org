@@ -3,6 +3,16 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.50 (octubre de 2026)
+** Agendas como árbol
+- =agendas.org= ahora se lee como *árbol de cabeceras*: la de nivel 1 es la persona o el lugar y cada subcabecera, a cualquier nivel, un *punto a tratar* (sus notas, el detalle). Se ve como la vista por etiqueta: ▾/▸, puntos pendientes y sangría. Las casillas de siempre se respetan.
+- *Procesar Inbox › Hablar con…* y *→ Agenda de…* crean la *subcabecera* (con las notas de la tarea) en la persona, el lugar o el punto que elijas, a cualquier nivel.
+- *Tratado* = =DONE= (con *Ocultar tratados*) o *Llevar a reunión…*: mueve el punto, con sus notas y subpuntos y su =:ID:=, a =reuniones.org=; también varios a la vez (*Seleccionar*).
+** Enlaces, tareas y editor
+- El buscador *[[* ya no ofrece crear un fichero («Crear página»); quedan *Nueva cabecera* y *Crear contacto*. Para notas en fichero, *Nueva nota ZK*.
+- Cada tarea muestra la *persona* (=:PERSONA:=) en un chip; siempre en Waiting y, en el resto, con Opciones de vista › *Mostrar personas*.
+- Editor de tarea: el botón de enlace a cabecera se ve como *[[ ]]* y los iconos de *Aa* salen en una fila inferior (en el móvil, con scroll horizontal).
+
 * 4.49 (octubre de 2026)
 ** Menús y atajos
 - *Menú ☰ › Vista* sale siempre, con *Dos columnas* y *Editar como texto plano* (esta última, antes en Mis ficheros). Lo que no se puede usar en ese momento se ve atenuado en vez de desaparecer.

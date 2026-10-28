@@ -495,6 +495,11 @@ export default function GtdSectionsSettings() {
         {[
           ['personas', 'Fichero de personas (contactos)', 'personas.org'],
           ['agendas', 'Fichero de agendas', 'agendas.org'],
+          [
+            'reuniones',
+            'Fichero de reuniones (a donde se llevan los puntos de una agenda)',
+            'reuniones.org',
+          ],
         ].map(([key, label, name]) => (
           <label key={key} className="eli-gtdsec__rule">
             <span>{label}</span>

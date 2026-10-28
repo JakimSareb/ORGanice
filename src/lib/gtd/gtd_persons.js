@@ -11,6 +11,7 @@ import { displayTitle, propertyValue, parsePersonLinks } from './gtd_model';
 export const PERSON_PROPERTY = 'PERSONA';
 export const PERSONAS_NAME = 'personas.org';
 export const AGENDAS_NAME = 'agendas.org';
+export const REUNIONES_NAME = 'reuniones.org';
 export const PERSONAS_TEMPLATE = '#+TITLE: Personas\n';
 
 // Fichero con ese nombre en la carpeta de `path` (o en la raíz)
