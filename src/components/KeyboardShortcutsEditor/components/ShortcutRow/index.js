@@ -71,7 +71,7 @@ export default class ShortcutRow extends PureComponent {
   }
 
   render() {
-    const { name, binding } = this.props;
+    const { name, binding, off, onToggleOff } = this.props;
     const { isEditMode } = this.state;
 
     const rebindAreaClassName = classNames('keyboard-shortcut-container__shortcut-key', {
@@ -79,8 +79,22 @@ export default class ShortcutRow extends PureComponent {
     });
 
     return (
-      <div className="keyboard-shortcut-container">
+      <div className="keyboard-shortcut-container" style={off ? { opacity: 0.55 } : undefined}>
         <div className="keyboard-shortcut-container__shortcut-name">{keybindingLabel(name)}</div>
+        {/* (4.49) «Desactivar» este atajo */}
+        {onToggleOff && (
+          <button
+            type="button"
+            className="btn"
+            role="switch"
+            aria-checked={!off}
+            title={off ? 'Activar este atajo' : 'Desactivar este atajo'}
+            onClick={() => onToggleOff(name, off)}
+            data-testid="kb-off"
+          >
+            <i className={off ? 'fas fa-ban' : 'fas fa-power-off'} />
+          </button>
+        )}
         <div
           className={rebindAreaClassName}
           onClick={this.handleRebindClick}

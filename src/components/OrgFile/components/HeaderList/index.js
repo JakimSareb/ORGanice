@@ -63,6 +63,27 @@ class HeaderList extends PureComponent {
     if (prevProps.narrowedHeaderId && !this.props.narrowedHeaderId) {
       this.eliScrollHeaderToTop(prevProps.narrowedHeaderId);
     }
+    // (4.49) Mover la cabecera seleccionada (flechas, menú de mover): cambia de sitio (o de
+    // nivel) sin cambiar la selección; si llega al borde de la pantalla, el scroll la sigue
+    if (
+      prevProps.selectedHeaderId === this.props.selectedHeaderId &&
+      prevProps.headers !== this.props.headers &&
+      this.props.selectedHeaderId
+    ) {
+      const id = this.props.selectedHeaderId;
+      const find = (hs) => hs.findIndex((h) => h.get('id') === id);
+      const before = find(prevProps.headers);
+      const now = find(this.props.headers);
+      if (
+        before >= 0 &&
+        now >= 0 &&
+        (before !== now ||
+          prevProps.headers.getIn([before, 'nestingLevel']) !==
+            this.props.headers.getIn([now, 'nestingLevel']))
+      ) {
+        this.eliKeepSelectedVisible();
+      }
+    }
     if (prevProps.selectedHeaderId !== this.props.selectedHeaderId) {
       const selectedHeaderDiv = this.headerRefs[this.props.selectedHeaderId];
       if (!!selectedHeaderDiv) {
@@ -74,6 +95,24 @@ class HeaderList extends PureComponent {
         }
       }
     }
+  }
+
+  // (4.49) deja la cabecera seleccionada dentro de la pantalla (con margen bajo la barra de arriba
+  // y sobre la barra de abajo), moviendo el scroll lo mínimo
+  eliKeepSelectedVisible() {
+    requestAnimationFrame(() => {
+      const el = this.headerRefs[this.props.selectedHeaderId];
+      if (!el || !el.isConnected || !el.scrollIntoView) return;
+      const bar = document.querySelector('.header-bar');
+      const dock = document.querySelector('.eli-docbar');
+      const top = bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
+      const dockTop = dock ? dock.getBoundingClientRect().top : window.innerHeight;
+      el.style.scrollMarginTop = `${Math.round(top) + 12}px`;
+      el.style.scrollMarginBottom = `${
+        Math.max(0, Math.round(window.innerHeight - dockTop)) + 12
+      }px`;
+      el.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   eliScrollHeaderToTop(headerId) {

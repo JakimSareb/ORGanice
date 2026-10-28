@@ -187,6 +187,8 @@ export const STRICT_REVIEW_STEPS = [
     hint:
       'Repasa las listas de control que uses (responsabilidades, rutinas, viajes, eventos…): ' +
       '¿falta hacer algo?',
+    // (4.49) abre la sección «Checklist» (la propia del usuario; ver findChecklistSection)
+    view: 'checklist',
     capture: 'Apuntar al Inbox',
   },
   {

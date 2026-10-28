@@ -228,6 +228,22 @@ export const setGtdConfig = (stored) => {
 export const getGtdConfig = () => current;
 export const getGtdFiles = () => current.files;
 
+// (4.49) La sección «Checklist» (propia del usuario, creada en Ajustes): se reconoce por su
+// nombre («Checklist» / «Checklists», sin mirar mayúsculas ni acentos). null si no existe.
+export const findChecklistSection = (cfg = current) => {
+  const norm = (t) =>
+    String(t || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  return (
+    (cfg.order || []).find(
+      (id) => !isSepId(id) && /^check[\s-]*lists?(\s|$)/.test(norm(sectionLabel(id, cfg)))
+    ) || null
+  );
+};
+
 export const isSectionShown = (id, cfg = current) => {
   const s = cfg.sections[id];
   return !s || s.show !== false;

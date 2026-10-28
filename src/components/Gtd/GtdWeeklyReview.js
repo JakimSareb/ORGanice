@@ -53,6 +53,7 @@ export default function GtdWeeklyReview({
   onProjectAction,
   onReplan,
   onHorizons,
+  checklistId = null, // (4.49) id de la sección «Checklist» del usuario (null: no hay)
   agendas = [], // (4.48) agendas con casillas abiertas: [{ headerId, label, open }]
 }) {
   const REVIEW_STEPS_NOW = stepsProp || REVIEW_STEPS;
@@ -223,7 +224,7 @@ export default function GtdWeeklyReview({
           <i className="fas fa-plus" /> {s.id === 'inbox' ? 'Apuntar algo' : 'Apuntar una idea'}
         </button>
       );
-    if (s.view && s.id !== 'next' && s.id !== 'waiting')
+    if (s.view && s.id !== 'next' && s.id !== 'waiting' && (s.id !== 'checklists' || checklistId))
       b.push(
         <button
           key="open"
@@ -233,7 +234,13 @@ export default function GtdWeeklyReview({
           data-testid="gtd-review-open"
         >
           <i className={s.icon} /> Abrir{' '}
-          {s.id === 'inbox' ? 'Inbox' : s.id === 'closed' ? 'el Logbook' : 'Someday'}
+          {s.id === 'inbox'
+            ? 'Inbox'
+            : s.id === 'closed'
+            ? 'el Logbook'
+            : s.id === 'checklists'
+            ? 'Checklist'
+            : 'Someday'}
         </button>
       );
     return (

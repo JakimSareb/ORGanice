@@ -39,7 +39,21 @@ const DEFAULT_BINDINGS = [
   ['Elemento de lista: desplegar (flecha)', 'eliListRight', 'right'],
   ['Elemento de lista: subir de nivel (con sus hijos)', 'eliListOutdent', 'alt+left'],
   ['Elemento de lista: bajar de nivel (con sus hijos)', 'eliListIndent', 'alt+right'],
+  // (4.49) historial (antes Alt+←/→ fijos) y salto título ↔ notas al editar (antes Tab fijo)
+  ['Historial: atrás', 'eliHistoryBack', 'alt+left'],
+  ['Historial: adelante', 'eliHistoryForward', 'alt+right'],
+  ['Saltar entre el título y las notas (al editar)', 'eliTitleNotesJump', 'tab'],
 ];
+
+// (4.49) «Desactivar» un atajo: se guarda en el mismo mapa de atajos personalizados (que ya se
+// guarda y sincroniza) con la clave «desactivado: <nombre>» = 'true'. Un atajo desactivado
+// devuelve '' como tecla (nadie lo reconoce y no cuenta para choques), pero conserva la tecla
+// asignada para cuando se vuelva a activar (`assigned`).
+export const OFF_PREFIX = 'desactivado: ';
+export const isBindingOff = (custom, name) =>
+  !!custom && typeof custom.get === 'function' && custom.get(OFF_PREFIX + name) === 'true';
+const effectiveBinding = (custom, name, def) =>
+  isBindingOff(custom, name) ? '' : custom.get(name, def);
 
 // ORG Mode para Eli (2.15): atajos de la vista GTD (al estilo de Nirvana). Se guardan con los
 // demás atajos personalizados (su nombre es la clave, así que no se cambia). [nombre, acción,
@@ -103,7 +117,9 @@ export const calculateGtdKeybindings = (customKeybindings) =>
     name,
     action,
     group,
-    binding: customKeybindings.get(name, binding),
+    binding: effectiveBinding(customKeybindings, name, binding),
+    assigned: customKeybindings.get(name, binding),
+    off: isBindingOff(customKeybindings, name),
   }));
 
 // (4.45) Grupos de los atajos de Documentos (para la ventana de Atajos)
@@ -117,6 +133,8 @@ const DOC_GROUP_OF = {
   eliToggleOpen: 'Moverse',
   eliListLeft: 'Moverse',
   eliListRight: 'Moverse',
+  eliHistoryBack: 'Moverse',
+  eliHistoryForward: 'Moverse',
   eliWordUpper: 'Texto',
   eliWordCapital: 'Texto',
   openAgenda: 'Abrir',
@@ -134,7 +152,9 @@ export const calculateDocKeybindings = (customKeybindings) =>
     action,
     def,
     group: DOC_GROUP_OF[action] || 'Editar',
-    binding: customKeybindings.get(name, def),
+    binding: effectiveBinding(customKeybindings, name, def),
+    assigned: customKeybindings.get(name, def),
+    off: isBindingOff(customKeybindings, name),
   }));
 export const defaultBindingOf = (name) => {
   const d = DEFAULT_BINDINGS.find((b) => b[0] === name);
@@ -146,14 +166,42 @@ export const defaultBindingOf = (name) => {
 export const calculateNamedKeybindings = (customKeybindings) =>
   DEFAULT_BINDINGS.map(([bindingName, _bindingAction, binding]) => [
     bindingName,
-    customKeybindings.get(bindingName, binding),
+    effectiveBinding(customKeybindings, bindingName, binding),
   ]);
 
 export const calculateActionedKeybindings = (customKeybindings) =>
   DEFAULT_BINDINGS.map(([bindingName, bindingAction, binding]) => [
     bindingAction,
-    customKeybindings.get(bindingName, binding),
+    effectiveBinding(customKeybindings, bindingName, binding),
   ]);
+
+// (4.49) La tecla (ya con lo desactivado y lo reasignado) de UNA acción de Documentos
+export const bindingOfAction = (customKeybindings, action) => {
+  const d = DEFAULT_BINDINGS.find((b) => b[1] === action);
+  if (!d) return '';
+  return customKeybindings && typeof customKeybindings.get === 'function'
+    ? effectiveBinding(customKeybindings, d[0], d[2])
+    : d[2];
+};
+
+// (4.49) Parejas de acciones que usan la misma tecla por defecto SIN chocar, porque actúan en
+// contextos distintos (historial y niveles de lista fuera/dentro de un campo de texto; Tab para
+// plegar con una cabecera seleccionada y para saltar título ↔ notas al editar)
+const SHARE_OK = [
+  ['eliHistoryBack', 'eliListOutdent'],
+  ['eliHistoryForward', 'eliListIndent'],
+  ['eliTitleNotesJump', 'toggleHeaderOpened'],
+];
+export const mayShareKey = (a, b) =>
+  SHARE_OK.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+
+// (4.49) Los atajos de los campos de texto y de la barra (que no pasan por react-hotkeys) leen
+// aquí los atajos vigentes; App.js los actualiza con cada cambio de los ajustes
+let liveKeybindings = null;
+export const setLiveKeybindings = (custom) => {
+  liveKeybindings = custom || null;
+};
+export const liveBindingOfAction = (action) => bindingOfAction(liveKeybindings, action);
 
 // ORG Mode para Eli: el primer elemento de cada atajo es la clave con la que se guardan los
 // atajos personalizados, así que no se traduce; solo se traduce al mostrarlo.

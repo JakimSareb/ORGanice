@@ -48,7 +48,7 @@ test('4.0: barra de abajo con 5 botones (Editar · Nueva · Añadir · Mover · 
   await app.page.keyboard.press('Escape');
   // Más (modo completo): también lo de tareas
   await app.page.locator('[data-testid=eli-docbar-more]').click();
-  for (const id of ['done-toggle', 'narrow', 'tags', 'share', 'dup', 'delete', 'clock', 'gtd'])
+  for (const id of ['narrow', 'tags', 'share', 'dup', 'delete', 'clock', 'gtd'])
     await expect(app.page.locator(`[data-testid=eli-docbar-${id}]`)).toBeVisible();
   expect(app.errors).toEqual([]);
 });
@@ -122,7 +122,7 @@ test('4.0: Modo Notas: sin GTD ni lo de tareas', async ({ app }) => {
   // sin el cambio Documentos/GTD
   await expect(app.page.locator('[data-testid=eli-mode-toggle]')).toHaveCount(0);
   await app.page.locator('[data-testid=eli-docbar-more]').click();
-  for (const id of ['done-toggle', 'narrow', 'tags', 'share', 'dup', 'delete'])
+  for (const id of ['narrow', 'tags', 'share', 'dup', 'delete'])
     await expect(app.page.locator(`[data-testid=eli-docbar-${id}]`)).toBeVisible();
   for (const id of ['clock', 'gtd', 'todo', 'star', 'dates', 'props', 'archive', 'capture'])
     await expect(app.page.locator(`[data-testid=eli-docbar-${id}]`)).toHaveCount(0);

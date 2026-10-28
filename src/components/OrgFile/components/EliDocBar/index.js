@@ -35,7 +35,6 @@ import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
 import { insertLinkInto } from '../../../../lib/eli_links';
 import { insertHeadingLink, insertTransclusion } from '../../../../lib/eli_heading_links';
 import { buildTransclusionLine } from '../../../../lib/eli_transclude';
-import { openBacklinks } from '../../../../lib/eli_heading_events';
 import { pickPersonForHeading } from '../../../../lib/gtd/gtd_persons_actions';
 import { showMessage, askPick, askText, askDate, askConfirm } from '../../../../lib/eli_prompt';
 import { getPriority } from '../../../../lib/eli_priority';
@@ -565,20 +564,6 @@ export default function EliDocBar({
         () => showMessage('No se ha podido copiar', 'El navegador no deja usar el portapapeles.')
       );
   };
-  // (4.0) «Hecha / Pendiente»: hecha (DONE) o vuelve a pendiente (el primer estado activo)
-  const pendingKeyword = () => {
-    const sets = todoKeywordSets || List();
-    const set =
-      sets.find((x) => (x.get('keywords') || List()).includes(keyword)) || sets.first() || null;
-    if (!set) return 'TODO';
-    const done = set.get('completedKeywords') || List();
-    const active = (set.get('keywords') || List()).filter((k) => !done.includes(k));
-    return active.first() || 'TODO';
-  };
-  const toggleDone = () =>
-    st.kind === 'done'
-      ? org('setTodoState', id, pendingKeyword(), logIntoDrawer)
-      : org('setTodoState', id, st.kind === 'active' ? st.doneKeyword : 'DONE', logIntoDrawer);
   const remove = () => {
     const before = headers;
     confirmRemoveHeader(before, id).then((ok) => {
@@ -1222,12 +1207,6 @@ export default function EliDocBar({
           },
         ],
         more: [
-          {
-            id: 'done-toggle',
-            icon: st.kind === 'done' ? 'far fa-square' : 'far fa-check-square',
-            label: st.kind === 'done' ? 'Pendiente' : 'Hecha',
-            onClick: toggleDone,
-          },
           narrowedId === id
             ? {
                 id: 'widen',
@@ -1269,13 +1248,6 @@ export default function EliDocBar({
           // (4.31) referencias entrantes ([[id:…]] a esta cabecera)
           ...(path && !path.startsWith('/__')
             ? [
-                {
-                  id: 'backlinks',
-                  icon: 'fas fa-link',
-                  label: 'Enlaces entrantes',
-                  hint: 'quién enlaza aquí',
-                  onClick: () => openBacklinks(path, id),
-                },
                 // (4.48) enlazar la cabecera (tarea, acta, nota) con una persona (:PERSONA:)
                 {
                   id: 'person',

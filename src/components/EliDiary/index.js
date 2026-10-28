@@ -51,7 +51,7 @@ import {
   monthlyData,
   regenerateMonthly,
   isYes,
-  monthValuesLine,
+  monthValuesRows,
 } from '../../lib/eli_monthly';
 import { getGtdFiles } from '../../lib/gtd/gtd_sections';
 import { zkCommand } from '../../lib/eli_zk_actions';
@@ -204,10 +204,23 @@ const MonthlyTables = ({ data, hasDays = false }) => (
         <h2>
           {m.label} {data.year}
         </h2>
-        {monthValuesLine(data.monthCounters, m.monthValues) && (
-          <p className="eli-diary-monthly__mvals">
-            {monthValuesLine(data.monthCounters, m.monthValues)}
-          </p>
+        {monthValuesRows(data.monthCounters, m.monthValues).length > 0 && (
+          <table className="eli-diary-monthly__table eli-diary-monthly__mvals">
+            <thead>
+              <tr>
+                <th>Dato</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monthValuesRows(data.monthCounters, m.monthValues).map(([name, value]) => (
+                <tr key={name}>
+                  <td>{name}</td>
+                  <td>{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
         <table className="eli-diary-monthly__table">
           <thead>

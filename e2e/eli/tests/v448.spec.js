@@ -33,7 +33,9 @@ test('4.48 A: editor → Persona → contacto nuevo en personas.org y :PERSONA: 
   expect(app.errors).toEqual([]);
 });
 
-test('4.48 A: «[[» ofrece siempre «Crear página» y «Crear contacto»', async ({ app }) => {
+test('4.48 A: «[[» ofrece siempre «Nueva cabecera», «Crear página» y «Crear contacto»', async ({
+  app,
+}) => {
   const { page } = app;
   await app.open(
     { '/tasks.org': '', '/inbox.org': '', '/notas.org': '* Beta\n* Delta\n' },
@@ -47,6 +49,9 @@ test('4.48 A: «[[» ofrece siempre «Crear página» y «Crear contacto»', asy
   await expect(page.locator('[data-testid=eli-ask-pick]')).toBeVisible({ timeout: 5000 });
   // aunque «Delta» ya existe, salen las opciones de crear
   await page.locator('[data-testid=eli-pick-search]').fill('Delta');
+  await expect(
+    page.locator('[data-testid=eli-pick-new]', { hasText: 'Nueva cabecera' })
+  ).toHaveCount(1);
   await expect(page.locator('[data-testid=eli-pick-new]', { hasText: 'Crear página' })).toHaveCount(
     1
   );
