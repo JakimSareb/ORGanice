@@ -3,6 +3,14 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.52 (octubre de 2026)
+** Procesar Inbox: Someday y Referencia con destino
+- *Someday / Maybe* pregunta «¿Pertenece a algún proyecto?»: si sí (uno que ya existe o uno nuevo), queda *dentro del proyecto* con estado Someday; si no, como siempre.
+- *Referencia* pregunta dónde guardarla: *Proyecto…*, *Enviar a una cabecera…* (otro fichero, la wiki…), *Dejar en Referencia* o *✎ Abrir y terminar de editar*, que abre la cabecera en su fichero con una barra «← Volver a Procesar Inbox» y, al volver, sigues en la misma pregunta.
+** Selector de destino navegable
+- «Enviar a» (y Procesar Inbox) ya no se limita a =tasks.org=: lista *todos los ficheros .org* (primero los de GTD y la wiki), los abre al entrar, y con *›* bajas por las subcabeceras a cualquier nivel. Migas de pan tocables, *← Atrás*, buscador entre ficheros y *Recientes*. Teclado: ↑ ↓, → entrar, ← subir, Intro elegir, Esc.
+- Arreglo: mover la *última* cabecera de un fichero (p. ej. la única del Inbox) a una cabecera de otro fichero ya no falla.
+
 * 4.51 (octubre de 2026)
 ** Wiki Divio en 5 ficheros
 - Nuevo *Menú ☰ › Wiki*: *Crear estructura de wiki* crea =index.org=, =tutoriales.org=, =procesos.org=, =referencia.org= y =explicacion.org= (solo lo que falta) en la carpeta de la wiki (Ajustes › Wiki).

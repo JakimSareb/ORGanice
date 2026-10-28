@@ -5367,3 +5367,32 @@ html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
 .gtd-editor--sheet .eli-format-bar--rows > .eli-format-bar__row > * {
   flex: 0 0 auto;
 }
+
+/* (4.52) Barra «← Volver a Procesar Inbox» sobre el fichero que se está editando */
+.gtd-proc-return {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: var(--base03, #002b36);
+  color: var(--base3, #fdf6e3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.gtd-proc-return__btn,
+.gtd-proc-return__cancel {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.gtd-proc-return__btn {
+  font-weight: 600;
+}

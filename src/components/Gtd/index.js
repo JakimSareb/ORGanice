@@ -101,7 +101,9 @@ import {
 } from '../../lib/gtd/gtd_actions';
 import { clockSummary, taskLinkText, isClockRunning } from '../../lib/gtd/gtd_tools';
 import { gtdSendTo } from '../../lib/gtd/gtd_sendto';
-import { pickRefileTarget } from '../../lib/eli_heading_links';
+import { pickRefileTarget, ensureHeadingOrgId } from '../../lib/eli_heading_links';
+import { takeProcReturn, setProcReturn } from '../../lib/eli_proc_return';
+import { wikiShortcuts } from '../../lib/eli_wiki_actions';
 import { openBacklinks } from '../../lib/eli_heading_events';
 import { PREF_DEFAULTS } from '../../lib/eli_defaults';
 import { OrgTitle } from '../EliHeadingViews/OrgRender';
@@ -1278,7 +1280,10 @@ export default function GtdView() {
   });
   const [lastReview, setLastReview] = useState(() => readLS('eliGtdLastReview', null));
   // (3.40) «Procesar Inbox»: { queue: [{key, path, title}], i, gone: {i: texto} } (null = cerrado)
-  const [proc, setProc] = useState(null);
+  // (4.52) «Abrir y terminar de editar» (Referencia): al volver del fichero se sigue en la MISMA pregunta
+  const [procBack] = useState(() => takeProcReturn());
+  const [proc, setProc] = useState(procBack ? procBack.proc : null);
+  const [procRestore, setProcRestore] = useState(procBack ? procBack.snapshot : null);
   // (4.05) proceso diario en curso: { kind: 'plan' | 'close' | 'now', step } (null = cerrado)
   const [daily, setDaily] = useState(null);
   const [today, setToday] = useState(() => {
@@ -4001,6 +4006,11 @@ export default function GtdView() {
     setProc({ queue, i: 0, gone: {} });
     goList('inbox');
   };
+  // (4.52) de vuelta del fichero: la lista del Inbox, como al empezar
+  useEffect(() => {
+    if (procBack) goList('inbox');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const procTask = (() => {
     if (!proc || proc.i >= proc.queue.length || proc.gone[proc.i]) return null;
     const e = proc.queue[proc.i];
@@ -4010,9 +4020,11 @@ export default function GtdView() {
       list.find((t) => t.path === e.path && t.title === e.title) ||
       // (3.42) editada desde la tarjeta (p. ej. con proyecto): se sigue aunque salga del Inbox
       (e.edited ? list.find((t) => t.rawTitle === e.rawTitle) : null) ||
+      // (4.52) editada en su fichero: se sigue por su :ID: aunque cambie el título
+      (e.orgId ? list.find((t) => t.orgId === e.orgId) : null) ||
       null;
     const found = find(inboxNow());
-    if (found || !e.edited) return found;
+    if (found || !(e.edited || e.orgId)) return found;
     return find(tasks.filter((t) => !t.isTrashed && !t.isDone && !t.isProject));
   })();
   // (3.42) Guardada desde el editor durante «Procesar Inbox»: se apunta para seguir con ella
@@ -4029,7 +4041,11 @@ export default function GtdView() {
       return { ...p, queue };
     });
   };
-  const procMove = (delta, goneText) =>
+  const procMove = (delta, goneText) => {
+    setProcRestore(null);
+    return procMoveNow(delta, goneText);
+  };
+  const procMoveNow = (delta, goneText) =>
     setProc((p) =>
       p
         ? {
@@ -4063,6 +4079,17 @@ export default function GtdView() {
     if (!(await dispatch(createPlainFile(path, '#+TITLE: Tickler\n')))) return null;
     return (await load()) ? path : null;
   };
+  // (4.52) Referencia → «Abrir y terminar de editar»: se abre la cabecera en su fichero y, al volver
+  // (barra «← Volver a Procesar Inbox»), sigue la MISMA pregunta con la misma tarea (por su :ID:)
+  const procEditFile = (task, snapshot) => {
+    if (!proc || !task) return;
+    const orgId = task.orgId || dispatch(ensureHeadingOrgId(task.path, task.id));
+    const queue = proc.queue.map((q, i) =>
+      i === proc.i ? { ...q, edited: true, orgId: orgId || q.orgId } : q
+    );
+    setProcReturn({ proc: { ...proc, queue }, snapshot: { ...snapshot, i: proc.i } });
+    openInFile(task, null);
+  };
   const processDecide = async (d) => {
     const task = procTask;
     if (!task) return;
@@ -4085,10 +4112,20 @@ export default function GtdView() {
       label = 'Papelera';
     } else if (d.kind === 'reference') {
       dispatch(gtdSaveTask(task, { tags: base('reference') }));
-      const target = tasksFileForRefile(store.getState());
-      if (task.isInboxFile && target && target !== task.path)
-        dispatch(gtdRefileTo([task], target, null));
-      label = 'Referencia';
+      if (d.dest) {
+        // (4.52) «Enviar a una cabecera…»: se mueve (con su :ID:) dentro de la elegida
+        const r = dispatch(gtdSendTo(task, d.dest.path, d.dest.headerId));
+        if (!r.moved) {
+          showMessage('Referencia', 'No se puede mover una tarea dentro de sí misma.');
+          return;
+        }
+        label = `Referencia → ${d.dest.title}`;
+      } else {
+        const target = tasksFileForRefile(store.getState());
+        if (task.isInboxFile && target && target !== task.path)
+          dispatch(gtdRefileTo([task], target, null));
+        label = 'Referencia';
+      }
     } else if (d.kind === 'someday') {
       dispatch(gtdSaveTask(task, { list: 'someday', tags: base('someday') }));
       label = 'Someday';
@@ -4135,7 +4172,7 @@ export default function GtdView() {
       label = 'Proyecto';
     }
     // (4.15) Allen estricto: «¿hay un proyecto?» en todas las ramas → la acción va dentro
-    if (d.project && ['done', 'waiting', 'next'].includes(d.kind)) {
+    if (d.project && ['done', 'waiting', 'next', 'someday', 'reference'].includes(d.kind)) {
       let target = null;
       if (d.project.key) {
         const p = allProjects.find((x) => x.key === d.project.key);
@@ -7312,6 +7349,17 @@ export default function GtdView() {
               .sort((a, b) => (a.title || '').localeCompare(b.title || ''))}
             onDecide={processDecide}
             onPickPerson={() => dispatch(pickPerson({ title: '¿Quién? (pasa a Waiting)' }))}
+            onPickDest={() =>
+              dispatch(
+                pickRefileTarget({
+                  title: `Enviar «${procTask.title}» a`,
+                  sessionKey: 'process-inbox',
+                  shortcuts: wikiShortcuts(store.getState()),
+                })
+              )
+            }
+            onEditFile={procEditFile}
+            restore={procRestore && procRestore.i === proc.i ? procRestore : null}
             onSkip={() => procMove(1)}
             onBack={() => procMove(-1)}
             onFinish={() => setProc(null)}

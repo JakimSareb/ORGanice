@@ -51,6 +51,7 @@ import { calculateActionedKeybindings, calculateGtdKeybindings } from '../../lib
 
 import * as syncBackendActions from '../../actions/sync_backend';
 import GtdShortcutsHost from '../Gtd/GtdShortcutsHost';
+import ProcReturnBar from '../Gtd/ProcReturnBar';
 import * as orgActions from '../../actions/org';
 import * as baseActions from '../../actions/base';
 import { loadTheme } from '../../lib/color';
@@ -353,6 +354,7 @@ class Entry extends PureComponent {
         {isAuthenticated && <EliConflicts />}
         {isAuthenticated && <EliCommandPalette />}
         {isAuthenticated && <GtdShortcutsHost />}
+        {isAuthenticated && <ProcReturnBar />}
         {isAuthenticated && <EliCalendar />}
         <EliCalculator />
         {isAuthenticated && <EliScratch />}
