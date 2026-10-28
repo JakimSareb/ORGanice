@@ -217,6 +217,8 @@ export default (state = Map(), action) => {
         'eliPagesFile',
         // (4.46) carpeta del Zettelkasten
         'eliZkFolder',
+        // (4.51) carpeta de la Wiki Divio
+        'eliWikiDir',
         // (4.47) Revisión ZK como último paso de la Revisión semanal (apagado por defecto)
         'eliZkWeeklyReview',
         'eliNoHashTagTitle',

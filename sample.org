@@ -651,6 +651,21 @@ En el *Menú ☰ › Procesos ZK* (aparte de los procesos GTD), con la misma tar
 - *Revisión ZK* (como la Revisión semanal): fugaces de más de 7 días · notas huérfanas (sin enlaces entrantes ni salientes) · permanentes sin índice · fichas con puntos sin procesar · enlaces rotos (abre la herramienta «Enlaces rotos») · una nota al azar (*Otra* para cambiarla). Tocar una nota la abre. En Ajustes › Zettelkasten, *Añadir la Revisión ZK como paso de la Revisión semanal* (apagado de serie) pone un paso más al final de la Revisión semanal con el botón para abrirla.
 - *Biblioteca*: las fichas de fuente con título, autor, tipo, estado, valoración y cuántos puntos quedan sin procesar; filtros por tipo y estado, ordenadas por fecha de fin. Tocar una la abre; 🖨 la imprime (o PDF) con su tabla.
 
+* Wiki (Divio) (4.51)
+La wiki sigue el sistema *Divio (Diátaxis)* en *5 ficheros* dentro de la *carpeta de la wiki* (Ajustes › Wiki; por defecto =wiki/= junto al fichero de entrada): =index.org= (portada), =tutoriales.org=, =procesos.org=, =referencia.org= y =explicacion.org=. Cada entrada es una *cabecera de nivel 1* con su =:ID:= (los enlaces, siempre por ID) y el *tema* como etiqueta de cabecera (=:emacs:=); tocar la etiqueta muestra las entradas de los cuatro ficheros. Las cabeceras con =:ID:= son nodos de org-roam.
+| | Hacer (trabajo) | Saber (estudio) |
+|---+-----------------+-----------------|
+| Acción | Procesos: cómo hacer algo | Tutoriales: aprender haciendo |
+| Conocimiento | Referencia: datos secos | Explicación: contexto y porqué |
+- *Menú ☰ › Wiki › Crear estructura de wiki*: crea la carpeta y los 5 ficheros, cada uno con su título y una línea que explica el tipo. Solo crea lo que falta; lo que ya existe no se toca.
+- *Menú ☰ › Wiki › Nueva entrada…*: elige el tipo (con su pregunta guía: ¿hacer o saber? ¿aprender o resolver?), el título y el tema; añade la cabecera con su plantilla *al final* del fichero del tipo, pone la línea =- [[id:…][Título]]= en su sección de =index.org= y la abre. Si ya hay una con ese título, la abre en vez de duplicarla; si falta algún fichero, ofrece crear la estructura.
+- Plantillas: *Tutorial* (Objetivo · Necesitas · Pasos · Resultado), *Referencia* (tabla =| Elemento | Qué hace | Notas |=), *Explicación* (Contexto · Por qué así · Alternativas descartadas · Ver también) y *Proceso*.
+** Procesos
+Cada proceso lleva propiedades: =:FRECUENCIA:= (diaria, semanal, mensual, trimestral, anual, a demanda), =:RESPONSABLE:= (un contacto de =personas.org=, opcional) y =:ULTIMA_REVISION:=; y secciones fijas: Propósito · Disparador / Entradas · Pasos (con casillas) · Salidas / Hecho cuando · Ver también.
+- *Menú ☰ › Wiki › Procesos*: tabla con tema, frecuencia, responsable y última revisión. Tocar una cabecera de columna la ordena (por defecto, los que llevan más tiempo sin revisar, arriba); tres filtros (frecuencia, responsable, tema); *Revisado hoy* pone la fecha de hoy; tocar el título abre el proceso.
+** Migrar tu wiki a mano
+Por cada entrada de tu =wiki.org= antiguo: pregúntate *¿hacer o saber?* y *¿aprender o resolver?* para elegir el fichero; si mezcla tipos, pártela en dos; deja el tema solo como etiqueta de cabecera; y conserva el =:ID:= si lo tenía. Para exportar fuera de la app: HTML con =org-publish=, PDF quitando el «# » de los =#+INCLUDE= al final de =index.org=, SharePoint con pandoc.
+
 * Diario en formato org-journal (4.38)
 - El Diario (Menú ☰ › Diario de hoy) guarda en el formato de *org-journal* de Emacs: por defecto un fichero por año, =journal/2026.org=. Cada día es una cabecera con =:CREATED: AAAAMMDD= (y su =:ID:= y contadores) y cada apunte es una subcabecera con su hora y su marca (– nota, o evento, x hecho, ! importante); lo que escribas en más líneas va como texto del apunte. Las respuestas de las preguntas del día van bajo =Plantilla del día=. Tus cabeceras sin hora debajo del día se respetan.
 - Los *contadores diarios* (B, KM…) son propiedades del día; los *mensuales* (Cintura…) también, del día en que los anotas: el valor del mes es el último que hayas apuntado ese mes.

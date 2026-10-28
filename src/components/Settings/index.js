@@ -32,6 +32,7 @@ import { useNotesPlain, setNotesPlain } from '../../lib/eli_notes_plain';
 import { pagesPathFor } from '../../lib/eli_heading_links';
 import { askPick, askText } from '../../lib/eli_prompt';
 import { ZK_DEFAULT_FOLDER, normalizeZkFolder } from '../../lib/eli_zk';
+import { WIKI_DEFAULT_FOLDER, normalizeWikiFolder } from '../../lib/eli_wiki';
 import { useTagsPos, setTagsPos } from '../../lib/eli_tags_pos';
 import { useGapHeaders, setGapHeaders } from '../../lib/eli_gap_headers';
 import {
@@ -276,6 +277,38 @@ const EliZkSettings = () => {
           </div>
         </div>
         <Switch isEnabled={weekly} onToggle={() => set('eliZkWeeklyReview', !weekly)} />
+      </div>
+    </details>
+  );
+};
+// (4.51) Wiki Divio: carpeta de los 5 ficheros (index, tutoriales, procesos, referencia, explicacion)
+const selectWikiFolder = (s) => s.base.get('eliWikiDir') || '';
+const EliWikiSettings = () => {
+  const dispatch = useDispatch();
+  const folder = useSelector(selectWikiFolder);
+  const choose = async () => {
+    const v = await askText({
+      title: 'Carpeta de la wiki',
+      message:
+        'Relativa a la carpeta del fichero de entrada (o absoluta, con «/» delante). Dentro: index.org, tutoriales.org, procesos.org, referencia.org y explicacion.org (☰ › Wiki › Crear estructura de wiki).',
+      value: folder || WIKI_DEFAULT_FOLDER,
+      okLabel: 'Guardar',
+    });
+    if (v === null || v === undefined) return;
+    const n = normalizeWikiFolder(v);
+    dispatch(baseActions.setEliSetting('eliWikiDir', n === WIKI_DEFAULT_FOLDER ? '' : n));
+  };
+  return (
+    <details className="eli-settings-section" data-testid="eli-settings-wiki">
+      <summary>
+        <span className="eli-settings-section__title">Wiki</span>
+        <span className="eli-settings-section__hint">Carpeta de la wiki (Divio, 5 ficheros)</span>
+      </summary>
+      <div className="setting-container" data-testid="eli-setting-wiki-folder">
+        <div className="setting-label">Carpeta de la wiki</div>
+        <button type="button" className="btn" onClick={choose} data-testid="eli-wiki-folder-btn">
+          {folder || WIKI_DEFAULT_FOLDER}
+        </button>
       </div>
     </details>
   );
@@ -1410,6 +1443,8 @@ const Settings = ({
       <EliDiarySettings />
 
       <EliZkSettings />
+
+      <EliWikiSettings />
 
       {!notes && (
         <details className="eli-settings-section" data-testid="eli-settings-gtd">

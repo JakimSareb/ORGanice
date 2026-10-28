@@ -18,6 +18,8 @@ export const MENU_ENTRIES = [
   { id: 'fugaz', label: 'Fugaz ZK' },
   // (4.47) Procesos ZK (procesar fugaces, Revisión ZK, Biblioteca), aparte de los de GTD
   { id: 'zkprocs', label: 'Procesos ZK' },
+  // (4.51) Wiki Divio (Crear estructura, Nueva entrada, Procesos)
+  { id: 'wiki', label: 'Wiki' },
   // (4.37) orden por defecto = el del usuario (lib/eli_defaults.js › MENU_ORDER)
   { id: 'processes', label: 'Procesos' },
   { id: 'files', label: 'Mis ficheros' },
