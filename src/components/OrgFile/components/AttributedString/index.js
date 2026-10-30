@@ -4,6 +4,7 @@ import EliTransclusion from '../EliTransclusion';
 import { fileLinkTarget } from '../../../../lib/eli_media';
 import { parseOrgLink } from '../../../../lib/eli_org_links';
 import React from 'react';
+import { fromJS } from 'immutable';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -182,6 +183,37 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
               `attributed-string__inline-markup--${part.get('markupType')}`
             );
 
+            // (4.53) un enlace dentro del formato (*[[url][texto]]*) se pinta como enlace, con el
+            // formato aplicado (antes salía el texto plano con los corchetes)
+            if (
+              part.get('markupType') !== 'inline-code' &&
+              part.get('markupType') !== 'verbatim' &&
+              /\[\[/.test(part.get('content') || '')
+            ) {
+              const pieces = [];
+              const text = part.get('content');
+              const re = /\[\[((?:\\[[\]]|[^\]])*)\](?:\[([^\]]*)\])?\]/g;
+              let last = 0;
+              let m = re.exec(text);
+              while (m) {
+                if (m.index > last) pieces.push(text.substring(last, m.index));
+                const contents = { uri: m[1] };
+                if (m[2]) contents.title = m[2];
+                pieces.push(
+                  renderLink(
+                    fromJS({ id: `${part.get('id')}-${pieces.length}`, type: 'link', contents })
+                  )
+                );
+                last = m.index + m[0].length;
+                m = re.exec(text);
+              }
+              if (last < text.length) pieces.push(text.substring(last));
+              return (
+                <span key={part.get('id')} className={className}>
+                  {pieces}
+                </span>
+              );
+            }
             return (
               <span key={part.get('id')} className={className}>
                 {part.get('content')}

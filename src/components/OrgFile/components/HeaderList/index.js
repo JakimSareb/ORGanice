@@ -18,7 +18,7 @@ import classNames from 'classnames';
 import { List, Map } from 'immutable';
 
 class HeaderList extends PureComponent {
-  LONG_PRESS_DELAY_MS = 350;
+  LONG_PRESS_DELAY_MS = 1000; // (4.53) mantener el texto 1 s para hacer narrow; si se suelta antes no hace nada
   LONG_PRESS_CANCEL_DISTANCE = 8;
   AUTO_SCROLL_MARGIN = 80;
   AUTO_SCROLL_SPEED = 18;

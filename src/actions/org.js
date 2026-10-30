@@ -840,6 +840,8 @@ export const eliSetHideBody = (headerId, hide) => ({ type: 'ELI_SET_HIDE_BODY', 
 
 // ORG Mode para Eli (2.15): contraer (false) o expandir (true) todas las cabeceras
 export const eliSetAllHeadersOpened = (opened) => ({ type: 'ELI_SET_ALL_OPENED', opened });
+// (4.53) ciclo de visibilidad (S-TAB de Org): CERRADA → HIJOS → TODO
+export const eliCycleVisibility = () => ({ type: 'ELI_CYCLE_VISIBILITY' });
 
 export const widenHeader = () => ({
   type: 'WIDEN_HEADER',
@@ -2371,6 +2373,9 @@ export const eliCurrentView = (state) => {
   return {
     path,
     narrowId: (path && present.getIn(['files', path, 'narrowedHeaderId'])) || null,
+    // (4.53) también la posición: cabecera seleccionada y scroll, para volver exactamente ahí
+    selId: (path && present.getIn(['files', path, 'selectedHeaderId'])) || null,
+    scrollY: typeof window !== 'undefined' ? Math.round(window.scrollY || 0) : 0,
   };
 };
 
@@ -2387,6 +2392,17 @@ export const eliRestoreView = (view) => async (dispatch, getState) => {
     dispatch(eliNarrowAndExpand(view.narrowId, { titlesOnly: true, hideBody: false }));
   } else {
     dispatch(widenHeader());
+  }
+  // (4.53) la cabecera seleccionada y el scroll de ese momento
+  if (view.selId && headers.some((h) => h.get('id') === view.selId))
+    dispatch(selectHeaderAndOpenParents(view.path, view.selId));
+  if (view.scrollY) {
+    const y = view.scrollY;
+    setTimeout(() => {
+      try {
+        window.scrollTo(0, y);
+      } catch (e) {}
+    }, 250);
   }
   return true;
 };
@@ -2460,7 +2476,9 @@ export const eliFollowOrgLink = (uri, basePath = null) => async (dispatch, getSt
   // restauran la cabecera reducida (antes, dentro del mismo fichero, la ruta no cambiaba)
   const originView = eliCurrentView(state);
   const targetView = { path: targetPath, narrowId: header ? header.get('id') : null };
-  if (header && !sameView(originView, targetView)) {
+  // (4.53) también los enlaces a un fichero (sin cabecera) o a un ancla: cada salto es una entrada
+  // del historial con su vista de origen (cabecera reducida, selección y scroll)
+  if (!sameView(originView, targetView)) {
     markView(originView);
     if (!pushView(`/file${targetPath}`, targetView))
       window.dispatchEvent(new CustomEvent('eli:navigate', { detail: `/file${targetPath}` }));

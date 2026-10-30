@@ -147,6 +147,7 @@ export default function EliDocBar({
   // (4.0) Modo Notas: sin lo de tareas (estado, ★, fechas, reloj, propiedades, GTD…)
   const notes = useNotesMode();
   const [sub, setSub] = useState(null); // submenú abierto (id)
+  const [ctx, setCtx] = useState(null); // (4.53) clic derecho: posición { x, y } del menú
   const [bottom, setBottom] = useState(0);
   const press = useLongPress();
   const locked = useDocLock();
@@ -371,12 +372,15 @@ export default function EliDocBar({
   const insertHeadingLinkHere = () => {
     const field = activeField();
     if (field) {
-      dispatch(insertHeadingLink(field, insertIntoField));
+      dispatch(insertHeadingLink(field, insertIntoField, null, activeField));
       return;
     }
     org('openHeader', id);
     base('activatePopup', 'description-editor');
-    setTimeout(() => dispatch(insertHeadingLink(activeField(), insertIntoField)), 120);
+    setTimeout(
+      () => dispatch(insertHeadingLink(activeField(), insertIntoField, null, activeField)),
+      120
+    );
   };
   // (4.42) «Citar…»: trae el contenido de otra cabecera o nota (línea `#+transclude:` en las notas)
   const insertQuote = () => {
@@ -909,6 +913,7 @@ export default function EliDocBar({
             icon: 'far fa-calendar-check',
             label: 'Programada',
             hint: planDate('SCHEDULED'),
+            keepHint: true,
             onClick: () => planning('SCHEDULED'),
           },
           {
@@ -916,6 +921,7 @@ export default function EliDocBar({
             icon: 'fas fa-calendar-check',
             label: 'Fecha límite',
             hint: planDate('DEADLINE'),
+            keepHint: true,
             onClick: () => planning('DEADLINE'),
           },
           {
@@ -1454,6 +1460,9 @@ export default function EliDocBar({
                 label: '[[ ]]', // (4.39) texto compacto en monoespaciada (CSS)
                 title: 'Enlace a una cabecera (también al teclear [[)',
                 onClick: insertHeadingLinkHere,
+                // (4.53) NO guardar ni cerrar el editor al abrir el buscador (antes salía «El
+                // campo que se editaba ya no está abierto» al editar una nota)
+                text: true,
               },
             ]
           : []),
@@ -1706,6 +1715,36 @@ export default function EliDocBar({
           onClick: () => org('removeListItem'),
           text: true,
         },
+        // (4.53) Editando el texto o las notas de una sección: las mismas opciones que al editar
+        // el título o las notas de la cabecera (enlace a cabecera, añadir archivo/enlace/fecha,
+        // formato y ocultar el teclado)
+        ...(listEditMode && header
+          ? [
+              {
+                id: 'link-hdr',
+                label: '[[ ]]',
+                title: 'Enlace a una cabecera (también al teclear [[)',
+                onClick: insertHeadingLinkHere,
+                text: true,
+              },
+              {
+                id: 'insert',
+                icon: 'fas fa-paperclip',
+                label: 'Añadir',
+                title: 'Añadir',
+                sub: 'insert',
+              },
+              { id: 'format', label: 'Aa', title: 'Formato', sub: 'format' },
+              {
+                id: 'kbd',
+                icon: 'fas fa-keyboard',
+                badge: '↓',
+                title: 'Ocultar el teclado',
+                onClick: hideKeyboard,
+                text: true,
+              },
+            ]
+          : []),
         {
           id: 'li-done',
           icon: 'fas fa-check',
@@ -1852,6 +1891,40 @@ export default function EliDocBar({
     };
   }, [sub]);
 
+  // (4.53) Clic derecho (solo ratón) sobre una cabecera, nota, sección, enlace o tabla: se
+  // selecciona esa cabecera y se abre, junto al puntero, un menú con todas las opciones
+  // aplicables (las de la barra y las del ⋯). En un campo de texto sigue el menú del navegador;
+  // en el móvil, mantener pulsado no cambia.
+  useEffect(() => {
+    if (!visible || external || coarse) return undefined;
+    const onCtx = (e) => {
+      const t = e.target;
+      if (!t || !t.closest) return;
+      if (
+        t.closest(
+          'textarea, input, select, [contenteditable="true"], .eli-docbar, .eli-docbar-menu, ' +
+            '.eli-prompt__overlay, .eli-more-menu'
+        )
+      )
+        return;
+      const box = t.closest('.header-list-container .header[data-header-id]');
+      if (!box || isDocLocked()) return;
+      e.preventDefault();
+      const hid = box.getAttribute('data-header-id');
+      const hs = headersRef.current;
+      const real = hs && hs.find((h) => String(h.get('id')) === hid);
+      if (real && String(selRef.current) !== hid) dispatch(orgActions.selectHeader(real.get('id')));
+      setCtx({ x: e.clientX, y: e.clientY });
+      setSub('ctx');
+    };
+    document.addEventListener('contextmenu', onCtx);
+    return () => document.removeEventListener('contextmenu', onCtx);
+  }, [visible, external, coarse, dispatch]); // eslint-disable-line
+  // al cerrarse el menú se olvida la posición del clic derecho
+  useEffect(() => {
+    if (!sub) setCtx(null);
+  }, [sub]);
+
   if (!visible || !rowItems.length) return null;
 
   const keep = (e) => e.preventDefault(); // no quitar el foco (ni el teclado) al editar
@@ -1909,6 +1982,23 @@ export default function EliDocBar({
   let menuItems = sub
     ? (external ? external.subs || {} : { ...subs, ...multiSubs })[sub] || []
     : null;
+  if (sub === 'ctx') {
+    menuItems = [
+      ...rowItems
+        .filter((b) => b.id !== 'more' && b.id !== 'kbd')
+        .map((b) => ({
+          id: b.id,
+          icon: b.icon || (b.id === 'format' ? 'fas fa-font' : 'far fa-circle'),
+          label: b.title,
+          disabled: b.disabled,
+          openSub: b.sub || null,
+          onClick: b.onClick,
+          text: b.text,
+        })),
+      { id: 'sep-ctx', sep: true },
+      ...((external ? external.subs || {} : { ...subs, ...multiSubs }).more || []),
+    ];
+  }
   if (sub === 'more' && overflow.length) {
     menuItems = [
       ...overflow.map((b) => ({
@@ -1925,6 +2015,19 @@ export default function EliDocBar({
     ];
   }
   const menuStyle = () => {
+    // (4.53) clic derecho: el menú sale junto al puntero
+    if (ctx) {
+      const w = Math.min(280, window.innerWidth - 16);
+      const left = Math.max(8, Math.min(ctx.x, window.innerWidth - w - 8));
+      const top = Math.max(8, Math.min(ctx.y, window.innerHeight - 160));
+      return {
+        left,
+        width: w,
+        top,
+        bottom: 'auto',
+        maxHeight: Math.min(460, window.innerHeight - top - 8),
+      };
+    }
     let el = anchorRef.current;
     // abierto con el teclado (tecla m) o el botón está en el ⋯: encima de la barra
     if (!el || !el.isConnected) el = rowRef.current;
@@ -1971,10 +2074,14 @@ export default function EliDocBar({
                   : run(c.onClick, { text: !!c.text, keepOpen: !!c.keepOpen })
               }
               data-testid={c.testId || `eli-docbar-${c.id}`}
+              // (4.53) cada opción muestra solo su título; la descripción sale como tooltip (el
+              // navegador la enseña tras ~1 s con el ratón encima, sin tapar el título). Los
+              // valores (fechas) sí se quedan a la vista.
+              title={c.hint && !c.keepHint ? c.hint : undefined}
             >
               <i className={c.icon} />
               <span className="eli-docbar-menu__label">{c.label}</span>
-              {c.hint && <span className="eli-docbar-menu__hint">{c.hint}</span>}
+              {c.hint && c.keepHint && <span className="eli-docbar-menu__hint">{c.hint}</span>}
               {c.current && <i className="fas fa-check eli-docbar-menu__mark" />}
               {c.openSub && <i className="fas fa-chevron-right eli-docbar-menu__mark" />}
             </button>

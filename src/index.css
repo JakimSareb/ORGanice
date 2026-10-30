@@ -477,4 +477,8 @@ div.eli-viewer__none {
    barra de arriba no se muevan al aparecer o desaparecer (solo afecta a barras clásicas) */
 html {
   scrollbar-gutter: stable;
+  /* (4.53) `scrollbar-gutter` no lo entienden todos los navegadores (Safari antiguo): la barra de
+     scroll de la página se muestra SIEMPRE, así el ancho útil es el mismo en Documentos, en GTD
+     y al pasar de uno a otro (los botones atrás/adelante ya no se desplazan hacia dentro) */
+  overflow-y: scroll;
 }
