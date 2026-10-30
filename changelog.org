@@ -3,6 +3,18 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.53 (octubre de 2026)
+** Documentos: interacción y fallos
+- *Visibilidad* (Menú ☰ › Vista): un solo botón cicla *cerrada → hijos → todo*, como S-TAB de Org (sustituye a «Contraer / Expandir todas»).
+- *Clic derecho* (ratón) sobre una cabecera, nota, sección, enlace o tabla abre un menú con todas las opciones aplicables.
+- El menú ⋯ de la barra muestra solo el título de cada opción; la descripción sale como ayuda al dejar el ratón encima.
+- Mantener pulsado el texto de una cabecera para «Ver sola» (narrow) pide *1 segundo*: si lo sueltas antes, no pasa nada.
+- Los *enlaces con formato* (=*[[url][texto]]*=, =/…/=, =_…_=, =+…+=…) se ven como enlace con el formato aplicado.
+- Al *editar una sección*, la barra ofrece lo mismo que al editar el título o las notas: *[[ ]]*, *Añadir*, *Aa* y ocultar el teclado.
+- *Atrás / adelante* recorren también los saltos por enlace (a una cabecera, por ID o a otro fichero), con la cabecera reducida, la selección y el scroll.
+- La barra de arriba ya no se desplaza al pasar de una página con scroll a otra sin él (ni entre Documentos y GTD).
+- Arreglo: el botón *[[ ]]* de la barra, al editar una nota, ya no cierra la edición ni dice «El campo que se editaba ya no está abierto».
+
 * 4.52 (octubre de 2026)
 ** Procesar Inbox: Someday y Referencia con destino
 - *Someday / Maybe* pregunta «¿Pertenece a algún proyecto?»: si sí (uno que ya existe o uno nuevo), queda *dentro del proyecto* con estado Someday; si no, como siempre.

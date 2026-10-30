@@ -236,8 +236,11 @@ const refocus = (el, at) => {
  * del texto que se sustituye (p. ej. el «[[» escrito); si no, en el cursor.
  * `insert(el, text, start, end)` inserta respetando React (insertIntoField).
  */
-export const insertHeadingLink = (el, insert, replace = null) => async (dispatch) => {
+export const insertHeadingLink = (el, insert, replace = null, refind = null) => async (
+  dispatch
+) => {
   if (!el) return false;
+  // (4.53) posición guardada ANTES de abrir el buscador (el campo puede perder el foco)
   const start = replace ? replace.start : el.selectionStart;
   const end = replace ? replace.end : el.selectionEnd;
   const target = await dispatch(pickHeadingTarget());
@@ -245,11 +248,14 @@ export const insertHeadingLink = (el, insert, replace = null) => async (dispatch
     refocus(el, replace ? replace.end : end);
     return false;
   }
-  if (!el.isConnected) {
+  // (4.53) si React volvió a montar el campo mientras se elegía, se busca el nuevo
+  let field = el;
+  if (!field.isConnected && refind) field = refind() || field;
+  if (!field.isConnected) {
     showMessage('Enlace', 'El campo que se editaba ya no está abierto.');
     return false;
   }
-  insert(el, idHeadingLink(target.orgId, target.title), start, end);
+  insert(field, idHeadingLink(target.orgId, target.title), start, end);
   return true;
 };
 

@@ -74,7 +74,7 @@ En Documentos, mientras editas el título o la descripción, el botón *Aa* est�
 - Ordenador: pulsa la viñeta con el ratón y arrastra.
 - Móvil: mantén pulsada la viñeta medio segundo (se «levanta») y arrastra. Cerca del borde de arriba o de abajo, la página se desplaza sola.
 - Mientras arrastras, muévete *a la derecha* para hacerla hija de la de arriba, o *a la izquierda* para subirla de nivel. La línea se mueve con el nivel.
-- Esc cancela. Mantener pulsado el *texto* de la cabecera sigue siendo «Ver sola» (narrow). Para llevarla lejos o a otro fichero, *Mover* en la barra de abajo. (4.35) Al reducir, sus subcabeceras quedan plegadas y la flechita *←* sobre ella vuelve a ver todo el documento.
+- Esc cancela. Mantener pulsado el *texto* de la cabecera sigue siendo «Ver sola» (narrow); (4.53) hay que mantenerlo *1 segundo* (si lo sueltas antes, no pasa nada). Para llevarla lejos o a otro fichero, *Mover* en la barra de abajo. (4.35) Al reducir, sus subcabeceras quedan plegadas y la flechita *←* sobre ella vuelve a ver todo el documento.
 
 ** Deslizar con el dedo
 - Desliza un encabezado *hacia la derecha* para avanzar su estado (NEXT → TODO → … → DONE).
@@ -518,6 +518,16 @@ En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador): en
 - Por defecto no salen las tareas terminadas (DONE, CANCELLED) ni lo archivado. El botón *Archivados* (junto al cuadro) lo muestra todo, con las archivadas marcadas; se recuerda.
 
 * Atajos de teclado
+** En Documentos: novedades de la 4.53
+- *Visibilidad (como S-TAB de Org)*: Menú ☰ › Vista › *Visibilidad* es un solo botón que cicla *cerrada → hijos → todo*: cerrada = todo plegado; hijos = el nivel de arriba abierto con sus notas y sus subcabeceras plegadas; todo = todo abierto. Con una cabecera reducida (narrow), solo cuenta esa cabecera y lo que cuelga de ella. Sustituye a «Contraer / Expandir todas».
+- *Clic derecho* (ratón) sobre una cabecera, nota, sección, enlace o tabla: selecciona esa cabecera y abre un menú con todas las opciones aplicables (las de la barra de abajo y las del ⋯). En un campo de texto sigue saliendo el menú del navegador; en el móvil, mantener pulsado no cambia.
+- El menú ⋯ de la barra muestra solo el título de cada opción; su explicación sale al dejar el ratón encima un momento.
+- Un *enlace dentro de un formato* (=*[[url][texto]]*=, =/…/=, =_…_=, =+…+=) se ve como enlace con el formato aplicado.
+- *Editar una sección* (las notas dentro de una cabecera): la barra ofrece lo mismo que al editar el título o las notas de la cabecera: *[[ ]]* (enlace a cabecera), *Añadir* (archivo o foto, enlace, fecha), *Aa* (formato) y ocultar el teclado.
+- *«[[ ]]» al editar notas* ya no cierra la edición ni dice «El campo que se editaba ya no está abierto»: el enlace (por ID) se inserta donde estaba el cursor.
+- *Atrás / adelante* (botones y Alt+←/→) recorren también los saltos que haces al seguir enlaces (a una cabecera, por ID, a otro fichero), volviendo con la cabecera reducida, la selección y el scroll de ese momento.
+- La barra de scroll de la página se muestra siempre, así los botones de la barra de arriba no se desplazan entre Documentos y GTD.
+
 ** En Documentos
 | Tecla        | Acción                                             |
 |--------------+----------------------------------------------------|

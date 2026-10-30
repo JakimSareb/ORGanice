@@ -141,6 +141,90 @@ const eliSetAllOpened = (state, action) => {
   );
 };
 
+// (4.53) Ciclo de visibilidad estilo Org (S-TAB): CERRADA → HIJOS → TODO → CERRADA.
+//  - CERRADA: todas las cabeceras plegadas (con la vista reducida, solo se ven sus títulos).
+//  - HIJOS: se abre el nivel de arriba (el de 1.er nivel, o la cabecera reducida) con sus notas;
+//    sus subcabeceras se ven pero plegadas.
+//  - TODO: todas abiertas, con subcabeceras y contenidos.
+// La etapa se deduce de cómo está el fichero ahora; un estado intermedio (abierto a mano) pasa a
+// CERRADA. Con la vista reducida solo cuenta la cabecera reducida y sus descendientes (sus padres
+// siguen abiertos, como en eliSetAllOpened).
+export const eliVisibilityStage = (headers, narrowedId) => {
+  if (!headers || !headers.size) return -1;
+  let from = 0;
+  let to = headers.size - 1;
+  let rootLevel = 1;
+  const ni = narrowedId ? indexOfHeaderWithId(headers, narrowedId) : -1;
+  if (ni >= 0) {
+    from = ni;
+    to = ni + subheadersOfHeaderWithId(headers, narrowedId).size;
+    rootLevel = headers.getIn([ni, 'nestingLevel']);
+  }
+  let allOpen = true;
+  let childrenShape = true;
+  let closedShape = true;
+  let roots = 0;
+  for (let i = from; i <= to; i++) {
+    const h = headers.get(i);
+    const opened = !!h.get('opened');
+    const hide = !!h.get('eliHideBody');
+    const isRoot = h.get('nestingLevel') === rootLevel;
+    if (!opened || hide) allOpen = false;
+    if (isRoot) {
+      roots++;
+      if (!opened || hide) childrenShape = false;
+      if (ni >= 0 ? !(opened && hide) : opened) closedShape = false;
+    } else {
+      if (opened) {
+        childrenShape = false;
+        closedShape = false;
+      }
+    }
+  }
+  if (allOpen) return 2;
+  if (closedShape) return 0;
+  if (childrenShape && roots) return 1;
+  return 2; // estado intermedio: el siguiente paso es CERRADA
+};
+
+const eliCycleVisibility = (state) => {
+  const headers = state.get('headers');
+  const narrowedId = state.get('narrowedHeaderId');
+  if (!headers || !headers.size) return state;
+  const next = (eliVisibilityStage(headers, narrowedId) + 1) % 3;
+  let from = 0;
+  let to = headers.size - 1;
+  let rootLevel = 1;
+  const keep = new Set(); // padres de la cabecera reducida: siguen abiertos
+  const ni = narrowedId ? indexOfHeaderWithId(headers, narrowedId) : -1;
+  if (ni >= 0) {
+    from = ni;
+    to = ni + subheadersOfHeaderWithId(headers, narrowedId).size;
+    rootLevel = headers.getIn([ni, 'nestingLevel']);
+    let level = rootLevel;
+    for (let j = ni - 1; j >= 0 && level > 1; j--) {
+      const l = headers.getIn([j, 'nestingLevel']);
+      if (l < level) {
+        keep.add(j);
+        level = l;
+      }
+    }
+  }
+  return state.set(
+    'headers',
+    headers.map((h, i) => {
+      if (keep.has(i)) return h.set('opened', true).set('eliHideBody', false);
+      if (i < from || i > to) return h;
+      const isRoot = h.get('nestingLevel') === rootLevel;
+      if (next === 2) return h.set('opened', true).set('eliHideBody', false);
+      if (next === 1)
+        return isRoot ? h.set('opened', true).set('eliHideBody', false) : h.set('opened', false);
+      // CERRADA: con la vista reducida, la cabecera reducida queda en «solo cabeceras»
+      return h.set('opened', ni >= 0 && isRoot).set('eliHideBody', ni >= 0 && isRoot);
+    })
+  );
+};
+
 const toggleHeaderOpened = (state, action) => {
   const headers = state.get('headers');
 
@@ -2509,6 +2593,8 @@ const reducer = (state, action) => {
       return inFile(eliOpenSubtree);
     case 'ELI_SET_ALL_OPENED':
       return inFile(eliSetAllOpened);
+    case 'ELI_CYCLE_VISIBILITY':
+      return inFile(eliCycleVisibility);
     case 'ELI_SET_HIDE_BODY':
       return inFile(eliSetHideBody);
     case 'ELI_MOVE_HEADER_LINE':

@@ -1080,18 +1080,12 @@ class HeaderBar extends PureComponent {
               testId: 'eli-menu-view',
               menuId: 'view',
               items: [
+                // (4.53) un solo botón: cicla CERRADA → HIJOS (subcabeceras plegadas) → TODO
                 {
-                  icon: 'fas fa-angle-double-up',
-                  label: 'Contraer todas las cabeceras',
-                  onClick: () => this.props.org.eliSetAllHeadersOpened(false),
-                  testId: 'eli-collapse-all',
-                  disabled: !inRealFile,
-                },
-                {
-                  icon: 'fas fa-angle-double-down',
-                  label: 'Expandir todas las cabeceras',
-                  onClick: () => this.props.org.eliSetAllHeadersOpened(true),
-                  testId: 'eli-expand-all',
+                  icon: 'fas fa-sync-alt',
+                  label: 'Visibilidad: cerrada → hijos → todo',
+                  onClick: () => this.props.org.eliCycleVisibility(),
+                  testId: 'eli-cycle-visibility',
                   disabled: !inRealFile,
                 },
                 {

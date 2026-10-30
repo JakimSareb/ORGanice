@@ -34,7 +34,7 @@ test('4.23: con ratón, un submenú se abre al pasar por encima y se recoge al v
   await page.locator('[data-testid=eli-more-top]').click();
   await page.locator('[data-testid=eli-menu-view]').hover();
   await expect(page.locator('[data-testid=eli-menu-view-flyout]')).toBeVisible({ timeout: 5000 });
-  await expect(page.locator('[data-testid=eli-expand-all]')).toBeVisible();
+  await expect(page.locator('[data-testid=eli-cycle-visibility]')).toBeVisible();
   await page.locator('[data-testid=eli-menu-help]').hover();
   await expect(page.locator('[data-testid=eli-menu-view-flyout]')).toHaveCount(0, {
     timeout: 5000,

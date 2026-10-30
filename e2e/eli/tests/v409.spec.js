@@ -168,9 +168,13 @@ test('4.09: móvil: la viñeta se toca también a su izquierda (área mayor)', a
   const coarse = await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches);
   test.skip(!coarse, 'sin pointer: coarse');
   if (!(await page.locator('text=Hija').first().isVisible())) {
-    await page.locator('[data-testid=eli-more-top]').click();
-    await page.locator('[data-testid=eli-menu-view]').click();
-    await page.locator('[data-testid=eli-expand-all]').click();
+    // (4.53) un solo botón cicla CERRADA → HIJOS → TODO: dos pulsaciones abren todo
+    for (let i = 0; i < 2; i++) {
+      await page.locator('[data-testid=eli-more-top]').click();
+      await page.locator('[data-testid=eli-menu-view]').click();
+      await page.locator('[data-testid=eli-cycle-visibility]').click();
+      await page.waitForTimeout(200);
+    }
     await expect(page.locator('text=Nieta').first()).toBeVisible();
     await page.waitForTimeout(400);
   }

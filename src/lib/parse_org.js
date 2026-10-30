@@ -10,7 +10,9 @@ import _ from 'lodash';
 // unwieldly.
 // ORG Mode para Eli (3.09): en la parte del enlace, «\[» y «\]» son corchetes escapados (como
 // org-link-escape: [[file:x.org::*\[2026-10-14 Wed\] JW][…]])
-const beginningRegexp = /(\[\[((?:\\[[\]]|[^\]])*)\]\]|\[\[((?:\\[[\]]|[^\]])*)\]\[([^\]]*)\]\])|(\[((\d*%)|(\d*\/\d*))\])|((^|\s|[({'"])([*/~=_+])([^\s,'](.*?))\11([\s\-.,:;!?'")}]?))/;
+// (4.53) el formato (*…*, /…/, _…_, =…=, ~…~, +…+) puede envolver un enlace [[uri][texto]] aunque
+// la dirección lleve el mismo carácter (p. ej. «/» o «_»): el enlace del principio se toma entero
+const beginningRegexp = /(\[\[((?:\\[[\]]|[^\]])*)\]\]|\[\[((?:\\[[\]]|[^\]])*)\]\[([^\]]*)\]\])|(\[((\d*%)|(\d*\/\d*))\])|((^|\s|[({'"])([*/~=_+])((?:\[\[(?:\\[[\]]|[^\]])*\](?:\[[^\]]*\])?\]|[^\s,'])(.*?))\11([\s\-.,:;!?'")}]?))/;
 
 // Regexp taken from https://stackoverflow.com/a/3809435/999007
 const httpUrlRegexp = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*))/;
