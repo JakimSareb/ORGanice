@@ -67,6 +67,13 @@ export const TIME_BUCKETS = [
   { id: 'more', label: '> 2 h', min: 121 },
 ];
 
+// (4.55) :CREATED: → Date (o null)
+export const parseCreated = (v) => {
+  const m =
+    /(\d{4})-(\d{2})-(\d{2})/.exec(v || '') || /^\s*(\d{4})(\d{2})(\d{2})\s*$/.exec(v || '');
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+};
+
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 // "1:30" → 90; "45" → 45; "2h" → 120
@@ -405,6 +412,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         deadlineRepeat: planningRepeat(header, 'DEADLINE'),
         closed: planningDate(header, 'CLOSED'),
         doneIn: propertyValue(header, DONE_IN_PROPERTY),
+        // (4.55) fecha de creación (:CREATED: [2026-10-31 Sat 14:39] o AAAAMMDD)
+        createdAt: parseCreated(propertyValue(header, 'CREATED')),
         project: parent ? parent.project : null,
         // (2.15) encabezado padre (para reordenar solo entre hermanas)
         parentId: parent ? headers.getIn([parent.index, 'id']) : null,
@@ -513,6 +522,8 @@ const hiddenBy = (t, s, today) => {
 
 // ¿Entra en esta lista exclusiva? (reglas + casos especiales de Inbox y Reference)
 const matchesList = (task, s) => {
+  // (4.55) «Descartar las tareas recurrentes» de esta sección
+  if (s.noRecurring && task.repeats) return false;
   if (matchesSectionRules(task, s, propertyOfTask)) return true;
   if (s.inboxFile && !task.keyword && task.isInboxFile && !task.parentHasKeyword) return true;
   // (4.22) …también los encabezados sin estado de un proyecto (material de apoyo, como Allen):
@@ -532,6 +543,7 @@ const matchesList = (task, s) => {
 const isScheduledView = (t, today) => {
   const s = getGtdConfig().sections.scheduled;
   if (t.isDone || t.isProject) return false;
+  if (s.noRecurring && t.repeats) return false;
   const base = isTaskLike(t) && (isFutureScheduled(t, today) || (t.isHabit && s.habits));
   if (!base && !matchesSectionRules(t, s, propertyOfTask)) return false;
   return !hiddenBy(t, s, today);
@@ -590,6 +602,7 @@ export const isFocus = (task, today = new Date()) => {
     );
   }
   const s = getGtdConfig().sections.focus;
+  if (s.noRecurring && task.repeats) return false;
   const t0 = startOfDay(today);
   const base =
     !!task.keyword &&
@@ -730,6 +743,7 @@ export const tasksForView = (tasks, view, filters = {}, today = new Date()) => {
       (t) =>
         !t.isDone &&
         !t.isProject &&
+        !(s.noRecurring && t.repeats) &&
         (withRules ? matchesAllSectionRules(t, s, propertyOfTask) : !!t.keyword) &&
         // (3.01) «Mostrar cabeceras sin tarea»: también los encabezados sin estado (con reglas)
         (!!t.keyword || hasInboxTag(t) || (s.headings === true && withRules)) &&

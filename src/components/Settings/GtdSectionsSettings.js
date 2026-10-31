@@ -1,10 +1,11 @@
 // ORG Mode para Eli: Ajustes → Vista GTD y gestos. Deslizar (documentos y GTD) y, para cada
 // sección de la vista GTD: mostrarla, ordenarla y decidir qué tareas entran.
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fromJS } from 'immutable';
 
 import TabButtons from '../UI/TabButtons';
+import { useListDrag, reorderIds } from '../../lib/eli_list_drag';
 import { setEliSetting } from '../../actions/base';
 import {
   sectionDef,
@@ -38,6 +39,7 @@ const TICKS = [
   ['future', 'Incluir tareas programadas para más adelante'],
   ['futurePriority', '… y las programadas para más adelante que tienen prioridad'],
   ['parked', 'Incluir tareas de proyectos dormidos o que aún no han empezado'],
+  ['noRecurring', 'Descartar las tareas recurrentes (con repetición) de esta sección'],
 ];
 
 const RulesInput = ({ label, value, placeholder, onSave, testId, hint }) => {
@@ -99,6 +101,51 @@ const Tick = ({ checked, label, onChange, testId }) => (
   </label>
 );
 
+// (4.55) Lista de ficheros marcables: buscador, orden alfabético, filas compactas (casilla,
+// nombre y ruta tenue)
+const baseName = (p) => p.split('/').filter(Boolean).pop() || p;
+const dirName = (p) => p.split('/').filter(Boolean).slice(0, -1).join('/');
+export const FilesChecklist = ({ paths, selected, onToggle, testPrefix }) => {
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const rows = [...paths]
+    .sort((a, b) => baseName(a).localeCompare(baseName(b)) || a.localeCompare(b))
+    .filter((p) => !needle || p.toLowerCase().includes(needle));
+  return (
+    <div className="eli-gtdfiles" data-testid={`${testPrefix}-list`}>
+      {paths.length > 0 && (
+        <input
+          type="search"
+          className="eli-gtdfiles__search"
+          value={q}
+          placeholder="Buscar fichero…"
+          onChange={(e) => setQ(e.target.value)}
+          data-testid={`${testPrefix}-search`}
+        />
+      )}
+      <div className="eli-gtdfiles__rows">
+        {rows.map((p) => (
+          <label key={p} className="eli-gtdfiles__row" title={p}>
+            <input
+              type="checkbox"
+              checked={selected.includes(p)}
+              onChange={(e) => onToggle(p, e.target.checked)}
+              data-testid={`${testPrefix}-${p}`}
+            />
+            <span className="eli-gtdfiles__name">{baseName(p)}</span>
+            <span className="eli-gtdfiles__dir">{dirName(p)}</span>
+          </label>
+        ))}
+        {!rows.length && (
+          <div className="eli-gtdfiles__empty">
+            {paths.length ? 'Ningún fichero coincide.' : 'Aún no hay ficheros .org cargados.'}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function GtdSectionsSettings() {
   const dispatch = useDispatch();
   const stored = useSelector(selectSections);
@@ -111,15 +158,31 @@ export default function GtdSectionsSettings() {
   const save = (next) => dispatch(setEliSetting('eliGtdSections', fromJS(next)));
   const setSection = (id, patch) =>
     save({ ...cfg, sections: { ...cfg.sections, [id]: { ...cfg.sections[id], ...patch } } });
-  const move = (id, delta) => {
-    const order = [...cfg.order];
-    const i = order.indexOf(id);
-    const j = i + delta;
-    if (j < 0 || j >= order.length) return;
-    order.splice(i, 1);
-    order.splice(j, 0, id);
-    save({ ...cfg, order });
-  };
+  // (4.55) ordenar arrastrando el asa (sustituye a las flechas)
+  const listRef = useRef(null);
+  const { drag, startDrag } = useListDrag(listRef, (id, target) =>
+    save({ ...cfg, order: reorderIds(cfg.order, id, target) })
+  );
+  const dragClass = (id) =>
+    drag && drag.id === id
+      ? ' is-dragging'
+      : drag && drag.over && drag.over.id === id
+      ? drag.over.after
+        ? ' is-drop-after'
+        : ' is-drop-before'
+      : '';
+  const handle = (id, testId) => (
+    <button
+      type="button"
+      className="eli-gtdsec__grip"
+      onPointerDown={startDrag(id)}
+      title="Arrastrar para ordenar"
+      aria-label="Arrastrar para ordenar"
+      data-testid={testId}
+    >
+      <i className="fas fa-grip-vertical" />
+    </button>
+  );
   const setFiles = (patch) => save({ ...cfg, files: { ...cfg.files, ...patch } });
   const reset = () => {
     if (window.confirm('¿Volver a la configuración de secciones de siempre?')) save({});
@@ -527,19 +590,16 @@ export default function GtdSectionsSettings() {
         />
         <div className="eli-gtdsec__rule">
           <span>«Archivar todas» solo de estos ficheros (ninguno marcado: de todos)</span>
-          {orgPaths.map((p) => (
-            <Tick
-              key={p}
-              checked={cfg.files.archive.includes(p)}
-              label={p}
-              onChange={(v) =>
-                setFiles({
-                  archive: v ? [...cfg.files.archive, p] : cfg.files.archive.filter((x) => x !== p),
-                })
-              }
-              testId={`eli-gtdfiles-archive-${p}`}
-            />
-          ))}
+          <FilesChecklist
+            paths={orgPaths}
+            selected={cfg.files.archive}
+            testPrefix="eli-gtdfiles-archive"
+            onToggle={(p, v) =>
+              setFiles({
+                archive: v ? [...cfg.files.archive, p] : cfg.files.archive.filter((x) => x !== p),
+              })
+            }
+          />
         </div>
       </div>
 
@@ -551,121 +611,90 @@ export default function GtdSectionsSettings() {
           </button>
         </div>
         <div className="eli-gtdsec__hint">
-          Ordénalas con las flechas (es el orden del menú y, si una tarea cumple varias listas, va a
-          la primera), elige cuáles se ven y toca una para decidir qué tareas entran.
+          Ordénalas arrastrando el asa (es el orden del menú y, si una tarea cumple varias listas,
+          va a la primera), elige cuáles se ven y toca una para decidir qué tareas entran.
         </div>
-        {cfg.order.map((id, i) => {
-          if (isSepId(id)) {
-            const sep = (cfg.separators || []).find((x) => x.id === id);
-            if (!sep) return null;
+        <div ref={listRef}>
+          {cfg.order.map((id, i) => {
+            if (isSepId(id)) {
+              const sep = (cfg.separators || []).find((x) => x.id === id);
+              if (!sep) return null;
+              return (
+                <div
+                  key={id}
+                  className={'eli-gtdsec__row eli-gtdsec__row--sep' + dragClass(id)}
+                  data-drag-id={id}
+                  data-testid="eli-gtdsec-sep"
+                >
+                  <div className="eli-gtdsec__line">
+                    {handle(id, 'eli-gtdsec-sep-grip')}
+                    <span className="eli-gtdsec__sep-line" aria-hidden="true" />
+                    <input
+                      className="eli-gtdsec__sep-name"
+                      defaultValue={sep.label}
+                      key={sep.label}
+                      placeholder="Línea simple (escribe un nombre para que sea cabecera)"
+                      onBlur={(e) =>
+                        e.target.value.trim() !== sep.label &&
+                        setSeparator(id, e.target.value.trim())
+                      }
+                      onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                      aria-label="Nombre de la cabecera (vacío: línea simple)"
+                      data-testid="eli-gtdsec-sep-name"
+                    />
+                    <span className="eli-gtdsec__sep-line" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="eli-gtdsec__move"
+                      onClick={() => removeSeparator(id)}
+                      title="Quitar el separador"
+                      data-testid="eli-gtdsec-sep-remove"
+                    >
+                      <i className="fas fa-times" />
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            const def = sectionDef(id, cfg);
+            if (!def) return null;
+            const s = cfg.sections[id];
+            const open = openId === id;
             return (
               <div
                 key={id}
-                className="eli-gtdsec__row eli-gtdsec__row--sep"
-                data-testid="eli-gtdsec-sep"
+                className={
+                  'eli-gtdsec__row' + (s.show === false ? ' is-hidden' : '') + dragClass(id)
+                }
+                data-drag-id={id}
+                data-testid={`eli-gtdsec-${id}`}
               >
                 <div className="eli-gtdsec__line">
-                  <button
-                    type="button"
-                    className="eli-gtdsec__move"
-                    onClick={() => move(id, -1)}
-                    disabled={i === 0}
-                    title="Subir"
-                    data-testid="eli-gtdsec-sep-up"
-                  >
-                    <i className="fas fa-arrow-up" />
-                  </button>
-                  <button
-                    type="button"
-                    className="eli-gtdsec__move"
-                    onClick={() => move(id, 1)}
-                    disabled={i === cfg.order.length - 1}
-                    title="Bajar"
-                    data-testid="eli-gtdsec-sep-down"
-                  >
-                    <i className="fas fa-arrow-down" />
-                  </button>
-                  <span className="eli-gtdsec__sep-line" aria-hidden="true" />
+                  {handle(id, `eli-gtdsec-${id}-grip`)}
                   <input
-                    className="eli-gtdsec__sep-name"
-                    defaultValue={sep.label}
-                    key={sep.label}
-                    placeholder="Línea simple (escribe un nombre para que sea cabecera)"
-                    onBlur={(e) =>
-                      e.target.value.trim() !== sep.label && setSeparator(id, e.target.value.trim())
-                    }
-                    onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
-                    aria-label="Nombre de la cabecera (vacío: línea simple)"
-                    data-testid="eli-gtdsec-sep-name"
+                    type="checkbox"
+                    checked={s.show !== false}
+                    onChange={(e) => setSection(id, { show: e.target.checked })}
+                    title="Mostrar esta sección"
+                    aria-label={`Mostrar ${sectionLabel(id, cfg)}`}
+                    data-testid={`eli-gtdsec-${id}-show`}
                   />
-                  <span className="eli-gtdsec__sep-line" aria-hidden="true" />
                   <button
                     type="button"
-                    className="eli-gtdsec__move"
-                    onClick={() => removeSeparator(id)}
-                    title="Quitar el separador"
-                    data-testid="eli-gtdsec-sep-remove"
+                    className="eli-gtdsec__name"
+                    onClick={() => setOpenId(open ? null : id)}
+                    aria-expanded={open}
+                    data-testid={`eli-gtdsec-${id}-open`}
                   >
-                    <i className="fas fa-times" />
+                    <i className={def.icon} /> {sectionLabel(id, cfg)}
+                    <i className={'fas ' + (open ? 'fa-caret-down' : 'fa-caret-right')} />
                   </button>
                 </div>
+                {open && renderOptions(id)}
               </div>
             );
-          }
-          const def = sectionDef(id, cfg);
-          if (!def) return null;
-          const s = cfg.sections[id];
-          const open = openId === id;
-          return (
-            <div
-              key={id}
-              className={'eli-gtdsec__row' + (s.show === false ? ' is-hidden' : '')}
-              data-testid={`eli-gtdsec-${id}`}
-            >
-              <div className="eli-gtdsec__line">
-                <button
-                  type="button"
-                  className="eli-gtdsec__move"
-                  onClick={() => move(id, -1)}
-                  disabled={i === 0}
-                  title="Subir"
-                  data-testid={`eli-gtdsec-${id}-up`}
-                >
-                  <i className="fas fa-arrow-up" />
-                </button>
-                <button
-                  type="button"
-                  className="eli-gtdsec__move"
-                  onClick={() => move(id, 1)}
-                  disabled={i === cfg.order.length - 1}
-                  title="Bajar"
-                  data-testid={`eli-gtdsec-${id}-down`}
-                >
-                  <i className="fas fa-arrow-down" />
-                </button>
-                <input
-                  type="checkbox"
-                  checked={s.show !== false}
-                  onChange={(e) => setSection(id, { show: e.target.checked })}
-                  title="Mostrar esta sección"
-                  aria-label={`Mostrar ${sectionLabel(id, cfg)}`}
-                  data-testid={`eli-gtdsec-${id}-show`}
-                />
-                <button
-                  type="button"
-                  className="eli-gtdsec__name"
-                  onClick={() => setOpenId(open ? null : id)}
-                  aria-expanded={open}
-                  data-testid={`eli-gtdsec-${id}-open`}
-                >
-                  <i className={def.icon} /> {sectionLabel(id, cfg)}
-                  <i className={'fas ' + (open ? 'fa-caret-down' : 'fa-caret-right')} />
-                </button>
-              </div>
-              {open && renderOptions(id)}
-            </div>
-          );
-        })}
+          })}
+        </div>
         <button
           type="button"
           className="btn eli-gtdsec__add"

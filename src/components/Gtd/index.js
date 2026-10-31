@@ -88,6 +88,8 @@ import {
   openSubtasksOf,
   autoCollect,
   LS_AUTO_COLLECT,
+  LS_NEW_PROJECT_ORDER,
+  newProjectsOrdered,
   gtdRenameTag,
   gtdRenameArea,
   gtdAssignProject,
@@ -1239,6 +1241,8 @@ export default function GtdView() {
     () => readLS('eliGtdProjectsOpen', true) !== false
   );
   const [autoCollectOn, setAutoCollectOn] = useState(() => autoCollect());
+  // (4.55) los proyectos nuevos nacen secuenciales (:ORDERED: t) o paralelos
+  const [newSeqOn, setNewSeqOn] = useState(() => newProjectsOrdered());
   const lastPointer = useRef('mouse');
   // ORG Mode para Eli: tarea recién creada con su editor abierto: no se cierra al tocar fuera
   // (hay que Guardar o Cancelar; Cancelar la borra)
@@ -1919,7 +1923,7 @@ export default function GtdView() {
         const refNodes = isRefs ? nestProjectRefs(tasks, sec.tasks) : null;
         const secTasks = isRefs ? refNodes.map((n) => n.task) : sec.tasks;
         // Mientras se arrastra se ven también las secciones vacías (para poder soltar en ellas)
-        if (!secTasks.length && (!reorderingKey || isRefs)) return;
+        if (!secTasks.length && !reorderingKey) return;
         const open = isRefs ? refsOpen : doneOpen;
         out.push({
           kind: 'header',
@@ -1928,7 +1932,7 @@ export default function GtdView() {
           label: sec.label,
           icon: sec.icon,
           count: secTasks.length,
-          reorder: !isRefs,
+          reorder: true,
           collapsible: isDone || isRefs,
           collapsed: (isDone || isRefs) && !open,
           toggle: isRefs ? 'refs' : 'done',
@@ -1942,7 +1946,7 @@ export default function GtdView() {
               kind: 'task',
               task: n.task,
               section: sec.id,
-              reorderable: false,
+              reorderable: true,
               isRef: true,
               depth: n.depth,
               hasKids: n.hasKids,
@@ -3173,8 +3177,10 @@ export default function GtdView() {
     const keyIndex = (k) => rowTasks.findIndex((t) => t.key === k);
     if (isProjectView) {
       const target = pos.section;
-      if (!target || target === 'refs') return;
-      const own = projectSectionOfSeq(task, today, projSequential);
+      if (!target) return;
+      // (4.55) «Referencias» del proyecto: las tareas sin estado
+      const own =
+        !task.keyword && !task.isDone ? 'refs' : projectSectionOfSeq(task, today, projSequential);
       const inTarget = rows.filter((i) => i.section === target).map((i) => i.task);
       const before = pos.beforeKey && inTarget.find((t) => t.key === pos.beforeKey);
       const after = pos.afterKey && inTarget.find((t) => t.key === pos.afterKey);
@@ -3203,6 +3209,11 @@ export default function GtdView() {
       if (target !== own) {
         if (target === 'done') {
           changes.list = 'done';
+        } else if (target === 'refs') {
+          // (4.55) arrastrar a «Referencias» = pasarla a Referencia (sin estado)
+          changes.list = 'reference';
+          changes.tags = tagsForList(task, 'reference');
+          if (own === 'scheduled') changes.scheduled = null;
         } else if (target === 'scheduled') {
           const day1 = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
           const date = await askDate({
@@ -4528,7 +4539,9 @@ export default function GtdView() {
     if (e.key === 'Enter') {
       if (t && t.closest && t.closest('button, a, select')) return false;
       e.preventDefault();
-      if (task.isProject && !isProjectView) selectView({ type: 'project', key: task.key });
+      // (4.55) un proyecto hijo dentro de la lista del padre también abre el hijo
+      if (task.isProject && (!isProjectView || task.key !== view.key))
+        selectView({ type: 'project', key: task.key });
       else setOpenKey(task.key);
       return true;
     }
@@ -4730,7 +4743,8 @@ export default function GtdView() {
       openInFile(task, e);
       return;
     }
-    if (task.isProject && !isProjectView) {
+    // (4.55) un proyecto hijo dentro de la lista del padre también abre el hijo
+    if (task.isProject && (!isProjectView || task.key !== view.key)) {
       selectView({ type: 'project', key: task.key });
       return;
     }
@@ -5680,6 +5694,18 @@ export default function GtdView() {
             window.localStorage.setItem(LS_AUTO_COLLECT, v ? 'true' : 'false');
           } catch (e) {}
         },
+      },
+      {
+        label: 'Proyectos nuevos secuenciales (si no, paralelos)',
+        checked: newSeqOn,
+        onClick: () => {
+          const v = !newSeqOn;
+          setNewSeqOn(v);
+          try {
+            window.localStorage.setItem(LS_NEW_PROJECT_ORDER, v ? 'sequential' : 'parallel');
+          } catch (e) {}
+        },
+        testId: 'gtd-menu-new-seq',
       },
       { sep: true },
       {
