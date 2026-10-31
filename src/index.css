@@ -405,6 +405,15 @@ div.eli-viewer__none {
   padding: 10px;
   opacity: 0.6;
 }
+/* (4.57) aviso bajo la lista del selector de destino */
+.eli-pick__tip {
+  font-size: 0.8em;
+  opacity: 0.65;
+  padding: 6px 2px 0;
+}
+.eli-pick__tip:empty {
+  display: none;
+}
 /* (4.52) Selector de destino navegable: migas, fila con «›» para entrar */
 .eli-pick__crumbs {
   display: flex;

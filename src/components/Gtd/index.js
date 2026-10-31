@@ -57,6 +57,7 @@ import {
   inProject,
   nestProjects,
   nestProjectRefs,
+  nestMeetingRows,
   taskByOrgId,
 } from '../../lib/gtd/gtd_model';
 import {
@@ -1580,6 +1581,8 @@ export default function GtdView() {
   // ORG Mode para Eli: en Scheduled, los hábitos van siempre abajo, en su propia sección; en el
   // Logbook, secciones por fecha de cierre (esta semana, la pasada, el mes pasado, este año…)
   const splitHabits = view.id === 'scheduled';
+  const isMeetingTreeView =
+    isCustomId(view.id) && !!gtdCfg.sections[view.id] && gtdCfg.sections[view.id].headings === true;
   const rendered = useMemo(() => {
     // Scheduled: programadas normales, luego las que se repiten y al final los hábitos
     let list = splitHabits
@@ -1603,8 +1606,25 @@ export default function GtdView() {
       const fresh = freshKeys.map((k) => list.find((t) => t.key === k)).filter(Boolean);
       if (fresh.length) list = [...fresh, ...list.filter((t) => !freshKeys.includes(t.key))];
     }
+    // (4.57) sección propia con «cabeceras sin tarea»: las de tipo meeting, con su jerarquía
+    if (isMeetingTreeView) list = nestMeetingRows(tasks, list).list;
     return list;
-  }, [visible, splitHabits, freshKeys, sortDue, view.id, groupMode, tasks, today]);
+  }, [
+    visible,
+    splitHabits,
+    freshKeys,
+    sortDue,
+    view.id,
+    groupMode,
+    tasks,
+    today,
+    isMeetingTreeView,
+  ]);
+  // sangría de cada cabecera de reunión (por nivel)
+  const meetingDepths = useMemo(
+    () => (isMeetingTreeView ? nestMeetingRows(tasks, rendered).depth : null),
+    [isMeetingTreeView, tasks, rendered]
+  );
   const sectionStarts = useMemo(() => {
     const out = {};
     if (splitHabits) {
@@ -2019,6 +2039,8 @@ export default function GtdView() {
         section: 'list',
         // Solo las sueltas sin fechas: las que tienen fecha las ordena la fecha
         reorderable: canReorderLoose && !t.project && !t.isDone && !t.scheduled && !t.deadline,
+        // (4.57) reuniones en una sección propia: sangría por nivel
+        ...(meetingDepths && t.type === 'meeting' ? { depth: meetingDepths.get(t.key) || 0 } : {}),
       });
     });
     return out;
@@ -6633,9 +6655,8 @@ export default function GtdView() {
     'agendas',
   ].includes(view.id);
   // 3.36: lupa de la cabecera (filtro de la sección); el Logbook tiene su propio buscador
-  const canFilterSection = !['logbook', 'projects', 'horizons', 'persons', 'agendas'].includes(
-    view.id
-  );
+  // (4.57) Personas y Agendas también se filtran por texto
+  const canFilterSection = !['logbook', 'projects', 'horizons'].includes(view.id);
   // 3.36 (a): resultados del buscador del menú lateral, agrupados por sección (plegables)
   const openSearchResult = (group, task) => {
     setSearchText('');
@@ -7194,6 +7215,25 @@ export default function GtdView() {
                     </span>
                   )}
                 </span>
+              ) : view.id === 'persons' || view.id === 'agendas' ? (
+                // (4.57) tocar el título abre el fichero vinculado (personas.org / agendas.org)
+                <span
+                  className={
+                    'gtd-main__title-text' +
+                    ((view.id === 'persons' ? personasLoaded : agendasLoaded) ? ' is-link' : '')
+                  }
+                  onClick={() => {
+                    const loaded = view.id === 'persons' ? personasLoaded : agendasLoaded;
+                    if (loaded)
+                      history.push(`/file${view.id === 'persons' ? personasPath : agendasPath}`);
+                  }}
+                  title={`Abrir ${(view.id === 'persons' ? personasPath : agendasPath)
+                    .split('/')
+                    .pop()}`}
+                  data-testid="gtd-title-open-file"
+                >
+                  {title}
+                </span>
               ) : (
                 title
               )}
@@ -7567,6 +7607,7 @@ export default function GtdView() {
         {view.id === 'persons' && (
           <PersonsPage
             contacts={contacts}
+            filter={text}
             loaded={personasLoaded}
             countOf={(c) =>
               c.orgId
@@ -7584,6 +7625,7 @@ export default function GtdView() {
         {view.id === 'agendas' && (
           <AgendasPage
             agendas={agendas}
+            filter={text}
             loaded={agendasLoaded}
             onOpenDoc={(a) =>
               openInFile({

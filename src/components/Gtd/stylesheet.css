@@ -5396,3 +5396,20 @@ html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
 .gtd-proc-return__btn {
   font-weight: 600;
 }
+
+/* (4.57) editar una cabecera de agenda (título, notas, borrar) */
+.gtd-agedit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 8px 22px;
+}
+.gtd-agedit input,
+.gtd-agedit textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.gtd-agedit .gtd-review__btn.is-danger {
+  color: var(--red);
+}

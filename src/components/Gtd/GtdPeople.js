@@ -3,24 +3,26 @@
 // persona.
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { bodyLines, visibleChildren } from '../../lib/gtd/gtd_agendas';
+import {
+  bodyLines,
+  visibleChildren,
+  filterWords,
+  nodeMatches,
+  nodeMatchesDeep,
+  contactMatches,
+} from '../../lib/gtd/gtd_agendas';
 import {
   agendaAddPoint,
   agendaToggle,
   agendaToggleDone,
-  agendaItemToContact,
+  agendaEditNode,
+  agendaDeleteNode,
   createContact,
   openPersonCard,
 } from '../../lib/gtd/gtd_persons_actions';
 import { agendaToMeeting } from '../../lib/gtd/gtd_agendas_actions';
 import { askText } from '../../lib/eli_prompt';
 import { OrgText } from '../EliHeadingViews/OrgRender';
-
-// ¿El texto de un ítem parece un nombre (para «Convertir en contacto»)?
-const looksLikeName = (text) => {
-  const t = String(text || '').trim();
-  return !!t && t.length <= 40 && !/\[\[|https?:|[:;?!]/.test(t) && t.split(/\s+/).length <= 4;
-};
 
 // Notas de una cabecera tal cual: ítems (con su casilla marcable, las de siempre) y párrafos
 const BodyLines = ({ headerId, body }) => {
@@ -64,21 +66,78 @@ const BodyLines = ({ headerId, body }) => {
             <span className="gtd-people__text">
               <OrgText text={item.text} />
             </span>
-            {looksLikeName(item.text) && (
-              <button
-                type="button"
-                className="gtd-people__mini"
-                title="Convertir en contacto (personas.org)"
-                onClick={() => dispatch(agendaItemToContact(headerId, i))}
-                data-testid="gtd-agenda-to-contact"
-              >
-                <i className="fas fa-user-plus" />
-              </button>
-            )}
           </li>
         );
       })}
     </ul>
+  );
+};
+
+// (4.57) Editar una cabecera de la agenda: título (solo los puntos), notas y borrar (solo los puntos)
+const NodeEditor = ({ node, isRoot, onSave, onCancel, onDelete }) => {
+  const [title, setTitle] = useState(node.rawTitle || node.title);
+  const [notes, setNotes] = useState(node.body);
+  const ok = isRoot || !!title.trim();
+  return (
+    <div className="gtd-agedit" data-testid="gtd-agenda-edit">
+      {!isRoot && (
+        <input
+          type="text"
+          className="gtd-tickler__input"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && ok) {
+              e.preventDefault();
+              onSave({ title, notes });
+            }
+            if (e.key === 'Escape') onCancel();
+          }}
+          placeholder="Punto a tratar"
+          aria-label="Título del punto"
+          data-testid="gtd-agenda-edit-title"
+        />
+      )}
+      <textarea
+        className="gtd-tickler__input gtd-agedit__notes"
+        value={notes}
+        rows={Math.min(12, Math.max(4, notes.split('\n').length + 1))}
+        onChange={(e) => setNotes(e.target.value)}
+        onKeyDown={(e) => e.key === 'Escape' && onCancel()}
+        placeholder="Notas"
+        aria-label="Notas"
+        data-testid="gtd-agenda-edit-notes"
+      />
+      <div className="gtd-tickler__add">
+        <button
+          type="button"
+          className="gtd-review__btn is-primary"
+          disabled={!ok}
+          onClick={() => onSave(isRoot ? { notes } : { title, notes })}
+          data-testid="gtd-agenda-edit-save"
+        >
+          Guardar
+        </button>
+        <button
+          type="button"
+          className="gtd-review__btn"
+          onClick={onCancel}
+          data-testid="gtd-agenda-edit-cancel"
+        >
+          Cancelar
+        </button>
+        {!isRoot && (
+          <button
+            type="button"
+            className="gtd-review__btn is-danger"
+            onClick={onDelete}
+            data-testid="gtd-agenda-edit-delete"
+          >
+            <i className="fas fa-trash" /> Borrar
+          </button>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -92,10 +151,13 @@ const PointNode = ({
   sel,
   toggleSel,
   ctl,
+  words,
 }) => {
-  const kids = visibleChildren(node, hideDone);
+  const kids = visibleChildren(node, hideDone).filter((c) => nodeMatchesDeep(c, words));
   const hasMore = kids.length > 0 || !!node.body.trim();
-  const isOpen = !collapsed.has(node.headerId);
+  // con un filtro escrito se ve todo lo que coincide
+  const isOpen = words.length > 0 || !collapsed.has(node.headerId);
+  const editing = ctl.editingId === node.headerId;
   return (
     <li className="gtd-agpoint" data-testid="gtd-agenda-point">
       <div className={'gtd-agpoint__row' + (node.done ? ' is-done' : '')}>
@@ -140,6 +202,15 @@ const PointNode = ({
             <button
               type="button"
               className="gtd-people__mini"
+              title="Editar el punto y sus notas"
+              onClick={() => ctl.setEditing(editing ? null : node.headerId)}
+              data-testid="gtd-agenda-point-edit"
+            >
+              <i className="fas fa-pen" />
+            </button>
+            <button
+              type="button"
+              className="gtd-people__mini"
               title="Añadir subpunto"
               onClick={() => ctl.addChild(node)}
               data-testid="gtd-agenda-point-add"
@@ -169,9 +240,19 @@ const PointNode = ({
           </>
         )}
       </div>
+      {editing && (
+        <NodeEditor
+          key={node.headerId}
+          node={node}
+          isRoot={false}
+          onSave={(v) => ctl.save(node, v)}
+          onCancel={() => ctl.setEditing(null)}
+          onDelete={() => ctl.remove(node)}
+        />
+      )}
       {isOpen && hasMore && (
         <div className="gtd-agpoint__more">
-          <BodyLines headerId={node.headerId} body={node.body} />
+          {!editing && <BodyLines headerId={node.headerId} body={node.body} />}
           {kids.length > 0 && (
             <ul className="gtd-agpoint__list">
               {kids.map((c) => (
@@ -185,6 +266,7 @@ const PointNode = ({
                   sel={sel}
                   toggleSel={toggleSel}
                   ctl={ctl}
+                  words={words}
                 />
               ))}
             </ul>
@@ -196,8 +278,15 @@ const PointNode = ({
 };
 
 // Una agenda (cabecera principal): sus notas, el árbol de puntos y «Añadir punto»
-export const AgendaBody = ({ agenda, onOpenDoc = null, testId = 'gtd-agenda-body' }) => {
+export const AgendaBody = ({
+  agenda,
+  onOpenDoc = null,
+  testId = 'gtd-agenda-body',
+  filter = '',
+}) => {
   const dispatch = useDispatch();
+  const words = filterWords(filter);
+  const [editingId, setEditingId] = useState(null);
   const [text, setText] = useState('');
   const [hideDone, setHideDone] = useState(true);
   const [collapsed, setCollapsed] = useState(() => new Set());
@@ -227,6 +316,16 @@ export const AgendaBody = ({ agenda, onOpenDoc = null, testId = 'gtd-agenda-body
     setSel(new Set());
   };
   const ctl = {
+    editingId,
+    setEditing: setEditingId,
+    save: (node, vals) => {
+      dispatch(agendaEditNode(node.headerId, vals));
+      setEditingId(null);
+    },
+    remove: async (node) => {
+      if (await dispatch(agendaDeleteNode(node.headerId, node.title, node.points)))
+        setEditingId(null);
+    },
     openDoc: onOpenDoc,
     done: (node) => dispatch(agendaToggleDone(node.headerId)),
     addChild: async (node) => {
@@ -241,13 +340,25 @@ export const AgendaBody = ({ agenda, onOpenDoc = null, testId = 'gtd-agenda-body
       if ((await dispatch(agendaToMeeting(ids))) > 0) endSelect();
     },
   };
-  const kids = visibleChildren(agenda, hideDone);
+  const kids = visibleChildren(agenda, hideDone).filter((c) => nodeMatchesDeep(c, words));
+  const editingRoot = editingId === agenda.headerId;
   const nDone = (function count(n) {
     return n.children.reduce((x, c) => x + (c.done ? 1 : 0) + count(c), 0);
   })(agenda);
   return (
     <div className="gtd-people__agenda" data-testid={testId}>
-      <BodyLines headerId={agenda.headerId} body={agenda.body} />
+      {editingRoot ? (
+        <NodeEditor
+          key={agenda.headerId}
+          node={agenda}
+          isRoot
+          onSave={(v) => ctl.save(agenda, v)}
+          onCancel={() => setEditingId(null)}
+          onDelete={() => {}}
+        />
+      ) : (
+        <BodyLines headerId={agenda.headerId} body={agenda.body} />
+      )}
       {kids.length > 0 && (
         <ul className="gtd-agpoint__list" data-testid="gtd-agenda-points">
           {kids.map((c) => (
@@ -261,6 +372,7 @@ export const AgendaBody = ({ agenda, onOpenDoc = null, testId = 'gtd-agenda-body
               sel={sel}
               toggleSel={toggleSel}
               ctl={ctl}
+              words={words}
             />
           ))}
         </ul>
@@ -269,6 +381,16 @@ export const AgendaBody = ({ agenda, onOpenDoc = null, testId = 'gtd-agenda-body
         <p className="gtd-people__hint">Sin puntos todavía.</p>
       )}
       <div className="gtd-tickler__add">
+        {!editingRoot && (
+          <button
+            type="button"
+            className="gtd-review__btn"
+            onClick={() => setEditingId(agenda.headerId)}
+            data-testid="gtd-agenda-edit-root"
+          >
+            <i className="fas fa-pen" /> {agenda.body.trim() ? 'Editar notas' : 'Añadir notas'}
+          </button>
+        )}
         {nDone > 0 && (
           <label className="gtd-people__hint">
             <input
@@ -345,7 +467,7 @@ export const AgendaBody = ({ agenda, onOpenDoc = null, testId = 'gtd-agenda-body
   );
 };
 
-const AgendaRow = ({ agenda, label, open, onToggle, onOpenDoc }) => (
+const AgendaRow = ({ agenda, label, open, onToggle, onOpenDoc, filter }) => (
   <li className={'gtd-people__row' + (open ? ' is-open' : '')} data-testid="gtd-agenda-row">
     <div className="gtd-people__rowhead">
       <button
@@ -375,13 +497,14 @@ const AgendaRow = ({ agenda, label, open, onToggle, onOpenDoc }) => (
         </button>
       )}
     </div>
-    {open && <AgendaBody agenda={agenda} onOpenDoc={onOpenDoc} />}
+    {open && <AgendaBody agenda={agenda} onOpenDoc={onOpenDoc} filter={filter} />}
   </li>
 );
 
 // Página «Agendas»: personas primero y luego lugares/ocasiones; cada una, plegable, con su árbol
-export const AgendasPage = ({ agendas, loaded, onOpenDoc }) => {
+export const AgendasPage = ({ agendas, loaded, onOpenDoc, filter = '' }) => {
   const [openId, setOpenId] = useState(null);
+  const words = filterWords(filter);
   const toggle = (id) => setOpenId((x) => (x === id ? null : id));
   if (!loaded)
     return (
@@ -389,23 +512,29 @@ export const AgendasPage = ({ agendas, loaded, onOpenDoc }) => {
         <p>No se encuentra agendas.org (se elige en Ajustes › GTD › Ficheros).</p>
       </div>
     );
+  // (4.57) con un filtro: solo las agendas cuyo título, notas o puntos coinciden; las que coinciden
+  // solo por dentro (en un punto) salen abiertas
   const list = (items, label) => (
     <ul className="gtd-people__list">
-      {items.map((a) => (
-        <AgendaRow
-          key={a.headerId}
-          agenda={a}
-          label={label(a)}
-          open={openId === a.headerId}
-          onToggle={() => toggle(a.headerId)}
-          onOpenDoc={onOpenDoc}
-        />
-      ))}
+      {items
+        .filter((a) => nodeMatchesDeep(a, words))
+        .map((a) => (
+          <AgendaRow
+            key={a.headerId}
+            agenda={a}
+            label={label(a)}
+            open={openId === a.headerId || (words.length > 0 && !nodeMatches(a, words))}
+            onToggle={() => toggle(a.headerId)}
+            onOpenDoc={onOpenDoc}
+            filter={filter}
+          />
+        ))}
     </ul>
   );
+  const shown = (items) => items.filter((a) => nodeMatchesDeep(a, words)).length > 0;
   return (
     <div className="gtd-people" data-testid="gtd-agendas">
-      {agendas.persons.length > 0 && (
+      {shown(agendas.persons) && (
         <>
           <div className="gtd-review__sub">
             <i className="fas fa-user-friends" /> Personas
@@ -413,7 +542,7 @@ export const AgendasPage = ({ agendas, loaded, onOpenDoc }) => {
           {list(agendas.persons, (a) => a.person.name)}
         </>
       )}
-      {agendas.places.length > 0 && (
+      {shown(agendas.places) && (
         <>
           <div className="gtd-review__sub">
             <i className="fas fa-map-marker-alt" /> Lugares y ocasiones
@@ -426,13 +555,20 @@ export const AgendasPage = ({ agendas, loaded, onOpenDoc }) => {
           <p>agendas.org no tiene ninguna agenda todavía.</p>
         </div>
       )}
+      {!!agendas.all.length && !shown(agendas.all) && (
+        <div className="gtd-empty" data-testid="gtd-agendas-nomatch">
+          <p>Ninguna agenda coincide con «{filter.trim()}».</p>
+        </div>
+      )}
     </div>
   );
 };
 
 // Página «Personas»: los contactos (tocar = ficha) y «Nuevo contacto»
-export const PersonsPage = ({ contacts, loaded, countOf }) => {
+export const PersonsPage = ({ contacts, loaded, countOf, filter = '' }) => {
   const dispatch = useDispatch();
+  const words = filterWords(filter);
+  const shownContacts = contacts.filter((c) => contactMatches(c, words));
   const add = async () => {
     const name = await askText({
       title: 'Nuevo contacto',
@@ -461,7 +597,7 @@ export const PersonsPage = ({ contacts, loaded, countOf }) => {
         </div>
       )}
       <ul className="gtd-people__list">
-        {contacts.map((c) => (
+        {shownContacts.map((c) => (
           <li key={c.headerId} className="gtd-people__row" data-testid="gtd-person-row">
             <div className="gtd-people__rowhead">
               <button
@@ -484,6 +620,11 @@ export const PersonsPage = ({ contacts, loaded, countOf }) => {
           </li>
         ))}
       </ul>
+      {loaded && !!contacts.length && !shownContacts.length && (
+        <div className="gtd-empty" data-testid="gtd-persons-nomatch">
+          <p>Ningún contacto coincide con «{filter.trim()}».</p>
+        </div>
+      )}
     </div>
   );
 };

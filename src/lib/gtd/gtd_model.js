@@ -1035,6 +1035,26 @@ export const nestProjectRefs = (allTasks, refs) => {
   return out;
 };
 
+// (4.57) Reuniones (`:TYPE: meeting`, heredable) en una SECCIÓN PROPIA con «cabeceras sin tarea»:
+// las cabeceras de tipo meeting (y las que cuelgan de ellas) salen como árbol, juntas donde estaba
+// la primera de ellas; el resto de filas y su orden NO cambian. → { list, depth: Map(key → nivel) }
+export const nestMeetingRows = (allTasks, list) => {
+  const meeting = list.filter((t) => t.type === 'meeting');
+  if (!meeting.length) return { list, depth: new Map() };
+  const nodes = nestProjectRefs(allTasks, meeting);
+  const depth = new Map(nodes.map((n) => [n.task.key, n.depth]));
+  const out = [];
+  let placed = false;
+  list.forEach((t) => {
+    if (t.type !== 'meeting') out.push(t);
+    else if (!placed) {
+      placed = true;
+      nodes.forEach((n) => out.push(n.task));
+    }
+  });
+  return { list: out, depth };
+};
+
 // Agrupar una lista por proyecto: primero las sueltas (sin proyecto), después cada proyecto en el
 // orden en que aparece por primera vez; dentro de cada proyecto, el orden de dueFirstFileOrder
 export const groupByProject = (list, today = new Date()) => {

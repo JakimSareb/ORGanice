@@ -555,6 +555,11 @@
   -webkit-user-select: none;
   flex: none;
 }
+/* (4.57) base.css fija `touch-action: manipulation` a todos los botones con más peso: sin esto, el
+   dedo hacía scroll (pointercancel) y las secciones no se podían ordenar con el dedo */
+.App:not(.landing-page) button.eli-gtdsec__grip {
+  touch-action: none;
+}
 .eli-gtdsec__row.is-dragging {
   opacity: 0.45;
 }

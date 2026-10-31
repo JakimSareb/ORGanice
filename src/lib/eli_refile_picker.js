@@ -138,7 +138,9 @@ export const forgetLoc = (key) => lastLocs.delete(key);
  *  - shortcuts: [{ label, hint, path, headerId, title }]  atajos fijos del nivel 1 (p. ej. Wiki)
  *  - sessionKey: recuerda el último nivel y los recientes se ofrecen arriba
  *  - onlyPath: solo ese fichero
- * → Promise<{ path, headerId, title } | null>
+ *  - allowNew: (4.57) dentro de un fichero ofrece «＋ Nueva subcabecera aquí…»: pide el título y
+ *    devuelve además `newTitle` (path/headerId = la madre donde crearla; la crea quien llama)
+ * → Promise<{ path, headerId, title, newTitle? } | null>
  */
 export const askRefileTarget = ({
   title = 'Enviar a',
@@ -148,6 +150,7 @@ export const askRefileTarget = ({
   shortcuts = [],
   sessionKey = null,
   onlyPath = null,
+  allowNew = false,
 }) =>
   new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -158,12 +161,17 @@ export const askRefileTarget = ({
         <div class="eli-pick__crumbs" data-testid="eli-refile-crumbs"></div>
         <input type="text" class="eli-prompt__input" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Buscar fichero o cabecera…" data-testid="eli-refile-search" />
         <div class="eli-pick__list" role="listbox"></div>
+        <div class="eli-pick__tip" data-testid="eli-refile-tip"></div>
         <div class="eli-prompt__buttons">
           <button type="button" class="btn eli-pick__up" data-testid="eli-refile-up">← Atrás</button>
           <button type="button" class="btn eli-prompt__cancel">Cancelar</button>
         </div>
       </form>`;
     overlay.querySelector('.eli-prompt__title').textContent = title;
+    // (4.57) aviso (4.52): para colgarlo de una subcabecera hay que entrar con «›» en su madre
+    overlay.querySelector('.eli-pick__tip').textContent = allowNew
+      ? 'Toca una cabecera para elegirla; «›» entra en sus subcabeceras (para elegir una de más abajo) y «＋ Nueva…» crea una.'
+      : '';
     const crumbsEl = overlay.querySelector('.eli-pick__crumbs');
     const input = overlay.querySelector('.eli-prompt__input');
     const listEl = overlay.querySelector('.eli-pick__list');
@@ -175,6 +183,7 @@ export const askRefileTarget = ({
     let active = 0;
     let busy = '';
     let finished = false;
+    let creating = false; // (4.57) escribiendo el título de la subcabecera nueva
 
     const find = (path, headerId) => {
       const list = (getIndex().byPath && getIndex().byPath.get(path)) || [];
@@ -221,7 +230,14 @@ export const askRefileTarget = ({
       active = 0;
       paint();
     };
+    const stopCreating = () => {
+      creating = false;
+      input.value = '';
+      active = 0;
+      paint();
+    };
     const goUp = () => {
+      if (creating) return stopCreating();
       if (input.value) {
         input.value = '';
       } else if (loc.trail.length) loc = { path: loc.path, trail: loc.trail.slice(0, -1) };
@@ -230,6 +246,7 @@ export const askRefileTarget = ({
       paint();
     };
     const goToDepth = (depth) => {
+      creating = false;
       if (depth === 0) loc = { path: null, trail: [] };
       else loc = { path: loc.path, trail: loc.trail.slice(0, depth - 1) };
       input.value = '';
@@ -250,10 +267,36 @@ export const askRefileTarget = ({
         })
       );
 
+    const finishNew = (newTitle) => {
+      const parent = loc.trail.length ? loc.trail[loc.trail.length - 1] : null;
+      rememberLoc(sessionKey, loc);
+      done({
+        path: loc.path,
+        headerId: parent ? parent.headerId : null,
+        title: parent ? parent.title : fileNameOf(loc.path),
+        newTitle,
+      });
+    };
+
     const build = () => {
       rows = [];
       const q = input.value.trim();
       const index = getIndex();
+      if (creating) {
+        const parent = loc.trail.length ? loc.trail[loc.trail.length - 1] : null;
+        if (q)
+          rows.push({
+            kind: 'create',
+            label: `✓ Crear «${q}»`,
+            hint: parent
+              ? `dentro de «${parent.title}»`
+              : `en ${fileNameOf(loc.path)}, nivel superior`,
+            depth: 0,
+            main: () => finishNew(q),
+            enter: null,
+          });
+        return;
+      }
       if (q) {
         const res = searchRows(index, visibleFiles, q);
         res.files.forEach((f) =>
@@ -329,6 +372,23 @@ export const askRefileTarget = ({
             : choose({ path: loc.path, headerId: null, title: fileNameOf(loc.path) }),
         enter: null,
       });
+      if (allowNew)
+        rows.push({
+          kind: 'new',
+          label: parent
+            ? `＋ Nueva subcabecera dentro de «${parent.title}»…`
+            : '＋ Nueva cabecera en el nivel superior…',
+          hint: '',
+          depth: 0,
+          main: () => {
+            creating = true;
+            input.value = '';
+            active = 0;
+            paint();
+            input.focus();
+          },
+          enter: null,
+        });
       addEntryRows(levelRows(index, loc.path, parent), 0);
     };
 
@@ -346,7 +406,10 @@ export const askRefileTarget = ({
         crumbsEl.appendChild(b);
         if (i < all.length - 1) crumbsEl.appendChild(document.createTextNode(' › '));
       });
-      upBtn.disabled = !loc.path && !input.value;
+      upBtn.disabled = !loc.path && !input.value && !creating;
+      input.placeholder = creating
+        ? 'Título de la subcabecera nueva…'
+        : 'Buscar fichero o cabecera…';
       // filas
       if (active >= rows.length) active = Math.max(0, rows.length - 1);
       listEl.innerHTML = '';
@@ -359,7 +422,9 @@ export const askRefileTarget = ({
       if (!rows.length) {
         const empty = document.createElement('div');
         empty.className = 'eli-pick__empty';
-        empty.textContent = input.value.trim()
+        empty.textContent = creating
+          ? 'Escribe el título y pulsa Intro.'
+          : input.value.trim()
           ? 'No hay coincidencias (solo se busca en los ficheros ya abiertos: entra en un fichero para abrirlo).'
           : loc.path
           ? 'Este fichero no tiene cabeceras: elige el fichero.'
@@ -405,7 +470,8 @@ export const askRefileTarget = ({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        done(null);
+        if (creating) stopCreating();
+        else done(null);
       } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         if (!rows.length) return;

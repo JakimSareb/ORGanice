@@ -1,7 +1,7 @@
 // ORG Mode para Eli (4.50): «Llevar a reunión…» — mueve puntos de agendas.org (subcabeceras, con
 // todo su contenido y subpuntos, conservando su :ID:) a una cabecera de reuniones.org. Vive en un
 // fichero aparte porque junta el selector de eli_heading_links y los thunks de personas.
-import { gtdRefileTo } from './gtd_actions';
+import { gtdRefileTo, gtdAddTask } from './gtd_actions';
 import { pickRefileTarget } from '../eli_heading_links';
 import { askConfirm, showMessage } from '../eli_prompt';
 import { createPlainFile, loadFileQuietly } from '../../actions/org';
@@ -36,14 +36,32 @@ export const agendaToMeeting = (headerIds) => async (dispatch, getState) => {
       title:
         ids.length === 1 ? 'Llevar a la reunión…' : `Llevar ${ids.length} puntos a la reunión…`,
       onlyPath: to,
+      allowNew: true,
     })
   );
   if (!target) return 0;
+  // (4.57) «＋ Nueva subcabecera aquí…»: se crea dentro de la elegida y los puntos van a ella
+  let targetId = target.headerId;
+  if (target.newTitle) {
+    targetId =
+      dispatch(
+        gtdAddTask(
+          target.headerId
+            ? { path: target.path, parentId: target.headerId }
+            : { path: target.path },
+          { title: target.newTitle, keyword: null }
+        )
+      ) || null;
+    if (!targetId) {
+      showMessage('Reunión', 'No se ha podido crear la subcabecera.');
+      return 0;
+    }
+  }
   const n = dispatch(
     gtdRefileTo(
       ids.map((id) => ({ path: from, id, key: `${from}::${id}` })),
       target.path,
-      target.headerId
+      targetId
     )
   );
   if (!n) showMessage('Reunión', 'No se ha podido llevar el punto.');
