@@ -373,10 +373,37 @@ export default () => {
       }
       return entries
         .filter((e) => e['.tag'] === 'file')
-        .map((e) => ({ path: e.path_display, size: e.size || 0 }))
+        .map((e) => ({
+          path: e.path_display,
+          size: e.size || 0,
+          // (4.58) marca de cambio del servidor (para saber si algo cambió sin descargar)
+          stamp: e.content_hash || e.rev || '',
+        }))
         .sort((a, b) => a.path.localeCompare(b.path));
     });
   const listAllFiles = () => listAllFileEntries().then((list) => list.map((e) => e.path));
+
+  // (4.58) copias rotativas: los .zip de `/backups` (no salen en el listado normal, que solo
+  // enseña ficheros org). Si la carpeta aún no existe, lista vacía.
+  const listBackupZips = () =>
+    withDbx(async (dbx) => {
+      let response;
+      try {
+        response = await dbx.filesListFolder({ path: '/backups', limit: 2000 });
+      } catch (error) {
+        const text = JSON.stringify((error && (error.error || error)) || '');
+        if ((error && error.status === 409) || /not_found/.test(text)) return [];
+        throw error;
+      }
+      let entries = response.result.entries;
+      while (response.result.has_more && entries.length < 20000) {
+        response = await dbx.filesListFolderContinue({ cursor: response.result.cursor });
+        entries = entries.concat(response.result.entries);
+      }
+      return entries
+        .filter((e) => e['.tag'] === 'file' && /\.zip$/i.test(e.name))
+        .map((e) => ({ path: e.path_display, name: e.name, size: e.size || 0 }));
+    });
 
   const listOrgFiles = () =>
     listAllFiles().then((paths) =>
@@ -414,6 +441,7 @@ export default () => {
     listOrgFiles,
     listAllFiles,
     listAllFileEntries,
+    listBackupZips,
     isSignedIn,
     getDirectoryListing,
     getMoreDirectoryListing,
