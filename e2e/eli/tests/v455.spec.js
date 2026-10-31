@@ -44,14 +44,25 @@ test('4.55: Ajustes › GTD: las secciones se ordenan arrastrando su asa', async
   test.skip(app.mobile, 'con el ratón');
   const { page } = app;
   await app.open(BASE, '/settings');
-  await page.evaluate(() => document.querySelectorAll('details').forEach((d) => (d.open = true)));
+  const grip = page.locator('[data-testid=eli-gtdsec-next-grip]');
+  // (4.56) con carga, los desplegables salen después: se abren hasta que el asa se ve
+  await expect
+    .poll(
+      async () => {
+        await page.evaluate(() =>
+          document.querySelectorAll('details').forEach((d) => (d.open = true))
+        );
+        return grip.isVisible();
+      },
+      { timeout: 30000 }
+    )
+    .toBe(true);
   const ids = () =>
     page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-drag-id]')).map((e) =>
         e.getAttribute('data-drag-id')
       )
     );
-  const grip = page.locator('[data-testid=eli-gtdsec-next-grip]');
   await grip.scrollIntoViewIfNeeded();
   await expect(grip).toBeVisible({ timeout: 20000 });
   const before = await ids();

@@ -63,7 +63,13 @@ import {
   hasHeaderContent,
   updateContentsWithListItemAddition,
 } from '../lib/org_utils';
-import { timestampForDate, getTimestampAsText, applyRepeater } from '../lib/timestamps';
+import {
+  timestampForDate,
+  getTimestampAsText,
+  applyRepeater,
+  dateForTimestamp,
+  addTimestampUnitToDate,
+} from '../lib/timestamps';
 import generateId from '../lib/id_generator';
 import { formatTextWrap } from '../util/misc';
 import { applyFileSettingsFromConfig } from '../util/settings_persister';
@@ -2981,7 +2987,42 @@ export const eliResetCheckboxesText = (text) => {
   return out.join('\n');
 };
 
+// (4.56) valor de una propiedad de la cabecera (texto plano) o null
+const eliHeaderProperty = (state, headerIndex, name) => {
+  const item = (state.getIn(['headers', headerIndex, 'propertyListItems']) || List()).find(
+    (p) => (p.get('property') || '').toUpperCase() === name
+  );
+  if (!item || !item.get('value')) return null;
+  return attributedStringToRawText(item.get('value')).trim() || null;
+};
+
+// (4.56) `:RESET_CHECK_BOXES: nil` (o no/f/0) = al repetirse NO se vacían las casillas
+// (por defecto sí, como desde la 2.18)
+export const eliKeepsCheckboxes = (value) =>
+  /^(nil|no|f|false|0)$/i.test(String(value || '').trim());
+
+// (4.56) `:DEADLINE_DAYS: N`: al repetirse, el DEADLINE pasa a ser el nuevo SCHEDULED + N días
+// (conserva la hora; sin repetidor propio). Sin SCHEDULED o sin número, no hace nada.
+const eliRelativeDeadline = (state, headerIndex) => {
+  const days = parseInt(eliHeaderProperty(state, headerIndex, 'DEADLINE_DAYS'), 10);
+  if (!Number.isFinite(days) || days < 0) return state;
+  const items = state.getIn(['headers', headerIndex, 'planningItems']) || List();
+  const sched = items.find((p) => p.get('type') === 'SCHEDULED');
+  if (!sched || !sched.get('timestamp')) return state;
+  const st = sched.get('timestamp');
+  const date = addTimestampUnitToDate(dateForTimestamp(st), days, 'd');
+  const withTime = !!(st.get('startHour') && st.get('startMinute'));
+  const stamp = fromJS(timestampForDate(date, { isActive: true, withStartTime: withTime }));
+  const at = items.findIndex((p) => p.get('type') === 'DEADLINE');
+  if (at >= 0)
+    return state.setIn(['headers', headerIndex, 'planningItems', at, 'timestamp'], stamp);
+  return state.updateIn(['headers', headerIndex, 'planningItems'], (list) =>
+    (list || List()).push(fromJS({ id: generateId(), type: 'DEADLINE', timestamp: stamp }))
+  );
+};
+
 const eliResetCheckboxesOfHeader = (state, headerIndex) => {
+  if (eliKeepsCheckboxes(eliHeaderProperty(state, headerIndex, 'RESET_CHECK_BOXES'))) return state;
   const raw = state.getIn(['headers', headerIndex, 'rawDescription']) || '';
   if (!/\[[Xx-]\]|\[\d*\/\d+\]|\[\d+%\]/.test(raw)) return state;
   const next = eliResetCheckboxesText(raw);
@@ -3173,6 +3214,8 @@ function updatePlanningItemsWithRepeaters({
   // ORG Mode para Eli (2.18): como org-reset-checkbox-state-subtree en Emacs, las casillas de las
   // notas de la tarea vuelven a estar sin marcar y sus contadores a cero
   state = eliResetCheckboxesOfHeader(state, headerIndex);
+  // (4.56) deadline relativo al nuevo SCHEDULED
+  state = eliRelativeDeadline(state, headerIndex);
   if (!noLogRepeatEnabledP({ state, headerIndex })) {
     const lastRepeatTimestamp = timestampForDate(timestamp, {
       isActive: false,

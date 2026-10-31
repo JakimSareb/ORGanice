@@ -3,7 +3,7 @@
 import { List } from 'immutable';
 import { getGtdFiles } from './gtd_sections';
 import { gtdAddTask, gtdSaveTask } from './gtd_actions';
-import { newOrgId, propertyValue } from './gtd_model';
+import { newOrgId, propertyValue, TYPE_PROPERTY } from './gtd_model';
 import {
   PERSON_PROPERTY,
   PERSONAS_NAME,
@@ -95,7 +95,12 @@ export const createContact = (name) => async (dispatch, getState) => {
   const already = contactNamed(contactsFromState(getState()), clean);
   if (already && already.orgId) return { id: already.orgId, title: already.name };
   const orgId = newOrgId();
-  const id = dispatch(gtdAddTask({ path }, { title: clean, keyword: null, props: { ID: orgId } }));
+  const id = dispatch(
+    gtdAddTask(
+      { path },
+      { title: clean, keyword: null, props: { ID: orgId, [TYPE_PROPERTY]: 'persona' } }
+    )
+  );
   return id ? { id: orgId, title: clean } : null;
 };
 
@@ -224,7 +229,10 @@ export const agendaAddPoint = (target, text, notes = '') => async (dispatch, get
       {
         title: target.person.title,
         keyword: null,
-        props: { [PERSON_PROPERTY]: personLink(target.person.id, target.person.title) },
+        props: {
+          [PERSON_PROPERTY]: personLink(target.person.id, target.person.title),
+          [TYPE_PROPERTY]: 'agenda',
+        },
       }
     )
   );

@@ -6,7 +6,7 @@
 //   - Cualquier cabecera (tarea, acta de reunión, nota) se enlaza con una o varias personas con
 //     «:PERSONA: [[id:A][Ana]] [[id:B][Luis]]» (mismo patrón que :PROYECTO:, solo por ID).
 //   - Un solo método: NO hay etiquetas de persona.
-import { displayTitle, propertyValue, parsePersonLinks } from './gtd_model';
+import { displayTitle, propertyValue, parsePersonLinks, ownTypeOf } from './gtd_model';
 
 export const PERSON_PROPERTY = 'PERSONA';
 export const PERSONAS_NAME = 'personas.org';
@@ -72,6 +72,7 @@ export const parseContacts = (file, path) => {
       phone: propertyValue(h, 'PHONE'),
       empresa: propertyValue(h, 'EMPRESA'),
       birthday: propertyValue(h, 'BIRTHDAY'),
+      type: ownTypeOf(h),
       aliases: splitAliases(propertyValue(h, 'ALIAS')),
     });
   });

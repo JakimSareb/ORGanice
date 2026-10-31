@@ -98,6 +98,17 @@ export const propertyValue = (header, name) => {
   return v || null;
 };
 
+// (4.56) Propiedad `:TYPE:` = marca explícita del tipo de una cabecera: checklist, agenda, persona o
+// reunión (además del fichero/sección que ya las identifica). Los HÁBITOS NO la usan: siguen con
+// `:STYLE: habit` (org-habit). Solo se lee `:TYPE:` (no hay lectura de `:STYLE:` para estos tipos).
+export const TYPE_PROPERTY = 'TYPE';
+export const GTD_TYPES = ['checklist', 'agenda', 'persona', 'meeting'];
+// Valor de :TYPE: de la propia cabecera (minúsculas, sin acentos de más) o null
+export const ownTypeOf = (header) => {
+  const v = header ? propertyValue(header, TYPE_PROPERTY) : null;
+  return v ? v.toLowerCase() : null;
+};
+
 const planningDate = (header, type) => {
   const item = (header.get('planningItems') || List()).find((p) => p.get('type') === type);
   if (!item) return null;
@@ -376,6 +387,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
       const isProject = keyword === 'PROJECT';
       const ownRef = parseProjectLink(propertyValue(header, PROJECT_LINK_PROPERTY));
       const personLinks = parsePersonLinks(propertyValue(header, 'PERSONA'));
+      // (4.56) :TYPE: propio y heredado (una reunión marca también todo lo que cuelga de ella)
+      const ownType = ownTypeOf(header);
       const projRef = isProject ? null : ownRef || (parent ? parent.projRef : null);
       const task = {
         key: `${path}::${header.get('id')}`,
@@ -402,6 +415,8 @@ const buildFileTasks = (file, path, isInboxFile) => {
         ownArea,
         energy: propertyValue(header, 'ENERGY'),
         isHabit: (propertyValue(header, 'STYLE') || '').toLowerCase() === 'habit',
+        ownType,
+        type: ownType || (parent ? parent.type : null),
         repeats: hasRepeater(header),
         effort: propertyValue(header, 'EFFORT'),
         scheduled: planningDate(header, 'SCHEDULED'),
@@ -409,6 +424,10 @@ const buildFileTasks = (file, path, isInboxFile) => {
         scheduledTimed: planningHasTime(header, 'SCHEDULED'),
         deadlineTimed: planningHasTime(header, 'DEADLINE'),
         scheduledRepeat: planningRepeat(header, 'SCHEDULED'),
+        // (4.56) `:DEADLINE_DAYS: N` (vence N días después de cada inicio) y
+        // `:RESET_CHECK_BOXES: nil` (al repetirse NO se vacían las casillas)
+        deadlineDays: propertyValue(header, 'DEADLINE_DAYS'),
+        resetBoxes: !/^(nil|no|f|false|0)$/i.test(propertyValue(header, 'RESET_CHECK_BOXES') || ''),
         deadlineRepeat: planningRepeat(header, 'DEADLINE'),
         closed: planningDate(header, 'CLOSED'),
         doneIn: propertyValue(header, DONE_IN_PROPERTY),
@@ -452,6 +471,7 @@ const buildFileTasks = (file, path, isInboxFile) => {
         project: isProject ? { id: header.get('id'), path, title: task.title } : task.project,
         projectStart: isProject ? laterDate(task.scheduled, task.projectStart) : task.projectStart,
         hasKeyword: !!keyword || (parent ? parent.hasKeyword : false),
+        type: task.type,
         isProject,
         projRef: isProject ? null : projRef,
       });

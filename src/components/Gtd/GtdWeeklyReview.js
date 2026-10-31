@@ -31,6 +31,8 @@ const ACTIONS = {
   ],
 };
 
+const NO_OPEN_BTN = ['loose', 'mind', 'past', 'upcoming', 'projects', 'goals', 'creative'];
+
 export default function GtdWeeklyReview({
   steps: stepsProp,
   strict = false,
@@ -224,7 +226,14 @@ export default function GtdWeeklyReview({
           <i className="fas fa-plus" /> {s.id === 'inbox' ? 'Apuntar algo' : 'Apuntar una idea'}
         </button>
       );
-    if (s.view && s.id !== 'next' && s.id !== 'waiting' && (s.id !== 'checklists' || checklistId))
+    // (4.56) los pasos que solo saltan de sección (sin botón «Abrir») van en NO_OPEN_BTN
+    if (
+      s.view &&
+      !NO_OPEN_BTN.includes(s.id) &&
+      s.id !== 'next' &&
+      s.id !== 'waiting' &&
+      (s.id !== 'checklists' || checklistId)
+    )
       b.push(
         <button
           key="open"
