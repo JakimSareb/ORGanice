@@ -256,6 +256,9 @@ export default function TaskEditor({
       : ''
   );
   const [dRepeat, setDRepeat] = useState(task.deadlineRepeat || '');
+  // (4.56) vence N días después de cada inicio · vaciar casillas al repetir
+  const [dueDays, setDueDays] = useState(task.deadlineDays || '');
+  const [resetBoxes, setResetBoxes] = useState(task.resetBoxes !== false);
   const [star, setStar] = useState(task.priority === 'A');
   const [showContexts, setShowContexts] = useState(false);
   const [project, setProject] = useState(
@@ -363,6 +366,8 @@ export default function TaskEditor({
     sRepeat,
     sTime,
     dRepeat,
+    dueDays,
+    resetBoxes,
     project,
     parent,
     persons,
@@ -427,6 +432,11 @@ export default function TaskEditor({
     if (c.sRepeat !== b.sRepeat) changes.scheduledRepeat = c.sRepeat;
     if (c.sTime !== b.sTime) changes.scheduledTime = c.sTime;
     if (c.dRepeat !== b.dRepeat) changes.deadlineRepeat = c.dRepeat;
+    // (4.56) :DEADLINE_DAYS: y :RESET_CHECK_BOXES: (nil = no vaciar; por defecto sí)
+    if (c.dueDays !== b.dueDays)
+      changes.props = { ...(changes.props || {}), DEADLINE_DAYS: c.dueDays || null };
+    if (c.resetBoxes !== b.resetBoxes)
+      changes.props = { ...(changes.props || {}), RESET_CHECK_BOXES: c.resetBoxes ? null : 'nil' };
     if (!enc && c.notes !== b.notes) changes.notes = c.notes;
     if (c.list !== b.list) changes.list = c.list;
     if (c.convert && c.convert !== b.convert) changes.list = targetList;
@@ -1483,6 +1493,10 @@ export default function TaskEditor({
           }}
           time={sTime}
           onTime={setSTime}
+          deadlineDays={dueDays}
+          onDeadlineDays={setDueDays}
+          resetBoxes={resetBoxes}
+          onResetBoxes={setResetBoxes}
           deadline={deadline}
           deadlineRepeat={dRepeat}
           onDeadline={(v, r) => {

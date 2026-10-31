@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.56 (octubre de 2026)
+** GTD II: tipo de cabecera, repeticiones, Tickler y saltos de sección
+- *Tipo de cabecera =:TYPE:=*: checklists, agendas, personas y reuniones se marcan con =:TYPE: checklist=, =:TYPE: agenda=, =:TYPE: persona= y =:TYPE: meeting= (además del fichero o la sección que ya las identifica). La app lo escribe al crear una persona o una agenda. *Los hábitos no cambian*: siguen con =:STYLE: habit=. No se lee =:STYLE:= para esos cuatro tipos: si lo tenías, cámbialo a mano a =:TYPE:=.
+- *Reuniones*: una cabecera con =:TYPE: meeting= (y todo lo que cuelga de ella) sale con su jerarquía en el grupo «Cabeceras sin tarea» de las vistas por etiqueta.
+- *Repetir… › Vence N días después de cada inicio*: el límite se recalcula en cada repetición (=:DEADLINE_DAYS: N=).
+- *Repetir… › Vaciar las casillas al terminar cada repetición* (encendido por defecto; apagado = =:RESET_CHECK_BOXES: nil=).
+- *Tickler*: al liberar una entrada al *Inbox* ya no lleva la etiqueta =inbox=; al liberarla a *Next* conserva sus fechas (SCHEDULED y DEADLINE).
+- *Procesos que saltan de sección*: «Planificar un proyecto nuevo» va a Todos los proyectos y «Revisión de horizontes» a Horizontes. En la *Revisión semanal* (Allen estricto) cada paso abre su sección: papeles, vaciar la cabeza y «sé creativo» → Inbox; calendario pasado → Logbook; calendario próximo → Tickler; proyectos → Todos los proyectos; objetivos → Horizontes.
+
 * 4.55 (octubre de 2026)
 ** GTD I: Referencias, ajustes y orden por arrastre
 - *Referencias de un proyecto*: arrastrar una tarea a «Referencias» (en la lista del proyecto) la pasa a Referencia y le quita el estado; también se pueden arrastrar desde Referencias a otra sección.

@@ -59,13 +59,27 @@ export const nextDates = (start, text, count = 3) => {
 
 const nextMonday = (today) => addDays(today, (8 - today.getDay()) % 7 || 7);
 
-function RepeatDialog({ date, repeat, deadlineSame, onCancel, onSave, onRemove }) {
+function RepeatDialog({
+  date,
+  repeat,
+  deadlineSame,
+  deadlineDays: initialDays,
+  resetBoxes: initialReset,
+  withExtras,
+  onCancel,
+  onSave,
+  onRemove,
+}) {
   const r = parseRepeat(repeat) || { type: '+', value: 1, unit: 'd' };
   const [unit, setUnit] = useState(['d', 'w', 'm', 'y'].includes(r.unit) ? r.unit : 'd');
   const [every, setEvery] = useState(String(r.value || 1));
   const [type, setType] = useState(r.type || '+');
   const [next, setNext] = useState(toInput(date || new Date()));
   const [addDue, setAddDue] = useState(!!deadlineSame);
+  // (4.56) fecha límite relativa (días después de cada inicio; '' = no) y vaciar casillas al repetir
+  const [dueDays, setDueDays] = useState(initialDays || '');
+  const [reset, setReset] = useState(initialReset !== false);
+  const relDue = dueDays !== '' && Number.isFinite(parseInt(dueDays, 10));
   const n = Math.max(1, Math.min(999, parseInt(every, 10) || 1));
   const text = `${type}${n}${unit}`;
   const u = UNITS.find((x) => x.id === unit);
@@ -145,12 +159,39 @@ function RepeatDialog({ date, repeat, deadlineSame, onCancel, onSave, onRemove }
         <label className="gtd-repeat__check">
           <input
             type="checkbox"
-            checked={addDue}
+            checked={addDue && !relDue}
+            disabled={relDue}
             onChange={(e) => setAddDue(e.target.checked)}
             data-testid="gtd-repeat-due"
           />
           <span>Añadir también la fecha límite (vence el mismo día y se repite igual)</span>
         </label>
+        {withExtras && (
+          <>
+            <label className="gtd-repeat__row">
+              <span>Vence</span>
+              <input
+                type="number"
+                min="0"
+                max="999"
+                placeholder="—"
+                value={dueDays}
+                onChange={(e) => setDueDays(e.target.value.replace(/[^\d]/g, ''))}
+                data-testid="gtd-repeat-due-days"
+              />
+              <span>días después de cada inicio</span>
+            </label>
+            <label className="gtd-repeat__check">
+              <input
+                type="checkbox"
+                checked={reset}
+                onChange={(e) => setReset(e.target.checked)}
+                data-testid="gtd-repeat-reset"
+              />
+              <span>Vaciar las casillas al terminar cada repetición</span>
+            </label>
+          </>
+        )}
         <div className="gtd-repeat__hint">
           Se escribe como en Emacs: <code>SCHEDULED: &lt;… {text}&gt;</code>
         </div>
@@ -172,7 +213,15 @@ function RepeatDialog({ date, repeat, deadlineSame, onCancel, onSave, onRemove }
           <button
             type="button"
             className="gtd-btn gtd-btn--primary"
-            onClick={() => onSave({ date: fromInput(next), repeat: text, addDue })}
+            onClick={() =>
+              onSave({
+                date: fromInput(next),
+                repeat: text,
+                addDue: addDue && !relDue,
+                deadlineDays: relDue ? String(parseInt(dueDays, 10)) : '',
+                resetBoxes: reset,
+              })
+            }
             data-testid="gtd-repeat-save"
           >
             Guardar
@@ -198,6 +247,11 @@ export default function ScheduleField({
   // (3.34) hora ('HH:MM' o '') para los avisos de hora exacta (3.25)
   time = '',
   onTime,
+  // (4.56) vence N días después de cada inicio (texto; '' = no) y vaciar casillas al repetir
+  deadlineDays = '',
+  onDeadlineDays,
+  resetBoxes = true,
+  onResetBoxes,
 }) {
   const [open, setOpen] = useState(false);
   const [dialog, setDialog] = useState(false);
@@ -369,17 +423,23 @@ export default function ScheduleField({
           date={date}
           repeat={repeat}
           deadlineSame={!!deadline && deadline === value && !!deadlineRepeat}
+          deadlineDays={deadlineDays}
+          resetBoxes={resetBoxes}
+          withExtras={!!onDeadlineDays}
           onCancel={() => setDialog(false)}
           onRemove={() => {
             onChange(value, '');
             if (deadline === value && deadlineRepeat && onDeadline) onDeadline(deadline, '');
             setDialog(false);
           }}
-          onSave={({ date: d, repeat: r, addDue }) => {
+          onSave={({ date: d, repeat: r, addDue, deadlineDays: dd, resetBoxes: rb }) => {
             const v = toInput(d || t0);
             onChange(v, r);
+            if (onDeadlineDays) onDeadlineDays(dd || '');
+            if (onResetBoxes) onResetBoxes(rb !== false);
             if (onDeadline) {
-              if (addDue) onDeadline(v, r);
+              if (dd) onDeadline(toInput(addDays(d || t0, parseInt(dd, 10))), '');
+              else if (addDue) onDeadline(v, r);
               else if (deadline === value && deadlineRepeat) onDeadline(deadline, '');
             }
             setDialog(false);

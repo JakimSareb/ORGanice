@@ -107,6 +107,7 @@ export const STRICT_REVIEW_STEPS = [
       'Recoge papeles, notas, tarjetas, recibos y demás cosas sueltas (también en el bolso, la ' +
       'mesa o el móvil) y mételas en el Inbox.',
     capture: 'Apuntar al Inbox',
+    view: 'inbox',
   },
   {
     id: 'inbox',
@@ -125,6 +126,7 @@ export const STRICT_REVIEW_STEPS = [
       'Apunta todo lo que tengas en la cabeza: proyectos, acciones, esperas, ideas. El Volcado ' +
       'mental te lo pregunta por categorías.',
     capture: 'Apuntar al Inbox',
+    view: 'inbox',
   },
   {
     id: 'next',
@@ -144,6 +146,7 @@ export const STRICT_REVIEW_STEPS = [
       'Repasa con detalle lo que tenía fecha desde la última revisión (y lo atrasado): ¿quedó ' +
       'alguna acción pendiente, algo que apuntar o que guardar como referencia?',
     capture: 'Apuntar al Inbox',
+    view: 'logbook',
   },
   {
     id: 'upcoming',
@@ -153,6 +156,7 @@ export const STRICT_REVIEW_STEPS = [
     hint:
       'Mira lo que viene, a corto y a largo plazo: ¿hay que preparar algo o dispara alguna acción?',
     capture: 'Apuntar al Inbox',
+    view: 'tickler',
   },
   {
     id: 'waiting',
@@ -170,6 +174,7 @@ export const STRICT_REVIEW_STEPS = [
     hint:
       'Cada proyecto activo: ¿cómo va? ¿sigue teniendo sentido su resultado? Mira sus notas y ' +
       'material: cada uno necesita al menos una acción siguiente.',
+    view: 'projects',
   },
   {
     id: 'goals',
@@ -178,6 +183,7 @@ export const STRICT_REVIEW_STEPS = [
     icon: 'fas fa-bullseye',
     hint: 'Repasa tus objetivos y resultados mayores: ¿piden algún proyecto o acción nueva?',
     capture: 'Apuntar al Inbox',
+    view: 'horizons',
   },
   {
     id: 'checklists',
@@ -206,6 +212,7 @@ export const STRICT_REVIEW_STEPS = [
     icon: 'fas fa-lightbulb',
     hint: '¿Alguna idea nueva, atrevida o creativa que añadir? Apúntala, por loca que parezca.',
     capture: 'Apuntar una idea',
+    view: 'inbox',
   },
 ];
 

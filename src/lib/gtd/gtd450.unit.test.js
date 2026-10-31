@@ -213,7 +213,7 @@ describe('4.50 B: crear subcabeceras en la agenda', () => {
     );
     expect(ok).toBeTruthy();
     expect(fileText(store, '/agendas.org')).toMatch(
-      /\* Luis\n:PROPERTIES:\n:PERSONA: \[\[id:LU-9\]\[Luis\]\]\n:END:\n\*\* Hablar del coche\n$/
+      /\* Luis\n:PROPERTIES:\n:PERSONA: \[\[id:LU-9\]\[Luis\]\]\n:TYPE: agenda\n:END:\n\*\* Hablar del coche\n$/
     );
   });
   test('persona que ya tiene agenda (por nombre): cuelga de la suya, no crea otra', async () => {

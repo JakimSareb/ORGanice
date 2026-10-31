@@ -1840,13 +1840,15 @@ export default function GtdView() {
         testId: 'gtd-tag-headings',
       });
       if (headingsOpen) {
-        tagHeadings.forEach((t) =>
+        // (4.56) las de tipo «meeting» (`:TYPE: meeting`, heredable) salen con su jerarquía
+        nestProjectRefs(tasks, tagHeadings).forEach((n) =>
           out.push({
             kind: 'task',
-            task: t,
+            task: n.task,
             section: 'tag-headings',
             reorderable: false,
             isRef: true,
+            depth: n.task.type === 'meeting' ? n.depth : 0,
           })
         );
       }
@@ -3622,6 +3624,8 @@ export default function GtdView() {
     }
     setSideOpen(false);
     setDaily({ kind, step: 0, rev: Date.now(), ...(extra || {}) });
+    // (4.56) «Revisión de horizontes» salta a Horizontes (si no viene de otro proceso)
+    if (kind === 'horizons' && !(extra && (extra.back || extra.existing))) goList('horizons');
     if (kind === 'horizons' || (extra && (extra.back || extra.existing))) return;
     if (GUIDED_PROCESSES[kind]) {
       const list = { sweep: 'inbox', stuck: 'projects', waiting: 'waiting', someday: 'someday' }[
@@ -3641,7 +3645,8 @@ export default function GtdView() {
     } else if (kind === 'close') {
       goList('focus');
     } else {
-      goList('next');
+      // (4.56) «Planificar un nuevo proyecto» salta a «Todos los proyectos»
+      goList(kind === 'project' ? 'projects' : 'next');
     }
   };
   const dailyMove = (t, kind, date) => {
@@ -3658,7 +3663,8 @@ export default function GtdView() {
       label = `Para el ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`;
     } else if (kind === 'inbox') {
       if (!inboxFile) return;
-      dispatch(gtdSaveTask(t, { tags: tagsForList(t, 'inbox') }));
+      // (4.56) desde el Tickler NO lleva la etiqueta `inbox` (el resto del proceso es igual)
+      if (!isTicklerPath(t.path)) dispatch(gtdSaveTask(t, { tags: tagsForList(t, 'inbox') }));
       if (t.path !== inboxFile) dispatch(gtdRefileTo([t], inboxFile, null));
       label = '→ Inbox';
     }
@@ -6365,7 +6371,8 @@ export default function GtdView() {
       dispatch(gtdRefileTo([t], tasksFile, null));
       moved = { ...t, path: tasksFile, key: `${tasksFile}::${t.id}` };
     }
-    dispatch(gtdSaveTask(moved, { list: 'next', tags: tagsForList(t, 'next'), scheduled: null }));
+    // (4.56) conserva sus fechas (SCHEDULED y DEADLINE)
+    dispatch(gtdSaveTask(moved, { list: 'next', tags: tagsForList(t, 'next') }));
     toast('→ Next');
   };
   const ticklerAdd = async () => {

@@ -43,3 +43,52 @@ test('con fecha puesta, cambiar a hoy se aplica', () => {
   fireEvent.change(input, { target: { value: todayInput() } });
   expect(onChange).toHaveBeenCalledWith(todayInput(), '');
 });
+
+// (4.56) «Vence N días después de cada inicio» y «Vaciar las casillas» en Repetir…
+describe('Repetir… (4.56)', () => {
+  const open = (extra = {}) => {
+    const onChange = jest.fn();
+    const onDeadline = jest.fn();
+    const onDeadlineDays = jest.fn();
+    const onResetBoxes = jest.fn();
+    const r = render(
+      <ScheduleField
+        value="2030-05-06"
+        repeat="+1w"
+        onChange={onChange}
+        deadline=""
+        deadlineRepeat=""
+        onDeadline={onDeadline}
+        onDeadlineDays={onDeadlineDays}
+        onResetBoxes={onResetBoxes}
+        {...extra}
+      />
+    );
+    fireEvent.click(r.getByTestId('gtd-editor-schedule-btn'));
+    fireEvent.click(r.getByTestId('gtd-editor-repeat'));
+    return { ...r, onChange, onDeadline, onDeadlineDays, onResetBoxes };
+  };
+
+  test('guardar con N días pone el límite relativo y la propiedad', () => {
+    const { getByTestId, onDeadline, onDeadlineDays, onResetBoxes } = open();
+    fireEvent.change(getByTestId('gtd-repeat-due-days'), { target: { value: '3' } });
+    fireEvent.click(getByTestId('gtd-repeat-save'));
+    expect(onDeadlineDays).toHaveBeenCalledWith('3');
+    expect(onResetBoxes).toHaveBeenCalledWith(true);
+    expect(onDeadline).toHaveBeenCalledWith('2030-05-09', '');
+  });
+
+  test('desmarcar «Vaciar las casillas» se guarda', () => {
+    const { getByTestId, onResetBoxes, onDeadlineDays } = open();
+    fireEvent.click(getByTestId('gtd-repeat-reset'));
+    fireEvent.click(getByTestId('gtd-repeat-save'));
+    expect(onResetBoxes).toHaveBeenCalledWith(false);
+    expect(onDeadlineDays).toHaveBeenCalledWith('');
+  });
+
+  test('sin onDeadlineDays (otros usos del campo) no salen las opciones nuevas', () => {
+    const { queryByTestId } = open({ onDeadlineDays: undefined, onResetBoxes: undefined });
+    expect(queryByTestId('gtd-repeat-due-days')).toBeNull();
+    expect(queryByTestId('gtd-repeat-reset')).toBeNull();
+  });
+});

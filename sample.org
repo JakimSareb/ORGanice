@@ -656,6 +656,14 @@ Los guiones se escriben en ficheros =.fountain= aparte (formato abierto de texto
 - Cada tarea muestra un chip azul con la/s persona/s (=:PERSONA:=): tocarlo abre su ficha. Siempre se ve en *Waiting*; en el resto de listas, con ⋯ › Opciones de vista › *Mostrar personas*.
 - En el editor de una tarea, el botón de enlace a cabecera se ve como *[[ ]]* y, al pulsar *Aa*, los iconos del formato salen en una *segunda fila* (en el móvil, se desplaza en horizontal).
 
+** Tipo de cabecera =:TYPE:= (4.56)
+- =:TYPE:= marca qué es una cabecera: =checklist=, =agenda=, =persona= o =meeting= (reunión). Es una marca explícita *además* del fichero (=personas.org=, =agendas.org=, =reuniones.org=) o de la sección «Checklist» que ya las identifica. La app la escribe sola al crear una persona (=:TYPE: persona=) o la agenda de una persona (=:TYPE: agenda=); las checklists y reuniones las marcas tú. Con una sección propia puedes filtrar por la regla de propiedad =TYPE= = =checklist=.
+- Los *hábitos* NO usan =:TYPE:=: siguen con =:STYLE: habit= (así Emacs/org-habit los entiende). De =:STYLE:= solo se lee =habit=; para los otros cuatro tipos hay que usar =:TYPE:=.
+- =:TYPE: meeting= es heredable: la cabecera y todo lo que cuelga de ella salen con su jerarquía en el grupo *Cabeceras sin tarea* de las vistas por etiqueta.
+- *Repetir…* tiene dos opciones nuevas: *Vence N días después de cada inicio* (=:DEADLINE_DAYS: N=: en cada repetición el DEADLINE pasa a ser el nuevo SCHEDULED + N días) y *Vaciar las casillas al terminar cada repetición* (=:RESET_CHECK_BOXES: nil= para no vaciarlas).
+- *Tickler*: liberar una entrada al Inbox no le pone la etiqueta =inbox=; liberarla a Next conserva sus fechas.
+- *Saltos de sección*: «Planificar un proyecto nuevo» → Todos los proyectos; «Revisión de horizontes» → Horizontes; cada paso de la Revisión semanal (Allen estricto) abre su sección (papeles, vaciar la cabeza y «sé creativo» → Inbox; calendario pasado → Logbook; calendario próximo → Tickler; proyectos → Todos los proyectos; objetivos → Horizontes).
+
 * Zettelkasten (4.46)
 Notas al estilo Zettelkasten, compatibles con org-roam. Ajustes › Zettelkasten elige la *carpeta ZK* (por defecto =ZK/= junto al fichero de entrada). Dentro: =literatura/=, =permanentes/=, =indices/= e =inbox.org= (las fugaces); se crean al primer uso. El tipo de nota va en =#+filetags:= (fugaz, literatura, permanente, indice) y el fichero se llama =AAAAMMDDHHMMSS-titulo.org=, como org-roam. Para verlas separadas en Emacs: =org-roam-directory= = la carpeta ZK.
 - *Menú ☰ › Nueva nota ZK*: nota permanente, índice o *ficha de fuente* (libro, artículo, vídeo; pide tipo, título, autor, año, fuente y URL o ISBN).

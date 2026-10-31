@@ -7,7 +7,7 @@
 //   - Las casillas viejas («- [ ]», «-», «+») dentro de las notas se respetan: marcar = solo
 //     «[ ]»→«[X]» en esa línea. Lo NUEVO siempre son subcabeceras (ver gtd_persons_actions.js).
 // Modelo puro (cabeceras Immutable).
-import { displayTitle, propertyValue, parsePersonLinks } from './gtd_model';
+import { displayTitle, propertyValue, parsePersonLinks, ownTypeOf } from './gtd_model';
 import { contactNamed, contactById, PERSON_PROPERTY } from './gtd_persons';
 
 // Ítem de lista: sangría, viñeta, casilla opcional y texto
@@ -112,6 +112,7 @@ export const parseAgendas = (file, contacts = [], path = '') => {
       level,
       body,
       keyword,
+      type: ownTypeOf(h),
       done: isDoneKeyword(keyword),
       person: null,
       children: [],
