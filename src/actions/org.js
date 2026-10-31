@@ -764,6 +764,15 @@ export const eliDropSubtree = (headerId, { beforeId = null, afterId = null, leve
   dirtying: true,
 });
 
+// (4.54) pegar texto Org como SUBCABECERAS de «headerId» (niveles adaptados). `headers` ya viene
+// analizado (lib/eli_header_clipboard.js: parseHeadersText).
+export const eliPasteHeaders = (headerId, headers) => ({
+  type: 'ELI_PASTE_HEADERS',
+  headerId,
+  headers,
+  dirtying: true,
+});
+
 export const moveHeaderToPosition = (sourceHeaderId, targetHeaderId, position) => ({
   type: 'MOVE_HEADER_TO_POSITION',
   sourceHeaderId,
@@ -1548,15 +1557,22 @@ export const insertInactiveDate = (headerId) => (dispatch) => {
 };
 
 // Sube ficheros ya preparados (p. ej. imágenes redimensionadas) y devuelve los enlaces Org
-export const uploadFilesAndGetLinks = (files, orgPath = null) => async (dispatch, getState) => {
+export const uploadFilesAndGetLinks = (files, orgPath = null, folder = null) => async (
+  dispatch,
+  getState
+) => {
   const state = getState();
   const client = state.syncBackend.get('client');
   const path = orgPath || state.org.present.get('path');
   dispatch(
-    setLoadingMessage(`Subiendo ${files.length} archivo(s) a assets/${new Date().getFullYear()}…`)
+    setLoadingMessage(
+      `Subiendo ${files.length} archivo(s) a ${
+        folder != null ? folder || '/' : `assets/${new Date().getFullYear()}`
+      }…`
+    )
   );
   try {
-    const links = await uploadAssets(client, path, files);
+    const links = await uploadAssets(client, path, files, folder);
     dispatch(setDisappearingLoadingMessage(`Adjuntado: ${links.join(' ')}`, 3000));
     return links;
   } catch (e) {

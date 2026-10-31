@@ -905,6 +905,26 @@ const eliMoveSubtreeNextTo = (state, action) => {
   return state;
 };
 
+// (4.54) Pegar cabeceras (texto Org ya analizado) como subcabeceras de «headerId»: van al final de
+// sus subcabeceras y la primera pasa a nivel+1 (las demás conservan su diferencia relativa).
+const eliPasteHeaders = (state, action) => {
+  const headers = state.get('headers');
+  const { headerId, headers: pasted } = action;
+  const index = indexOfHeaderWithId(headers, headerId);
+  if (index < 0 || !pasted || !pasted.size) return state;
+  const level = headers.getIn([index, 'nestingLevel']) + 1;
+  const shift = level - pasted.first().get('nestingLevel');
+  const adapted = pasted.map((h) =>
+    h.set('nestingLevel', Math.max(1, h.get('nestingLevel') + shift))
+  );
+  const at = index + 1 + subheadersOfHeaderWithId(headers, headerId).size;
+  state = state.set('headers', headers.splice(at, 0, ...adapted.toArray()));
+  state = updateCookiesOfHeaderWithId(state, headerId);
+  return state.updateIn(['headers'], (hs) =>
+    hs.map((h) => (h.get('id') === headerId ? h.set('opened', true) : h))
+  );
+};
+
 // (4.04) Arrastrar una cabecera por su viñeta: la cabecera con sus subcabeceras se pone delante
 // de «beforeId» (o detrás de «afterId» y las suyas, o al final) con el nivel «level».
 const eliDropSubtree = (state, action) => {
@@ -2656,6 +2676,8 @@ const reducer = (state, action) => {
       return inFile(eliMoveSubtreeNextTo);
     case 'ELI_DROP_SUBTREE':
       return inFile(eliDropSubtree);
+    case 'ELI_PASTE_HEADERS':
+      return inFile(eliPasteHeaders);
     case 'ELI_MAKE_SUBTASK_OF':
       return inFile(eliMakeSubtaskOf);
     case 'ELI_PROMOTE_SUBTASK':
@@ -2824,6 +2846,7 @@ const ELI_ALIGN_NEW_HEADER_ACTIONS = [
   'ADD_HEADER',
   'INSERT_CAPTURE',
   'INSERT_CAPTURE_FROM_HEADER',
+  'ELI_PASTE_HEADERS',
 ];
 export const eliAlignTablesInFile = (state, path, prevHeaders, actionType) => {
   const headers = state.getIn(['files', path, 'headers']);

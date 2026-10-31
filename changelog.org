@@ -3,6 +3,15 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.54 (octubre de 2026)
+** Documentos II: copiar y pegar, estructuras, adjuntos, HTML y letra
+- *Copiar, cortar y pegar cabeceras*: con una cabecera seleccionada, Ctrl/⌘+C copia la cabecera con TODAS sus subcabeceras como texto Org (también sirve para pegar fuera de la app). Con un elemento de lista (sección) seleccionado, copia ese elemento con sus subelementos. Al *copiar* los =:ID:= se renuevan (no se duplican); al *cortar* se conservan. Ctrl/⌘+V pega el texto Org como *subcabecera* de la seleccionada, con los niveles adaptados; si es una lista, la añade a sus notas; si no es Org, pega como siempre.
+- *Insertar estructura…* (menú ⋯): elige una plantilla de captura y se inserta como subcabecera de la seleccionada, con sus fechas y campos.
+- *Adjuntos*: al subir un archivo, «Cambiar carpeta…» abre un selector de carpetas (por defecto, assets/año junto al fichero).
+- *Exportar a HTML*: en la vista previa de PDF / imprimir, botón *HTML*: un solo fichero con su CSS, tablas, enlaces y fotos incrustadas.
+- *Tipo de letra «Del sistema»*: escribe el nombre de cualquier fuente instalada (en Chrome/Edge de escritorio también hay una lista).
+- El *tamaño de letra* ahora es propio de cada dispositivo (ya no viaja entre ordenador y móvil).
+
 * 4.53 (octubre de 2026)
 ** Documentos: interacción y fallos
 - *Visibilidad* (Menú ☰ › Vista): un solo botón cicla *cerrada → hijos → todo*, como S-TAB de Org (sustituye a «Contraer / Expandir todas»).

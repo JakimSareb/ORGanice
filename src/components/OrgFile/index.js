@@ -1,6 +1,7 @@
 import { allTagsForEditor, declaredTagsFromConfigLines } from '../../lib/gtd_contexts';
 import { defaultTagsLine } from '../../lib/eli_todo_defaults';
-import { shouldIgnoreOrganiceHotkey, blockedWhileTyping } from '../../lib/eli_hotkeys';
+import { shouldIgnoreOrganiceHotkey, blockedWhileTyping, isEditable } from '../../lib/eli_hotkeys';
+import { createClipboardHandlers, parseHeadersText } from '../../lib/eli_header_clipboard';
 import { confirmRemoveHeader } from '../../lib/eli_confirm_remove';
 import { revealTextInHeader } from '../../lib/eli_search_snippets';
 import { openFavorites } from '../EliTools';
@@ -59,6 +60,7 @@ import {
   STATIC_FILE_PREFIX,
   indexOfHeaderWithId,
   previousVisibleHeaderAfterIndex,
+  headerThatContainsListItemId,
 } from '../../lib/org_utils';
 import { parseCaptureTemplate } from '../../lib/capture_template_parsing';
 import {
@@ -180,6 +182,11 @@ class OrgFile extends PureComponent {
     });
     document.addEventListener('keydown', this.handleEliKeyDown);
     window.addEventListener('blur', releaseStuckModifiers);
+    // (4.54) copiar / cortar / pegar cabeceras con el atajo del sistema (Ctrl/⌘ + C, X, V)
+    this.eliClipboard = createClipboardHandlers(this.eliClipboardApi());
+    document.addEventListener('copy', this.eliClipboard.copy);
+    document.addEventListener('cut', this.eliClipboard.cut);
+    document.addEventListener('paste', this.eliClipboard.paste);
     const { staticFile, path } = this.props;
 
     if (!!staticFile) {
@@ -209,6 +216,45 @@ class OrgFile extends PureComponent {
     this.applyEliPendingNarrow();
   }
 
+  // (4.54) Datos que necesita lib/eli_header_clipboard.js (se leen de las props en cada evento)
+  eliClipboardApi() {
+    return {
+      canAct: (event) =>
+        !this.props.staticFile &&
+        !this.props.activePopupType &&
+        !shouldIgnoreOrganiceHotkey(event, this.container) &&
+        !isEditable(event && event.target) &&
+        !isEditable(document.activeElement),
+      getSelection: () => {
+        if (isMultiActive() || !this.props.headers) return null;
+        const { selectedListItemId, selectedHeaderId } = this.props;
+        if (selectedListItemId) return { listItemId: selectedListItemId };
+        return selectedHeaderId ? { headerId: selectedHeaderId } : null;
+      },
+      getHeaders: () => this.props.headers,
+      isLocked: () => isDocLocked(),
+      removeHeader: (id) => {
+        this.props.org.selectNextSiblingHeader(id);
+        this.props.org.removeHeader(id);
+      },
+      headerOfListItem: (listItemId) => {
+        const h = headerThatContainsListItemId(this.props.headers, listItemId);
+        return h ? h.get('id') : null;
+      },
+      pasteHeaders: (headerId, text) => {
+        const parsed = parseHeadersText(text, this.props.todoKeywordSets);
+        if (!parsed.size) return;
+        this.props.org.eliPasteHeaders(headerId, parsed);
+        this.props.org.openHeader(headerId);
+        this.props.org.selectHeader(parsed.first().get('id'));
+      },
+      pasteList: (headerId, text) => {
+        this.props.org.appendLinesToHeader(headerId, text.replace(/\s+$/, '').split('\n'));
+      },
+      notify: (message) => this.props.base.setDisappearingLoadingMessage(message, 2500),
+    };
+  }
+
   // If a fragment is set in the URL (by the activatePopup base
   // action), activate the appropriate pop-up
   activatePopup() {
@@ -224,6 +270,11 @@ class OrgFile extends PureComponent {
     setCaptureActive(false);
     document.removeEventListener('keydown', this.handleEliKeyDown);
     window.removeEventListener('blur', releaseStuckModifiers);
+    if (this.eliClipboard) {
+      document.removeEventListener('copy', this.eliClipboard.copy);
+      document.removeEventListener('cut', this.eliClipboard.cut);
+      document.removeEventListener('paste', this.eliClipboard.paste);
+    }
     const { staticFile } = this.props;
 
     if (!!staticFile) {

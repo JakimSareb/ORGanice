@@ -482,3 +482,28 @@ html {
      y al pasar de uno a otro (los botones atrás/adelante ya no se desplazan hacia dentro) */
   overflow-y: scroll;
 }
+
+/* (4.54) Selector de carpeta de los adjuntos */
+.eli-folder-picker__path {
+  font-family: monospace;
+  font-size: 0.9em;
+  word-break: break-all;
+  margin-bottom: 6px;
+  opacity: 0.8;
+}
+.eli-folder-picker__list {
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+.eli-upload__folder {
+  padding: 2px 8px;
+}
+
+/* (4.54) «Del sistema»: campo y lista de fuentes instaladas */
+.eli-font-system {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}

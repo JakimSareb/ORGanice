@@ -16,7 +16,16 @@ import './stylesheet.css';
 
 import TabButtons from '../UI/TabButtons';
 import { READABILITY, getReadability, setReadability } from '../../lib/eli_readability';
-import { FONTS, getFont, setFont, getFontGtd, setFontGtd } from '../../lib/eli_font';
+import {
+  FONTS,
+  getFont,
+  setFont,
+  getFontGtd,
+  setFontGtd,
+  getCustomFont,
+  setCustomFont,
+  listLocalFonts,
+} from '../../lib/eli_font';
 import Switch from '../UI/Switch';
 import ExternalLink from '../UI/ExternalLink';
 import { APP_NAME, APP_VERSION } from '../../lib/eli_app_name';
@@ -867,6 +876,72 @@ const EliFontSetting = () => {
           setFont(v);
         }}
       />
+      {value === 'system' && <EliSystemFontPicker />}
+    </div>
+  );
+};
+
+// (4.54) «Del sistema»: campo de texto (siempre) + lista de fuentes instaladas donde el navegador
+// la ofrece (Chrome/Edge de escritorio, con permiso; en el iPhone solo se escribe el nombre)
+const EliSystemFontPicker = () => {
+  const [name, setName] = React.useState(getCustomFont());
+  const [fonts, setFonts] = React.useState(null);
+  const canList = typeof window !== 'undefined' && typeof window.queryLocalFonts === 'function';
+  const save = (v) => {
+    setName(v);
+    setCustomFont(v);
+  };
+  return (
+    <div className="eli-font-system" data-testid="eli-setting-font-system">
+      <input
+        type="text"
+        className="textfield"
+        value={name}
+        placeholder="Nombre de la fuente (p. ej. Palatino)"
+        aria-label="Nombre de la fuente del sistema"
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
+        data-testid="eli-setting-font-system-name"
+        onChange={(e) => save(e.target.value)}
+      />
+      {canList && (
+        <>
+          <button
+            type="button"
+            className="btn"
+            data-testid="eli-setting-font-system-list"
+            onClick={async () => setFonts((await listLocalFonts()) || [])}
+          >
+            Ver las fuentes instaladas
+          </button>
+          {fonts && fonts.length > 0 && (
+            <select
+              value={fonts.includes(name) ? name : ''}
+              onChange={(e) => e.target.value && save(e.target.value)}
+              aria-label="Fuentes instaladas"
+            >
+              <option value="">— elegir —</option>
+              {fonts.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+          )}
+          {fonts && fonts.length === 0 && (
+            <div className="setting-label__description">
+              No se han podido leer (¿permiso denegado?). Escribe el nombre a mano.
+            </div>
+          )}
+        </>
+      )}
+      {!canList && (
+        <div className="setting-label__description">
+          Este navegador no ofrece la lista: escribe el nombre exacto de una fuente instalada (en el
+          iPhone, las que trae el sistema: Palatino, Georgia, Avenir…).
+        </div>
+      )}
     </div>
   );
 };

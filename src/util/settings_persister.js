@@ -129,6 +129,8 @@ export const persistableFields = [
     category: 'base',
     name: 'fontSize',
     type: 'nullable',
+    // (4.54) el tamaño de letra es de cada dispositivo: se guarda aquí pero NO viaja en el fichero
+    local: true,
   },
   {
     category: 'base',
@@ -411,11 +413,15 @@ const getFieldsToPersist = (state, fields) => {
 };
 
 const persistableNames = () => persistableFields.map((f) => f.name);
+// (4.54) ajustes que NO viajan en el fichero de ajustes (propios de cada dispositivo)
+const isLocalField = (name) => persistableFields.some((f) => f.name === name && f.local);
+const syncedNames = () => persistableNames().filter((n) => !isLocalField(n));
 
 // (4.33) Además de los ajustes de organice: sus marcas de tiempo (`eliStamps`) y los ajustes de la
 // app con la suya (`eliPrefs`)
-const getConfigFileContents = (fieldsToPersist) => {
-  const names = persistableNames();
+const getConfigFileContents = (allFieldsToPersist) => {
+  const fieldsToPersist = allFieldsToPersist.filter(([name]) => !isLocalField(name));
+  const names = syncedNames();
   const stamps = localStorageAvailable ? readStamps() : {};
   const eliStamps = _.pick(stamps, names);
   const eliPrefs = localStorageAvailable ? collectLocalPrefs(names, stamps) : {};
@@ -429,7 +435,7 @@ const fieldValues = (fieldsToPersist) =>
 
 // (4.33) Aplica el fichero de ajustes fusionando por clave
 const applyRemoteConfig = (dispatch, getState, config) => {
-  const names = persistableNames();
+  const names = syncedNames();
   const stamps = readStamps();
   const merged = mergeSettings({
     remote: config,

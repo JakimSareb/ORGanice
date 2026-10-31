@@ -32,6 +32,10 @@ import generateId from '../../../../lib/id_generator';
 import { taskStateOf, clockTotals, formatMillis } from '../../../../lib/eli_task_state';
 import { attachmentsOfHeader } from '../../../../lib/eli_attachments';
 import { confirmRemoveHeader } from '../../../../lib/eli_confirm_remove';
+import { chooseCaptureTemplate } from '../../../../lib/eli_capture_menu';
+import substituteTemplateVariables from '../../../../lib/capture_template_substitution';
+import sampleCaptureTemplates from '../../../../lib/sample_capture_templates';
+import { startsWithHeading, parseHeadersText } from '../../../../lib/eli_header_clipboard';
 import { insertLinkInto } from '../../../../lib/eli_links';
 import { insertHeadingLink, insertTransclusion } from '../../../../lib/eli_heading_links';
 import { buildTransclusionLine } from '../../../../lib/eli_transclude';
@@ -140,6 +144,7 @@ export default function EliDocBar({
   const listEditMode = file.get('editMode');
   const todoKeywordSets = file.get('todoKeywordSets');
   const narrowedId = file.get('narrowedHeaderId');
+  const captureTemplates = useSelector((s) => s.capture.get('captureTemplates'));
   const logIntoDrawer = useSelector((s) => s.base.get('shouldLogIntoDrawer'));
   const indentOnExport = useSelector((s) => s.base.get('eliIndentOnExport') === true);
   // (4.35) «/» abre el menú de acciones solo si el ajuste está encendido (por defecto no)
@@ -441,6 +446,21 @@ export default function EliDocBar({
         : 'No se ha podido copiar; cópiala a mano:\n\n') +
         `${text}\n\nEn el fichero solo se guarda esa línea (como org-transclusion de Emacs).`
     );
+  };
+  // (4.54) «Insertar estructura…»: una plantilla de captura se inserta como SUBCABECERA de esta
+  // (con sus campos: fechas, propiedades…). Las preguntas «%^{…}» se dejan en blanco.
+  const insertStructure = async () => {
+    const templates = (captureTemplates || List()).concat(sampleCaptureTemplates);
+    const t = await chooseCaptureTemplate(templates);
+    if (!t) return;
+    const [text] = substituteTemplateVariables(t.get('template') || '');
+    const clean = text.replace(/%\^\{[^}]*\}/g, '').replace(/^\s*\n/, '');
+    const full = startsWithHeading(clean) ? clean : `* ${clean.replace(/^\s+/, '')}`;
+    const parsed = parseHeadersText(full, todoKeywordSets);
+    if (!parsed.size) return;
+    org('eliPasteHeaders', id, parsed);
+    org('openHeader', id);
+    org('selectHeader', parsed.first().get('id'));
   };
   // (4.46) Zettelkasten: la cabecera como fugaz (con enlace por ID al origen) y sus alias
   const sendToZk = () => {
@@ -1250,6 +1270,14 @@ export default function EliDocBar({
             icon: 'far fa-clone',
             label: 'Duplicar',
             onClick: () => org('duplicateHeader', id),
+          },
+          {
+            id: 'insert-structure',
+            testId: 'eli-doc-insert-structure',
+            icon: 'fas fa-sitemap',
+            label: 'Insertar estructura…',
+            hint: 'plantilla como subcabecera',
+            onClick: insertStructure,
           },
           // (4.31) referencias entrantes ([[id:…]] a esta cabecera)
           ...(path && !path.startsWith('/__')
