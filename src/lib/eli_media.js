@@ -269,11 +269,12 @@ export const orgLinkFor = (relativePath) => `[[file:${relativePath}]]`;
  * Sube los ficheros a assets/AAAA y devuelve los enlaces Org a insertar.
  * @returns {Promise<string[]>}
  */
-export const uploadAssets = async (client, orgFilePath, files) => {
+export const uploadAssets = async (client, orgFilePath, files, folder = null) => {
   if (!client || !client.uploadBinaryFile) {
     throw new Error('La subida de archivos solo está disponible con Dropbox');
   }
-  const dir = assetsDirFor(orgFilePath);
+  // (4.54) `folder` = carpeta elegida por la persona (por defecto, assets/AAAA junto al .org)
+  const dir = folder != null ? String(folder).replace(/\/+$/, '') : assetsDirFor(orgFilePath);
   const links = [];
   for (const file of files) {
     const uploadedPath = await client.uploadBinaryFile(

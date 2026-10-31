@@ -21,6 +21,8 @@ export const LOCAL_KEYS = [
   { key: 'eliTagsPos', label: 'Etiquetas al lado o debajo' },
   { key: 'eliLogseqEdit', label: 'Edición tipo Logseq' },
   { key: 'eliFont', label: 'Tipo de letra' },
+  { key: 'eliFontCustom', label: 'Fuente del sistema elegida' },
+  { key: 'fontSize', label: 'Tamaño de letra' }, // (4.54)
   { key: 'eliFontGtd', label: 'Tipo de letra también en GTD' },
   { key: 'eliReadability', label: 'Legibilidad' },
   { key: 'eliTapMode', label: 'Toques (qué hace cada toque)' },

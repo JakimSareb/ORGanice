@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { pickFolder } from '../../lib/eli_folder_picker';
+import { downloadHtml } from '../../lib/eli_export_html';
+import { showMessage } from '../../lib/eli_prompt';
 import { useHistory } from 'react-router-dom';
 
 import './stylesheet.css';
@@ -523,6 +526,29 @@ export function PrintButton({ docRef, testId }) {
   );
 }
 
+export function ExportHtmlButton({ docRef, title, testId }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      className="btn eli-raw__btn"
+      onClick={async () => {
+        if (busy || !docRef.current) return;
+        setBusy(true);
+        try {
+          await downloadHtml(docRef.current, title);
+        } catch (e) {
+          showMessage('No se pudo exportar', (e && e.message) || String(e));
+        }
+        setBusy(false);
+      }}
+      disabled={busy}
+      data-testid={testId}
+    >
+      <i className="fas fa-code" /> HTML
+    </button>
+  );
+}
+
 function PrintHeader({ header, baseLevel, path = null }) {
   const level = Math.min(6, Math.max(1, header.get('nestingLevel') - baseLevel + 1));
   const Tag = `h${level}`;
@@ -647,6 +673,7 @@ function PrintTasks({ files, items, title, onClose }) {
           Cerrar
         </button>
         <div className="eli-raw__title">Vista previa</div>
+        <ExportHtmlButton docRef={docRef} title={title || 'GTD'} testId="eli-export-html-tasks" />
         <PrintButton docRef={docRef} testId="eli-print-go" />
       </div>
       <div className="eli-print__hint eli-no-print">
@@ -717,6 +744,7 @@ function PrintPreview({ path, file, headerId, onClose }) {
             Incluir backlinks
           </label>
         )}
+        <ExportHtmlButton docRef={docRef} title={title} testId="eli-export-html" />
         <PrintButton docRef={docRef} testId="eli-print-file-go" />
       </div>
       <div className="eli-print__hint eli-no-print">
@@ -973,6 +1001,14 @@ function UploadDialog({ request, path, headers, onClose }) {
   );
   const [busy, setBusy] = useState(false);
   const [names, setNames] = useState([]); // nombres editables (sin extensión)
+  // (4.54) carpeta destino elegida (null = assets/AAAA junto al fichero, como siempre)
+  const [folder, setFolder] = useState(null);
+  const client = useSelector((st) => st.syncBackend.get('client'));
+  const chooseFolder = async () => {
+    const start = folder != null ? folder : (path || '/').replace(/\/[^/]*$/, '') || '';
+    const picked = await pickFolder({ client, start });
+    if (picked !== null) setFolder(picked);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -1015,7 +1051,8 @@ function UploadDialog({ request, path, headers, onClose }) {
     const links = await dispatch(
       uploadFilesAndGetLinks(
         prepared.map((p, i) => renamedFile(pick(p), names[i])),
-        path
+        path,
+        folder
       )
     );
     if (links.length) {
@@ -1117,8 +1154,20 @@ function UploadDialog({ request, path, headers, onClose }) {
         )}
 
         <div className="eli-upload__dest">
-          Se guardará en <code>assets/{new Date().getFullYear()}/</code> junto al fichero y se
-          añadirá el enlace{' '}
+          Se guardará en{' '}
+          <code data-testid="eli-upload-dest">
+            {folder != null ? `${folder || ''}/` : `assets/${new Date().getFullYear()}/`}
+          </code>
+          {folder == null && ' junto al fichero'}{' '}
+          <button
+            type="button"
+            className="btn eli-upload__folder"
+            onClick={chooseFolder}
+            data-testid="eli-upload-folder"
+          >
+            <i className="fas fa-folder-open" /> Cambiar carpeta…
+          </button>{' '}
+          y se añadirá el enlace{' '}
           {target && target.el ? (
             'en el texto que estás editando.'
           ) : headers && headers.size ? (
