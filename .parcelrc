@@ -2,5 +2,11 @@
   "extends": "@parcel/config-default",
   "transformers": {
     "url:*": ["@parcel/transformer-raw"]
+  },
+  "packagers": {
+    "*.mjs": "@parcel/packager-raw"
+  },
+  "optimizers": {
+    "*.mjs": []
   }
 }

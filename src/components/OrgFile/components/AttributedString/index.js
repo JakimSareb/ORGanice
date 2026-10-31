@@ -3,6 +3,7 @@ import EliMedia from '../EliMedia';
 import EliTransclusion from '../EliTransclusion';
 import { fileLinkTarget } from '../../../../lib/eli_media';
 import { parseOrgLink } from '../../../../lib/eli_org_links';
+import { pdfLinkInfo } from '../../../../lib/eli_noter';
 import React from 'react';
 import { fromJS } from 'immutable';
 import { connect } from 'react-redux';
@@ -38,6 +39,19 @@ const AttributedString = ({ org, parts, subPartDataAndHandlers }) => {
     if (youTubeId(uri)) {
       const hasDescription = !!part.getIn(['contents', 'title']);
       return <EliYouTube key={id} url={uri} title={hasDescription ? title : null} />;
+    }
+    // (4.59) PDF: [[pdf:x.pdf::3]], [[file:x.pdf::3]] → visor de la app en esa página
+    const pdf = pdfLinkInfo(uri);
+    if (pdf) {
+      const hasDescription = !!part.getIn(['contents', 'title']);
+      return (
+        <EliMedia
+          key={id}
+          target={pdf.target}
+          page={pdf.page}
+          title={hasDescription ? title : null}
+        />
+      );
     }
     const mediaTarget = fileLinkTarget(uri);
     if (mediaTarget) {

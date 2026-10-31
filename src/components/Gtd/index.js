@@ -251,6 +251,8 @@ import { openUploadDialog } from '../EliTools';
 import { confirmAndDeleteAttachment } from '../../lib/eli_attachments';
 import { linkTargetFor } from '../../lib/eli_org_attach';
 import EliMedia from '../OrgFile/components/EliMedia';
+import { openPdfViewer } from '../EliPdfViewer';
+import { pdfLinkInfo } from '../../lib/eli_noter';
 import {
   setGtdConfig,
   effectiveStored,
@@ -2220,6 +2222,13 @@ export default function GtdView() {
   }, [tasks, today, pendingLoads, dispatch]);
 
   const openLink = (task, target) => {
+    // (4.59) PDF: visor de la app (notas org-noter en el fichero de la tarea)
+    const pdf = pdfLinkInfo(target);
+    const pdfPath = pdf && resolveDropboxPath(task.path, pdf.target);
+    if (pdfPath && client && client.getFileBlob) {
+      openPdfViewer({ path: pdfPath, page: pdf.page, orgPath: task.path });
+      return;
+    }
     const file = fileLinkTarget(target);
     const path = file && resolveDropboxPath(task.path, file);
     if (path) {

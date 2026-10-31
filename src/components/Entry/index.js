@@ -30,6 +30,7 @@ import EliCommandPalette from '../EliCommandPalette';
 import EliHeadingViews from '../EliHeadingViews';
 import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
+import EliPdfViewer from '../EliPdfViewer';
 import EliScratch from '../EliScratch';
 import EliZk from '../EliZk';
 import EliWiki from '../EliWiki';
@@ -357,6 +358,7 @@ class Entry extends PureComponent {
         {isAuthenticated && <ProcReturnBar />}
         {isAuthenticated && <EliCalendar />}
         <EliCalculator />
+        {isAuthenticated && <EliPdfViewer />}
         {isAuthenticated && <EliScratch />}
         {isAuthenticated && <EliZk />}
         {isAuthenticated && <EliWiki />}
