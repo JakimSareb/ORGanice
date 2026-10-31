@@ -9,7 +9,9 @@ test('4.58: Ajustes › Copias de seguridad aparece y explica que WebDAV no las 
   test.skip(app.mobile, 'ajustes de escritorio');
   const { page } = app;
   await app.open({ '/tasks.org': '* NEXT Algo\n', '/inbox.org': '' }, '/settings');
-  await page.waitForTimeout(1000);
+  await page
+    .locator('[data-testid=eli-settings-backups]')
+    .waitFor({ state: 'attached', timeout: 20000 });
   await page.evaluate(() => document.querySelectorAll('details').forEach((d) => (d.open = true)));
   await expect(page.locator('[data-testid=eli-settings-backups]')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('[data-testid=eli-backups-unsupported]')).toBeVisible();
