@@ -485,3 +485,82 @@
   font-weight: bold;
   opacity: 0.85;
 }
+
+/* (4.55) lista de ficheros marcables de Ajustes › GTD */
+.eli-gtdfiles {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eli-gtdfiles__search {
+  padding: 4px 8px;
+  border: 1px solid var(--base1);
+  border-radius: 6px;
+  background: var(--base3);
+  color: var(--base01);
+  font: inherit;
+  box-sizing: border-box;
+  width: 100%;
+}
+.eli-gtdfiles__rows {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--base2);
+  border-radius: 6px;
+}
+.eli-gtdfiles__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 8px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.eli-gtdfiles__row:nth-child(even) {
+  background: var(--base2);
+}
+.eli-gtdfiles__row input {
+  flex: none;
+  align-self: center;
+}
+.eli-gtdfiles__name {
+  flex: none;
+  color: var(--base01);
+}
+.eli-gtdfiles__dir {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85em;
+  color: var(--base1);
+}
+.eli-gtdfiles__empty {
+  padding: 6px 8px;
+  font-size: 0.9em;
+  color: var(--base1);
+}
+
+/* (4.55) asa para ordenar arrastrando (secciones de GTD) */
+.eli-gtdsec__grip {
+  border: none;
+  background: transparent;
+  color: var(--base1);
+  cursor: grab;
+  padding: 4px 6px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  flex: none;
+}
+.eli-gtdsec__row.is-dragging {
+  opacity: 0.45;
+}
+.eli-gtdsec__row.is-drop-before {
+  box-shadow: 0 -2px 0 var(--blue);
+}
+.eli-gtdsec__row.is-drop-after {
+  box-shadow: 0 2px 0 var(--blue);
+}

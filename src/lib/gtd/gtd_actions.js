@@ -35,6 +35,7 @@ import {
   projectLinkFor,
   newOrgId,
   STATUS_PROPERTY,
+  ORDERED_PROPERTY,
 } from './gtd_model';
 import { showMessage } from '../eli_prompt';
 import { defaultKeywords, ENERGY_PROPERTY, EFFORT_PROPERTY } from '../eli_todo_defaults';
@@ -221,6 +222,13 @@ const buildSaveTask = (getState, task, changes) => {
   const dontIndent = getState().base.get('eliIndentOnExport') !== true;
   const logIntoDrawer = getState().base.get('shouldLogIntoDrawer');
   const inner = [];
+
+  // (4.55) tarea convertida en proyecto: según Ajustes nace secuencial (:ORDERED: t)
+  if (changes.list === 'project' && !task.isProject && newProjectsOrdered()) {
+    const props = { ...(changes.props || {}) };
+    if (!(ORDERED_PROPERTY in props)) props[ORDERED_PROPERTY] = 't';
+    changes = { ...changes, props };
+  }
 
   // 1) Cuerpo: notas, planificación y propiedades
   let h = header;
@@ -703,6 +711,16 @@ export const gtdToggleStar = (task) => (dispatch) =>
  * Nueva tarea. target: { path, parentId? } · fields: { title, list, area, tags }
  */
 // (2.17) Línea con la fecha de creación de una tarea nueva: «:Created: [2026-10-03 Sat 19:55]»
+// (4.55) ¿los proyectos nuevos son secuenciales (:ORDERED: t)? Ajuste del dispositivo; por defecto
+// paralelos (como hasta ahora)
+export const LS_NEW_PROJECT_ORDER = 'eliGtdNewProjectOrder';
+export const newProjectsOrdered = () => {
+  try {
+    return window.localStorage.getItem(LS_NEW_PROJECT_ORDER) === 'sequential';
+  } catch (e) {
+    return false;
+  }
+};
 export const createdLine = (date = new Date()) =>
   `:Created: [${formatDate(date, 'yyyy-MM-dd eee HH:mm')}]`;
 // (3.10) Ahora va como propiedad :CREATED: dentro del cajón :PROPERTIES:
@@ -739,11 +757,18 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
   if (fields.area) props = setProperty(props, 'AREA', fields.area);
   if (fields.energy) props = setProperty(props, ENERGY_PROPERTY, fields.energy);
   if (fields.effort) props = setProperty(props, EFFORT_PROPERTY, fields.effort);
-  if (fields.created) props = setProperty(props, CREATED_PROPERTY, createdStamp());
+  // (4.55) los proyectos nuevos también llevan :CREATED: y, si se pide en Ajustes, :ORDERED: t
+  const isNewProject = keyword === 'PROJECT';
+  if (fields.created || (isNewProject && fields.created !== false)) {
+    props = setProperty(props, CREATED_PROPERTY, createdStamp());
+  }
   // (4.07) otras propiedades ({ ID: …, OBJETIVO: … })
   Object.keys(fields.props || {}).forEach((name) => {
     if (fields.props[name]) props = setProperty(props, name, fields.props[name]);
   });
+  if (isNewProject && !(fields.props && ORDERED_PROPERTY in fields.props) && newProjectsOrdered()) {
+    props = setProperty(props, ORDERED_PROPERTY, 't');
+  }
   let planning = List();
   if (fields.scheduled)
     planning = setPlanning(planning, 'SCHEDULED', fields.scheduled, fields.scheduledRepeat);

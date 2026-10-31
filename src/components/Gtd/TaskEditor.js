@@ -1621,6 +1621,21 @@ export default function TaskEditor({
               <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
             </span>
           )}
+          {/* (4.55) fecha de creación, junto al fichero y con su mismo estilo (tareas y proyectos) */}
+          {task.createdAt && !isNew && (
+            <span
+              className="gtd-ed__file gtd-ed__created"
+              title="Fecha de creación (:CREATED:)"
+              data-testid="gtd-editor-created"
+            >
+              <i className="far fa-clock" />{' '}
+              {task.createdAt.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </span>
+          )}
           {/* (3.44) «Mover a…» (lo que hacía el nombre del fichero), donde estaba «Abrir» */}
           {onMove && !isNew && (
             <button
