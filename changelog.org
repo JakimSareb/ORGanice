@@ -3,6 +3,14 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.57 (octubre de 2026)
+** Agendas y Personas, y el orden de las secciones de Ajustes
+- *Ajustes › GTD: ya se pueden ordenar las secciones arrastrando el asa ⋮⋮* (con el dedo y con el ratón). En la 4.55 no funcionaba con el dedo: una regla general de los botones hacía que la página se desplazara en vez de arrastrar. También vale para los separadores.
+- *Agendas*: en cada punto, el lápiz edita su título y sus notas, y permite *borrar* el punto (con confirmación); en la agenda principal, *Editar notas*. El resto de agendas.org no cambia. Se quita el botón «convertir en contacto».
+- *Tocar el título «Agendas» o «Personas»* abre su fichero. La lupa de la cabecera *filtra por texto* en las dos.
+- *Llevar a reunión…*: nueva opción *＋ Nueva subcabecera aquí…* para crear la cabecera de destino al momento, y un aviso de que se entra con «›» para elegir una de más abajo.
+- *Reuniones* (=:TYPE: meeting=): también salen con su jerarquía en las *secciones propias* con «cabeceras sin tarea».
+
 * 4.56 (octubre de 2026)
 ** GTD II: tipo de cabecera, repeticiones, Tickler y saltos de sección
 - *Tipo de cabecera =:TYPE:=*: checklists, agendas, personas y reuniones se marcan con =:TYPE: checklist=, =:TYPE: agenda=, =:TYPE: persona= y =:TYPE: meeting= (además del fichero o la sección que ya las identifica). La app lo escribe al crear una persona o una agenda. *Los hábitos no cambian*: siguen con =:STYLE: habit=. No se lee =:STYLE:= para esos cuatro tipos: si lo tenías, cámbialo a mano a =:TYPE:=.

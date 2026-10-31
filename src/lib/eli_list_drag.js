@@ -54,13 +54,17 @@ export const useListDrag = (containerRef, onDrop) => {
       live.current = null;
       setDrag(null);
     };
+    // (4.57) mientras se arrastra con el dedo, la página no se desplaza (iOS ignora a veces touch-action)
+    const noScroll = (e) => e.cancelable && e.preventDefault();
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', cancel);
+    window.addEventListener('touchmove', noScroll, { passive: false });
     return () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('touchmove', noScroll, { passive: false });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!drag]);

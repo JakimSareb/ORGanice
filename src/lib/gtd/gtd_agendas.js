@@ -7,7 +7,7 @@
 //   - Las casillas viejas («- [ ]», «-», «+») dentro de las notas se respetan: marcar = solo
 //     «[ ]»→«[X]» en esa línea. Lo NUEVO siempre son subcabeceras (ver gtd_persons_actions.js).
 // Modelo puro (cabeceras Immutable).
-import { displayTitle, propertyValue, parsePersonLinks, ownTypeOf } from './gtd_model';
+import { displayTitle, propertyValue, parsePersonLinks, ownTypeOf, PRIORITY_RE } from './gtd_model';
 import { contactNamed, contactById, PERSON_PROPERTY } from './gtd_persons';
 
 // Ítem de lista: sangría, viñeta, casilla opcional y texto
@@ -86,7 +86,7 @@ export const isDoneKeyword = (k) => DONE_KEYWORDS.includes(String(k || '').toUpp
 /**
  * Agendas de agendas.org (fichero Immutable) con los contactos de personas.org →
  * { roots, all, persons, places, nodes, path }
- *   nodo = { headerId, orgId, title, level, body, keyword, done, person ({ id, name } o null),
+ *   nodo = { headerId, orgId, title, rawTitle, level, body, keyword, done, person ({ id, name } o null),
  *            children, parentId, open (puntos pendientes + casillas sin marcar de todo el
  *            subárbol), points (puntos pendientes del subárbol, sin contar este) }
  *   roots = all = las agendas principales (nivel 1, o la primera cabecera si el fichero empieza por
@@ -109,6 +109,8 @@ export const parseAgendas = (file, contacts = [], path = '') => {
       headerId: h.get('id'),
       orgId: propertyValue(h, 'ID'),
       title,
+      // (4.57) título tal cual (con sus enlaces; sin la prioridad), para editarlo
+      rawTitle: (h.getIn(['titleLine', 'rawTitle']) || '').replace(PRIORITY_RE, '').trim(),
       level,
       body,
       keyword,
@@ -178,3 +180,26 @@ export const agendaChoices = (agendas) => {
 // Nº de puntos de un nodo que se ven con «Ocultar tratados» (los tratados y su subárbol no)
 export const visibleChildren = (node, hideDone) =>
   hideDone ? node.children.filter((c) => !c.done) : node.children;
+
+// (4.57) Filtro por texto de Personas y Agendas (sin mirar mayúsculas ni acentos; todas las palabras)
+const plain = (t) =>
+  String(t || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+export const filterWords = (q) => plain(q).split(/\s+/).filter(Boolean);
+const hasAll = (words, text) => {
+  const t = plain(text);
+  return words.every((w) => t.includes(w));
+};
+// ¿El título, las notas o la persona de este nodo cumplen?
+export const nodeMatches = (node, words) =>
+  !words.length ||
+  hasAll(words, `${node.title} ${node.body} ${node.person ? node.person.name : ''}`);
+// …o algún punto de su subárbol
+export const nodeMatchesDeep = (node, words) =>
+  !words.length || nodeMatches(node, words) || node.children.some((c) => nodeMatchesDeep(c, words));
+// ¿Un contacto de personas.org cumple? (nombre, alias, empresa, correo)
+export const contactMatches = (c, words) =>
+  !words.length ||
+  hasAll(words, [c.name, ...(c.aliases || []), c.empresa, c.email].filter(Boolean).join(' '));

@@ -2,8 +2,8 @@
 // está en lib/gtd/gtd_persons.js y lib/gtd/gtd_agendas.js.
 import { List } from 'immutable';
 import { getGtdFiles } from './gtd_sections';
-import { gtdAddTask, gtdSaveTask } from './gtd_actions';
-import { newOrgId, propertyValue, TYPE_PROPERTY } from './gtd_model';
+import { gtdAddTask, gtdSaveTask, gtdDeleteTask } from './gtd_actions';
+import { newOrgId, propertyValue, TYPE_PROPERTY, PRIORITY_RE } from './gtd_model';
 import {
   PERSON_PROPERTY,
   PERSONAS_NAME,
@@ -260,6 +260,60 @@ export const agendaToggleDone = (headerId) => (dispatch, getState) => {
   const keyword = h.getIn(['titleLine', 'todoKeyword']) || null;
   const next = isDoneKeyword(keyword) ? null : 'DONE';
   dispatch(gtdSaveTask({ path, id: headerId, keyword }, { keyword: next }));
+  return true;
+};
+
+/**
+ * (4.57) Editar una cabecera de agendas.org (agenda principal o punto): `title` (texto del título,
+ * sin estado ni etiquetas, que se conservan) y/o `notes` (el cuerpo). Lo que no cambia no se toca
+ * (el resto del fichero queda byte a byte igual). → true si se cambió algo.
+ */
+export const agendaEditNode = (headerId, { title, notes } = {}) => (dispatch, getState) => {
+  const path = agendasPathFor(getState());
+  const h = headerOf(getState, path, headerId);
+  if (!h) return false;
+  const rawTitle = h.getIn(['titleLine', 'rawTitle']) || '';
+  const pm = PRIORITY_RE.exec(rawTitle);
+  const task = {
+    path,
+    id: headerId,
+    keyword: h.getIn(['titleLine', 'todoKeyword']) || null,
+    priority: pm ? pm[1] : null,
+    rawTitle,
+    ownTags: (h.getIn(['titleLine', 'tags']) || List()).toArray().filter(Boolean),
+  };
+  const changes = {};
+  if (title !== undefined) {
+    const clean = oneLine(title);
+    if (!clean) return false;
+    if (clean !== rawTitle.replace(PRIORITY_RE, '').trim()) changes.rawTitle = clean;
+  }
+  if (notes !== undefined) {
+    const next = String(notes).replace(/\s+$/, '');
+    if (next !== (h.get('rawDescription') || '').replace(/\s+$/, '')) changes.notes = next;
+  }
+  if (!Object.keys(changes).length) return false;
+  dispatch(gtdSaveTask(task, changes));
+  return true;
+};
+
+// (4.57) Borrar una cabecera de agendas.org (un punto o una agenda entera) con sus subpuntos,
+// tras confirmar. → true si se borró
+export const agendaDeleteNode = (headerId, title = '', subpoints = 0) => async (
+  dispatch,
+  getState
+) => {
+  const path = agendasPathFor(getState());
+  if (!headerOf(getState, path, headerId)) return false;
+  const ok = await askConfirm({
+    title: 'Borrar',
+    message: `¿Borrar «${title}»${
+      subpoints > 0 ? ` y sus ${subpoints} subpunto${subpoints === 1 ? '' : 's'}` : ''
+    }? (se puede deshacer)`,
+    okLabel: 'Borrar',
+  });
+  if (!ok) return false;
+  dispatch(gtdDeleteTask({ path, id: headerId }));
   return true;
 };
 

@@ -335,6 +335,7 @@ export const pickRefileTarget = ({
   onlyPath = null,
   shortcuts = [],
   sessionKey = null,
+  allowNew = false,
 } = {}) => async (dispatch, getState) => {
   const all = onlyPath ? [onlyPath] : await dispatch(listAllOrgPaths());
   const cfg = getGtdFiles();
@@ -355,6 +356,7 @@ export const pickRefileTarget = ({
     files,
     onlyPath,
     sessionKey,
+    allowNew,
     shortcuts: shortcuts.filter((s) => known.has(s.path)),
     getIndex: () => indexOfState(getState()),
     ensureLoaded: async (path) => {
