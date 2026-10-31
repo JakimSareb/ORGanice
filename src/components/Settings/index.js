@@ -12,6 +12,7 @@ import * as orgActions from '../../actions/org';
 
 import GtdSectionsSettings from './GtdSectionsSettings';
 import OfflineSettings from './OfflineSettings';
+import BackupsSettings from './BackupsSettings';
 import './stylesheet.css';
 
 import TabButtons from '../UI/TabButtons';
@@ -1520,6 +1521,8 @@ const Settings = ({
       <EliZkSettings />
 
       <EliWikiSettings />
+
+      <BackupsSettings />
 
       {!notes && (
         <details className="eli-settings-section" data-testid="eli-settings-gtd">

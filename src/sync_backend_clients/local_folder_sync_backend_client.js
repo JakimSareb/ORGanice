@@ -226,10 +226,14 @@ export default () => {
         } else if (accept(name)) {
           if (withSize) {
             let size = 0;
+            let stamp = '';
             try {
-              size = (await handle.getFile()).size;
+              const file = await handle.getFile();
+              size = file.size;
+              // (4.58) marca de cambio: la fecha de modificación del fichero
+              stamp = String(file.lastModified);
             } catch (e) {}
-            out.push({ path: full, size });
+            out.push({ path: full, size, stamp });
           } else out.push(full);
         }
       }
@@ -243,6 +247,27 @@ export default () => {
   // ORG Mode para Eli: todos los ficheros (sin backups/ ni carpetas ocultas)
   const listAllFiles = () => walkFiles(() => true, 20000);
   const listAllFileEntries = () => walkFiles(() => true, 20000, true);
+
+  // (4.58) copias rotativas: los .zip de `/backups` (walkFiles se salta esa carpeta a propósito)
+  const listBackupZips = async () => {
+    let dir;
+    try {
+      dir = await dirHandle(['backups']);
+    } catch (e) {
+      if (e && e.notFound) return [];
+      throw e;
+    }
+    const out = [];
+    for await (const [name, handle] of dir.entries()) {
+      if (handle.kind !== 'file' || !/\.zip$/i.test(name)) continue;
+      let size = 0;
+      try {
+        size = (await handle.getFile()).size;
+      } catch (e) {}
+      out.push({ path: `/backups/${name}`, name, size });
+    }
+    return out;
+  };
 
   return {
     type: 'LocalFolder',
@@ -263,5 +288,6 @@ export default () => {
     listOrgFiles,
     listAllFiles,
     listAllFileEntries,
+    listBackupZips,
   };
 };

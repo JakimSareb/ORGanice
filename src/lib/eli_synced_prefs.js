@@ -42,6 +42,8 @@ const STATE_KEYS = [
   STAMPS_KEY,
   // (4.41) nº de enlaces rotos del último escaneo (contador de Herramientas)
   'eliBrokenLinksCount',
+  // (4.58) última comprobación de copias de ESTE dispositivo
+  'eliBackupLastRun',
   'eliSyncLog',
   'eliSyncLogSeen',
   'eliLastRoute',

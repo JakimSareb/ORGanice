@@ -3,6 +3,13 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.58 (octubre de 2026)
+** Copias de seguridad rotativas
+- *Una copia por hora, si cambió algo*: con Dropbox o con una carpeta del ordenador, la app guarda en la carpeta =backups/= un fichero =.zip= con todos tus ficheros =.org= (también los cifrados y los =.org_archive=). Si no ha cambiado nada desde la última, no hace otra.
+- *Se van borrando solas*: se conservan las de las últimas 24 horas, la primera de cada día de la última semana, de cada semana del último mes, de cada mes del último año, y la primera de cada año. Nunca se borra la más reciente, y no se borra nada hasta comprobar que la nueva se guardó bien.
+- *Ajustes › Copias de seguridad*: activar o desactivar, *Copiar ahora*, ver la lista y *Restaurar* una (pide confirmación, guarda antes una copia de lo actual y no borra ningún fichero; hay que tener todo sincronizado).
+- Las copias por fichero de siempre (=backups/nombre.org.organice-bak=) siguen como estaban. WebDAV no admite las rotativas.
+
 * 4.57 (octubre de 2026)
 ** Agendas y Personas, y el orden de las secciones de Ajustes
 - *Ajustes › GTD: ya se pueden ordenar las secciones arrastrando el asa ⋮⋮* (con el dedo y con el ratón). En la 4.55 no funcionaba con el dedo: una regla general de los botones hacía que la página se desplazara en vez de arrastrar. También vale para los separadores.

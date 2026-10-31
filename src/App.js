@@ -16,6 +16,7 @@ import { BrowserRouter } from 'react-router-dom';
 import EliErrorBoundary from './components/EliErrorBoundary';
 import EliLocalFolderGate from './components/EliLocalFolderGate';
 import EliReminders from './components/EliReminders';
+import EliBackups from './components/EliBackups';
 
 import { DragDropContext } from 'react-beautiful-dnd';
 
@@ -262,6 +263,7 @@ export default class App extends PureComponent {
               <Turnout />
               <EliLocalFolderGate />
               <EliReminders />
+              <EliBackups />
             </EliErrorBoundary>
           </Provider>
         </BrowserRouter>

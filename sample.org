@@ -499,6 +499,7 @@ Para trabajar sin Internet, por ejemplo en un vuelo largo, prepara la app antes,
 - *Borrar lo guardado* quita del dispositivo las copias y los adjuntos (conserva los cambios que aún no se han subido).
 - Si un fichero ha cambiado en Dropbox y también aquí, ORGanice te lo dice y te deja elegir: quedarte con tu versión, con la de Dropbox, o ver las diferencias y elegir cambio a cambio.
 - En Dropbox se guarda una copia de seguridad de cada fichero en la carpeta backups.
+- *Copias rotativas* (Ajustes → Copias de seguridad): además, una vez por hora (si cambió algo) se guarda en =backups/= un zip con todos tus ficheros .org. Se conservan las de las últimas 24 horas, 7 días, 4 semanas y 12 meses, y la primera de cada año; las demás se borran solas (nunca la más reciente, ni antes de comprobar que la nueva está bien). Ahí mismo puedes copiar ahora, ver la lista y *Restaurar* una: antes guarda una copia de lo actual y no borra ningún fichero. Funciona con Dropbox y con una carpeta del ordenador.
 
 * Carpeta local (sin Dropbox)
 En la pantalla de acceso, «Elegir carpeta…» (Edge o Chrome de ordenador): en el ordenador es la primera opción, y Dropbox va debajo, tras una línea fina; en el iPhone (que no lo permite), Dropbox va primero. Los ficheros no salen del ordenador y todo funciona igual.

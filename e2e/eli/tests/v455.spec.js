@@ -44,6 +44,11 @@ test('4.55: Ajustes › GTD: las secciones se ordenan arrastrando su asa', async
   test.skip(app.mobile, 'con el ratón');
   const { page } = app;
   await app.open(BASE, '/settings');
+  // `app.open` vuelve antes de que Ajustes pinte sus secciones: sin esta espera, a veces «abrir
+  // todos los details» no encontraba ninguno (4.58: falló así en CI)
+  await page
+    .locator('[data-testid=eli-gtdsec-next-grip]')
+    .waitFor({ state: 'attached', timeout: 20000 });
   await page.evaluate(() => document.querySelectorAll('details').forEach((d) => (d.open = true)));
   const ids = () =>
     page.evaluate(() =>
