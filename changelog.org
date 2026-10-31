@@ -3,6 +3,12 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.59 (octubre de 2026)
+** Visor de PDF con notas al estilo org-noter
+- *Los PDF se abren dentro de la app*: al tocar un enlace a un PDF ([[file:libro.pdf]], [[file:libro.pdf::12]] o [[pdf:libro.pdf::12]]), en la vista GTD o con la paleta (*Abrir un PDF…*). Una página cada vez, con zoom; ↗ lo abre fuera. Se carga solo al abrir un PDF.
+- *Notas por página*: botón *Nota* (con texto seleccionado, *Nota con cita*). Se guardan como subcabeceras con =:NOTER_PAGE:= bajo una cabecera con =:NOTER_DOCUMENT:=, el mismo formato de org-noter en Emacs. Tocar una nota salta a su página; el lápiz la abre en el documento. El resto del fichero no cambia.
+- Paleta: *Abrir el PDF de esta nota (org-noter)* desde la nota o la sesión seleccionada. El manual explica cómo usarlo en Emacs con pdf-tools y org-noter.
+
 * 4.58 (octubre de 2026)
 ** Copias de seguridad rotativas
 - *Una copia por hora, si cambió algo*: con Dropbox o con una carpeta del ordenador, la app guarda en la carpeta =backups/= un fichero =.zip= con todos tus ficheros =.org= (también los cifrados y los =.org_archive=). Si no ha cambiado nada desde la última, no hace otra.

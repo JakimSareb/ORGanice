@@ -118,6 +118,10 @@ export default (url, login, password) => {
     );
   };
 
+  // ORG Mode para Eli (4.59): ficheros binarios (el visor de PDF)
+  const getFileBlob = (path) =>
+    webdavClient.getFileContents(path, { format: 'binary' }).then((buf) => new Blob([buf]));
+
   const deleteFile = (path) =>
     new Promise((resolve, reject) =>
       webdavClient
@@ -139,6 +143,7 @@ export default (url, login, password) => {
     createFile,
     getFileContentsAndMetadata,
     getFileContents,
+    getFileBlob,
     deleteFile,
   };
 };

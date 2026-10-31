@@ -28,6 +28,7 @@ import {
 import { eliPrepareOffline } from '../../actions/eli_offline';
 import { openCalendar } from '../EliCalendar';
 import { openCalculator } from '../EliCalculator';
+import { pickAndOpenPdf, openPdfOfSelectedNote } from '../EliPdfViewer';
 import { getShowArchived, setShowArchived, isArchiveFile } from '../../lib/eli_archived';
 import {
   activatePopup,
@@ -512,6 +513,23 @@ export default function EliCommandPalette() {
       () => openCalculator(),
       '',
       'calcular sumar cuentas'
+    );
+    // (4.59) visor de PDF con notas org-noter
+    act(
+      'pdf-open',
+      'Abrir un PDF…',
+      'far fa-file-pdf',
+      () => pickAndOpenPdf(store.getState()),
+      '',
+      'pdf leer documento'
+    );
+    act(
+      'pdf-noter',
+      'Abrir el PDF de esta nota (org-noter)',
+      'fas fa-file-pdf',
+      () => openPdfOfSelectedNote(store.getState()),
+      '',
+      'pdf noter página'
     );
 
     // Listas GTD

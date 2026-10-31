@@ -1,6 +1,6 @@
 {
   "name": "organice",
-  "version": "4.5.8",
+  "version": "4.5.9",
   "private": true,
   "engines": {
     "node": "^20.17.0"
@@ -33,6 +33,7 @@
     "lodash": "^4.17.21",
     "openpgp": "^6",
     "parcel": "^2.14.4",
+    "pdfjs-dist": "4.10.38",
     "peggy": "^5.0.0",
     "react": "16.10.0",
     "react-beautiful-dnd": "^13.0.0",

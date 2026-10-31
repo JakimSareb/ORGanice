@@ -1,0 +1,222 @@
+@import '../../colors.css';
+
+/* ORG Mode para Eli (4.59): visor de PDF con notas org-noter */
+.eli-pdf {
+  position: fixed;
+  inset: 0;
+  z-index: 2950;
+  background: var(--base3);
+  color: var(--base00);
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.eli-pdf__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--base2);
+  background: var(--base2);
+}
+.eli-pdf__btn {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 6px 8px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.eli-pdf__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.eli-pdf__name {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.eli-pdf__pager,
+.eli-pdf__zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.eli-pdf__page {
+  width: 3.2em;
+  text-align: center;
+  padding: 4px;
+  border: 1px solid var(--base1);
+  border-radius: 6px;
+  background: var(--base3);
+  color: inherit;
+  font-size: 16px; /* sin zoom automático del iPhone */
+}
+.eli-pdf__count {
+  font-size: 0.9em;
+  opacity: 0.8;
+  padding: 0 2px;
+}
+.eli-pdf__add {
+  white-space: nowrap;
+}
+.eli-pdf__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.eli-pdf__scroll {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--base2);
+  padding: 8px;
+}
+.eli-pdf__status {
+  padding: 12px;
+  text-align: center;
+}
+.eli-pdf__pagebox {
+  position: relative;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+.eli-pdf__canvas {
+  display: block;
+}
+.eli-pdf__notes {
+  width: 340px;
+  max-width: 40%;
+  overflow-y: auto;
+  border-left: 1px solid var(--base2);
+  padding: 8px;
+}
+.eli-pdf__notes-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.eli-pdf__notes-file {
+  font-weight: normal;
+  font-size: 0.8em;
+  opacity: 0.7;
+  word-break: break-all;
+}
+.eli-pdf__empty {
+  font-size: 0.9em;
+  opacity: 0.75;
+}
+.eli-pdf__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+.eli-pdf__note.is-current {
+  background: var(--base2);
+}
+.eli-pdf__note-main {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.eli-pdf__note-page {
+  font-size: 0.75em;
+  opacity: 0.7;
+}
+.eli-pdf__note-title {
+  font-weight: 600;
+}
+.eli-pdf__note-body {
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  max-height: 5.5em;
+  overflow: hidden;
+  opacity: 0.85;
+}
+
+/* Móvil: el PDF arriba y las notas debajo */
+@media (max-width: 700px) {
+  .eli-pdf__body {
+    flex-direction: column;
+  }
+  .eli-pdf__notes {
+    width: auto;
+    max-width: none;
+    max-height: 38%;
+    border-left: 0;
+    border-top: 1px solid var(--base2);
+  }
+}
+
+/* Capa de texto de pdf.js 4.10 (copiada de su pdf_viewer.css, lo mínimo para seleccionar) */
+.eli-pdf .textLayer {
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  z-index: 0;
+}
+.eli-pdf .textLayer,
+.eli-pdf .textLayer :is(span, br) {
+  /* la app quita la selección en todo el cuerpo: aquí hace falta para citar */
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+.eli-pdf .textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.eli-pdf .textLayer > :not(.markedContent),
+.eli-pdf .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+}
+.eli-pdf .textLayer span.markedContent {
+  top: 0;
+  height: 0;
+}
+.eli-pdf .textLayer ::selection {
+  background: rgba(0, 0, 255, 0.25);
+}
+.eli-pdf .textLayer br::selection {
+  background: transparent;
+}
+.eli-pdf .textLayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+.eli-pdf .textLayer.selecting .endOfContent {
+  top: 0;
+}

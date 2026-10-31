@@ -11,6 +11,7 @@ import {
   openInNewTab,
 } from '../../../../lib/eli_media';
 import { STATIC_FILE_PREFIX } from '../../../../lib/org_utils';
+import { openPdfViewer } from '../../../EliPdfViewer';
 
 // ORG Mode para Eli: muestra un enlace Org a un fichero de Dropbox (imagen, vídeo, audio u
 // otro). Las imágenes se ven en línea (miniatura); al pulsar se abre el original.
@@ -22,7 +23,8 @@ const selectPath = (state) => state.org.present.get('path');
 export const MediaPathContext = createContext(null);
 
 // `orgPath`: fichero del enlace si no es el abierto (p. ej. desde la vista GTD)
-export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) {
+// (4.59) `page`: página del PDF (enlaces [[pdf:x.pdf::3]] o [[file:x.pdf::3]])
+export default function EliMedia({ target, title, orgPath: ownOrgPath = null, page = null }) {
   const client = useSelector(selectClient);
   const openPath = useSelector(selectPath);
   const ctxPath = useContext(MediaPathContext);
@@ -33,6 +35,8 @@ export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) 
   const label = title && title !== target && title !== `file:${target}` ? title : null;
   const name = target.split('/').pop();
   const supported = !!(client && client.getTemporaryLink && path);
+  // (4.59) los PDF se abren en el visor de la app (con notas org-noter)
+  const isPdf = /\.pdf$/i.test(target) && !!(client && client.getFileBlob && path);
 
   const [src, setSrc] = useState(null);
   const [error, setError] = useState(null);
@@ -60,6 +64,10 @@ export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) 
   const open = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isPdf) {
+      openPdfViewer({ path, page, orgPath });
+      return;
+    }
     if (!supported) return;
     openInNewTab(client, path).catch(() =>
       setError(
@@ -68,18 +76,25 @@ export default function EliMedia({ target, title, orgPath: ownOrgPath = null }) 
     );
   };
 
-  const icon = { image: 'fa-image', video: 'fa-film', audio: 'fa-music', file: 'fa-paperclip' }[
-    kind
-  ];
+  const icon = isPdf
+    ? 'fa-file-pdf'
+    : { image: 'fa-image', video: 'fa-film', audio: 'fa-music', file: 'fa-paperclip' }[kind];
 
   const chip = (
-    <span className="eli-media__chip" onClick={open} title={path || target} role="link">
+    <span
+      className="eli-media__chip"
+      onClick={open}
+      title={path || target}
+      role="link"
+      data-testid={isPdf ? 'eli-pdf-link' : undefined}
+    >
       <i className={`fas ${icon}`} /> {label || name}
+      {isPdf && page ? ` (p. ${page})` : ''}
       {error && <span className="eli-media__error"> — {error}</span>}
     </span>
   );
 
-  if (!supported || error) return chip;
+  if (!supported || error || isPdf) return chip;
 
   if (kind === 'image') {
     return (

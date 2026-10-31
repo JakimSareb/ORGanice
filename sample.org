@@ -417,6 +417,24 @@ Formato › *Lista ›* pone Casilla, Guion, Más, Numerada o lo quita en la lí
 - Al *imprimir o sacar el PDF* se imprime el contenido citado.
 - *Emacs*: activa =org-transclusion-mode= para ver las mismas citas allí.
 
+** Leer PDF y tomar notas (4.59, como org-noter)
+- *Abrir un PDF dentro de la app*: toca un enlace a un PDF ([[file:libro.pdf]], o con página: [[file:libro.pdf::12]] o [[pdf:libro.pdf::12]]), o en la paleta *Abrir un PDF…* (busca todos los PDF de tu Dropbox o carpeta). En la vista GTD, los PDF de una tarea también se abren aquí. El visor se carga solo al abrir un PDF, así que la app no arranca más lenta.
+- Se ve *una página cada vez* (gasta poca memoria en el iPhone): ‹ › o las flechas del teclado para pasar, el número para saltar, lupas para acercar o alejar. ↗ lo abre fuera de la app.
+- *Notas*: a la derecha (en el móvil, debajo) salen las notas de ese PDF ordenadas por página. Tocar una salta a su página; el lápiz la abre en el documento para escribir con calma.
+- *Nota nueva*: pulsa *Nota*; se crea una subcabecera con la página actual. Si antes *seleccionas texto* del PDF, el botón pasa a *Nota con cita* y el texto se guarda en un bloque =#+begin_quote=.
+- *Dónde se guardan*: en el fichero desde el que abriste el PDF (o en otro ya cargado que tenga sus notas; si lo abriste desde la paleta sin fichero, en =nombre-del-pdf.org= junto al PDF). La primera nota crea la cabecera de la sesión:
+  : * Notas: libro
+  : :PROPERTIES:
+  : :NOTER_DOCUMENT: libro.pdf
+  : :END:
+  : ** Idea clave
+  : :PROPERTIES:
+  : :NOTER_PAGE: 12
+  : :END:
+  El resto del fichero no se toca. =:NOTER_PAGE:= también vale con posición, =(12 . 0.4)=, como lo escribe Emacs.
+- *Desde una nota*: selecciona la nota (o la cabecera de la sesión) y en la paleta *Abrir el PDF de esta nota (org-noter)*.
+- *Emacs*: instala =pdf-tools= (=M-x pdf-tools-install=) y =org-noter=; con el cursor en la cabecera de la sesión, =M-x org-noter= abre el PDF al lado con las mismas notas, e =i= añade una nota en la página que ves. Si en Emacs pones la ruta absoluta del PDF (=~/Dropbox/…=), la app la reconoce por el nombre del fichero. Los enlaces =pdf:…::n= son los de =org-pdftools=; si no lo usas, en Emacs funcionan igual los =file:libro.pdf::12=.
+
 * Buscar, mover y archivar
 - *b*: buscar en tareas, encabezados o texto, con fragmentos; «Solo esta hoja» limita la búsqueda al fichero abierto y «Archivadas» busca también en los ficheros _archive (se recuerda; en la paleta, «Archivadas: mostrar lo archivado»).
 - *m*: mover el encabezado seleccionado con las flechas.

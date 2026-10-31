@@ -11,6 +11,8 @@ const PORT = Number(process.env.E2E_PORT || 4317);
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
+  '.pdf': 'application/pdf',
   '.css': 'text/css',
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
