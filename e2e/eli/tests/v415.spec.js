@@ -5,7 +5,7 @@ const { test, expect, gtd } = require('../harness');
 test('4.15: Revisión semanal oficial (Allen estricto)', async ({ app }) => {
   const { page } = app;
   await app.open({ '/tasks.org': '* NEXT Algo\n', '/inbox.org': '' }, '/gtd', {
-    localStorage: { eliGtdStrict: 'true' },
+    localStorage: { eliGtdShowPlanDay: 'false', eliGtdShowCloseDay: 'false' },
   });
   await gtd.ready(app);
   await page.click('[data-testid=eli-more-top]');
