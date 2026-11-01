@@ -70,7 +70,13 @@ import * as orgActions from '../../actions/org';
 import { ActionCreators as undoActions } from 'redux-undo';
 
 import ExternalLink from '../UI/ExternalLink';
-import { splitMenuLayout } from '../../lib/eli_menu_layout';
+import {
+  splitMenuLayout,
+  topBarOrder,
+  topBarPlace,
+  getTopBar,
+  normalizeTopBar,
+} from '../../lib/eli_menu_layout';
 
 import { List } from 'immutable';
 import _ from 'lodash';
@@ -181,31 +187,34 @@ class HeaderBar extends PureComponent {
     }
     return (
       <div className="eli-mode-bar">
-        {/* Un solo botón: se pulse donde se pulse, cambia de modo */}
-        <button
-          type="button"
-          className="eli-mode"
-          onClick={() => (docs ? openGtdMode() : openDocuments())}
-          title={docs ? 'Cambiar a la vista GTD (tecla g)' : 'Cambiar a Documentos (tecla g)'}
-          aria-label={docs ? 'Cambiar a la vista GTD' : 'Cambiar a Documentos'}
-          data-testid="eli-mode-toggle"
-        >
-          <span
-            className={'eli-mode__btn eli-mode__btn--docs' + (docs ? ' is-on' : '')}
-            data-testid="eli-mode-docs"
+        {/* Un solo botón: se pulse donde se pulse, cambia de modo. (4.60) Se puede quitar de la
+            barra (al Menú ☰ o apagado) en Ajustes › Menú ☰ › «Barra superior» */}
+        {topBarPlace('mode') === 'bar' && (
+          <button
+            type="button"
+            className="eli-mode"
+            onClick={() => (docs ? openGtdMode() : openDocuments())}
+            title={docs ? 'Cambiar a la vista GTD (tecla g)' : 'Cambiar a Documentos (tecla g)'}
+            aria-label={docs ? 'Cambiar a la vista GTD' : 'Cambiar a Documentos'}
+            data-testid="eli-mode-toggle"
           >
-            <i className="far fa-file-alt" />
-            <span className="eli-mode__label eli-mode__label--long">Documentos</span>
-            <span className="eli-mode__label eli-mode__label--short">Docs</span>
-          </span>
-          <span
-            className={'eli-mode__btn eli-mode__btn--gtd' + (!docs ? ' is-on' : '')}
-            data-testid="eli-open-gtd"
-          >
-            <i className="fas fa-tasks" />
-            <span className="eli-mode__label">GTD</span>
-          </span>
-        </button>
+            <span
+              className={'eli-mode__btn eli-mode__btn--docs' + (docs ? ' is-on' : '')}
+              data-testid="eli-mode-docs"
+            >
+              <i className="far fa-file-alt" />
+              <span className="eli-mode__label eli-mode__label--long">Documentos</span>
+              <span className="eli-mode__label eli-mode__label--short">Docs</span>
+            </span>
+            <span
+              className={'eli-mode__btn eli-mode__btn--gtd' + (!docs ? ' is-on' : '')}
+              data-testid="eli-open-gtd"
+            >
+              <i className="fas fa-tasks" />
+              <span className="eli-mode__label">GTD</span>
+            </span>
+          </button>
+        )}
         {up && (
           <Link
             to={decodeURIComponent(up.to)}
@@ -229,6 +238,7 @@ class HeaderBar extends PureComponent {
     window.addEventListener('keydown', this.eliNavKey);
     window.addEventListener('resize', this.eliResize);
     window.addEventListener('eli:open-settings', this.eliOpenSettings);
+    window.addEventListener('eli:topbar', this.eliTopBarChanged);
     installNavHistory(this.props.history);
     // (3.04) el candado está en ⋯ › Fichero; el nombre del fichero lo muestra cuando está puesto
     this.eliUnsubLock = subscribeDocLock(() => this.forceUpdate());
@@ -289,12 +299,69 @@ class HeaderBar extends PureComponent {
   };
 
   // (4.45) la tecla «,» de Documentos
+  // (4.60) cambió dónde va cada botón fijo de la barra
+  eliTopBarChanged = () => this.forceUpdate();
+
+  // (4.60) Entradas del Menú ☰ para los botones fijos de la barra que se han pasado al menú
+  eliTopBarMenuItems({ inFile, inGtd, isUndoEnabled, isRedoEnabled }) {
+    const l = normalizeTopBar(getTopBar());
+    const inMenu = l.order.filter((id) => topBarPlace(id, l) === 'menu');
+    const root = this.getPathRoot();
+    const out = [];
+    inMenu.forEach((id) => {
+      if (id === 'mode')
+        out.push({
+          icon: inGtd ? 'far fa-file-alt' : 'fas fa-tasks',
+          label: inGtd ? 'Ir a Documentos' : 'Ir a GTD',
+          onClick: () => (inGtd ? openDocuments() : openGtdMode()),
+          testId: 'eli-topbar-menu-mode',
+        });
+      if (id === 'nav' && (inFile || inGtd || root === 'files')) {
+        out.push({
+          icon: 'fas fa-arrow-left',
+          label: 'Atrás',
+          onClick: () => goBack(this.props.history),
+          testId: 'eli-topbar-menu-back',
+        });
+        out.push({
+          icon: 'fas fa-arrow-right',
+          label: 'Adelante',
+          onClick: () => goForward(this.props.history),
+          testId: 'eli-topbar-menu-forward',
+        });
+      }
+      if (id === 'undo' && inFile) {
+        out.push({
+          icon: 'fas fa-undo',
+          label: 'Deshacer',
+          onClick: () => isUndoEnabled && this.handleUndoClick(),
+          testId: 'eli-topbar-menu-undo',
+        });
+        out.push({
+          icon: 'fas fa-redo',
+          label: 'Rehacer',
+          onClick: () => isRedoEnabled && this.handleRedoClick(),
+          testId: 'eli-topbar-menu-redo',
+        });
+      }
+      if (id === 'sync' && (inFile || inGtd || root === 'files'))
+        out.push({
+          icon: 'fas fa-sync-alt',
+          label: 'Sincronizar ahora',
+          onClick: () => this.eliSyncNow(),
+          testId: 'eli-topbar-menu-sync',
+        });
+    });
+    return out;
+  }
+
   eliOpenSettings = () => {
     this.handleSettingsClick();
     this.props.history.push('/settings');
   };
 
   componentWillUnmount() {
+    window.removeEventListener('eli:topbar', this.eliTopBarChanged);
     window.removeEventListener('eli:open-settings', this.eliOpenSettings);
     window.removeEventListener('resize', this.eliResize);
     clearTimeout(this.eliResizeTimer);
@@ -1146,6 +1213,14 @@ class HeaderBar extends PureComponent {
                 },
               ],
             },
+            // (4.60) botones fijos de la barra que se han pasado al Menú ☰
+            ...this.eliTopBarMenuItems({
+              inFile,
+              inGtd,
+              docs: !inGtd,
+              isUndoEnabled,
+              isRedoEnabled,
+            }),
             {
               icon: 'fas fa-cogs',
               label: 'Ajustes',
@@ -1182,91 +1257,107 @@ class HeaderBar extends PureComponent {
 
           {isAuthenticated && this.renderSplitCloseButton()}
 
-          {/* ORG Mode para Eli (2.15): atrás / adelante (como en el navegador). (4.0) Con una
-              cabecera «vista sola» (narrow), Atrás vuelve al fichero entero */}
-          {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
-            <>
-              <i
-                className={
-                  'fas fa-arrow-left header-bar__actions__item eli-nav-btn' +
-                  (canBack ? '' : ' header-bar__actions__item--disabled')
-                }
-                onClick={() =>
-                  // (4.49) Atrás tira atrás en el historial DIRECTAMENTE (restaura la vista de la
-                  // entrada anterior, con su cabecera reducida o sin ella); solo si no hay nada
-                  // atrás y se está en una cabecera reducida, vuelve al fichero entero
-                  canGoBack()
-                    ? goBack(this.props.history)
-                    : inRealFile && narrowedHeaderId
-                    ? this.props.org.widenHeaderToTop()
-                    : goBack(this.props.history)
-                }
-                title={
-                  !canGoBack() && inRealFile && narrowedHeaderId
-                    ? 'Atrás: volver al fichero entero'
-                    : `Atrás${backHint}`
-                }
-                aria-label="Atrás"
-                data-testid="eli-nav-back"
-                role="button"
-              />
-              <i
-                className={
-                  'fas fa-arrow-right header-bar__actions__item eli-nav-btn' +
-                  (canGoForward() ? '' : ' header-bar__actions__item--disabled')
-                }
-                onClick={() => goForward(this.props.history)}
-                title={`Adelante${fwdHint}`}
-                aria-label="Adelante"
-                data-testid="eli-nav-forward"
-                role="button"
-              />
-            </>
-          )}
-
-          {/* (4.0) deshacer / rehacer: en los documentos, arriba (antes en la barra de abajo) */}
-          {isAuthenticated && inFile && (
-            <>
-              <i
-                className={
-                  'fas fa-undo header-bar__actions__item' +
-                  (isUndoEnabled ? '' : ' header-bar__actions__item--disabled')
-                }
-                onClick={this.handleUndoClick}
-                title="Deshacer"
-                aria-label="Deshacer"
-                aria-disabled={!isUndoEnabled}
-                data-testid="eli-undo"
-                role="button"
-              />
-              <i
-                className={
-                  'fas fa-redo header-bar__actions__item' +
-                  (isRedoEnabled ? '' : ' header-bar__actions__item--disabled')
-                }
-                onClick={this.handleRedoClick}
-                title="Rehacer"
-                aria-label="Rehacer"
-                aria-disabled={!isRedoEnabled}
-                data-testid="eli-redo"
-                role="button"
-              />
-            </>
-          )}
-
-          {/* ORG Mode para Eli: sincronizar, en los dos modos */}
-          {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
-            <i
-              className={
-                'fas fa-sync-alt header-bar__actions__item' +
-                (online ? '' : ' header-bar__actions__item--disabled')
-              }
-              onClick={() => online && this.eliSyncNow()}
-              title="Sincronizar ahora (s)"
-              data-testid="eli-sync-btn"
-              role="button"
-            />
-          )}
+          {/* (4.60) botones fijos de la barra (Atrás/Adelante, Deshacer/Rehacer, Sincronizar) en el
+              orden y el sitio elegidos en Ajustes › Menú ☰ › «Barra superior» */}
+          {topBarOrder().map((id) => (
+            <React.Fragment key={`tb-${id}`}>
+              {id === 'nav' && (
+                <>
+                  {/* ORG Mode para Eli (2.15): atrás / adelante (como en el navegador). (4.0) Con una
+                cabecera «vista sola» (narrow), Atrás vuelve al fichero entero */}
+                  {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
+                    <>
+                      <i
+                        className={
+                          'fas fa-arrow-left header-bar__actions__item eli-nav-btn' +
+                          (canBack ? '' : ' header-bar__actions__item--disabled')
+                        }
+                        onClick={() =>
+                          // (4.49) Atrás tira atrás en el historial DIRECTAMENTE (restaura la vista de la
+                          // entrada anterior, con su cabecera reducida o sin ella); solo si no hay nada
+                          // atrás y se está en una cabecera reducida, vuelve al fichero entero
+                          canGoBack()
+                            ? goBack(this.props.history)
+                            : inRealFile && narrowedHeaderId
+                            ? this.props.org.widenHeaderToTop()
+                            : goBack(this.props.history)
+                        }
+                        title={
+                          !canGoBack() && inRealFile && narrowedHeaderId
+                            ? 'Atrás: volver al fichero entero'
+                            : `Atrás${backHint}`
+                        }
+                        aria-label="Atrás"
+                        data-testid="eli-nav-back"
+                        role="button"
+                      />
+                      <i
+                        className={
+                          'fas fa-arrow-right header-bar__actions__item eli-nav-btn' +
+                          (canGoForward() ? '' : ' header-bar__actions__item--disabled')
+                        }
+                        onClick={() => goForward(this.props.history)}
+                        title={`Adelante${fwdHint}`}
+                        aria-label="Adelante"
+                        data-testid="eli-nav-forward"
+                        role="button"
+                      />
+                    </>
+                  )}
+                </>
+              )}
+              {id === 'undo' && (
+                <>
+                  {/* (4.0) deshacer / rehacer: en los documentos, arriba (antes en la barra de abajo) */}
+                  {isAuthenticated && inFile && (
+                    <>
+                      <i
+                        className={
+                          'fas fa-undo header-bar__actions__item' +
+                          (isUndoEnabled ? '' : ' header-bar__actions__item--disabled')
+                        }
+                        onClick={this.handleUndoClick}
+                        title="Deshacer"
+                        aria-label="Deshacer"
+                        aria-disabled={!isUndoEnabled}
+                        data-testid="eli-undo"
+                        role="button"
+                      />
+                      <i
+                        className={
+                          'fas fa-redo header-bar__actions__item' +
+                          (isRedoEnabled ? '' : ' header-bar__actions__item--disabled')
+                        }
+                        onClick={this.handleRedoClick}
+                        title="Rehacer"
+                        aria-label="Rehacer"
+                        aria-disabled={!isRedoEnabled}
+                        data-testid="eli-redo"
+                        role="button"
+                      />
+                    </>
+                  )}
+                </>
+              )}
+              {id === 'sync' && (
+                <>
+                  {/* ORG Mode para Eli: sincronizar, en los dos modos */}
+                  {isAuthenticated && (inFile || inGtd || this.getPathRoot() === 'files') && (
+                    <i
+                      className={
+                        'fas fa-sync-alt header-bar__actions__item' +
+                        (online ? '' : ' header-bar__actions__item--disabled')
+                      }
+                      onClick={() => online && this.eliSyncNow()}
+                      title="Sincronizar ahora (s)"
+                      data-testid="eli-sync-btn"
+                      role="button"
+                    />
+                  )}
+                </>
+              )}
+            </React.Fragment>
+          ))}
 
           {/* (4.33) errores de sincronización sin mirar: abre el registro */}
           {isAuthenticated && unseenCount() > 0 && (

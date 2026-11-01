@@ -23,7 +23,6 @@ import {
   commitUnitAction,
   planFromProject,
 } from '../../lib/gtd/gtd_guided';
-import { strictOn } from '../../lib/gtd/gtd_strict';
 
 // Campo de una línea con botón (Intro = el botón)
 export function LineInput({ placeholder, button, icon, onSubmit, testId, autoFocus }) {
@@ -114,7 +113,7 @@ export default function GtdGuidedProcess({
   const [kept, setKept] = useState({});
 
   // (4.15) con «Allen estricto», el Volcado mental sin el bloque «Extra» (no oficial)
-  const steps = kind === 'sweep' ? sweepSteps(strictOn()) : proc.steps;
+  const steps = kind === 'sweep' ? sweepSteps() : proc.steps;
   const multi = steps.length > 1 || kind === 'stuck';
   const total = kind === 'stuck' ? queue.length : steps.length;
   const done = multi && step >= total;

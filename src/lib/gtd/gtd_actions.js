@@ -119,7 +119,7 @@ export const titleLineFrom = ({ keyword, priority, rawTitle, tags }) => {
   );
 };
 
-const setProperty = (items, name, value) => {
+export const setProperty = (items, name, value) => {
   const all = items || List();
   const same = (p) => (p.get('property') || '').toUpperCase() === name.toUpperCase();
   const empty = value === null || value === undefined || String(value).trim() === '';
@@ -732,6 +732,16 @@ export const capturedTitle = (date = new Date()) =>
   `Capturado [${formatDate(date, 'yyyy-MM-dd eee')}]`;
 
 export const gtdAddTask = (target, fields) => (dispatch, getState) => {
+  const r = addTaskAction(getState, target, fields);
+  if (!r) return null;
+  dispatch(r.action);
+  syncFile(dispatch, target.path);
+  return r.headerId;
+};
+
+// (4.60) La acción de gtdAddTask sin despacharla (para juntarla con otras en un ELI_BATCH = un
+// solo Deshacer). → { action, headerId } o null
+export const addTaskAction = (getState, target, fields) => {
   if (!target || !target.path || !getState().org.present.getIn(['files', target.path, 'headers']))
     return null;
   const dontIndent = getState().base.get('eliIndentOnExport') !== true;
@@ -746,12 +756,15 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
       : null;
   if (missingKeyword(getState, target.path, [keyword])) return null;
   const headerId = generateId();
-  const titleLine = titleLineFrom({
-    keyword,
-    priority: fields.priority || null,
-    rawTitle: fields.title,
-    tags: fields.tags || [],
-  });
+  // (4.60) fields.titleLine: la línea de título ya hecha (copia de una plantilla)
+  const titleLine =
+    fields.titleLine ||
+    titleLineFrom({
+      keyword,
+      priority: fields.priority || null,
+      rawTitle: fields.title,
+      tags: fields.tags || [],
+    });
   // Cuerpo mínimo con las propiedades/planificación
   let props = List();
   if (fields.area) props = setProperty(props, 'AREA', fields.area);
@@ -794,18 +807,17 @@ export const gtdAddTask = (target, fields) => (dispatch, getState) => {
       : props.size || planning.size || fields.notes || fields.created
       ? createRawDescriptionText(fake, false, dontIndent)
       : '';
-  dispatch(
-    inFile(target.path, {
+  return {
+    headerId,
+    action: inFile(target.path, {
       type: 'ELI_ADD_HEADER_AT',
       titleLine,
       description,
       parentId: target.parentId || null,
       headerId,
       dirtying: true,
-    })
-  );
-  syncFile(dispatch, target.path);
-  return headerId;
+    }),
+  };
 };
 
 // ORG Mode para Eli: cerrar un proyecto (DONE o CANCELLED), y si se pide, cancelar también sus

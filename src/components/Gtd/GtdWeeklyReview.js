@@ -35,7 +35,6 @@ const NO_OPEN_BTN = ['loose', 'mind', 'past', 'upcoming', 'projects', 'goals', '
 
 export default function GtdWeeklyReview({
   steps: stepsProp,
-  strict = false,
   horizonsOn = false,
   review,
   step,
@@ -439,9 +438,9 @@ export default function GtdWeeklyReview({
     let content = null;
     if (s.id === 'closed') {
       content = n ? renderList(review.closed, { done: true }) : null;
-    } else if (s.id === 'next' && strict) {
+    } else if (s.id === 'next') {
       content = n ? renderList(review.next, { actions: ACTIONS.strictNext }) : null;
-    } else if (s.id === 'someday' && strict) {
+    } else if (s.id === 'someday') {
       content = n ? renderList(review.someday, { actions: ACTIONS.someday }) : null;
     } else if (s.id === 'waiting') {
       // (4.48) agrupado por persona (:PERSONA:); sin persona, al final

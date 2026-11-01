@@ -117,7 +117,9 @@ const test = base.test.extend({
             // (3.46) las subtareas vienen apagadas; las pruebas anteriores las usan encendidas
             localStorage.setItem('eliGtdSubtasks', 'true');
             // (4.15) «Allen estricto» viene encendido; las pruebas anteriores usan los procesos de antes
-            localStorage.setItem('eliGtdStrict', 'false');
+            // (4.60) ya no hay modo NO estricto: «Planificar/Cerrar el día» se activan para las de antes
+            localStorage.setItem('eliGtdShowPlanDay', 'true');
+            localStorage.setItem('eliGtdShowCloseDay', 'true');
             // (4.37) Valores por defecto nuevos (los del usuario): las pruebas anteriores asumen los de
             // antes, así que se fijan aquí. `fresh: true` los deja sin tocar (instalación nueva).
             if (!fresh) {

@@ -89,6 +89,8 @@ test('4.48 B: Procesar Inbox → Hablar con Mari Carmen → punto en su agenda',
   await expect(page.locator('[data-testid=gtd-process]')).toHaveCount(1);
   // ¿Requiere acción? Sí → ¿menos de 2 minutos? No → «Hablar con… (Agenda)»
   await page.keyboard.press('1');
+  // (4.60, Allen) siguiente acción (Intro) antes de «¿menos de 2 minutos?»
+  await page.keyboard.press('Enter');
   await page.keyboard.press('2');
   await page.locator('[data-testid=gtd-proc-opt]', { hasText: 'Hablar con' }).first().click();
   await page.locator('[data-testid=eli-pick-item]', { hasText: 'Mari Carmen' }).first().click();

@@ -25,8 +25,13 @@ const formatDate = (d) =>
 const formatSize = (n) =>
   n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
 
+const hhmm = (d) => d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
 const MESSAGES = {
   created: 'Copia creada.',
+  unsupported: 'Este tipo de conexión no admite copias.',
+  off: 'Las copias automáticas están apagadas.',
+  wait: 'Ya se comprobó hace poco.',
   unchanged: 'No hay cambios desde la última copia.',
   recent: 'Ya hay una copia de hace menos de una hora.',
   empty: 'No hay ficheros que copiar.',
@@ -41,28 +46,46 @@ export default function BackupsSettings() {
   const [backups, setBackups] = useState(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  const [progress, setProgress] = useState('');
+  const [listing, setListing] = useState(false);
   const supported = backupsSupported(client);
 
   useEffect(() => subscribeBackupsOn(setOn), []);
 
+  // (4.60) «Ver copias» y «Copiar ahora» siempre dicen algo: lo que están haciendo y cómo acabó
   const refresh = async () => {
+    setListing(true);
     try {
       const list = await dispatch(eliListBackups());
       setBackups(list.slice().reverse());
     } catch (e) {
       setBackups([]);
-      setNote('No se han podido leer las copias (¿sin conexión?).');
+      setNote(
+        `No se han podido leer las copias (¿sin conexión?): ${(e && e.message) || String(e)}`
+      );
     }
+    setListing(false);
   };
 
   const backupNow = async () => {
     setBusy(true);
     setNote('');
-    const result = await dispatch(eliBackupTick({ force: true }));
+    setProgress('Copiando…');
+    let result;
+    try {
+      result = await dispatch(eliBackupTick({ force: true, onProgress: setProgress }));
+    } catch (e) {
+      result = { status: 'error', message: (e && e.message) || String(e) };
+    }
+    setProgress('');
     setNote(
       result.status === 'error'
         ? `No se ha podido copiar: ${result.message}`
-        : MESSAGES[result.status] || ''
+        : result.status === 'created'
+        ? `Copia hecha a las ${hhmm(new Date())}${
+            result.files ? ` (${result.files} fichero${result.files === 1 ? '' : 's'})` : ''
+          }.`
+        : MESSAGES[result.status] || `Resultado: ${result.status}`
     );
     await refresh();
     setBusy(false);
@@ -132,10 +155,21 @@ export default function BackupsSettings() {
             >
               Copiar ahora
             </button>
-            <button type="button" className="btn" disabled={busy} onClick={refresh}>
+            <button
+              type="button"
+              className="btn"
+              disabled={busy || listing}
+              onClick={refresh}
+              data-testid="eli-backups-list-btn"
+            >
               Ver copias
             </button>
           </div>
+          {(progress || listing) && (
+            <p className="setting-label__description" data-testid="eli-backups-progress">
+              <i className="fas fa-spinner fa-spin" /> {progress || 'Buscando copias…'}
+            </p>
+          )}
           {note && (
             <p className="setting-label__description" data-testid="eli-backups-note">
               {note}
@@ -143,7 +177,11 @@ export default function BackupsSettings() {
           )}
           {backups && (
             <ul className="eli-backups-list" data-testid="eli-backups-list">
-              {backups.length === 0 && <li>Aún no hay copias.</li>}
+              {backups.length === 0 && (
+                <li data-testid="eli-backups-empty">
+                  Aún no hay copias en la carpeta backups/ (de la carpeta de la app).
+                </li>
+              )}
               {backups.map((b) => (
                 <li key={b.name} data-testid="eli-backups-item">
                   {formatDate(b.date)} · {formatSize(b.size)}{' '}

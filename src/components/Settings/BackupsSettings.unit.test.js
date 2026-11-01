@@ -93,7 +93,10 @@ test('«Copiar ahora» crea una copia y sale en la lista', async () => {
   const items = await findAllByTestId('eli-backups-item');
   expect(items).toHaveLength(1);
   expect(Object.keys(client.zips)).toHaveLength(1);
-  expect(getByTestId('eli-backups-note').textContent).toBe('Copia creada.');
+  // (4.60) dice a qué hora y cuántos ficheros
+  expect(getByTestId('eli-backups-note').textContent).toMatch(
+    /^Copia hecha a las \d\d:\d\d \(\d+ ficheros?\)\.$/
+  );
 });
 
 test('«Restaurar» pide confirmación y reescribe el fichero', async () => {

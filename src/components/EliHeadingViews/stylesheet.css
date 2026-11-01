@@ -401,3 +401,14 @@ body.eli-hv-open {
 .eli-person__file {
   color: var(--base1, #999);
 }
+
+/* (4.60) ficha de persona: botones (Abrir, Nueva reunión, Nombre, Datos, Eliminar) */
+.eli-person__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+.eli-person__open.is-danger {
+  color: var(--red, #c0392b);
+}

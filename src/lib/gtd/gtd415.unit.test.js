@@ -3,7 +3,7 @@ import { parseOrg } from '../parse_org';
 import { buildTasks } from './gtd_model';
 import { weeklyReview, reviewCount, reviewSteps, REVIEW_STEPS } from './gtd_review';
 import { sweepSteps, MIND_SWEEP } from './gtd_guided';
-import { strictOn, setStrictOn } from './gtd_strict';
+import { strictOn } from './gtd_strict';
 
 const HEAD = '#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED\n';
 const TODAY = new Date(2026, 9, 20);
@@ -12,17 +12,16 @@ const titles = (l) => l.map((t) => t.title);
 
 describe('4.15: ajuste «Allen estricto»', () => {
   afterEach(() => window.localStorage.removeItem('eliGtdStrict'));
-  test('encendido por defecto; se puede apagar', () => {
+  // (4.60) siempre encendido: ya no es un ajuste (un valor guardado antiguo se ignora)
+  test('siempre encendido', () => {
     expect(strictOn()).toBe(true);
-    setStrictOn(false);
-    expect(strictOn()).toBe(false);
-    setStrictOn(true);
+    window.localStorage.setItem('eliGtdStrict', 'false');
     expect(strictOn()).toBe(true);
   });
-  test('el Volcado mental sin el bloque Extra en estricto', () => {
-    expect(sweepSteps(true).length).toBe(39);
-    expect(sweepSteps(true).some((s) => s.group === 'Extra')).toBe(false);
-    expect(sweepSteps(false)).toBe(MIND_SWEEP);
+  test('el Volcado mental sin el bloque Extra', () => {
+    expect(sweepSteps().length).toBe(39);
+    expect(sweepSteps().some((s) => s.group === 'Extra')).toBe(false);
+    expect(sweepSteps()).toBe(MIND_SWEEP);
   });
 });
 

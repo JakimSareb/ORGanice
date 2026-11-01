@@ -3,7 +3,7 @@
 import { List } from 'immutable';
 import { getGtdFiles } from './gtd_sections';
 import { gtdAddTask, gtdSaveTask, gtdDeleteTask } from './gtd_actions';
-import { newOrgId, propertyValue, TYPE_PROPERTY, PRIORITY_RE } from './gtd_model';
+import { newOrgId, propertyValue, displayTitle, TYPE_PROPERTY, PRIORITY_RE } from './gtd_model';
 import {
   PERSON_PROPERTY,
   PERSONAS_NAME,
@@ -25,6 +25,7 @@ import {
   isDoneKeyword,
 } from './gtd_agendas';
 import { askPick, askConfirm, showMessage } from '../eli_prompt';
+import { pickProjectAgenda } from './gtd_agendas_actions';
 import { loadFileQuietly, createPlainFile } from '../../actions/org';
 import { setLoadingMessage, hideLoadingMessage } from '../../actions/base';
 
@@ -185,9 +186,28 @@ export const openPersonCard = (orgId) =>
 
 // ---------------- Agendas (4.50: árbol de cabeceras) ----------------
 
+// (4.60) Título de la cabecera con ese :ID: en los ficheros cargados (no en los de archivo)
+export const projectTitleResolver = (state) => (id) => {
+  const want = String(id || '').toLowerCase();
+  let found = null;
+  (filesOf(state) || []).forEach((file, path) => {
+    if (found || !path || /\.org_archive$/i.test(path) || !file || !file.get('headers')) return;
+    const h = file
+      .get('headers')
+      .find((x) => String(propertyValue(x, 'ID') || '').toLowerCase() === want);
+    if (h) found = displayTitle(h.getIn(['titleLine', 'rawTitle']) || '');
+  });
+  return found;
+};
+
 export const agendasFromState = (state) => {
   const path = agendasPathFor(state);
-  return parseAgendas(filesOf(state).get(path), contactsFromState(state), path);
+  return parseAgendas(
+    filesOf(state).get(path),
+    contactsFromState(state),
+    path,
+    projectTitleResolver(state)
+  );
 };
 
 export const reunionesPathFor = (state) =>
@@ -334,11 +354,19 @@ export const pickAgenda = ({ title = 'Hablar con… (Agenda)' } = {}) => async (
   agendaChoices(ag).forEach(({ node, depth, root }) =>
     rows.push({
       target: { headerId: node.headerId },
-      label: depth ? node.title : root.person ? root.person.name : node.title,
-      hint: depth ? '' : root.person ? 'persona' : 'lugar / ocasión',
+      label: depth
+        ? node.title
+        : root.person
+        ? root.person.name
+        : root.project
+        ? root.project.name
+        : node.title,
+      hint: depth ? '' : root.person ? 'persona' : root.project ? 'proyecto' : 'lugar / ocasión',
       depth,
     })
   );
+  // (4.60) agenda de un proyecto (se crea si no la tiene)
+  rows.push({ project: true, label: '📁 Proyecto…', hint: 'agenda de un proyecto', depth: 0 });
   const withAgenda = new Set(ag.persons.map((a) => a.person.id.toLowerCase()));
   contacts
     .filter((c) => !c.orgId || !withAgenda.has(c.orgId.toLowerCase()))
@@ -347,7 +375,7 @@ export const pickAgenda = ({ title = 'Hablar con… (Agenda)' } = {}) => async (
     );
   const chosen = await askPick({
     title,
-    placeholder: 'Persona, lugar o punto…',
+    placeholder: 'Persona, lugar, proyecto o punto…',
     emptyText: 'No hay agendas ni contactos: escribe un nombre para crear el contacto.',
     items: rows.map((r, i) => ({ id: String(i), label: r.label, hint: r.hint, depth: r.depth })),
     newItem: (raw) => ({ label: `👤 Nuevo contacto «${raw}»`, hint: 'y su agenda' }),
@@ -360,6 +388,7 @@ export const pickAgenda = ({ title = 'Hablar con… (Agenda)' } = {}) => async (
   const r = rows[Number(chosen)];
   if (!r) return null;
   if (r.target) return r.target;
+  if (r.project) return dispatch(pickProjectAgenda());
   const orgId = dispatch(ensureContactId(r.contact));
   return orgId ? { person: { id: orgId, title: r.contact.name } } : null;
 };
@@ -376,7 +405,7 @@ export const sendToAgenda = (text, notes = '') => async (dispatch, getState) => 
   const ag = agendasFromState(getState());
   let n = agendaNode(ag, target.headerId);
   while (n && n.parentId) n = agendaNode(ag, n.parentId);
-  return n ? (n.person && n.person.name) || n.title : 'Agenda';
+  return n ? (n.person && n.person.name) || (n.project && n.project.name) || n.title : 'Agenda';
 };
 
 // «Convertir en contacto» un ítem de agenda cuyo texto es un nombre («- [ ] Xus»): crea el

@@ -18,8 +18,9 @@ const TEXT = [
 ].join('\n');
 
 describe('4.04: revisión semanal, primero las terminadas desde la última', () => {
-  test('es el primer paso', () => {
-    expect(REVIEW_STEPS[0].id).toBe('closed');
+  // (4.60) la revisión NO estricta (con «Terminadas» como primer paso) se quitó
+  test('ya no es un paso de la revisión (solo la oficial)', () => {
+    expect(REVIEW_STEPS.some((s) => s.id === 'closed')).toBe(false);
   });
   test('desde la última revisión (las más nuevas primero)', () => {
     const r = weeklyReview(tasksOf(TEXT), TODAY, new Date(2026, 9, 18).toISOString());

@@ -7,14 +7,16 @@ test('4.32: procesar el Inbox con contexto elegido y tiempo', async ({ app }) =>
   await gtd.ready(app);
   await gtd.side(app, 'gtd-process-start');
   await expect(page.locator('[data-testid=gtd-process]')).toHaveCount(1);
-  // misma ruta que gtd_340: Sí → … → pantalla de «¿Cuándo?» con área/etiquetas
-  for (const k of ['1', '2', '2', '2', '1']) await page.keyboard.press(k);
+  // misma ruta que gtd_340 (4.60, Allen): Sí → acción → No (<2 min) → aplazar → sin proyecto →
+  // pantalla de «¿Cuándo?» con área/etiquetas
+  for (const k of ['1', 'Enter', '2', '2', '1']) await page.keyboard.press(k);
   const chip = page.locator('[data-testid=gtd-proc-context]').first();
   await expect(chip).toHaveCount(1);
   const name = (await chip.textContent()).trim();
   await chip.click();
   await page.selectOption('[data-testid=gtd-proc-effort]', '0:30');
-  await page.locator('[data-testid=gtd-proc-opt]:has-text("Guardar")').first().click();
+  // (4.60) sin fecha, el botón es «Sin fecha: a Next»
+  await page.locator('[data-testid=gtd-proc-opt]').first().click();
   await expect(page.locator('[data-testid=gtd-process-done]')).toHaveCount(1);
   await page.waitForTimeout(3000);
   const all =

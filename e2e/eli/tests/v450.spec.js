@@ -31,6 +31,8 @@ test('4.50 B: Inbox → Hablar con… → punto de la lista (nivel 2) cuelga com
   await gtd.side(app, 'gtd-process-start');
   await expect(page.locator('[data-testid=gtd-process]')).toHaveCount(1);
   await page.keyboard.press('1');
+  // (4.60, Allen) siguiente acción (Intro) antes de «¿menos de 2 minutos?»
+  await page.keyboard.press('Enter');
   await page.keyboard.press('2');
   await page.locator('[data-testid=gtd-proc-opt]', { hasText: 'Hablar con' }).first().click();
   // el selector es jerárquico: se puede elegir «Barcelona» (nivel 2)

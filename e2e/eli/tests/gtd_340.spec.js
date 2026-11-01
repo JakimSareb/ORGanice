@@ -44,7 +44,9 @@ test('GTD (3.40): procesar el Inbox una a una', async ({ app }) => {
   await expect(count(app)).toContainText('3 de 4');
 
   // 3) Delegar → Waiting con persona (4.48: contacto nuevo en personas.org, :PERSONA:)
+  // (4.60, Allen) Sí → siguiente acción (Intro) → ¿<2 min? No → ¿delegar? Sí
   await page.keyboard.press('1');
+  await page.keyboard.press('Enter');
   await page.keyboard.press('2');
   await page.keyboard.press('1');
   await page.click('[data-testid=gtd-proc-person]');
@@ -55,6 +57,9 @@ test('GTD (3.40): procesar el Inbox una a una', async ({ app }) => {
     timeout: 10000,
   });
   await opt(app, 'Continuar').click();
+  // ¿forma parte de un proyecto? No
+  await expect(page.locator('[data-testid=gtd-process-question]')).toContainText('proyecto');
+  await page.keyboard.press('1');
   await expect(page.locator('[data-testid=gtd-process-question]')).toContainText('¿Cuándo?');
   await opt(app, 'Guardar sin fecha').click();
   await expect(count(app)).toContainText('4 de 4');
@@ -65,7 +70,8 @@ test('GTD (3.40): procesar el Inbox una a una', async ({ app }) => {
   await expect(page.locator('[data-testid=gtd-process-question]')).toContainText(
     '¿Requiere acción?'
   );
-  for (const k of ['1', '2', '2', '2', '1']) await page.keyboard.press(k);
+  // (4.60, Allen) Sí → acción → ¿<2 min? No → aplazar → ¿proyecto? No → ¿cuándo?
+  for (const k of ['1', 'Enter', '2', '2', '1']) await page.keyboard.press(k);
   await page.fill('[data-testid=gtd-proc-deadline]', '2027-01-15');
   await opt(app, 'Guardar').click();
   await expect(page.locator('[data-testid=gtd-process-done]')).toHaveCount(1);

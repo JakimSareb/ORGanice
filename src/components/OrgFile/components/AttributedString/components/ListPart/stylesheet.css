@@ -71,3 +71,21 @@
 .list-part__li--has-children > div {
   cursor: auto;
 }
+
+/* (4.60) zona tocable sobre la viñeta (plegar con el dedo) */
+.list-part__li--has-children {
+  position: relative;
+}
+.list-part__fold-hit {
+  position: absolute;
+  left: -22px;
+  top: 0;
+  width: 22px;
+  height: 20px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.attributed-string__list-part--ordered .list-part__fold-hit {
+  left: -34px;
+  width: 34px;
+}

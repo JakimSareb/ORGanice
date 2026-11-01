@@ -5413,3 +5413,159 @@ html[data-eli-theme] .gtd-main.is-project-view .gtd-main__head--project {
 .gtd-agedit .gtd-review__btn.is-danger {
   color: var(--red);
 }
+
+/* (4.60) Agendas: triángulo a la izquierda (ancho fijo: los títulos quedan alineados) y «hecho»
+   a la derecha */
+.gtd-agpoint__fold {
+  flex: none;
+  width: 22px;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.gtd-agpoint__done {
+  flex: none;
+}
+.gtd-agpoint__row > .gtd-people__mini {
+  flex: none;
+}
+.gtd-people__name.is-broken {
+  opacity: 0.55;
+}
+.gtd-people__danger .is-danger {
+  color: var(--red);
+}
+.gtd-people__kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.gtd-people__kind {
+  cursor: pointer;
+  border: 1px solid var(--base1-soft, rgba(0, 0, 0, 0.15));
+  background: none;
+  color: inherit;
+}
+.gtd-people__kind.is-on {
+  background: var(--blue, #268bd2);
+  border-color: var(--blue, #268bd2);
+  color: #fff;
+}
+
+/* (4.60) «Nueva reunión» */
+.gtd-meeting {
+  max-width: 520px;
+  width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+.gtd-meeting__label {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 0.9em;
+  color: var(--base01, #666);
+}
+.gtd-meeting__title,
+.gtd-meeting__text {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.gtd-meeting__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 2px 0 6px;
+}
+.gtd-meeting__check {
+  display: block;
+  margin: 6px 0;
+}
+.gtd-meeting__tasks {
+  margin-top: 8px;
+}
+
+/* (4.60) Agenda y reuniones en el detalle del proyecto */
+.gtd-projpeople {
+  margin: 0 12px 8px;
+  border-bottom: 1px solid var(--base2, #eee);
+}
+.gtd-projpeople__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.gtd-projpeople__head .gtd-people__name {
+  flex: 0 1 auto;
+}
+.gtd-meetings {
+  padding: 0 0 8px 8px;
+}
+
+/* (4.60) GTD nunca con scroll horizontal en Agendas: todo puede encogerse y los textos largos
+   (enlaces, URL) se parten; en el móvil, sangría por nivel más corta */
+.gtd-people,
+.gtd-people__agenda,
+.gtd-agpoint,
+.gtd-agpoint__more,
+.gtd-agpoint__list,
+.gtd-people__items {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.gtd-people__text,
+.gtd-people__para,
+.gtd-agpoint__title,
+.gtd-people__name {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+@media (max-width: 600px) {
+  .gtd-people {
+    padding: 8px 8px 24px;
+  }
+  .gtd-people__agenda {
+    padding-left: 4px;
+  }
+  .gtd-agpoint__more {
+    padding-left: 10px;
+  }
+  .gtd-agpoint__more > .gtd-agpoint__list {
+    padding-left: 6px;
+    margin-left: 4px;
+  }
+  .gtd-agpoint__row > .gtd-people__mini {
+    padding: 6px 5px;
+  }
+}
+
+/* (4.60) editor de tarea: el fichero y la fecha de creación en la misma línea */
+.gtd-ed__fileline {
+  flex-basis: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.gtd-ed__fileline > .gtd-ed__file {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.gtd-ed__fileline > .gtd-ed__created {
+  flex: none;
+}
+/* (4.60) los campos de texto de la ficha no pasan el desplazamiento a la pantalla de detrás */
+.gtd-editor--sheet textarea,
+.gtd-editor--sheet input {
+  overscroll-behavior: contain;
+}

@@ -18,11 +18,11 @@ const HEAD = '#+TODO: TODO NEXT WAITING MAYBE PROJECT | DONE CANCELLED\n';
 const tasksOf = (text, path = '/p.org') => buildTasks(Map({ [path]: parseOrg(HEAD + text) }), []);
 
 describe('4.14: Volcado mental oficial', () => {
-  test('19 profesionales, 20 personales y 3 extra', () => {
+  test('19 profesionales y 20 personales (4.60: sin el grupo «Extra»)', () => {
     const n = (g) => MIND_SWEEP.filter((s) => s.group === g).length;
     expect(n('Profesional')).toBe(19);
     expect(n('Personal')).toBe(20);
-    expect(n('Extra')).toBe(3);
+    expect(n('Extra')).toBe(0);
     // los huecos de antes ya están
     const labels = MIND_SWEEP.map((s) => s.label);
     ['Leer / revisar', 'Marketing y promoción', 'Legal', 'Vestuario profesional'].forEach((l) =>
@@ -34,7 +34,7 @@ describe('4.14: Volcado mental oficial', () => {
     expect(nextGroupStep(MIND_SWEEP, 0)).toBe(19);
     expect(nextGroupStep(MIND_SWEEP, 5)).toBe(19);
     expect(nextGroupStep(MIND_SWEEP, 19)).toBe(39);
-    expect(nextGroupStep(MIND_SWEEP, 40)).toBe(42);
+    expect(nextGroupStep(MIND_SWEEP, 30)).toBe(39);
   });
   test('Project Brainstorm Trigger List: 14 categorías', () => {
     expect(BRAINSTORM_TRIGGERS.length).toBe(14);
