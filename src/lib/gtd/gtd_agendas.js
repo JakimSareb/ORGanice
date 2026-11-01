@@ -7,7 +7,15 @@
 //   - Las casillas viejas («- [ ]», «-», «+») dentro de las notas se respetan: marcar = solo
 //     «[ ]»→«[X]» en esa línea. Lo NUEVO siempre son subcabeceras (ver gtd_persons_actions.js).
 // Modelo puro (cabeceras Immutable).
-import { displayTitle, propertyValue, parsePersonLinks, ownTypeOf, PRIORITY_RE } from './gtd_model';
+import {
+  displayTitle,
+  propertyValue,
+  parsePersonLinks,
+  parseProjectLink,
+  PROJECT_LINK_PROPERTY,
+  ownTypeOf,
+  PRIORITY_RE,
+} from './gtd_model';
 import { contactNamed, contactById, PERSON_PROPERTY } from './gtd_persons';
 
 // Ítem de lista: sangría, viñeta, casilla opcional y texto
@@ -93,9 +101,11 @@ export const isDoneKeyword = (k) => DONE_KEYWORDS.includes(String(k || '').toUpp
  *   un nivel más profundo) · persons = las de persona · places = el resto (lugares/ocasiones)
  *   nodes = todos los nodos en el orden del documento.
  */
-export const parseAgendas = (file, contacts = [], path = '') => {
+// (4.60) `projectTitleOf(id)` → título del proyecto con ese :ID: o null (enlace roto). Prioridad al
+// clasificar una principal: persona (:PERSONA:/nombre/alias) > proyecto (:PROYECTO:) > lugar.
+export const parseAgendas = (file, contacts = [], path = '', projectTitleOf = null) => {
   const headers = file && file.get && file.get('headers');
-  const out = { roots: [], all: [], persons: [], places: [], nodes: [], path };
+  const out = { roots: [], all: [], persons: [], places: [], projects: [], nodes: [], path };
   if (!headers) return out;
   const stack = [];
   headers.forEach((h) => {
@@ -117,6 +127,7 @@ export const parseAgendas = (file, contacts = [], path = '') => {
       type: ownTypeOf(h),
       done: isDoneKeyword(keyword),
       person: null,
+      project: null,
       children: [],
       parentId: parent ? parent.headerId : null,
       open: 0,
@@ -130,6 +141,13 @@ export const parseAgendas = (file, contacts = [], path = '') => {
         : contact && contact.orgId
         ? { id: contact.orgId, name: contact.name }
         : null;
+      if (!node.person) {
+        const pl = parseProjectLink(propertyValue(h, PROJECT_LINK_PROPERTY));
+        if (pl) {
+          const t = projectTitleOf ? projectTitleOf(pl.id) : null;
+          node.project = { id: pl.id, name: t || pl.title || title, missing: !t };
+        }
+      }
       out.roots.push(node);
     } else parent.children.push(node);
     out.nodes.push(node);
@@ -151,7 +169,8 @@ export const parseAgendas = (file, contacts = [], path = '') => {
   out.roots.forEach((r) => count(r, true));
   out.all = out.roots;
   out.persons = out.roots.filter((a) => a.person);
-  out.places = out.roots.filter((a) => !a.person);
+  out.projects = out.roots.filter((a) => !a.person && a.project);
+  out.places = out.roots.filter((a) => !a.person && !a.project);
   return out;
 };
 
@@ -161,19 +180,28 @@ export const agendaOfPerson = (agendas, orgId) =>
     agendas.persons.find((a) => a.person.id.toLowerCase() === String(orgId).toLowerCase())) ||
   null;
 
+// (4.60) Agenda de un proyecto (por su :ID:) o null
+export const agendaOfProject = (agendas, orgId) =>
+  (agendas &&
+    orgId &&
+    agendas.projects.find((a) => a.project.id.toLowerCase() === String(orgId).toLowerCase())) ||
+  null;
+
 // Nodo por id de cabecera
 export const agendaNode = (agendas, headerId) =>
   (agendas && agendas.nodes.find((n) => n.headerId === headerId)) || null;
 
-// Lista plana jerárquica para elegir (personas primero y luego lugares; cada una con sus puntos
-// bajo ella, sangrados): [{ node, depth, root }]
+// Lista plana jerárquica para elegir (personas, lugares y (4.60) proyectos; cada una con sus
+// puntos bajo ella, sangrados): [{ node, depth, root }]
 export const agendaChoices = (agendas) => {
   const out = [];
   const walk = (n, depth, root) => {
     out.push({ node: n, depth, root });
     n.children.forEach((c) => walk(c, depth + 1, root));
   };
-  [...agendas.persons, ...agendas.places].forEach((r) => walk(r, 0, r));
+  [...agendas.persons, ...agendas.places, ...(agendas.projects || [])].forEach((r) =>
+    walk(r, 0, r)
+  );
   return out;
 };
 
@@ -195,7 +223,12 @@ const hasAll = (words, text) => {
 // ¿El título, las notas o la persona de este nodo cumplen?
 export const nodeMatches = (node, words) =>
   !words.length ||
-  hasAll(words, `${node.title} ${node.body} ${node.person ? node.person.name : ''}`);
+  hasAll(
+    words,
+    `${node.title} ${node.body} ${node.person ? node.person.name : ''} ${
+      node.project ? node.project.name : ''
+    }`
+  );
 // …o algún punto de su subárbol
 export const nodeMatchesDeep = (node, words) =>
   !words.length || nodeMatches(node, words) || node.children.some((c) => nodeMatchesDeep(c, words));

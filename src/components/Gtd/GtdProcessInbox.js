@@ -4,7 +4,7 @@
 // o todo junto (grupos «No requiere acción» / «Requiere acción» / «¿Cuándo?»).
 // La decisión se entrega a `onDecide(d)`: d.kind = trash | reference | someday | tickler | done |
 // waiting | project | next | later, con los datos que haga falta (fechas, persona, área, etiquetas…).
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toDateInput, fromDateInput } from './TaskEditor';
 import { parseTagsInput } from '../../lib/gtd/gtd_process';
 
@@ -40,7 +40,6 @@ export default function GtdProcessInbox({
   areas,
   today,
   paused,
-  strict = false,
   projects = [],
   contextTags = [],
   effortOptions = [],
@@ -106,6 +105,17 @@ export default function GtdProcessInbox({
   const [nextTitle, setNextTitle] = useState(
     (restore && restore.nextTitle) || (task && task.title) || ''
   );
+  // (4.60) si se cambia el título con «Editar» mientras se procesa, la siguiente acción lo sigue
+  // (si no se había reescrito a mano)
+  const lastTitleRef = useRef(task ? task.title : '');
+  useEffect(() => {
+    const now = task ? task.title : '';
+    if (now !== lastTitleRef.current) {
+      const old = lastTitleRef.current;
+      lastTitleRef.current = now;
+      setNextTitle((t) => (t === old ? now : t));
+    }
+  }, [task]);
   const [projName, setProjName] = useState('');
   const [projKey, setProjKey] = useState('');
   const optionsRef = useRef([]);
@@ -133,7 +143,7 @@ export default function GtdProcessInbox({
   // (4.15) con la siguiente acción reescrita, se guarda también el título nuevo
   const decide = (d) => {
     const t = nextTitle.trim();
-    onDecide(strict && t && task && t !== task.title ? { ...d, title: t } : d);
+    onDecide(t && task && t !== task.title ? { ...d, title: t } : d);
   };
   // (4.15) tras «¿hay un proyecto?»: hecha → guardar; si no, «¿cuándo?»
   const finishStrict = (b) => {
@@ -157,7 +167,7 @@ export default function GtdProcessInbox({
   // Opciones de la pregunta en curso: [{ label, hint, icon, run, primary }]
   let options = [];
   let fields = null;
-  if (mode !== 'all' && task && strict) {
+  if (mode !== 'all' && task) {
     // (4.15) Allen estricto (diagrama «Clarifying»): ¿accionable? → NO: papelera / referencia /
     // incubar · SÍ: ¿siguiente acción? → <2 min (hacerla) / delegar (Waiting) / aplazar (con fecha
     // = calendario, sin fecha = Next), y en TODAS las ramas «¿hay un proyecto?»
@@ -287,19 +297,9 @@ export default function GtdProcessInbox({
   if (
     mode !== 'all' &&
     task &&
-    (!strict || ['noaction', 'tickler', 'when', 'somedayproj', 'refdest'].includes(step))
+    ['noaction', 'tickler', 'when', 'somedayproj', 'refdest'].includes(step)
   ) {
-    if (step === 'action') {
-      options = [
-        { label: 'Sí', hint: 'hay algo que hacer', icon: 'fas fa-check', run: () => go('two') },
-        {
-          label: 'No',
-          hint: 'tirar, guardar o incubar',
-          icon: 'fas fa-times',
-          run: () => go('noaction'),
-        },
-      ];
-    } else if (step === 'noaction') {
+    if (step === 'noaction') {
       options = [
         { label: 'Papelera', icon: 'fas fa-trash', run: () => decide({ kind: 'trash' }) },
         { label: 'Referencia', icon: 'far fa-file-alt', run: () => go('refdest') },
@@ -383,78 +383,6 @@ export default function GtdProcessInbox({
       options = [
         { label: 'Guardar en el Tickler', icon: 'far fa-bell', primary: true, run: tickler },
       ];
-    } else if (step === 'two') {
-      options = [
-        {
-          label: 'Sí: hecha ya',
-          hint: 'hazla ahora y márcala',
-          icon: 'fas fa-check-double',
-          run: () => decide({ kind: 'done' }),
-        },
-        { label: 'No', icon: 'fas fa-arrow-right', run: () => go('who') },
-      ];
-    } else if (step === 'who') {
-      options = [
-        {
-          label: 'Sí: delegar',
-          hint: 'Waiting',
-          icon: 'fas fa-hourglass-half',
-          run: () => go('person'),
-        },
-        { label: 'No, la hago yo', icon: 'fas fa-user', run: () => go('steps') },
-        // (4.48) Allen: lo que hay que hablar con alguien va a su agenda
-        {
-          label: 'Hablar con… (Agenda)',
-          hint: 'punto en una agenda',
-          icon: 'fas fa-comments',
-          run: () => decide({ kind: 'agenda' }),
-        },
-      ];
-    } else if (step === 'person') {
-      fields = renderPerson();
-      options = [
-        {
-          label: 'Continuar',
-          icon: 'fas fa-arrow-right',
-          primary: true,
-          run: () => withWhen({ kind: 'waiting', person }),
-        },
-      ];
-    } else if (step === 'steps') {
-      options = [
-        { label: 'Sí: proyecto', icon: 'fas fa-project-diagram', run: () => go('project') },
-        { label: 'No', icon: 'fas fa-arrow-right', run: () => go('week') },
-      ];
-    } else if (step === 'project') {
-      fields = (
-        <input
-          className="gtd-proc__input"
-          value={first}
-          onChange={(e) => setFirst(e.target.value)}
-          placeholder="Primera acción (Next)"
-          data-testid="gtd-proc-first"
-          autoFocus
-          onKeyDown={(e) => e.key === 'Enter' && withWhen({ kind: 'project', first: first.trim() })}
-        />
-      );
-      options = [
-        {
-          label: 'Continuar',
-          icon: 'fas fa-arrow-right',
-          primary: true,
-          run: () => withWhen({ kind: 'project', first: first.trim() }),
-        },
-      ];
-    } else if (step === 'week') {
-      options = [
-        { label: 'Sí: Next', icon: 'fas fa-play', run: () => withWhen({ kind: 'next' }) },
-        {
-          label: 'Más adelante',
-          hint: 'Todo, no esta semana',
-          icon: 'fas fa-forward',
-          run: () => withWhen({ kind: 'later' }),
-        },
-      ];
     } else if (step === 'when') {
       fields = (
         <React.Fragment>
@@ -467,7 +395,7 @@ export default function GtdProcessInbox({
           label:
             sched || deadline
               ? 'Guardar'
-              : strict && base && base.kind === 'next'
+              : base && base.kind === 'next'
               ? 'Sin fecha: a Next'
               : 'Guardar sin fecha',
           icon: 'fas fa-check',
@@ -484,16 +412,7 @@ export default function GtdProcessInbox({
       { label: 'Someday', icon: 'fas fa-cloud', run: () => decide({ kind: 'someday' }) },
       { label: 'Hecha ya', icon: 'fas fa-check-double', run: () => decide({ kind: 'done' }) },
       { label: 'Next', icon: 'fas fa-play', run: () => decide({ kind: 'next', ...details() }) },
-      // (4.15) con Allen estricto no hay Todo (todo lo accionable sin fecha → Next)
-      ...(strict
-        ? []
-        : [
-            {
-              label: 'Más adelante',
-              icon: 'fas fa-forward',
-              run: () => decide({ kind: 'later', ...details() }),
-            },
-          ]),
+      // (4.15/4.60) Allen: no hay Todo (todo lo accionable sin fecha → Next)
     ];
   }
   optionsRef.current = options;

@@ -301,6 +301,20 @@ export default class ListPart extends PureComponent {
             }
           }}
         >
+          {/* (4.60) con el DEDO, el toque en el margen de la viñeta lo «ajusta» el navegador al texto
+              más cercano (y lo seleccionaba en vez de plegar): una zona tocable real sobre la viñeta */}
+          {hasChildren && (
+            <span
+              className="list-part__fold-hit"
+              role="button"
+              aria-label={isFolded ? 'Desplegar' : 'Plegar'}
+              data-testid="list-fold-hit"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleListFold(item.get('id'));
+              }}
+            />
+          )}
           <div className={lineContainerClass} onClick={this.handleListItemSelect(item.get('id'))}>
             {item.get('isCheckbox') && (
               <Checkbox

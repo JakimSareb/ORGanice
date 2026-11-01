@@ -38,7 +38,7 @@ test('4.06: Volcado mental (apuntar al Inbox, pasar de disparador)', async ({ ap
   await app.open({ '/tasks.org': '* NEXT Algo\n', '/inbox.org': '' });
   await gtd.ready(app);
   await openProc(app, 'eli-proc-sweep');
-  await expect(page.locator('[data-testid=gtd-guided-kicker]')).toContainText('Paso 1 de 42');
+  await expect(page.locator('[data-testid=gtd-guided-kicker]')).toContainText('Paso 1 de 39');
   await page.locator('[data-testid=gtd-sweep-input]').fill('Terminar el informe');
   await page.locator('[data-testid=gtd-sweep-input]').press('Enter');
   await expect(page.locator('[data-testid=gtd-sweep-captured]')).toContainText(
@@ -46,7 +46,7 @@ test('4.06: Volcado mental (apuntar al Inbox, pasar de disparador)', async ({ ap
   );
   await fileHas(app, '/inbox.org', /Terminar el informe/);
   await page.locator('[data-testid=gtd-guided-next]').click();
-  await expect(page.locator('[data-testid=gtd-guided-kicker]')).toContainText('Paso 2 de 42');
+  await expect(page.locator('[data-testid=gtd-guided-kicker]')).toContainText('Paso 2 de 39');
   await expect(page.locator('[data-testid=gtd-sweep-captured]')).toHaveCount(0);
   await expect(page.locator('[data-testid=gtd-sweep-total]')).toContainText('1');
   expect(app.errors).toEqual([]);

@@ -59,21 +59,17 @@ test('GTD (3.24): revisión semanal paso a paso', async ({ app }) => {
   const p = app.page;
   await gtd.side(app, 'gtd-review-start');
   await p.waitForSelector('[data-testid=gtd-review]');
-  // (4.04) el primer paso son las terminadas; luego el Inbox
-  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Terminadas');
+  // (4.60) solo la revisión oficial (Allen estricto): papeles sueltos, luego el Inbox
+  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Papeles');
   await app.press(p.locator('[data-testid=gtd-review-next]'));
   await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Inbox');
   expect(await gtd.titles(app)).toContain('Idea');
-  // (3.41) pasos nuevos (Next, semana, calendario, Waiting): se salta directo con su punto
-  await app.press(p.locator('[data-testid=gtd-review-dot-stalled]'));
-  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('sin acción');
-  await expect(p.locator('[data-testid=gtd-review-item]')).toHaveText(['Atascado']);
-  await app.press(p.locator('[data-testid=gtd-review-item]'));
-  await expect(p.locator('[data-testid=gtd-title]')).toContainText('Atascado');
+  // se salta directo con su punto
+  await app.press(p.locator('[data-testid=gtd-review-dot-projects]'));
+  await expect(p.locator('[data-testid=gtd-review-title]')).toContainText('Proyectos');
   await expect(p.locator('[data-testid=gtd-review]')).toBeVisible();
+  await app.press(p.locator('[data-testid=gtd-review-dot-creative]'));
   await app.press(p.locator('[data-testid=gtd-review-next]'));
-  await expect(p.locator('[data-testid=gtd-review-item]')).toHaveText(['Dormido']);
-  for (let i = 0; i < 2; i++) await app.press(p.locator('[data-testid=gtd-review-next]'));
   await p.waitForSelector('[data-testid=gtd-review-done]');
   await app.press(p.locator('[data-testid=gtd-review-finish]'));
   await expect(p.locator('[data-testid=gtd-review]')).toHaveCount(0);
@@ -260,13 +256,21 @@ test('GTD (3.35): flechas solo entre secciones; menú lateral con ↑ ↓, borde
   const sideOpen = () => page.$eval('.gtd', (g) => g.classList.contains('is-side-open'));
   const on = () =>
     page.$eval('.gtd-side .gtd-side__item.is-on .gtd-side__label', (x) => x.textContent.trim());
-  // (a) abrir un proyecto no crea paso: ← vuelve a la sección anterior a la actual
+  // (a) (4.60) abrir un proyecto SÍ crea paso: ← vuelve a la MISMA sección (Next) y → al proyecto
   await gtd.openList(app, 'Inbox');
   await gtd.openList(app, 'Next');
   if (isMobile) await page.click('.gtd-main__menu');
   await app.press(page.locator('[data-testid=gtd-project]', { hasText: 'Casa' }).first());
   await page.waitForTimeout(500);
   expect(await on()).toBe('Casa');
+  await page.locator('[data-testid=eli-nav-back]').click();
+  await page.waitForTimeout(500);
+  expect(await on()).toBe('Next');
+  await page.locator('[data-testid=eli-nav-forward]').click();
+  await page.waitForTimeout(500);
+  expect(await on()).toBe('Casa');
+  await page.locator('[data-testid=eli-nav-back]').click();
+  await page.waitForTimeout(500);
   await page.locator('[data-testid=eli-nav-back]').click();
   await page.waitForTimeout(500);
   expect(await on()).toBe('Inbox');

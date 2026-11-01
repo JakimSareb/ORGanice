@@ -4,7 +4,7 @@ import { Map } from 'immutable';
 import { parseOrg } from '../parse_org';
 import { buildTasks } from './gtd_model';
 import { DAILY_PROCESSES, dailyReview } from './gtd_daily';
-import { dailyShown, setDailyOptIn, setStrictOn, NOT_ALLEN_DAILY } from './gtd_strict';
+import { dailyShown, setDailyOptIn, NOT_ALLEN_DAILY } from './gtd_strict';
 import {
   parseHorizons,
   termOf,
@@ -66,10 +66,11 @@ describe('4.16: Planificar/Cerrar el día dentro de Allen estricto', () => {
     expect(dailyShown('close')).toBe(false);
     expect(window.localStorage.getItem(NOT_ALLEN_DAILY.plan)).toBe('true');
   });
-  test('sin estricto: siempre a la vista', () => {
-    setStrictOn(false);
-    expect(dailyShown('plan')).toBe(true);
-    expect(dailyShown('close')).toBe(true);
+  // (4.60) ya no hay modo NO estricto: un valor guardado antiguo se ignora
+  test('un «sin estricto» guardado antiguo no los enseña', () => {
+    window.localStorage.setItem('eliGtdStrict', 'false');
+    expect(dailyShown('plan')).toBe(false);
+    expect(dailyShown('close')).toBe(false);
   });
 });
 

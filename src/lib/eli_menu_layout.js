@@ -197,3 +197,101 @@ export const splitMenuLayout = (items, layout = getMenuLayout(), maxBar = Infini
   });
   return { bar, menu };
 };
+
+// (4.60) Botones FIJOS de la barra superior (los de siempre), ahora también ordenables, ocultables y
+// movibles al Menú ☰ (Ajustes › Menú ☰ › «Barra superior»). Se guardan aparte (eliTopBarLayout,
+// viaja entre dispositivos) para no tocar el orden del Menú. El ☰ siempre se queda.
+export const TOPBAR_ENTRIES = [
+  { id: 'mode', label: 'Documentos / GTD', icon: 'fas fa-exchange-alt' },
+  { id: 'nav', label: 'Atrás / Adelante', icon: 'fas fa-arrow-left' },
+  { id: 'undo', label: 'Deshacer / Rehacer', icon: 'fas fa-undo' },
+  { id: 'sync', label: 'Sincronizar', icon: 'fas fa-sync-alt' },
+];
+const TB_KEY = 'eliTopBarLayout';
+const TB_IDS = TOPBAR_ENTRIES.map((e) => e.id);
+export const TOPBAR_MENU_LINE = '__menu__';
+
+// { order, hidden, bar }: las `bar` primeras de `order` van en la barra; el resto, en el ☰
+export const normalizeTopBar = (raw) => {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  const saved = (Array.isArray(r.order) ? r.order : []).filter(
+    (id, i, a) => TB_IDS.includes(id) && a.indexOf(id) === i
+  );
+  const missing = TB_IDS.filter((id) => !saved.includes(id));
+  const savedBar =
+    r.bar === undefined || r.bar === null
+      ? saved.length
+      : Math.min(saved.length, Math.max(0, Math.round(Number(r.bar)) || 0));
+  // los que falten (nuevos o sin guardar) van a la barra, delante, en su orden de siempre
+  const order = [...missing, ...saved];
+  const hidden = (Array.isArray(r.hidden) ? r.hidden : []).filter(
+    (id, i, a) => TB_IDS.includes(id) && a.indexOf(id) === i
+  );
+  return { order, hidden, bar: savedBar + missing.length };
+};
+
+export const getTopBar = () => {
+  try {
+    return normalizeTopBar(JSON.parse(localStorage.getItem(TB_KEY) || 'null'));
+  } catch (e) {
+    return normalizeTopBar(null);
+  }
+};
+
+export const setTopBar = (layout) => {
+  try {
+    localStorage.setItem(TB_KEY, JSON.stringify(normalizeTopBar(layout)));
+  } catch (e) {}
+  try {
+    window.dispatchEvent(new CustomEvent('eli:topbar'));
+  } catch (e) {}
+};
+
+// Filas de Ajustes: la barra, la línea «Menú ☰» y lo que va al menú
+export const topBarRows = (layout) => {
+  const l = normalizeTopBar(layout);
+  const rows = l.order.slice();
+  rows.splice(l.bar, 0, TOPBAR_MENU_LINE);
+  return rows;
+};
+export const moveTopBarRow = (layout, id, dir) => {
+  const l = normalizeTopBar(layout);
+  const rows = topBarRows(l);
+  const i = rows.indexOf(id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= rows.length) return l;
+  [rows[i], rows[j]] = [rows[j], rows[i]];
+  return {
+    ...l,
+    order: rows.filter((x) => x !== TOPBAR_MENU_LINE),
+    bar: rows.indexOf(TOPBAR_MENU_LINE),
+  };
+};
+// (arrastre) poner la fila `id` en la posición `to` de topBarRows
+export const placeTopBarRow = (layout, id, to) => {
+  const l = normalizeTopBar(layout);
+  const rows = topBarRows(l).filter((x) => x !== id);
+  rows.splice(Math.max(0, Math.min(rows.length, to)), 0, id);
+  return {
+    ...l,
+    order: rows.filter((x) => x !== TOPBAR_MENU_LINE),
+    bar: rows.indexOf(TOPBAR_MENU_LINE),
+  };
+};
+export const toggleTopBarHidden = (layout, id) => {
+  const l = normalizeTopBar(layout);
+  const hidden = l.hidden.includes(id) ? l.hidden.filter((h) => h !== id) : [...l.hidden, id];
+  return { ...l, hidden };
+};
+// ¿Dónde sale cada botón? → 'bar' | 'menu' | 'off'
+export const topBarPlace = (id, layout = getTopBar()) => {
+  const l = normalizeTopBar(layout);
+  if (l.hidden.includes(id)) return 'off';
+  const i = l.order.indexOf(id);
+  return i >= 0 && i < l.bar ? 'bar' : 'menu';
+};
+// Orden de los que van en la barra
+export const topBarOrder = (layout = getTopBar()) => {
+  const l = normalizeTopBar(layout);
+  return l.order.slice(0, l.bar).filter((id) => !l.hidden.includes(id));
+};

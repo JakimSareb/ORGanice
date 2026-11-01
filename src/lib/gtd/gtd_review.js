@@ -15,88 +15,8 @@ import {
 // Someday/Maybe e ideas nuevas). «Elegir para la semana» va justo después de revisar Next.
 export const REVIEW_PHASES = { clear: 'Despejar', current: 'Al día', creative: 'Crear' };
 
-export const REVIEW_STEPS = [
-  // (4.04) primero, lo terminado desde la última revisión (para verlo y celebrarlo; ¿pide algo?)
-  {
-    id: 'closed',
-    phase: 'clear',
-    label: 'Terminadas desde la última revisión',
-    icon: 'fas fa-check-double',
-    hint:
-      'Repasa lo que has terminado desde la última revisión semanal (sin revisión anterior, ' +
-      'los últimos 7 días). ¿Falta apuntar algún paso siguiente o avisar a alguien?',
-    view: 'logbook',
-  },
-  {
-    id: 'inbox',
-    phase: 'clear',
-    label: 'Vaciar la cabeza y el Inbox',
-    icon: 'fas fa-inbox',
-    hint:
-      'Junta papeles, notas, correos y mensajes; apunta lo que tengas en la cabeza (proyectos, ' +
-      'acciones, esperas, ideas) y deja el Inbox a cero.',
-    view: 'inbox',
-  },
-  {
-    id: 'next',
-    phase: 'current',
-    label: 'Revisar Next',
-    icon: 'fas fa-play',
-    hint: 'Marca lo hecho y quita de Next lo que esta semana no se va a hacer.',
-    view: 'next',
-  },
-  {
-    id: 'week',
-    phase: 'current',
-    label: 'Elegir para la semana',
-    icon: 'fas fa-hand-pointer',
-    hint: 'Pasa a Next lo que quieras hacer esta semana, de Todo o de Someday.',
-  },
-  {
-    id: 'dates',
-    phase: 'current',
-    label: 'Calendario: atrasado y próximo',
-    icon: 'far fa-calendar-alt',
-    hint:
-      'Lo que se quedó atrás y lo que vence o está programado en los próximos 7 días. ' +
-      '¿Pide alguna acción nueva?',
-  },
-  {
-    id: 'waiting',
-    phase: 'current',
-    label: 'Waiting',
-    icon: 'fas fa-hourglass-half',
-    hint: 'Marca lo que ya ha llegado y apunta un seguimiento para lo que se retrasa.',
-    view: 'waiting',
-  },
-  {
-    id: 'stalled',
-    phase: 'current',
-    label: 'Proyectos sin acción siguiente',
-    icon: 'fas fa-project-diagram',
-    hint: 'Cada proyecto activo necesita al menos una acción Next (o dormirlo, o cerrarlo).',
-  },
-  {
-    id: 'sleep',
-    phase: 'current',
-    label: 'Dormidos',
-    icon: 'fas fa-bed',
-    hint: '¿Hay que despertar alguno, o ya no hace falta?',
-  },
-  {
-    id: 'someday',
-    phase: 'creative',
-    label: 'Someday e ideas nuevas',
-    icon: 'fas fa-cloud',
-    hint:
-      '¿Algún proyecto que activar? Tira lo que ya no interese y apunta cualquier idea nueva, ' +
-      'por loca que parezca.',
-    view: 'someday',
-  },
-];
-
 // (4.15) «Allen estricto»: la checklist oficial de la Weekly Review, paso a paso y sin extras
-// (Terminadas, Elegir para la semana y Dormidos solo salen con el ajuste apagado).
+// (4.60: es la única; la revisión con Terminadas, Elegir para la semana y Dormidos se quitó).
 export const STRICT_REVIEW_STEPS = [
   {
     id: 'loose',
@@ -216,6 +136,9 @@ export const STRICT_REVIEW_STEPS = [
   },
 ];
 
+// (4.60) la revisión NO estricta se quitó: REVIEW_STEPS es la oficial
+export const REVIEW_STEPS = STRICT_REVIEW_STEPS;
+
 // (4.47) Paso opcional al final: la Revisión ZK (ajuste «Añadir la Revisión ZK como paso de la
 // Revisión semanal», apagado por defecto: sin él, los pasos de Allen no cambian)
 export const ZK_REVIEW_STEP = {
@@ -234,9 +157,10 @@ export const zkReviewOn = () => {
 };
 
 // Pasos según el ajuste «Allen estricto» (y el de la Revisión ZK)
-export const reviewSteps = (strict, { zk = false } = {}) => {
-  const base = strict ? STRICT_REVIEW_STEPS : REVIEW_STEPS;
-  return zk ? [...base, ZK_REVIEW_STEP] : base;
+// (4.60) solo existe la revisión «Allen estricto»: el primer argumento antiguo (strict) se ignora
+export const reviewSteps = (a, b) => {
+  const { zk = false } = (a && typeof a === 'object' ? a : b) || {};
+  return zk ? [...STRICT_REVIEW_STEPS, ZK_REVIEW_STEP] : STRICT_REVIEW_STEPS;
 };
 
 // Índice de un paso por su id (−1 si no existe)

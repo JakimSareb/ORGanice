@@ -1,6 +1,6 @@
 import React from 'react';
 import { getProcessMode, setProcessMode } from '../../lib/gtd/gtd_process';
-import { strictOn, setStrictOn, dailyOptIn, setDailyOptIn } from '../../lib/gtd/gtd_strict';
+import { dailyOptIn, setDailyOptIn } from '../../lib/gtd/gtd_strict';
 import { connect, useSelector, useDispatch } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
@@ -59,7 +59,16 @@ import {
   getEdgePad,
   setEdgePad,
   EDGE_PAD_MAX,
+  TOPBAR_ENTRIES,
+  TOPBAR_MENU_LINE,
+  getTopBar,
+  setTopBar,
+  topBarRows,
+  moveTopBarRow,
+  placeTopBarRow,
+  toggleTopBarHidden,
 } from '../../lib/eli_menu_layout';
+import { useListDrag, reorderIds } from '../../lib/eli_list_drag';
 import { getPomodoroCfg, setPomodoroCfg } from '../../lib/eli_pomodoro';
 import {
   getDiaryCfg,
@@ -773,6 +782,99 @@ const EliMenuLayoutSetting = () => {
   );
 };
 
+// (4.60) Botones FIJOS de la barra superior: ordenar (arrastrando el asa o con las flechas), apagar
+// y pasarlos al Menú ☰ (lo que quede debajo de la línea «Menú ☰»). El ☰ siempre se queda.
+const EliTopBarSetting = () => {
+  const [layout, setLayout] = React.useState(getTopBar());
+  const save = (l) => {
+    setTopBar(l);
+    setLayout(getTopBar());
+  };
+  const label = (id) => (TOPBAR_ENTRIES.find((e) => e.id === id) || {}).label || id;
+  const rows = topBarRows(layout);
+  const listRef = React.useRef(null);
+  const { drag, startDrag } = useListDrag(listRef, (id, target) => {
+    const next = reorderIds(rows, id, target);
+    save(placeTopBarRow(layout, id, next.indexOf(id)));
+  });
+  const dragClass = (id) =>
+    drag && drag.id === id
+      ? ' is-dragging'
+      : drag && drag.over && drag.over.id === id
+      ? drag.over.after
+        ? ' is-drop-after'
+        : ' is-drop-before'
+      : '';
+  return (
+    <div
+      className="setting-container setting-container--vertical eli-theme-setting"
+      data-testid="eli-setting-topbar"
+    >
+      <div className="setting-label">
+        Barra superior
+        <div className="setting-label__description">
+          Los botones fijos de arriba. Arrastra el asa (o usa las flechas) para ordenarlos; lo que
+          quede por debajo de la línea «Menú ☰» pasa al menú. Con el interruptor se apagan. El botón
+          ☰ siempre se queda.
+        </div>
+      </div>
+      <div ref={listRef}>
+        {rows.map((id, i) => {
+          const line = id === TOPBAR_MENU_LINE;
+          return (
+            <div
+              key={id}
+              data-drag-id={id}
+              className={`eli-menu-layout__row${
+                line ? ' eli-menu-layout__row--line' : ''
+              } eli-gtdsec__row${dragClass(id)}`}
+              data-testid={line ? 'eli-topbar-menu-line' : `eli-topbar-${id}`}
+            >
+              <button
+                type="button"
+                className="eli-gtdsec__grip"
+                onPointerDown={startDrag(id)}
+                title="Arrastrar para ordenar"
+                aria-label="Arrastrar para ordenar"
+                data-testid={`eli-topbar-grip-${line ? 'line' : id}`}
+              >
+                <i className="fas fa-grip-vertical" />
+              </button>
+              <span className="eli-menu-layout__label">{line ? '—— Menú ☰ ——' : label(id)}</span>
+              <button
+                type="button"
+                className="btn-passive eli-menu-layout__btn"
+                disabled={i === 0}
+                onClick={() => save(moveTopBarRow(layout, id, -1))}
+                title="Subir"
+                data-testid={`eli-topbar-up-${line ? 'line' : id}`}
+              >
+                <i className="fas fa-arrow-up" />
+              </button>
+              <button
+                type="button"
+                className="btn-passive eli-menu-layout__btn"
+                disabled={i === rows.length - 1}
+                onClick={() => save(moveTopBarRow(layout, id, 1))}
+                title="Bajar"
+                data-testid={`eli-topbar-down-${line ? 'line' : id}`}
+              >
+                <i className="fas fa-arrow-down" />
+              </button>
+              {!line && (
+                <Switch
+                  isEnabled={!layout.hidden.includes(id)}
+                  onToggle={() => save(toggleTopBarHidden(layout, id))}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // (4.12) Margen izquierdo de Documentos con el dedo (móvil/tableta); antes fijo, 14 px
 const EliDocMarginSetting = () => {
   const [px, setPx] = React.useState(getDocMargin());
@@ -1089,38 +1191,14 @@ const EliProcessModeSettings = () => {
   );
 };
 
-// (4.15) «Allen estricto»: los procesos siguen solo lo oficial de David Allen
-const EliStrictSetting = () => {
-  const [on, setOn] = React.useState(strictOn());
-  return (
-    <>
-      <div className="setting-container" data-testid="eli-setting-allen-strict">
-        <div className="setting-label">
-          Allen estricto
-          <div className="setting-label__description">
-            Revisión semanal, Procesar Inbox y Volcado mental siguen solo lo oficial de David Allen
-            (sin pasos propios ni la lista Todo); «Planificar el día» y «Cerrar el día» se ocultan
-            salvo que los actives aquí. No cambia tus listas ni tus ficheros.
-          </div>
-        </div>
-        <Switch
-          isEnabled={on}
-          onToggle={() => {
-            setStrictOn(!on);
-            setOn(strictOn());
-          }}
-        />
-      </div>
-      <EliStrictDailySettings strict={on} />
-    </>
-  );
-};
+// (4.15) «Allen estricto» — (4.60) ya no es un ajuste: los procesos SIEMPRE siguen solo lo oficial de
+// David Allen. Quedan los dos interruptores de los procesos diarios que no son de Allen.
+const EliStrictSetting = () => <EliStrictDailySettings />;
 
 // (4.16) dentro de «Allen estricto»: mostrar «Planificar el día» / «Cerrar el día» (no son de Allen;
 // apagados por defecto). Con el estricto apagado se ven siempre y no salen estos interruptores.
-const EliStrictDailySettings = ({ strict }) => {
+const EliStrictDailySettings = () => {
   const [, setRev] = React.useState(0);
-  if (!strict) return null;
   return [
     ['plan', 'eli-setting-allen-plan-day', 'Mostrar «Planificar el día»'],
     ['close', 'eli-setting-allen-close-day', 'Mostrar «Cerrar el día»'],
@@ -1406,6 +1484,7 @@ const Settings = ({
 
         <EliSub>Menú ☰</EliSub>
         <div className="eli-settings-group">
+          <EliTopBarSetting />
           <EliMenuLayoutSetting />
         </div>
       </details>

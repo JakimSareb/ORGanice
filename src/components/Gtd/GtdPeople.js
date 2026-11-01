@@ -1,8 +1,8 @@
 // ORG Mode para Eli (4.48/4.50): Personas y Agendas en la vista GTD (páginas del menú lateral) y el
 // árbol de una agenda (puntos = subcabeceras de agendas.org), que también sale en la ficha de la
 // persona.
-import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import {
   bodyLines,
   visibleChildren,
@@ -20,8 +20,18 @@ import {
   createContact,
   openPersonCard,
 } from '../../lib/gtd/gtd_persons_actions';
-import { agendaToMeeting } from '../../lib/gtd/gtd_agendas_actions';
+import {
+  agendaToMeeting,
+  openHeadingInDocs,
+  deleteHeading,
+  renameHeading,
+  createProjectAgenda,
+} from '../../lib/gtd/gtd_agendas_actions';
+import { reunionesPathFor, agendasPathFor } from '../../lib/gtd/gtd_persons_actions';
+import { meetingsIn, filterMeetings } from '../../lib/gtd/gtd_meetings';
+import { loadFileQuietly } from '../../actions/org';
 import { askText } from '../../lib/eli_prompt';
+import { openNewMeeting } from './GtdNewMeeting';
 import { OrgText } from '../EliHeadingViews/OrgRender';
 
 // Notas de una cabecera tal cual: ítems (con su casilla marcable, las de siempre) y párrafos
@@ -161,27 +171,18 @@ const PointNode = ({
   return (
     <li className="gtd-agpoint" data-testid="gtd-agenda-point">
       <div className={'gtd-agpoint__row' + (node.done ? ' is-done' : '')}>
-        {selecting ? (
-          <input
-            type="checkbox"
-            className="gtd-agpoint__sel"
-            checked={sel.has(node.headerId)}
-            onChange={() => toggleSel(node.headerId)}
-            aria-label="Seleccionar el punto"
-            data-testid="gtd-agenda-point-select"
-          />
-        ) : (
-          <button
-            type="button"
-            className="gtd-people__check"
-            aria-pressed={node.done}
-            title={node.done ? 'Volver a abrir el punto' : 'Marcar como tratado'}
-            onClick={() => ctl.done(node)}
-            data-testid="gtd-agenda-point-done"
-          >
-            <i className={node.done ? 'far fa-check-circle' : 'far fa-circle'} />
-          </button>
-        )}
+        {/* (4.60) triángulo de plegar a la IZQUIERDA y «hecho» a la DERECHA (mano derecha) */}
+        <button
+          type="button"
+          className="gtd-agpoint__fold"
+          onClick={() => hasMore && toggleCollapsed(node.headerId)}
+          aria-expanded={hasMore ? isOpen : undefined}
+          aria-label={hasMore ? (isOpen ? 'Plegar' : 'Desplegar') : undefined}
+          tabIndex={hasMore ? 0 : -1}
+          data-testid="gtd-agenda-point-fold"
+        >
+          {hasMore && <i className={isOpen ? 'fas fa-caret-down' : 'fas fa-caret-right'} />}
+        </button>
         <button
           type="button"
           className="gtd-agpoint__title"
@@ -189,7 +190,6 @@ const PointNode = ({
           aria-expanded={hasMore ? isOpen : undefined}
           data-testid="gtd-agenda-point-title"
         >
-          {hasMore && <i className={isOpen ? 'fas fa-caret-down' : 'fas fa-caret-right'} />}{' '}
           <OrgText text={node.title} />
         </button>
         {node.points > 0 && (
@@ -238,6 +238,27 @@ const PointNode = ({
               </button>
             )}
           </>
+        )}
+        {selecting ? (
+          <input
+            type="checkbox"
+            className="gtd-agpoint__sel"
+            checked={sel.has(node.headerId)}
+            onChange={() => toggleSel(node.headerId)}
+            aria-label="Seleccionar el punto"
+            data-testid="gtd-agenda-point-select"
+          />
+        ) : (
+          <button
+            type="button"
+            className="gtd-people__check gtd-agpoint__done"
+            aria-pressed={node.done}
+            title={node.done ? 'Volver a abrir el punto' : 'Marcar como tratado'}
+            onClick={() => ctl.done(node)}
+            data-testid="gtd-agenda-point-done"
+          >
+            <i className={node.done ? 'far fa-check-circle' : 'far fa-circle'} />
+          </button>
         )}
       </div>
       {editing && (
@@ -467,43 +488,120 @@ export const AgendaBody = ({
   );
 };
 
-const AgendaRow = ({ agenda, label, open, onToggle, onOpenDoc, filter }) => (
-  <li className={'gtd-people__row' + (open ? ' is-open' : '')} data-testid="gtd-agenda-row">
-    <div className="gtd-people__rowhead">
-      <button
-        type="button"
-        className="gtd-people__name"
-        onClick={onToggle}
-        aria-expanded={open}
-        data-testid="gtd-agenda-toggle"
-      >
-        <i className={open ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
-        {agenda.person && <i className="fas fa-user" />} {label}
-      </button>
-      {agenda.open > 0 && (
-        <span className="gtd-side__count" data-testid="gtd-agenda-open-count">
-          {agenda.open}
-        </span>
-      )}
-      {agenda.person && (
+// (4.60) Persona, lugar o proyecto de la cabecera principal de una agenda
+const agendaKind = (a) => (a.person ? 'person' : a.project ? 'project' : 'place');
+export const agendaLabel = (a) => (a.person ? a.person.name : a.project ? a.project.name : a.title);
+
+// (4.60) Datos para «Nueva reunión» desde una agenda
+const meetingDetailOf = (agenda, project = null) => ({
+  persons: agenda.person ? [{ id: agenda.person.id, title: agenda.person.name }] : [],
+  project:
+    project ||
+    (agenda.project && !agenda.project.missing
+      ? { orgId: agenda.project.id, title: agenda.project.name }
+      : null),
+  agendaId: agenda.headerId,
+  agendaName: agendaLabel(agenda),
+});
+
+const AgendaRow = ({ agenda, label, open, onToggle, onOpenDoc, filter, projectOf }) => {
+  const dispatch = useDispatch();
+  const kind = agendaKind(agenda);
+  const broken = kind === 'project' && agenda.project.missing;
+  const editName = async () => {
+    const t = await askText({
+      title: 'Cambiar el nombre de la agenda',
+      value: agenda.rawTitle || agenda.title,
+      okLabel: 'Guardar',
+    });
+    if (t && t.trim()) dispatch(agendaEditNode(agenda.headerId, { title: t }));
+  };
+  const remove = (e) => {
+    e.stopPropagation();
+    return dispatch(agendaDeleteNode(agenda.headerId, label, agenda.points));
+  };
+  return (
+    <li className={'gtd-people__row' + (open ? ' is-open' : '')} data-testid="gtd-agenda-row">
+      <div className="gtd-people__rowhead">
+        <button
+          type="button"
+          className={'gtd-people__name' + (broken ? ' is-broken' : '')}
+          onClick={onToggle}
+          aria-expanded={open}
+          title={broken ? 'Proyecto no encontrado (borrado, archivado o sin :ID:)' : undefined}
+          data-testid="gtd-agenda-toggle"
+        >
+          <i className={open ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
+          {kind === 'person' && <i className="fas fa-user" />}
+          {kind === 'project' && <i className="fas fa-project-diagram" />} {label}
+        </button>
+        {agenda.open > 0 && (
+          <span className="gtd-side__count" data-testid="gtd-agenda-open-count">
+            {agenda.open}
+          </span>
+        )}
         <button
           type="button"
           className="gtd-people__mini"
-          title="Ficha de la persona"
-          onClick={() => openPersonCard(agenda.person.id)}
-          data-testid="gtd-agenda-person-card"
+          title="Nueva reunión"
+          onClick={() =>
+            openNewMeeting(meetingDetailOf(agenda, projectOf ? projectOf(agenda) : null))
+          }
+          data-testid="gtd-agenda-new-meeting"
         >
-          <i className="far fa-address-card" />
+          <i className="fas fa-users" />
         </button>
+        {agenda.person && (
+          <button
+            type="button"
+            className="gtd-people__mini"
+            title="Ficha de la persona"
+            onClick={() => openPersonCard(agenda.person.id)}
+            data-testid="gtd-agenda-person-card"
+          >
+            <i className="far fa-address-card" />
+          </button>
+        )}
+      </div>
+      {open && (
+        <>
+          <AgendaBody agenda={agenda} onOpenDoc={onOpenDoc} filter={filter} />
+          <div className="gtd-tickler__add gtd-people__danger">
+            <button
+              type="button"
+              className="gtd-review__btn"
+              onClick={editName}
+              data-testid="gtd-agenda-rename"
+            >
+              <i className="fas fa-pen" /> Cambiar nombre
+            </button>
+            <button
+              type="button"
+              className="gtd-review__btn is-danger"
+              onClick={remove}
+              data-testid="gtd-agenda-delete"
+            >
+              <i className="fas fa-trash" /> Eliminar agenda
+            </button>
+          </div>
+        </>
       )}
-    </div>
-    {open && <AgendaBody agenda={agenda} onOpenDoc={onOpenDoc} filter={filter} />}
-  </li>
-);
+    </li>
+  );
+};
 
-// Página «Agendas»: personas primero y luego lugares/ocasiones; cada una, plegable, con su árbol
-export const AgendasPage = ({ agendas, loaded, onOpenDoc, filter = '' }) => {
+// (4.60) Filtro por tipo de la página Agendas
+const KINDS = [
+  { id: 'all', label: 'Todas' },
+  { id: 'person', label: 'Personas' },
+  { id: 'place', label: 'Lugares' },
+  { id: 'project', label: 'Proyectos' },
+];
+
+// Página «Agendas»: personas, lugares/ocasiones y (4.60) proyectos; cada una, plegable, con su árbol
+export const AgendasPage = ({ agendas, loaded, onOpenDoc, filter = '', projectOf = null }) => {
   const [openId, setOpenId] = useState(null);
+  const [kind, setKind] = useState('all');
   const words = filterWords(filter);
   const toggle = (id) => setOpenId((x) => (x === id ? null : id));
   if (!loaded)
@@ -514,7 +612,7 @@ export const AgendasPage = ({ agendas, loaded, onOpenDoc, filter = '' }) => {
     );
   // (4.57) con un filtro: solo las agendas cuyo título, notas o puntos coinciden; las que coinciden
   // solo por dentro (en un punto) salen abiertas
-  const list = (items, label) => (
+  const list = (items) => (
     <ul className="gtd-people__list">
       {items
         .filter((a) => nodeMatchesDeep(a, words))
@@ -522,32 +620,64 @@ export const AgendasPage = ({ agendas, loaded, onOpenDoc, filter = '' }) => {
           <AgendaRow
             key={a.headerId}
             agenda={a}
-            label={label(a)}
+            label={agendaLabel(a)}
             open={openId === a.headerId || (words.length > 0 && !nodeMatches(a, words))}
             onToggle={() => toggle(a.headerId)}
             onOpenDoc={onOpenDoc}
             filter={filter}
+            projectOf={projectOf}
           />
         ))}
     </ul>
   );
-  const shown = (items) => items.filter((a) => nodeMatchesDeep(a, words)).length > 0;
+  const shown = (items, k) =>
+    (kind === 'all' || kind === k) && items.filter((a) => nodeMatchesDeep(a, words)).length > 0;
+  const projects = agendas.projects || [];
+  const any =
+    shown(agendas.persons, 'person') ||
+    shown(agendas.places, 'place') ||
+    shown(projects, 'project');
   return (
     <div className="gtd-people" data-testid="gtd-agendas">
-      {shown(agendas.persons) && (
+      {!!agendas.all.length && (
+        <div className="gtd-people__kinds" role="tablist" data-testid="gtd-agendas-kinds">
+          {KINDS.map((k) => (
+            <button
+              key={k.id}
+              type="button"
+              role="tab"
+              aria-selected={kind === k.id}
+              className={'gtd-chip gtd-people__kind' + (kind === k.id ? ' is-on' : '')}
+              onClick={() => setKind(k.id)}
+              data-testid={`gtd-agendas-kind-${k.id}`}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {shown(agendas.persons, 'person') && (
         <>
           <div className="gtd-review__sub">
             <i className="fas fa-user-friends" /> Personas
           </div>
-          {list(agendas.persons, (a) => a.person.name)}
+          {list(agendas.persons)}
         </>
       )}
-      {shown(agendas.places) && (
+      {shown(agendas.places, 'place') && (
         <>
           <div className="gtd-review__sub">
             <i className="fas fa-map-marker-alt" /> Lugares y ocasiones
           </div>
-          {list(agendas.places, (a) => a.title)}
+          {list(agendas.places)}
+        </>
+      )}
+      {shown(projects, 'project') && (
+        <>
+          <div className="gtd-review__sub" data-testid="gtd-agendas-projects">
+            <i className="fas fa-project-diagram" /> Proyectos
+          </div>
+          {list(projects)}
         </>
       )}
       {!agendas.all.length && (
@@ -555,11 +685,208 @@ export const AgendasPage = ({ agendas, loaded, onOpenDoc, filter = '' }) => {
           <p>agendas.org no tiene ninguna agenda todavía.</p>
         </div>
       )}
-      {!!agendas.all.length && !shown(agendas.all) && (
+      {!!agendas.all.length && !any && (
         <div className="gtd-empty" data-testid="gtd-agendas-nomatch">
-          <p>Ninguna agenda coincide con «{filter.trim()}».</p>
+          <p>
+            {words.length
+              ? `Ninguna agenda coincide con «${filter.trim()}».`
+              : 'No hay agendas de este tipo.'}
+          </p>
         </div>
       )}
+    </div>
+  );
+};
+
+// ---------------- (4.60) Reuniones de una persona o de un proyecto ----------------
+
+// reuniones.org cargado en silencio (sin crearlo) → { path, file }
+const useReuniones = () => {
+  const dispatch = useDispatch();
+  const store = useStore();
+  const path = reunionesPathFor(store.getState());
+  const file = useSelector((st) => st.org.present.getIn(['files', path]));
+  const loaded = !!(file && file.get('headers'));
+  useEffect(() => {
+    if (!loaded) Promise.resolve(dispatch(loadFileQuietly(path))).catch(() => null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path]);
+  return { path, file };
+};
+
+/**
+ * Sección «Reuniones»: las de reuniones.org con esa persona (:PERSONA:) o de ese proyecto
+ * (:PROYECTO:), de la más reciente a la más antigua; las 5 últimas y «Ver todas» (con lupa).
+ * Tocar = abrir en Documentos. Lápiz = cambiar el título; papelera = eliminar (con confirmación).
+ */
+export const MeetingsSection = ({ personId = null, projectId = null, onOpened = null }) => {
+  const dispatch = useDispatch();
+  const { path, file } = useReuniones();
+  const [all, setAll] = useState(false);
+  const [q, setQ] = useState('');
+  const list = useMemo(
+    () => (personId || projectId ? meetingsIn(file, path, { personId, projectId }) : []),
+    [file, path, personId, projectId]
+  );
+  const shown = all ? filterMeetings(list, q) : list.slice(0, 5);
+  const open = (m) => {
+    if (onOpened) onOpened();
+    dispatch(openHeadingInDocs({ path, headerId: m.headerId }));
+  };
+  const rename = async (m) => {
+    const t = await askText({ title: 'Título de la reunión', value: m.title, okLabel: 'Guardar' });
+    if (t && t.trim()) dispatch(renameHeading(path, m.headerId, t));
+  };
+  return (
+    <div className="gtd-meetings" data-testid="gtd-meetings">
+      {!list.length && <div className="gtd-people__hint">Ninguna reunión todavía.</div>}
+      <ul className="gtd-people__list">
+        {shown.map((m) => (
+          <li key={m.headerId} className="gtd-people__row" data-testid="gtd-meeting-row">
+            <div className="gtd-people__rowhead">
+              <button
+                type="button"
+                className="gtd-people__name"
+                onClick={() => open(m)}
+                data-testid="gtd-meeting-open"
+              >
+                <i className="fas fa-users" /> {m.title}
+                {m.date && !m.title.includes(m.date) && (
+                  <small className="gtd-people__hint"> {m.date}</small>
+                )}
+              </button>
+              <button
+                type="button"
+                className="gtd-people__mini"
+                title="Cambiar el título"
+                onClick={() => rename(m)}
+                data-testid="gtd-meeting-rename"
+              >
+                <i className="fas fa-pen" />
+              </button>
+              <button
+                type="button"
+                className="gtd-people__mini"
+                title="Eliminar la reunión"
+                onClick={() =>
+                  dispatch(
+                    deleteHeading({
+                      path,
+                      headerId: m.headerId,
+                      what: 'la reunión',
+                      title: m.title,
+                    })
+                  )
+                }
+                data-testid="gtd-meeting-delete"
+              >
+                <i className="fas fa-trash" />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {list.length > 5 && !all && (
+        <button
+          type="button"
+          className="gtd-review__btn"
+          onClick={() => setAll(true)}
+          data-testid="gtd-meetings-all"
+        >
+          Ver todas ({list.length})
+        </button>
+      )}
+      {all && (
+        <div className="gtd-tickler__add">
+          <i className="fas fa-search" />
+          <input
+            type="text"
+            className="gtd-tickler__input gtd-tickler__new"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar reunión…"
+            data-testid="gtd-meetings-filter"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
+ * (4.60) En el detalle de un proyecto: su «Agenda» (puntos a tratar, plegada si no hay abiertos) y
+ * sus «Reuniones», con «Nueva reunión». `project` = tarea del modelo; `agenda` = la suya o null.
+ */
+export const ProjectPeopleBlock = ({ project, agenda, onOpenDoc }) => {
+  const dispatch = useDispatch();
+  const store = useStore();
+  const [agOpen, setAgOpen] = useState(() => !!(agenda && agenda.points > 0));
+  const [mtOpen, setMtOpen] = useState(false);
+  const newMeeting = () =>
+    openNewMeeting({
+      persons: [],
+      project,
+      agendaId: agenda ? agenda.headerId : null,
+      agendaName: project.title,
+    });
+  const createAgenda = async () => {
+    const id = await dispatch(createProjectAgenda(project));
+    if (id) setAgOpen(true);
+  };
+  return (
+    <div className="gtd-projpeople" data-testid="gtd-project-people">
+      <div className="gtd-projpeople__head">
+        <button
+          type="button"
+          className="gtd-people__name"
+          onClick={() => (agenda ? setAgOpen(!agOpen) : createAgenda())}
+          aria-expanded={agenda ? agOpen : undefined}
+          data-testid="gtd-project-agenda-toggle"
+        >
+          {agenda ? (
+            <>
+              <i className={agOpen ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
+              <i className="far fa-comments" /> Agenda
+              {agenda.open > 0 && <span className="gtd-side__count">{agenda.open}</span>}
+            </>
+          ) : (
+            <>
+              <i className="fas fa-plus" /> <i className="far fa-comments" /> Agenda del proyecto
+            </>
+          )}
+        </button>
+        <button
+          type="button"
+          className="gtd-people__name"
+          onClick={() => setMtOpen(!mtOpen)}
+          aria-expanded={mtOpen}
+          data-testid="gtd-project-meetings-toggle"
+        >
+          <i className={mtOpen ? 'fas fa-caret-down' : 'fas fa-caret-right'} />{' '}
+          <i className="fas fa-users" /> Reuniones
+        </button>
+        <button
+          type="button"
+          className="gtd-people__mini"
+          title="Nueva reunión"
+          onClick={newMeeting}
+          data-testid="gtd-project-new-meeting"
+        >
+          <i className="fas fa-plus" />
+        </button>
+      </div>
+      {agenda && agOpen && (
+        <AgendaBody
+          agenda={agenda}
+          testId="gtd-project-agenda"
+          onOpenDoc={
+            onOpenDoc
+              ? (n) => onOpenDoc({ path: agendasPathFor(store.getState()), headerId: n.headerId })
+              : null
+          }
+        />
+      )}
+      {mtOpen && <MeetingsSection projectId={project.orgId || null} />}
     </div>
   );
 };

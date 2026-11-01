@@ -29,7 +29,8 @@ test('4.04: Menú ☰ › Procesos (Diarios y Periódicos) lanza la revisión de
   await expect(page.locator('[data-testid=eli-proc-inbox]')).toBeVisible();
   await page.locator('[data-testid=eli-proc-review]').click();
   await expect(page.locator('[data-testid=gtd-review]')).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('[data-testid=gtd-review-title]')).toContainText('Terminadas');
+  // (4.60) solo la revisión oficial: empieza por los papeles sueltos
+  await expect(page.locator('[data-testid=gtd-review-title]')).toContainText('Papeles');
   expect(app.errors).toEqual([]);
 });
 

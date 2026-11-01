@@ -121,7 +121,8 @@ import {
   exportViewOrg,
 } from './gtdTaskActions';
 import GtdProcessInbox from './GtdProcessInbox';
-import { AgendasPage, PersonsPage } from './GtdPeople';
+import { AgendasPage, PersonsPage, ProjectPeopleBlock } from './GtdPeople';
+import { openNewMeeting } from './GtdNewMeeting';
 import { PersonChip } from './PersonChip';
 import {
   parseContacts,
@@ -130,7 +131,7 @@ import {
   personLinksValue,
   PERSON_PROPERTY,
 } from '../../lib/gtd/gtd_persons';
-import { parseAgendas } from '../../lib/gtd/gtd_agendas';
+import { parseAgendas, agendaOfProject } from '../../lib/gtd/gtd_agendas';
 import {
   personasPathFor,
   agendasPathFor,
@@ -197,7 +198,7 @@ import {
   markHzReviewed,
 } from '../../lib/gtd/gtd_horizons';
 import { weeklyReview, reviewSteps, zkReviewOn } from '../../lib/gtd/gtd_review';
-import { strictOn, NOT_ALLEN_DAILY } from '../../lib/gtd/gtd_strict';
+import { NOT_ALLEN_DAILY } from '../../lib/gtd/gtd_strict';
 import GtdTagManager from './GtdTagManager';
 import { describeRepeat } from './ScheduleField';
 import useRowDrag, { useLasso } from './useRowDrag';
@@ -1407,11 +1408,28 @@ export default function GtdView() {
     personasFile,
     personasPath,
   ]);
-  const agendas = useMemo(() => parseAgendas(agendasFile, contacts, agendasPath), [
-    agendasFile,
-    contacts,
-    agendasPath,
-  ]);
+  // (4.60) agendas de proyecto: título de cada proyecto por su :ID: (sin él = enlace roto)
+  const projectsByOrgId = useMemo(() => {
+    const m = new Map();
+    tasks.forEach((t) => {
+      if (t.isProject && t.orgId && !t.isTrashed) m.set(t.orgId.toLowerCase(), t);
+    });
+    return m;
+  }, [tasks]);
+  const projectTitles = useMemo(
+    () => new Map(Array.from(projectsByOrgId, ([k, t]) => [k, t.title])),
+    [projectsByOrgId]
+  );
+  const agendas = useMemo(
+    () =>
+      parseAgendas(
+        agendasFile,
+        contacts,
+        agendasPath,
+        (id) => projectTitles.get(String(id).toLowerCase()) || null
+      ),
+    [agendasFile, contacts, agendasPath, projectTitles]
+  );
   // (4.50) nombre de cada contacto por id (para los chips de persona de las filas); null mientras
   // personas.org no está cargado (entonces no se marcan enlaces rotos)
   const contactNames = useMemo(
@@ -1583,6 +1601,7 @@ export default function GtdView() {
   // ORG Mode para Eli: en Scheduled, los hábitos van siempre abajo, en su propia sección; en el
   // Logbook, secciones por fecha de cierre (esta semana, la pasada, el mes pasado, este año…)
   const splitHabits = view.id === 'scheduled';
+  const isTreeHeading = (t) => !t.keyword && !t.isProject;
   const isMeetingTreeView =
     isCustomId(view.id) && !!gtdCfg.sections[view.id] && gtdCfg.sections[view.id].headings === true;
   const rendered = useMemo(() => {
@@ -1609,7 +1628,8 @@ export default function GtdView() {
       if (fresh.length) list = [...fresh, ...list.filter((t) => !freshKeys.includes(t.key))];
     }
     // (4.57) sección propia con «cabeceras sin tarea»: las de tipo meeting, con su jerarquía
-    if (isMeetingTreeView) list = nestMeetingRows(tasks, list).list;
+    // (4.60) …y todas las cabeceras sin tarea, con su jerarquía y plegables (como las Referencias)
+    if (isMeetingTreeView) list = nestMeetingRows(tasks, list, isTreeHeading).list;
     return list;
   }, [
     visible,
@@ -1623,8 +1643,8 @@ export default function GtdView() {
     isMeetingTreeView,
   ]);
   // sangría de cada cabecera de reunión (por nivel)
-  const meetingDepths = useMemo(
-    () => (isMeetingTreeView ? nestMeetingRows(tasks, rendered).depth : null),
+  const meetingTree = useMemo(
+    () => (isMeetingTreeView ? nestMeetingRows(tasks, rendered, isTreeHeading) : null),
     [isMeetingTreeView, tasks, rendered]
   );
   const sectionStarts = useMemo(() => {
@@ -2042,7 +2062,14 @@ export default function GtdView() {
         // Solo las sueltas sin fechas: las que tienen fecha las ordena la fecha
         reorderable: canReorderLoose && !t.project && !t.isDone && !t.scheduled && !t.deadline,
         // (4.57) reuniones en una sección propia: sangría por nivel
-        ...(meetingDepths && t.type === 'meeting' ? { depth: meetingDepths.get(t.key) || 0 } : {}),
+        ...(meetingTree && meetingTree.depth.has(t.key)
+          ? {
+              depth: meetingTree.depth.get(t.key) || 0,
+              isRef: true,
+              hasKids: (meetingTree.kids.get(t.key) || 0) > 0,
+              kidCount: meetingTree.kids.get(t.key) || 0,
+            }
+          : {}),
       });
     });
     return out;
@@ -2294,13 +2321,13 @@ export default function GtdView() {
     else setSideOpen(false);
     setSelKey(null);
   }, []);
-  // 3.35: el historial (flechas ← →) solo apunta secciones (Inbox, Next…); abrir un proyecto no
-  // crea entrada, así que ← desde un proyecto vuelve a la sección anterior
+  // 3.35: el historial (flechas ← →) apunta las secciones (Inbox, Next…). (4.60) …y también los
+  // proyectos abiertos: ← desde un proyecto vuelve a la MISMA sección (con su lista) y → al proyecto
   const selectView = useCallback(
     (v) => {
       applyView(v);
       const l = history.location;
-      if (v.type || !/^\/gtd(\/|$)/.test(l.pathname)) return;
+      if (!/^\/gtd(\/|$)/.test(l.pathname)) return;
       const cur = l.state && l.state.eliGtdView;
       if (JSON.stringify(v) === JSON.stringify(cur)) return;
       history.push(l.pathname + (l.search || ''), { ...(l.state || {}), eliGtdView: v });
@@ -2310,7 +2337,7 @@ export default function GtdView() {
   // La entrada actual guarda la vista; al ir atrás/adelante (POP) se recupera la de esa entrada
   useEffect(() => {
     const l = history.location;
-    if (!(l.state && l.state.eliGtdView) && !viewRef.current.type) {
+    if (!(l.state && l.state.eliGtdView)) {
       history.replace(l.pathname + (l.search || '') + (l.hash || ''), {
         ...(l.state || {}),
         eliGtdView: viewRef.current,
@@ -3605,12 +3632,12 @@ export default function GtdView() {
     writeLS('eliGtdReview', step);
   };
   // (4.15) pasos según el ajuste «Allen estricto»
-  const REVIEW_STEPS = reviewSteps(strictOn(), { zk: zkReviewOn() });
+  const REVIEW_STEPS = reviewSteps({ zk: zkReviewOn() });
   const startReview = () => {
     setSideOpen(false);
     setReview(0);
     // (4.04) el primer paso es lo terminado (Logbook); (4.15) con Allen estricto, papeles sueltos
-    const v = reviewSteps(strictOn())[0].view;
+    const v = reviewSteps()[0].view;
     if (v) goList(v);
   };
   const finishReview = () => {
@@ -5369,6 +5396,18 @@ export default function GtdView() {
             data-testid="gtd-sec-filter-btn"
           >
             <i className="fas fa-search" />
+          </button>
+        )}
+        {/* (4.60) «Nueva reunión» sin contexto, en el título «Agendas» */}
+        {view.id === 'agendas' && (
+          <button
+            className="gtd-main__sync"
+            onClick={() => openNewMeeting({})}
+            title="Nueva reunión"
+            aria-label="Nueva reunión"
+            data-testid="gtd-agendas-new-meeting"
+          >
+            <i className="fas fa-users" />
           </button>
         )}
       </>
@@ -7316,7 +7355,6 @@ export default function GtdView() {
         {reviewStep !== null && (
           <GtdWeeklyReview
             steps={REVIEW_STEPS}
-            strict={strictOn()}
             horizonsOn={horizonsOn}
             review={reviewData}
             step={reviewStep}
@@ -7408,7 +7446,7 @@ export default function GtdView() {
             onCapture={() => openDraft('inbox')}
             onProcess={startProcess}
             onNow={() => startDaily('now')}
-            notAllen={!!NOT_ALLEN_DAILY[daily.kind] && strictOn()}
+            notAllen={!!NOT_ALLEN_DAILY[daily.kind]}
           />
         )}
         {proc && (
@@ -7425,7 +7463,6 @@ export default function GtdView() {
             energyOptions={energyOptions}
             today={today}
             paused={!!(openKey || draft || newProject || menu || showAgenda)}
-            strict={strictOn()}
             projects={allProjects
               .filter((p) => !p.isTrashed)
               .sort((a, b) => (a.title || '').localeCompare(b.title || ''))}
@@ -7482,6 +7519,17 @@ export default function GtdView() {
               }
             </div>
           )}
+        {/* (4.60) agenda y reuniones del proyecto */}
+        {projectTask && openKey !== projectTask.key && (
+          <ProjectPeopleBlock
+            key={projectTask.key}
+            project={projectTask}
+            agenda={projectTask.orgId ? agendaOfProject(agendas, projectTask.orgId) : null}
+            onOpenDoc={(n) =>
+              openInFile({ path: n.path, id: n.headerId, key: `${n.path}::${n.headerId}` })
+            }
+          />
+        )}
         {projectTask && openKey === projectTask.key && renderEditor(projectTask)}
 
         {view.id === 'projects' && (
@@ -7636,6 +7684,9 @@ export default function GtdView() {
             agendas={agendas}
             filter={text}
             loaded={agendasLoaded}
+            projectOf={(a) =>
+              (a.project && projectsByOrgId.get(a.project.id.toLowerCase())) || null
+            }
             onOpenDoc={(a) =>
               openInFile({
                 path: agendasPath,

@@ -735,11 +735,33 @@ export default function TaskEditor({
         setTimeout(() => closeEditorRef.current(), 160);
       } else reset();
     };
+    // (4.60) arrastrar el dedo sobre el título (o cualquier sitio de la ficha que no se desplace)
+    // movía la pantalla de DETRÁS: con la ficha abierta, un gesto que no puede desplazar nada
+    // dentro de ella se anula (salvo en el campo que se está escribiendo: cursor y selección)
+    const scrollsInside = (t) => {
+      let n = t;
+      while (n && n.nodeType === 1 && n !== document.body) {
+        if (n === el) return el.scrollHeight > el.clientHeight + 1;
+        const cs = window.getComputedStyle(n);
+        if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight + 1) return true;
+        if (/(auto|scroll)/.test(cs.overflowX) && n.scrollWidth > n.clientWidth + 1) return true;
+        n = n.parentNode;
+      }
+      return false;
+    };
+    const guard = (e) => {
+      const t = e.target;
+      if (dragging || !t || !el.contains(t)) return;
+      if (t === document.activeElement && /^(TEXTAREA|INPUT)$/.test(t.tagName)) return;
+      if (!scrollsInside(t) && e.cancelable) e.preventDefault();
+    };
     el.addEventListener('touchstart', onStart, { passive: true });
     el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchmove', guard, { passive: false });
     el.addEventListener('touchend', onEnd);
     el.addEventListener('touchcancel', reset);
     return () => {
+      el.removeEventListener('touchmove', guard);
       el.removeEventListener('touchstart', onStart);
       el.removeEventListener('touchmove', onMove);
       el.removeEventListener('touchend', onEnd);
@@ -1612,44 +1634,47 @@ export default function TaskEditor({
               <i className="fas fa-plus" /> Subtarea
             </button>
           )}
-          {/* (3.44) el nombre del fichero abre la tarea en su fichero (antes, «Abrir») */}
-          {onOpen && !isNew ? (
-            <button
-              type="button"
-              className="gtd-ed__file gtd-ed__file--open"
-              title={`Fichero: ${task.path} · Abrir en su fichero`}
-              onClick={(e) => {
-                commit();
-                onOpen(e);
-              }}
-              data-testid="gtd-editor-file"
-            >
-              <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
-            </button>
-          ) : (
-            <span
-              className="gtd-ed__file"
-              title={`Fichero: ${task.path}`}
-              data-testid="gtd-editor-file"
-            >
-              <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
-            </span>
-          )}
-          {/* (4.55) fecha de creación, junto al fichero y con su mismo estilo (tareas y proyectos) */}
-          {task.createdAt && !isNew && (
-            <span
-              className="gtd-ed__file gtd-ed__created"
-              title="Fecha de creación (:CREATED:)"
-              data-testid="gtd-editor-created"
-            >
-              <i className="far fa-clock" />{' '}
-              {task.createdAt.toLocaleDateString('es-ES', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </span>
-          )}
+          {/* (4.60) fichero y fecha de creación en la MISMA línea (la fecha a su derecha) */}
+          <span className="gtd-ed__fileline">
+            {/* (3.44) el nombre del fichero abre la tarea en su fichero (antes, «Abrir») */}
+            {onOpen && !isNew ? (
+              <button
+                type="button"
+                className="gtd-ed__file gtd-ed__file--open"
+                title={`Fichero: ${task.path} · Abrir en su fichero`}
+                onClick={(e) => {
+                  commit();
+                  onOpen(e);
+                }}
+                data-testid="gtd-editor-file"
+              >
+                <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
+              </button>
+            ) : (
+              <span
+                className="gtd-ed__file"
+                title={`Fichero: ${task.path}`}
+                data-testid="gtd-editor-file"
+              >
+                <i className="far fa-file-alt" /> {(task.path || '').replace(/^\//, '')}
+              </span>
+            )}
+            {/* (4.55) fecha de creación, junto al fichero y con su mismo estilo (tareas y proyectos) */}
+            {task.createdAt && !isNew && (
+              <span
+                className="gtd-ed__file gtd-ed__created"
+                title="Fecha de creación (:CREATED:)"
+                data-testid="gtd-editor-created"
+              >
+                <i className="far fa-clock" />{' '}
+                {task.createdAt.toLocaleDateString('es-ES', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </span>
+            )}
+          </span>
           {/* (3.44) «Mover a…» (lo que hacía el nombre del fichero), donde estaba «Abrir» */}
           {onMove && !isNew && (
             <button

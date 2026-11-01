@@ -41,9 +41,14 @@ test('GTD (3.42): editar la tarea mientras se procesa el Inbox', async ({ app })
   await expect(question).toHaveText(before);
   await expect(page.locator('[data-testid=gtd-process-count]')).toContainText('1 de 2');
 
-  // Se termina de procesar: Next
-  for (const k of ['2', '2', '2', '1']) await page.keyboard.press(k);
-  await opt(app, 'Guardar').click();
+  // Se termina de procesar: Next. (4.60, Allen) la siguiente acción ya trae el título nuevo →
+  // ¿<2 min? No → aplazar → ¿proyecto? No (ya está en Casa) → ¿cuándo? Sin fecha: a Next
+  await expect(page.locator('[data-testid=gtd-proc-next-title]')).toHaveValue(
+    'Arreglar el grifo de la cocina'
+  );
+  await opt(app, 'Continuar').click();
+  for (const k of ['2', '2', '1']) await page.keyboard.press(k);
+  await opt(app, 'Sin fecha: a Next').click();
   await expect(page.locator('[data-testid=gtd-process-count]')).toContainText('2 de 2');
   await expect(page.locator('[data-testid=gtd-process-title]')).toContainText('Otra cosa');
 

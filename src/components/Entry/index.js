@@ -28,6 +28,7 @@ import GtdView from '../Gtd';
 import EliConflicts from '../EliConflicts';
 import EliCommandPalette from '../EliCommandPalette';
 import EliHeadingViews from '../EliHeadingViews';
+import GtdNewMeetingHost from '../Gtd/GtdNewMeeting';
 import EliCalendar from '../EliCalendar';
 import EliCalculator from '../EliCalculator';
 import EliPdfViewer from '../EliPdfViewer';
@@ -365,6 +366,7 @@ class Entry extends PureComponent {
         {isAuthenticated && <EliDiary />}
         {isAuthenticated && <EliSyncLog />}
         {isAuthenticated && <EliHeadingViews />}
+        {isAuthenticated && <GtdNewMeetingHost />}
         {isAuthenticated && <EliBrokenLinks />}
 
         {isAuthenticated &&

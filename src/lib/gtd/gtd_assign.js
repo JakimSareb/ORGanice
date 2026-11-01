@@ -45,7 +45,7 @@ const gtdPaths = (state) => {
   return Array.from(paths);
 };
 
-const loadedTasks = (state) => {
+export const loadedTasks = (state) => {
   const files = state.org.present
     .get('files')
     .filter((f, p) => p && !p.startsWith('/__') && !isArchive(p) && f && f.get('headers'));

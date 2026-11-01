@@ -1038,21 +1038,24 @@ export const nestProjectRefs = (allTasks, refs) => {
 // (4.57) Reuniones (`:TYPE: meeting`, heredable) en una SECCIÓN PROPIA con «cabeceras sin tarea»:
 // las cabeceras de tipo meeting (y las que cuelgan de ellas) salen como árbol, juntas donde estaba
 // la primera de ellas; el resto de filas y su orden NO cambian. → { list, depth: Map(key → nivel) }
-export const nestMeetingRows = (allTasks, list) => {
-  const meeting = list.filter((t) => t.type === 'meeting');
-  if (!meeting.length) return { list, depth: new Map() };
+// (4.60) `pick` elige qué filas van en árbol (por defecto las meeting; en las secciones propias con
+// «cabeceras sin tarea», todas las cabeceras sin estado). `kids` = nº de hijas directas (▾/▸).
+export const nestMeetingRows = (allTasks, list, pick = (t) => t.type === 'meeting') => {
+  const meeting = list.filter(pick);
+  if (!meeting.length) return { list, depth: new Map(), kids: new Map() };
   const nodes = nestProjectRefs(allTasks, meeting);
   const depth = new Map(nodes.map((n) => [n.task.key, n.depth]));
+  const kids = new Map(nodes.map((n) => [n.task.key, n.kidCount]));
   const out = [];
   let placed = false;
   list.forEach((t) => {
-    if (t.type !== 'meeting') out.push(t);
+    if (!pick(t)) out.push(t);
     else if (!placed) {
       placed = true;
       nodes.forEach((n) => out.push(n.task));
     }
   });
-  return { list: out, depth };
+  return { list: out, depth, kids };
 };
 
 // Agrupar una lista por proyecto: primero las sueltas (sin proyecto), después cada proyecto en el

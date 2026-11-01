@@ -5,7 +5,7 @@ import { PERSON_PROPERTY, personLinksValue } from './gtd_persons';
 import { listOf, projectsOf, projectState, projectSectionOf, inProject } from './gtd_model';
 
 // Lista de disparadores: (4.14) la «Incompletion Trigger List» OFICIAL de David Allen (19
-// profesionales + 20 personales, con sus ejemplos como pista) y un grupo «Extra» (no oficial)
+// profesionales + 20 personales, con sus ejemplos como pista) (4.60: sin el antiguo grupo «Extra»)
 export const MIND_SWEEP = [
   ['Profesional', 'Proyectos empezados', 'Lo que tienes a medias.'],
   ['Profesional', 'Proyectos por empezar', 'Lo que tendrías que arrancar.'],
@@ -150,20 +150,12 @@ export const MIND_SWEEP = [
     'Tiendas, ferretería, material, regalos, compra, farmacia, banco, tintorería.',
   ],
   ['Personal', 'Comunidad', 'Barrio, vecinos, trabajo de servicio, colegios, implicación cívica.'],
-  ['Extra', 'Decisiones pendientes', 'Lo que tienes que decidir. (No es de la lista oficial.)'],
-  ['Extra', 'Ideas', 'Mejoras, proyectos nuevos, «estaría bien…». (No es de la lista oficial.)'],
-  [
-    'Extra',
-    'Algún día / quizá',
-    'Sueños, ideas sueltas, «me gustaría…». (No es de la lista oficial.)',
-  ],
 ].map(([group, label, hint], i) => ({ id: `sweep${i + 1}`, group, label, hint }));
 
-export const SWEEP_GROUPS = ['Profesional', 'Personal', 'Extra'];
+export const SWEEP_GROUPS = ['Profesional', 'Personal'];
 
-// (4.15) pasos del Volcado: con «Allen estricto», sin el bloque «Extra» (no es de la lista oficial)
-export const sweepSteps = (strict) =>
-  strict ? MIND_SWEEP.filter((s) => s.group !== 'Extra') : MIND_SWEEP;
+// (4.15/4.60) pasos del Volcado: solo la lista oficial de Allen (sin el antiguo bloque «Extra»)
+export const sweepSteps = () => MIND_SWEEP;
 
 // «Saltar este bloque»: primer paso del grupo siguiente (o el final)
 export const nextGroupStep = (steps, i) => {

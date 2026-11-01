@@ -69,7 +69,17 @@ import {
   agendaAddPoint,
 } from '../../lib/gtd/gtd_persons_actions';
 import { agendaOfPerson } from '../../lib/gtd/gtd_agendas';
-import { AgendaBody } from '../Gtd/GtdPeople';
+import { AgendaBody, MeetingsSection } from '../Gtd/GtdPeople';
+import { openNewMeeting } from '../Gtd/GtdNewMeeting';
+import GtdPropertiesDialog from '../Gtd/GtdPropertiesDialog';
+import {
+  contactRef,
+  deleteHeading,
+  renameHeading,
+  reunionesMeetingIds,
+} from '../../lib/gtd/gtd_agendas_actions';
+import { gtdSetProperties } from '../../lib/gtd/gtd_actions';
+import { askText } from '../../lib/eli_prompt';
 
 export { openTagView, openBacklinks } from '../../lib/eli_heading_events';
 
@@ -964,8 +974,40 @@ const PersonCardView = ({ orgId, onClose }) => {
   const card = useMemo(() => {
     const ag = agendasPathFor(store.getState());
     const c = personCard(index, orgId, backlinkEntries(index, orgId));
-    return { ...c, notes: c.notes.filter((e) => e.path !== ag) };
+    // (4.60) las reuniones salen en su propia sección
+    const meetings = reunionesMeetingIds(store.getState());
+    return {
+      ...c,
+      notes: c.notes.filter((e) => e.path !== ag && !meetings.has(`${e.path}::${e.headerId}`)),
+    };
   }, [index, orgId, store]);
+  const [propsOpen, setPropsOpen] = useState(false);
+  const ref = contactRef(store.getState(), orgId);
+  const refHeader =
+    ref && (files.getIn([ref.path, 'headers']) || []).find((h) => h.get('id') === ref.headerId);
+  const rename = async () => {
+    if (!ref) return;
+    const t = await askText({ title: 'Nombre del contacto', value: ref.name, okLabel: 'Guardar' });
+    if (t && t.trim()) dispatch(renameHeading(ref.path, ref.headerId, t));
+  };
+  const remove = async () => {
+    if (!ref) return;
+    const n = card.tasks.reduce((x, g) => x + g.items.length, 0);
+    if (
+      await dispatch(
+        deleteHeading({
+          path: ref.path,
+          headerId: ref.headerId,
+          what: 'el contacto',
+          title: ref.name,
+          extra: n
+            ? `Sus ${n} tareas conservan el enlace (saldrá atenuado).`
+            : 'Los enlaces que apunten a él se conservan (saldrán atenuados).',
+        })
+      )
+    )
+      onClose();
+  };
   const name = (contact && contact.name) || (self && self.title) || '…';
   const nTasks = card.tasks.reduce((n, g) => n + g.items.length, 0);
   const [point, setPoint] = useState('');
@@ -998,15 +1040,72 @@ const PersonCardView = ({ orgId, onClose }) => {
             {contact.birthday && <span>🎂 {contact.birthday}</span>}
           </div>
         )}
-        {self && (
+        <div className="eli-person__actions">
+          {self && (
+            <button
+              type="button"
+              className="eli-person__open"
+              onClick={() => goClose(self)}
+              data-testid="eli-person-open-doc"
+            >
+              <i className="fas fa-external-link-alt" /> Abrir en Documentos
+            </button>
+          )}
           <button
             type="button"
             className="eli-person__open"
-            onClick={() => goClose(self)}
-            data-testid="eli-person-open-doc"
+            onClick={() =>
+              openNewMeeting({
+                persons: [{ id: orgId, title: name }],
+                agendaId: agenda ? agenda.headerId : null,
+                agendaName: name,
+              })
+            }
+            data-testid="eli-person-new-meeting"
           >
-            <i className="fas fa-external-link-alt" /> Abrir en Documentos
+            <i className="fas fa-users" /> Nueva reunión
           </button>
+          {ref && (
+            <>
+              <button
+                type="button"
+                className="eli-person__open"
+                onClick={rename}
+                title="Cambiar el nombre"
+                data-testid="eli-person-rename"
+              >
+                <i className="fas fa-pen" /> Nombre
+              </button>
+              {refHeader && (
+                <button
+                  type="button"
+                  className="eli-person__open"
+                  onClick={() => setPropsOpen(true)}
+                  title="Correo, teléfono, empresa…"
+                  data-testid="eli-person-props"
+                >
+                  <i className="fas fa-list-ul" /> Datos
+                </button>
+              )}
+              <button
+                type="button"
+                className="eli-person__open is-danger"
+                onClick={remove}
+                data-testid="eli-person-delete"
+              >
+                <i className="fas fa-trash" /> Eliminar
+              </button>
+            </>
+          )}
+        </div>
+        {propsOpen && refHeader && (
+          <GtdPropertiesDialog
+            task={{ path: ref.path, id: ref.headerId, header: refHeader, title: ref.name }}
+            onSave={(rows) =>
+              dispatch(gtdSetProperties({ path: ref.path, id: ref.headerId }, rows))
+            }
+            onClose={() => setPropsOpen(false)}
+          />
         )}
         <h4 className="eli-person__h">Tareas ({nTasks})</h4>
         {card.tasks.length ? (
@@ -1035,6 +1134,8 @@ const PersonCardView = ({ orgId, onClose }) => {
         ) : (
           <div className="eli-hv__empty">Ninguna.</div>
         )}
+        <h4 className="eli-person__h">Reuniones</h4>
+        <MeetingsSection personId={orgId} onOpened={onClose} />
         <h4 className="eli-person__h">Agenda</h4>
         {agenda ? (
           <AgendaBody agenda={agenda} testId="eli-person-agenda" />
@@ -1081,10 +1182,14 @@ export default function EliHeadingViews() {
     window.addEventListener('eli:tag-view', onTag);
     window.addEventListener('eli:backlinks', onRefs);
     window.addEventListener('eli:person', onPerson);
+    // (4.60) al crear una reunión desde la ficha, la ficha se cierra (se abre la reunión)
+    const onClose = () => setView(null);
+    window.addEventListener('eli:hv-close', onClose);
     return () => {
       window.removeEventListener('eli:tag-view', onTag);
       window.removeEventListener('eli:backlinks', onRefs);
       window.removeEventListener('eli:person', onPerson);
+      window.removeEventListener('eli:hv-close', onClose);
     };
   }, []);
 

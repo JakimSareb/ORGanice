@@ -75,9 +75,14 @@ const prune = async (c, items, now) => {
 //  'created' (name, removed) · 'recent' (hay una de hace menos de 1 h) · 'unchanged' (nada ha
 //  cambiado desde la última) · 'empty' (no hay ficheros) · 'unverified' (se subió pero no se pudo
 //  comprobar: no se poda nada) · 'unsupported'
-export const runBackup = async (client, { now = new Date(), force = false, deflateRaw } = {}) => {
+// (4.60) `onProgress(texto)`: lo que se está haciendo (para que Ajustes lo enseñe)
+export const runBackup = async (
+  client,
+  { now = new Date(), force = false, deflateRaw, onProgress = () => {} } = {}
+) => {
   if (!backupsSupported(client)) return { status: 'unsupported' };
   const c = rawOf(client);
+  onProgress('Mirando las copias que hay…');
   const existing = await listBackups(client);
   const newest = existing[existing.length - 1];
 
@@ -86,6 +91,7 @@ export const runBackup = async (client, { now = new Date(), force = false, defla
     return { status: 'recent', newestAt: newest.date.getTime(), removed };
   }
 
+  onProgress('Buscando los ficheros que copiar…');
   const entries = (await c.listAllFileEntries()).filter((e) => isBackupSource(e.path));
   if (!entries.length) return { status: 'empty' };
 
@@ -98,6 +104,7 @@ export const runBackup = async (client, { now = new Date(), force = false, defla
   // Descarga (de 4 en 4) y zip
   const files = [];
   for (let i = 0; i < entries.length; i += 4) {
+    onProgress(`Leyendo ficheros: ${i} de ${entries.length}…`);
     const chunk = await Promise.all(
       entries.slice(i, i + 4).map(async (e) => ({
         name: e.path.replace(/^\/+/, ''),
@@ -113,14 +120,17 @@ export const runBackup = async (client, { now = new Date(), force = false, defla
       return { status: 'unchanged', removed };
     }
   }
+  onProgress(`Comprimiendo ${files.length} ficheros…`);
   const zip = await makeZip(files, deflateRaw ? { date: now, deflateRaw } : { date: now });
   const name = formatBackupName(now, sig);
+  onProgress('Subiendo la copia…');
   const uploaded = await c.uploadBinaryFile(
     `${BACKUPS_DIR}/${name}`,
     new Blob([zip], { type: 'application/zip' })
   );
 
   // Comprobar que quedó bien escrita antes de borrar nada
+  onProgress('Comprobando la copia…');
   const after = await listBackups(client);
   const found = after.find((b) => b.name === name);
   if (!found || (found.size && found.size !== zip.length)) {
@@ -187,7 +197,7 @@ export const restoreBackup = async (client, backup, { now = new Date(), inflateR
 let running = false;
 
 // Comprobación periódica (la lanza `EliBackups`): como mucho 1 copia por hora, y solo si cambió algo
-export const eliBackupTick = ({ force = false } = {}) => async (dispatch, getState) => {
+export const eliBackupTick = ({ force = false, onProgress } = {}) => async (dispatch, getState) => {
   if (running) return { status: 'busy' };
   if (!force && !getBackupsOn()) return { status: 'off' };
   const client = getState().syncBackend.get('client');
@@ -196,7 +206,10 @@ export const eliBackupTick = ({ force = false } = {}) => async (dispatch, getSta
   if (!force && now.getTime() - getLastRun() < MIN_INTERVAL_MS) return { status: 'wait' };
   running = true;
   try {
-    const result = await runBackup(client, { now, force });
+    const result = await runBackup(
+      client,
+      onProgress ? { now, force, onProgress } : { now, force }
+    );
     if (result.status === 'recent') setLastRun(result.newestAt);
     else if (result.status !== 'unverified') setLastRun(now.getTime());
     return result;

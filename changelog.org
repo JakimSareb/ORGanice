@@ -3,6 +3,22 @@
 * Acerca de este fichero
 Aquí se anotan los cambios de ORGanice que se notan al usarla. Cuando hay novedades, aparece un regalo en la barra superior. El manual completo está en el botón de ayuda (Ajustes → Manual de uso) y en la pantalla de inicio («Probar con el manual»).
 
+* 4.60 (noviembre de 2026)
+** Reuniones, agendas de proyecto y lista del 1-nov
+- *Nueva reunión* (ficha de persona, cada agenda, título «Agendas» y detalle del proyecto): título, asistentes, proyecto, *Traer los puntos abiertos* de la agenda, *Insertar plantilla…* y *Pegar transcripción*. Se crea al final de =reuniones.org= (=:TYPE: meeting=, =:PERSONA:=, =:PROYECTO:=, fecha inactiva), en un solo Deshacer, y se abre en Documentos para escribir el acta.
+- *Agendas de proyecto* (=:PROYECTO:= en =agendas.org=): en Agendas (con chips Todas · Personas · Lugares · Proyectos) y en el detalle del proyecto, con su sección *Reuniones*. Si el proyecto no tenía =:ID:=, se le pone al crear su agenda (único cambio en su fichero).
+- *Reuniones* en la ficha de la persona y en el proyecto (las 5 últimas y *Ver todas*); editar y eliminar personas, reuniones y agendas, siempre con confirmación y Deshacer.
+- *Plantillas* = cabeceras con =:TYPE: plantilla=: se copian (con =:ID:= nuevos) en la reunión nueva o en la subcabecera nueva de «Llevar a reunión…».
+- *Acta desde el móvil*: =/gtd?acta=portapapeles= (o con el texto) desde un Atajo de iOS abre *Nueva reunión* con la transcripción; la app propone tareas con reglas sencillas (sin IA) y las marcadas van al Inbox. El manual explica el Atajo.
+- *Solo «Allen estricto»*: ya no es un ajuste; la revisión semanal, Procesar Inbox y el Volcado mental siguen siempre lo oficial de Allen.
+- *Barra superior configurable* (Ajustes › Apariencia): ordenar, apagar o pasar al Menú ☰ los botones fijos (Documentos/GTD, Atrás/Adelante, Deshacer/Rehacer, Sincronizar).
+- *Secciones propias* con «cabeceras sin tarea»: todas en árbol y plegables, como las Referencias de un proyecto.
+- *Agendas*: triángulo a la izquierda y «tratado» a la derecha; sin scroll horizontal en el móvil y sangría más corta.
+- *Documentos*: plegar con el dedo la viñeta de una «sección» de las notas.
+- *Editor de tarea*: la fecha de creación junto al nombre del fichero; arrastrar sobre el título ya no mueve la pantalla de detrás.
+- *GTD*: Atrás desde un proyecto vuelve a la misma sección (y Adelante al proyecto).
+- *Copias de seguridad*: «Copiar ahora» y «Ver copias» enseñan lo que están haciendo y el resultado (hora y nº de ficheros, o el error).
+
 * 4.59 (octubre de 2026)
 ** Visor de PDF con notas al estilo org-noter
 - *Los PDF se abren dentro de la app*: al tocar un enlace a un PDF ([[file:libro.pdf]], [[file:libro.pdf::12]] o [[pdf:libro.pdf::12]]), en la vista GTD o con la paleta (*Abrir un PDF…*). Una página cada vez, con zoom; ↗ lo abre fuera. Se carga solo al abrir un PDF.

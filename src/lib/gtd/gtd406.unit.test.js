@@ -19,12 +19,10 @@ const titles = (l) => l.map((t) => t.title);
 
 describe('4.06: Volcado mental', () => {
   test('la lista larga de disparadores (Trabajo y Personal)', () => {
-    // (4.14) lista oficial: 19 + 20 + 3 extra
-    expect(MIND_SWEEP.length).toBe(42);
-    expect(new Set(MIND_SWEEP.map((s) => s.group))).toEqual(
-      new Set(['Profesional', 'Personal', 'Extra'])
-    );
-    expect(new Set(MIND_SWEEP.map((s) => s.id)).size).toBe(42);
+    // (4.14) lista oficial: 19 + 20 (4.60: sin los 3 «Extra»)
+    expect(MIND_SWEEP.length).toBe(39);
+    expect(new Set(MIND_SWEEP.map((s) => s.group))).toEqual(new Set(['Profesional', 'Personal']));
+    expect(new Set(MIND_SWEEP.map((s) => s.id)).size).toBe(39);
   });
 });
 
